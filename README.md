@@ -4,20 +4,20 @@
 
 # OpenTranslator
 
-**Ferramenta de tradução e modding para jogos — offline-first, sem anúncios, sem rastreamento.**
+**Game translation and modding tool — offline-first, no ads, no tracking.**
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/Licença-Livre%20%7C%20Não%20Comercial-purple)](LICENSE)
+[![License](https://img.shields.io/badge/License-Free%20%7C%20Non--Commercial-purple)](LICENSE)
 
 </div>
 
 ---
 
-## Engines suportadas
+## Supported Engines
 
-| Engine | Tradução de Arquivo | Hook em Tempo Real |
-|--------|:-------------------:|:------------------:|
+| Engine | File Translation | Real-Time Hook |
+|--------|:----------------:|:--------------:|
 | RPG Maker MZ / MV | ✅ | ✅ |
 | TyranoScript | ✅ | ✅ |
 | Wolf RPG | ✅ | ✅ |
@@ -28,63 +28,63 @@
 
 ---
 
-## Início rápido
+## Quick Start
 
 ```bash
 git clone https://github.com/JstEzzo/OpenTranslator.git
 ```
 
-Depois, duplo clique em **`LAUNCH_OpenTranslator.bat`**.
+Then double-click **`LAUNCH_OpenTranslator.bat`**.
 
-Na primeira execução, o launcher detecta e baixa automaticamente tudo que estiver faltando (Node.js, dependências NPM, ferramentas de engine).
+On first run, the launcher automatically detects and downloads everything that's missing (Node.js, NPM dependencies, engine tools).
 
 ---
 
-## Como funciona
+## How It Works
 
 ```
  [LAUNCH_OpenTranslator.bat]
           │
           ▼
- [Servidor Backend — Node.js :3000]  ←→  [Interface Web — Chromium]
+ [Backend Server — Node.js :3000]  ←→  [Web UI — Chromium]
           │
-          ├── Tradução de arquivos JSON/data (patch permanente)
-          ├── Hook em tempo real via WebSocket :16005
-          ├── Descriptografia de imagens/áudio XOR
-          ├── Auto word-wrap para PT-BR
-          └── Gerenciamento de saves e backups
+          ├── JSON/data file translation (permanent patch)
+          ├── Real-time hook via WebSocket :16005
+          ├── XOR image/audio decryption
+          ├── Smart auto word-wrap
+          └── Save and backup management
 ```
 
-O servidor escuta **exclusivamente em `127.0.0.1`** — nenhuma porta é exposta à rede local ou externa.
+The server listens **exclusively on `127.0.0.1`** — no ports are exposed to the local network or internet.
 
 ---
 
-## Motores de tradução
+## Translation Engines
 
 - Google Translate
-- Bing / Microsoft Translator  
+- Bing / Microsoft Translator
 - DeepL
-- LibreTranslate (auto-hospedado)
-- Modelos LLM locais (via API compatível com OpenAI)
+- LibreTranslate (self-hosted)
+- Local LLM models (via OpenAI-compatible API)
 
 ---
 
-## Estrutura
+## Project Structure
 
 ```
 OpenTranslator/
-├── LAUNCH_OpenTranslator.bat   ← Ponto de entrada
+├── LAUNCH_OpenTranslator.bat   ← Entry point
 └── Tool/
-    ├── server.js               ← Backend principal
-    ├── src/                    ← Módulos do servidor
-    ├── www/                    ← Interface web
-    ├── loaders/                ← Hooks por engine
-    ├── resources/              ← Ferramentas por engine
-    └── gameLib/                ← Detecção de engine
+    ├── server.js               ← Main backend
+    ├── src/                    ← Server modules
+    ├── www/                    ← Web interface
+    ├── loaders/                ← Per-engine hooks
+    ├── resources/              ← Per-engine tools
+    └── gameLib/                ← Engine detection
 ```
 
 ---
 
 <div align="center">
-  <sub>Feito para jogadores. Tradução sem complicação.</sub>
+  <sub>Built for players. Translation without the hassle.</sub>
 </div>
