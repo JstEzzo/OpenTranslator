@@ -106,7 +106,7 @@ const server = http.createServer((req, res) => {
 
 function tryListen(port) {
   server.removeAllListeners("error");
-  server.listen(port, () => {
+  server.listen(port, "127.0.0.1", () => {
     global.PORT = server.address().port;
     const PID_FILE = path.join(global.DATA_DIR, "server.pid");
     fs.writeFileSync(PID_FILE, String(process.pid));
