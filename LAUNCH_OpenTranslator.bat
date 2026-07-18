@@ -1,58 +1,81 @@
 @echo off
 setlocal enabledelayedexpansion
-chcp 65001 >nul
-
-:: ================================================================
-:: OpenTranslator — Launcher Principal
-:: Verifica dependências e executa o setup automático se necessário
-:: ================================================================
 
 set "ROOT=%~dp0"
-set "TOOL_DIR=%ROOT%Tool"
-set "PORTABLE_NODE_DIR=%TOOL_DIR%\bin"
-set "PORTABLE_NODE=%PORTABLE_NODE_DIR%\node.exe"
-set "NODE_MODULES=%TOOL_DIR%\node_modules"
-set "NEEDS_SETUP=0"
+set "TOOL=%ROOT%Tool"
+set "BIN=%TOOL%\bin"
+set "NODE_EXE=%BIN%\node.exe"
+set "MODS=%TOOL%\node_modules"
+set "GODOT=%TOOL%\resources\godot"
+set "INJECT=%TOOL%\loaders\inject.exe"
 
-:: ── Checar se é primeira execução (node_modules ausente) ─────────
-if not exist "%NODE_MODULES%\ws\package.json" set "NEEDS_SETUP=1"
-
-:: ── Se precisar de setup, executar SETUP.bat primeiro ───────────
-if "%NEEDS_SETUP%"=="1" (
-    echo.
-    echo  Primeira execução detectada. Iniciando instalação automática...
-    echo  Isso pode levar alguns minutos dependendo da sua internet.
-    echo.
-    call "%ROOT%SETUP.bat"
-    echo.
-    echo  Setup concluído. Iniciando o OpenTranslator...
-    timeout /t 2 /nobreak >nul
-)
-
-:: ── Detectar Node.js ─────────────────────────────────────────────
+:: ----------------------------------------------------------------
+:: [1] Resolver Node.js
+:: ----------------------------------------------------------------
 where node >nul 2>nul
 if %errorlevel% equ 0 (
-    set "NODE_CMD=node"
-    goto :RUN
+    set "NODE=node"
+    goto :NPM
 )
-
-if exist "%PORTABLE_NODE%" (
-    set "NODE_CMD=%PORTABLE_NODE%"
-    goto :RUN
+if exist "%NODE_EXE%" (
+    set "NODE=%NODE_EXE%"
+    goto :NPM
 )
-
-:: ── Node não encontrado mesmo após setup: baixar portátil ────────
-echo Node.js nao detectado. Baixando versao portatil v22.17.0...
-if not exist "%PORTABLE_NODE_DIR%" mkdir "%PORTABLE_NODE_DIR%"
-powershell -Command "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.17.0/win-x64/node.exe' -OutFile '%PORTABLE_NODE%' } catch { Write-Error $_.Exception.Message; exit 1 }"
-
-if not exist "%PORTABLE_NODE%" (
-    echo ERRO: Nao foi possivel baixar o Node.js.
-    echo Instale manualmente em: https://nodejs.org/
+echo Baixando Node.js portatil...
+if not exist "%BIN%" mkdir "%BIN%"
+powershell -NoProfile -NonInteractive -Command ^
+  "$ProgressPreference='SilentlyContinue';" ^
+  "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
+  "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.17.0/win-x64/node.exe' -OutFile '%NODE_EXE%' -UseBasicParsing"
+if not exist "%NODE_EXE%" (
+    echo ERRO: Falha ao baixar Node.js. Instale manualmente em https://nodejs.org/
     pause
     exit /b 1
 )
-set "NODE_CMD=%PORTABLE_NODE%"
+set "NODE=%NODE_EXE%"
 
+:: ----------------------------------------------------------------
+:: [2] Instalar dependencias NPM (node_modules)
+:: ----------------------------------------------------------------
+:NPM
+if not exist "%MODS%\ws\package.json" (
+    echo Instalando dependencias NPM...
+    cd /d "%TOOL%"
+    "%NODE%" "%BIN%\npm" install --prefer-offline >nul 2>nul
+    if not exist "%MODS%\ws\package.json" (
+        call npm install >nul 2>nul
+    )
+)
+
+:: ----------------------------------------------------------------
+:: [3] Baixar gdre_tools.exe (Godot) se ausente
+:: ----------------------------------------------------------------
+if not exist "%GODOT%\gdre_tools.exe" (
+    echo Baixando gdre_tools.exe...
+    if not exist "%GODOT%" mkdir "%GODOT%"
+    powershell -NoProfile -NonInteractive -Command ^
+      "$ProgressPreference='SilentlyContinue';" ^
+      "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;" ^
+      "try {" ^
+      "  $r=Invoke-RestMethod -Uri 'https://api.github.com/repos/bruvzg/gdsdecomp/releases/latest' -UseBasicParsing;" ^
+      "  $a=$r.assets|Where-Object{$_.name -match 'windows.*\.zip'}|Select-Object -First 1;" ^
+      "  if($a){Invoke-WebRequest -Uri $a.browser_download_url -OutFile '%GODOT%\gdre.zip' -UseBasicParsing;" ^
+      "  Expand-Archive -Path '%GODOT%\gdre.zip' -DestinationPath '%GODOT%' -Force;" ^
+      "  Remove-Item '%GODOT%\gdre.zip' -Force}" ^
+      "} catch {}"
+)
+
+:: ----------------------------------------------------------------
+:: [4] Avisar sobre inject.exe se ausente (nao ha download automatico)
+:: ----------------------------------------------------------------
+if not exist "%INJECT%" (
+    echo AVISO: inject.exe nao encontrado. Hook de processo indisponivel.
+    echo        Baixe o MTool em https://mtool.app/ e copie inject.exe para:
+    echo        %INJECT%
+)
+
+:: ----------------------------------------------------------------
+:: [5] Executar o OpenTranslator
+:: ----------------------------------------------------------------
 :RUN
-wscript "%ROOT%Tool\OpenTranslator.vbs" "%NODE_CMD%"
+wscript "%TOOL%\OpenTranslator.vbs" "%NODE%"
