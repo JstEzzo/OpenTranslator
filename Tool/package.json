@@ -1,0 +1,17 @@
+{
+    "name": "OpenTranslator",
+    "version": "1.0.0",
+    "private": true,
+    "dependencies": {
+        "adm-zip": "^0.6.0",
+        "better-sqlite3": "^12.11.1",
+        "exceljs": "^4.4.0",
+        "fs-extra": "^11.3.6",
+        "iconv-lite": "^0.7.3",
+        "jconv": "^0.1.5",
+        "pe-library": "^2.0.1",
+        "resedit": "^3.0.2",
+        "terser": "^5.49.0",
+        "ws": "^8.21.1"
+    }
+}

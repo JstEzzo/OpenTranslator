@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Unity-mono / BepInEx 5 plugins load fine as net46. (Sugoi uses net35;
+         net46 is the safe modern equivalent and resolves refs locally.)        -->
+    <TargetFramework>net46</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>UltraBatchEndpoint</AssemblyName>
+    <RootNamespace>UltraBatch</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <!-- No AssemblyInfo auto-gen noise; keep the DLL minimal. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reference the EXACT DLLs from the target game's BepInEx install.
+         Private=false => do NOT copy them next to our output DLL.            -->
+    <Reference Include="XUnity.AutoTranslator.Plugin.Core">
+      <HintPath>build\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="XUnity.Common">
+      <HintPath>build\XUnity.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
