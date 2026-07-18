@@ -8,7 +8,7 @@
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/Licença-MIT-purple)](LICENSE)
+[![License](https://img.shields.io/badge/Licença-Livre%20%7C%20Não%20Comercial-purple)](LICENSE)
 
 </div>
 
