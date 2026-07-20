@@ -29,6 +29,12 @@ const SKIP_KEYS = new Set([
   "pictureName",
   "title1Name",
   "title2Name",
+  "fontFace",
+  "fontFileName",
+  "mainFontFace",
+  "subFontFace",
+  "fontFile",
+  "font",
   "note",
 ]);
 const SAFE_PARAM_KEYS = [
@@ -158,16 +164,6 @@ function extractGameTexts(gameDir) {
       function checkString(val, keys) {
         const key = keys[keys.length - 1];
         if (typeof key === "string" && SKIP_KEYS.has(key)) return;
-        if (key === "name") {
-          if (
-            file === "Tilesets.json" ||
-            file === "Animations.json" ||
-            file === "Troops.json" ||
-            file === "CommonEvents.json" ||
-            (file.startsWith("Map") && file.endsWith(".json"))
-          )
-            return;
-        }
         if (key === "name" && keys.length >= 2) {
           const parentKeys = keys.slice(0, -1);
           const parent = getValueAtPath(data, parentKeys);
@@ -184,6 +180,21 @@ function extractGameTexts(gameDir) {
           extractTextsFromJsCode(val, file, keys, texts, idxRef);
           idx = idxRef.val;
           return;
+        }
+
+        if (/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(val)) {
+          return addText(texts, { id: idx++, file, keys, original: val });
+        }
+
+        if (key === "name") {
+          if (
+            file === "Tilesets.json" ||
+            file === "Animations.json" ||
+            file === "Troops.json" ||
+            file === "CommonEvents.json" ||
+            (file.startsWith("Map") && file.endsWith(".json"))
+          )
+            return;
         }
 
         if (typeof key === "string" && TEXT_FIELDS.has(key))
@@ -360,6 +371,9 @@ function isTranslatableText(clean) {
   if (/^[a-z]{2}[-_][A-Z]{2}$/.test(s)) return false;
   if (s.length <= 4 && /^[A-Z]+$/.test(s)) return false;
   if (/^[\d\s.,!?\-+%=*/<>()\[\]{}@#$^&;:'"`~|\\\/]+$/.test(s)) return false;
+  if (/\.(woff|woff2|ttf|otf|png|jpg|jpeg|ogg|mp3|wav)$/i.test(s)) return false;
+
+  if (/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(s)) return true;
 
   const skipWords = new Set([
     "hp",

@@ -1,6 +1,12 @@
 (async function () {
   "use strict";
 
+  window.addEventListener("beforeunload", () => {
+    try {
+      navigator.sendBeacon("/api/shutdown");
+    } catch (e) {}
+  });
+
   async function rpc(method, params) {
     const r = await fetch("/api/rpc", {
       method: "POST",
@@ -585,10 +591,11 @@
   async function launchGame(key) {
     const g = S.games[key];
     if (!g) return;
-    if (S.launchedKey) {
-      log("warn", "A game is already running");
+    if (S.launchedKey || S.isLaunching) {
+      log("warn", "A game is already running or launch is in progress");
       return;
     }
+    S.isLaunching = true;
     const ld = $("gl-loading"),
       lm = $("gl-loading-msg");
     if (ld) ld.style.display = "block";
@@ -624,6 +631,8 @@
       loadingVisible = false;
       if (ld) ld.style.display = "none";
       log("error", "Launch failed: " + e.message);
+    } finally {
+      S.isLaunching = false;
     }
   }
 
@@ -1578,30 +1587,30 @@ select option {
         c.style.display = t.includes(sq) ? "" : "none";
       });
     }
-    qsa(".glPlay").forEach((b) =>
-      b.addEventListener("click", function (e) {
+    qsa(".glPlay").forEach((b) => {
+      b.onclick = function (e) {
         e.stopPropagation();
         const c = this.closest(".gc");
         if (c) launchGame(c.dataset.key);
-      }),
-    );
-    qsa(".glEdit").forEach((b) =>
-      b.addEventListener("click", function (e) {
+      };
+    });
+    qsa(".glEdit").forEach((b) => {
+      b.onclick = function (e) {
         e.stopPropagation();
         const c = this.closest(".gc");
         if (c) openEdit(c.dataset.key);
-      }),
-    );
-    qsa(".glDel").forEach((b) =>
-      b.addEventListener("click", async function (e) {
+      };
+    });
+    qsa(".glDel").forEach((b) => {
+      b.onclick = async function (e) {
         e.stopPropagation();
         const c = this.closest(".gc");
         if (c && (await customConfirm(t("deleteConfirm")))) {
           await delGame(c.dataset.key);
           renderGames();
         }
-      }),
-    );
+      };
+    });
     updSB();
   }
 

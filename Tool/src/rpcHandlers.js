@@ -314,45 +314,52 @@ const handlers = {
     return detectEngine(exePath, exeDir);
   },
   async launchGame({ key }) {
-    if (global.restoreTimeout) {
-      clearTimeout(global.restoreTimeout);
-      global.restoreTimeout = null;
-    }
-    const games = handlers.loadGames().games;
-    const g = games[key];
-    if (!g) {
-      global.log("error", "launchGame: game not found key=" + key);
-      return { ok: false, error: "Game not found" };
+    if (global.isLaunchingGame) {
+      global.log("warn", "launchGame: inicialização de jogo já em andamento");
+      return { ok: false, error: "Launch/pipeline already in progress" };
     }
     if (global.launchedProc && checkProcessRunning().running) {
-      global.log("warn", "launchGame: already running");
+      global.log("warn", "launchGame: jogo já em execução");
       return { ok: false, error: "A game is already running" };
     }
-    const args = g.constArgs || {};
-    const exe = args.gameExe || "";
-    const eng = args.engine || detectEngine(exe);
-    const title = g.libConf?.title || key;
-    global.log(
-      "info",
-      'launchGame: "' +
-        title +
-        '" exe="' +
-        exe +
-        '" exists=' +
-        fs.existsSync(exe) +
-        " eng=" +
-        eng
-    );
-    if (!exe || !fs.existsSync(exe))
-      return { ok: false, error: "EXE not found: " + exe };
-    const gameDir = path.dirname(exe);
 
+    global.isLaunchingGame = true;
     try {
-      const escapedDir = gameDir.replace(/'/g, "''");
-      const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object { $_.Path -like '${escapedDir}\\\\*' } | Stop-Process -Force"`;
-      execSync(psCmd);
-      global.log("info", "Processos zumbis do jogo limpos antes do boot");
-    } catch (e) {}
+      if (global.restoreTimeout) {
+        clearTimeout(global.restoreTimeout);
+        global.restoreTimeout = null;
+      }
+      const games = handlers.loadGames().games;
+      const g = games[key];
+      if (!g) {
+        global.log("error", "launchGame: game not found key=" + key);
+        return { ok: false, error: "Game not found" };
+      }
+      const args = g.constArgs || {};
+      const exe = args.gameExe || "";
+      const eng = args.engine || detectEngine(exe);
+      const title = g.libConf?.title || key;
+      global.log(
+        "info",
+        'launchGame: "' +
+          title +
+          '" exe="' +
+          exe +
+          '" exists=' +
+          fs.existsSync(exe) +
+          " eng=" +
+          eng
+      );
+      if (!exe || !fs.existsSync(exe))
+        return { ok: false, error: "EXE not found: " + exe };
+      const gameDir = path.dirname(exe);
+
+      try {
+        const escapedDir = gameDir.replace(/'/g, "''");
+        const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object { $_.Path -like '${escapedDir}\\\\*' } | Stop-Process -Force"`;
+        execSync(psCmd);
+        global.log("info", "Processos zumbis do jogo limpos antes do boot");
+      } catch (e) {}
 
     let bakDir = "";
     const eInfo = ENGINES_DEF[eng];
@@ -374,6 +381,7 @@ const handlers = {
           stdio: "ignore",
           detached: true,
           shell: false,
+          windowsHide: false,
         });
         if (proc) {
           proc.on("exit", (code) => {
@@ -427,6 +435,7 @@ const handlers = {
                         stdio: "ignore",
                         detached: true,
                         shell: false,
+                        windowsHide: false,
                       });
                     } catch (err) {
                       global.log(
@@ -450,6 +459,7 @@ const handlers = {
           stdio: "ignore",
           detached: true,
           shell: false,
+          windowsHide: false,
         });
       }
     } else {
@@ -460,6 +470,7 @@ const handlers = {
           stdio: "ignore",
           detached: true,
           shell: false,
+          windowsHide: false,
         });
       } catch (e) {
         global.log("error", "Spawn exception: " + e.message);
@@ -519,9 +530,12 @@ const handlers = {
       global.activeCheatSocket = null;
       global.lastGameState = null;
     });
-    proc.unref();
-    global.log("info", "Game launched PID: " + gp);
-    return { pid: gp, key };
+      global.log("info", "Game launched PID: " + gp);
+      verifyAndDiagnoseGame(gameDir, exe, gp);
+      return { pid: gp, key };
+    } finally {
+      global.isLaunchingGame = false;
+    }
   },
   checkGame() {
     return checkProcessRunning();
@@ -1326,3 +1340,73 @@ const handlers = {
 module.exports = {
   handlers
 };
+
+function verifyAndDiagnoseGame(gameDir, exe, pid) {
+  setTimeout(() => {
+    if (!pid || pid <= 0) return;
+
+    let isRunning = false;
+    try {
+      isRunning = process.kill(pid, 0);
+    } catch (e) {
+      isRunning = false;
+    }
+
+    if (!isRunning) {
+      global.log(
+        "error",
+        `[Erro de Boot] O processo do jogo (PID ${pid}) foi encerrado logo após a inicialização.`
+      );
+      const debugLogPath = path.join(gameDir, "debug.log");
+      if (fs.existsSync(debugLogPath)) {
+        try {
+          const content = fs.readFileSync(debugLogPath, "utf8").trim();
+          const lines = content.split("\n").filter((l) => l.trim().length > 0);
+          const lastLines = lines.slice(-5).join("\n  -> ");
+          global.log(
+            "info",
+            "Logs de erro do jogo (debug.log):\n  -> " + lastLines
+          );
+        } catch (e) {}
+      }
+      return;
+    }
+
+    const exeName = path.basename(exe, ".exe");
+    const cmd = `powershell -NoProfile -Command "(Get-Process -Id ${pid} -ErrorAction SilentlyContinue).MainWindowHandle"`;
+
+    exec(cmd, (err, stdout) => {
+      const handleStr = (stdout || "").trim();
+      const handleNum = parseInt(handleStr, 10);
+
+      if (!isNaN(handleNum) && handleNum > 0) {
+        global.log(
+          "success",
+          `[Verificação de Saúde] O jogo (PID ${pid}) está ativo com JANELA VISÍVEL na tela (Handle: ${handleNum}).`
+        );
+      } else {
+        global.log(
+          "warn",
+          `[Alerta de Boot] O jogo (PID ${pid}) está rodando no Gerenciador de Tarefas, mas a JANELA ESTÁ INVISÍVEL ou minimizada (Handle: ${handleNum || 0}).`
+        );
+        global.log("info", "Tentando restaurar e focar a janela gráfica do jogo automaticamente...");
+
+        const unhideCmd = `powershell -NoProfile -Command "$t = Add-Type -MemberDefinition '[DllImport(\x22user32.dll\x22)] public static extern bool ShowWindow(IntPtr h, int n); [DllImport(\x22user32.dll\x22)] public static extern bool SetForegroundWindow(IntPtr h);' -Name W -PassThru; $p = Get-Process -Name '${exeName}' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1; if ($p) { $t::ShowWindow($p.MainWindowHandle, 9); $t::SetForegroundWindow($p.MainWindowHandle); }"`;
+        exec(unhideCmd);
+
+        const debugLogPath = path.join(gameDir, "debug.log");
+        if (fs.existsSync(debugLogPath)) {
+          try {
+            const content = fs.readFileSync(debugLogPath, "utf8").trim();
+            const lines = content.split("\n").filter((l) => l.trim().length > 0);
+            const lastLines = lines.slice(-5).join("\n  -> ");
+            global.log(
+              "info",
+              "Logs recentes do jogo (debug.log):\n  -> " + lastLines
+            );
+          } catch (e) {}
+        }
+      }
+    });
+  }, 3500);
+}

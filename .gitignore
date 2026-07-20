@@ -1,0 +1,34 @@
+# Pasta de documentacao e scripts locais — apenas local
+skills_whitepaper/
+
+# Arquivos de biblioteca de jogo gerados em runtime
+Tool/gameLib/*.gljson
+Tool/gameLib/*_pic
+
+# Configuracoes do agente de IA — apenas local
+.agents/
+
+# Dependencias NPM — restauradas via npm install
+node_modules/
+**/node_modules/
+
+# Binarios portateis — baixados automaticamente pelo launcher
+Tool/bin/
+
+# Logs e dados de runtime — nao pertencem ao repositorio
+*.log
+Tool/data/openT.log
+Tool/data/server.pid
+
+# Banco de dados local — gerado em runtime
+Tool/data/global_cache.db
+Tool/data/global_cache.db-shm
+Tool/data/global_cache.db-wal
+Tool/global_cache.db*
+*.db*
+*.sqlite*
+
+# Binarios pesados (acima do limite do GitHub)
+Tool/loaders/inject.exe
+Tool/resources/godot/gdre_tools.exe
+Tool/resources/godot/GodotMonoDecompNativeAOT.dll

@@ -792,6 +792,63 @@ function healGameData(gameDir) {
   } catch (e) {
     global.log("warn", "Autocorreção de Áudio falhou: " + e.message);
   }
+
+  healFonts(gameDir);
+}
+
+function healFonts(gameDir) {
+  try {
+    const dataDir = findDataDir(gameDir);
+    if (!dataDir) return;
+    const wwwDir = path.dirname(dataDir);
+    const candidateDirs = [
+      path.join(wwwDir, "fonts"),
+      path.join(gameDir, "fonts"),
+      path.join(wwwDir, "font"),
+      path.join(gameDir, "font"),
+    ];
+
+    let fontsDir = null;
+    for (const d of candidateDirs) {
+      if (fs.existsSync(d)) {
+        fontsDir = d;
+        break;
+      }
+    }
+    if (!fontsDir) return;
+
+    const files = fs.readdirSync(fontsDir);
+    if (files.length === 0) return;
+
+    for (const f of files) {
+      const ext = path.extname(f);
+      if (![".woff", ".woff2", ".ttf", ".otf"].includes(ext.toLowerCase())) continue;
+      const base = path.basename(f, ext);
+
+      if (/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(base)) {
+        const aliases = [
+          "Mosaico Kiniro" + ext,
+          "Mosaico_Kiniro" + ext,
+          "GameFont" + ext,
+          "main" + ext,
+        ];
+        for (const alias of aliases) {
+          const aliasPath = path.join(fontsDir, alias);
+          if (!fs.existsSync(aliasPath)) {
+            try {
+              fs.copyFileSync(path.join(fontsDir, f), aliasPath);
+              global.log(
+                "info",
+                `Self-Healing Fontes: Criado alias de fonte automático "${alias}" a partir de "${f}".`
+              );
+            } catch (e) {}
+          }
+        }
+      }
+    }
+  } catch (e) {
+    global.log("warn", "Self-Healing Fontes falhou: " + e.message);
+  }
 }
 
 async function executeTranslationPipeline(gameDir, cfg, title) {
@@ -881,12 +938,19 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
       `Traduzindo os ${unmatched.length} textos inéditos restantes usando motor ${engine} (Idioma: ${sl} -> ${tl})...`
     );
     const glossary = loadGlossary();
+    let savedCount = 0;
     const newTranslations = await translateBatch(
       unmatched,
       sl,
       tl,
       engine,
-      glossary
+      glossary,
+      (toSaveChunk) => {
+        if (toSaveChunk && toSaveChunk.length > 0) {
+          saveNewGlobalTranslations(sl, tl, toSaveChunk);
+          savedCount += toSaveChunk.length;
+        }
+      }
     );
 
     const toSave = [];
@@ -897,12 +961,12 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
         toSave.push([item.clean, tr]);
       }
     }
-    if (toSave.length > 0) {
+    if (toSave.length > savedCount) {
       saveNewGlobalTranslations(sl, tl, toSave);
     }
     global.log(
       "info",
-      `Cache global SQLite atualizado com ${toSave.length} novas traduções.`
+      `Cache global SQLite atualizado incrementalmente com ${toSave.length} novas traduções.`
     );
   }
 
@@ -928,6 +992,7 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
     `Pipeline concluído. Substituídos ${patched} textos nos arquivos do jogo.`
   );
 
+  const dataDir = findDataDir(gameDir);
   if (dataDir) {
     const wwwDir = path.dirname(dataDir);
     const htmlPath = path.join(wwwDir, "index.html");

@@ -357,7 +357,7 @@ async function translateMultiBatch(texts, sl, tl, glossary) {
   return googleResults;
 }
 
-async function translateBatch(texts, sl, tl, engine, glossary) {
+async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated) {
   if (!engine || engine === "auto") engine = "google";
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
   if (engine === "multi") return translateMultiBatch(texts, sl, tl, glossary);
@@ -435,39 +435,68 @@ async function translateBatch(texts, sl, tl, engine, glossary) {
     `Dividido em ${unique.length} textos únicos em ${batches.length} lotes para tradução.`
   );
 
-  const CONCURRENCY_LIMIT = 6;
+  const CONCURRENCY_LIMIT = 5;
   let completedUniqueTexts = 0;
   let completedBatchesCount = 0;
   const startTime = Date.now();
 
+  const fetchGoogleBatchWithRetry = async (url, maxRetries = 3) => {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const raw = await new Promise((res, rej) => {
+          const rq = https.get(
+            url,
+            {
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                Accept: "application/json, text/plain, */*",
+              },
+            },
+            (rsp) => {
+              let d = "";
+              rsp.setEncoding("utf8");
+              rsp.on("data", (c) => (d += c));
+              rsp.on("end", () => {
+                if (rsp.statusCode === 429) {
+                  return rej(new Error("HTTP 429 Rate Limit"));
+                }
+                if (rsp.statusCode !== 200) {
+                  return rej(new Error(`HTTP ${rsp.statusCode}`));
+                }
+                res(d);
+              });
+            }
+          );
+          rq.on("error", (e) => rej(e));
+          rq.setTimeout(15000, () => {
+            rq.destroy();
+            rej(new Error("timeout"));
+          });
+        });
+
+        if (raw && raw.trim().startsWith("[")) {
+          return JSON.parse(raw);
+        }
+        throw new Error("Resposta inválida (não JSON)");
+      } catch (err) {
+        if (attempt < maxRetries) {
+          const backoff = Math.pow(2, attempt) * 1000 + Math.floor(Math.random() * 500);
+          await new Promise((r) => setTimeout(r, backoff));
+        } else {
+          throw err;
+        }
+      }
+    }
+  };
+
   const processBatch = async (batch, bIdx) => {
+    await new Promise((r) => setTimeout(r, Math.random() * 50 + 20));
     const joined = batch.map(([clean]) => clean).join(SEP);
     try {
       const q = encodeURIComponent(joined);
       const url = BASE_URL + q;
-      const raw = await new Promise((res, rej) => {
-        const rq = https.get(
-          url,
-          {
-            headers: {
-              "User-Agent": "Mozilla/5.0",
-              Accept: "application/json",
-            },
-          },
-          (rsp) => {
-            let d = "";
-            rsp.setEncoding("utf8");
-            rsp.on("data", (c) => (d += c));
-            rsp.on("end", () => res(d));
-          },
-        );
-        rq.on("error", (e) => rej(e));
-        rq.setTimeout(20000, () => {
-          rq.destroy();
-          rej(new Error("timeout"));
-        });
-      });
-      const j = JSON.parse(raw);
+      const j = await fetchGoogleBatchWithRetry(url, 3);
       const translated = j[0]
         .map((x) => x[0])
         .filter(Boolean)
@@ -478,24 +507,38 @@ async function translateBatch(texts, sl, tl, engine, glossary) {
           `Alinhamento de lote incorreto (esperado: ${batch.length}, obtido: ${parts.length})`
         );
       }
+      const toSaveBatch = [];
       for (let j = 0; j < batch.length; j++) {
         const [clean, related] = batch[j];
         const tr = parts[j] || clean;
         for (const t of related) results.set(t.id, tr);
+        if (tr && tr !== clean && tr.length > 0) {
+          toSaveBatch.push([clean, tr]);
+        }
       }
+
+      if (toSaveBatch.length > 0 && typeof onBatchTranslated === "function") {
+        try {
+          onBatchTranslated(toSaveBatch);
+        } catch (e) {}
+      }
+
       completedUniqueTexts += batch.length;
       completedBatchesCount++;
       const pct = ((completedUniqueTexts / unique.length) * 100).toFixed(1);
-      global.log(
-        "info",
-        `Lote ${completedBatchesCount}/${batches.length} (${batch.length} textos) traduzido com sucesso. Progresso: ${completedUniqueTexts}/${unique.length} (${pct}%)`
-      );
+      if (completedBatchesCount % 20 === 0 || completedBatchesCount === batches.length) {
+        global.log(
+          "info",
+          `Lote ${completedBatchesCount}/${batches.length} (${batch.length} textos) traduzido com sucesso. Progresso: ${completedUniqueTexts}/${unique.length} (${pct}%)`
+        );
+      }
     } catch (e) {
       global.log(
         "warn",
         `Falha no lote ${bIdx + 1} (${e.message}). Iniciando tradução individual para este lote...`
       );
-      await limitConcurrency(3, batch, async ([clean, related]) => {
+      const toSaveFallback = [];
+      await limitConcurrency(2, batch, async ([clean, related]) => {
         try {
           const q = encodeURIComponent(clean);
           const url =
@@ -505,35 +548,16 @@ async function translateBatch(texts, sl, tl, engine, glossary) {
             tl +
             "&dt=t&q=" +
             q;
-          const raw = await new Promise((res, rej) => {
-            const rq = https.get(
-              url,
-              {
-                headers: {
-                  "User-Agent": "Mozilla/5.0",
-                  Accept: "application/json",
-                },
-              },
-              (rsp) => {
-                let d = "";
-                rsp.setEncoding("utf8");
-                rsp.on("data", (c) => (d += c));
-                rsp.on("end", () => res(d));
-              },
-            );
-            rq.on("error", (e) => rej(e));
-            rq.setTimeout(10000, () => {
-              rq.destroy();
-              rej(new Error("timeout"));
-            });
-          });
-          const j = JSON.parse(raw);
+          const j = await fetchGoogleBatchWithRetry(url, 2);
           const tr =
             j[0]
               .map((x) => x[0])
               .filter(Boolean)
               .join("") || clean;
           for (const t of related) results.set(t.id, tr);
+          if (tr && tr !== clean && tr.length > 0) {
+            toSaveFallback.push([clean, tr]);
+          }
         } catch (e2) {
           global.log(
             "error",
@@ -542,6 +566,11 @@ async function translateBatch(texts, sl, tl, engine, glossary) {
           for (const t of related) results.set(t.id, clean);
         }
       });
+      if (toSaveFallback.length > 0 && typeof onBatchTranslated === "function") {
+        try {
+          onBatchTranslated(toSaveFallback);
+        } catch (e) {}
+      }
       completedUniqueTexts += batch.length;
       completedBatchesCount++;
       const pct = ((completedUniqueTexts / unique.length) * 100).toFixed(1);

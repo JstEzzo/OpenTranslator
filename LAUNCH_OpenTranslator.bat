@@ -78,4 +78,5 @@ if not exist "%INJECT%" (
 :: [5] Executar o OpenTranslator
 :: ----------------------------------------------------------------
 :RUN
+powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
 wscript "%TOOL%\OpenTranslator.vbs" "%NODE%"

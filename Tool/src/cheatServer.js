@@ -8,9 +8,11 @@ global.lastGameState = null;
 global.pendingCheatCommands = [];
 global.lastCheatPollTime = 0;
 
+let hookHttpServer = null;
+
 function startHookServer() {
   try {
-    const hookHttpServer = whttp.createServer(async (req, res) => {
+    hookHttpServer = whttp.createServer(async (req, res) => {
       const parsed = new URL(req.url, "http://localhost");
       const pathname = parsed.pathname;
       res.setHeader("Access-Control-Allow-Origin", "*");
@@ -285,6 +287,22 @@ function startHookServer() {
   }
 }
 
+function stopHookServer() {
+  if (global.activeCheatSocket) {
+    try {
+      global.activeCheatSocket.close();
+    } catch (e) {}
+    global.activeCheatSocket = null;
+  }
+  if (hookHttpServer) {
+    try {
+      hookHttpServer.close();
+    } catch (e) {}
+    hookHttpServer = null;
+  }
+}
+
 module.exports = {
-  startHookServer
+  startHookServer,
+  stopHookServer,
 };

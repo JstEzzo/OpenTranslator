@@ -66,18 +66,22 @@ process.on("unhandledRejection", (reason) => {
 // ==================== GERENCIAMENTO DE INSTÂNCIAS (PID) ====================
 const PID_FILE = path.join(global.DATA_DIR, "server.pid");
 try {
+  if (process.platform === "win32") {
+    try {
+      execSync(
+        `powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`
+      );
+    } catch (e) {}
+  }
   if (fs.existsSync(PID_FILE)) {
     const oldPid = parseInt(fs.readFileSync(PID_FILE, "utf8").trim(), 10);
     if (oldPid > 0 && oldPid !== process.pid) {
       try {
-        process.kill(oldPid, 0);
-        try {
-          const cmd =
-            process.platform === "win32"
-              ? "taskkill /PID " + oldPid + " /F 2>nul"
-              : "kill -9 " + oldPid + " 2>/dev/null";
-          execSync(cmd);
-        } catch (e) {}
+        const cmd =
+          process.platform === "win32"
+            ? "taskkill /PID " + oldPid + " /F 2>nul"
+            : "kill -9 " + oldPid + " 2>/dev/null";
+        execSync(cmd);
       } catch (e) {}
       try {
         fs.unlinkSync(PID_FILE);
@@ -87,16 +91,65 @@ try {
 } catch (e) {}
 
 let isCleaningUp = false;
-const cleanup = () => {
+function shutdownAll(reason = "App Shutdown") {
   if (isCleaningUp) return;
   isCleaningUp = true;
+  global.log("info", `Encerrando OpenTranslator (${reason})...`);
+  console.log(`[OpenTranslator] Encerrando aplicação (${reason})...`);
+
+  // 1. Encerrar qualquer processo de jogo ativo
+  if (global.launchedProc) {
+    try {
+      const pid = typeof global.launchedProc === "object" ? global.launchedProc.pid : global.launchedProc;
+      if (pid && pid > 0) {
+        global.log("info", `Encerrando processo de jogo ativo (PID ${pid})...`);
+        if (process.platform === "win32") {
+          execSync(`taskkill /F /T /PID ${pid} 2>nul`);
+        } else {
+          process.kill(pid, "SIGKILL");
+        }
+      }
+    } catch (e) {}
+    global.launchedProc = null;
+  }
+
+  // 2. Restaurar backups pendentes se o jogo ainda estiver modificando arquivos
+  if (global.launchedBak) {
+    try {
+      const { restoreGameData } = require("./src/gameEngine");
+      restoreGameData(global.launchedBak);
+    } catch (e) {}
+  }
+
+  // 3. Fechar porta do servidor HTTP (3000)
   try {
-    fs.unlinkSync(PID_FILE);
+    const { server } = require("./src/httpServer");
+    if (server && server.listening) {
+      server.close();
+    }
   } catch (e) {}
-  process.exit(0);
-};
-process.on("SIGINT", cleanup);
-process.on("SIGTERM", cleanup);
+
+  // 4. Fechar portas e sockets do Hook Server (16005)
+  try {
+    const { stopHookServer } = require("./src/cheatServer");
+    stopHookServer();
+  } catch (e) {}
+
+  // 5. Limpar arquivo de PID
+  try {
+    if (fs.existsSync(PID_FILE)) {
+      fs.unlinkSync(PID_FILE);
+    }
+  } catch (e) {}
+
+  setTimeout(() => process.exit(0), 250);
+}
+
+global.shutdownAll = shutdownAll;
+
+process.on("SIGINT", () => shutdownAll("SIGINT - Ctrl+C"));
+process.on("SIGTERM", () => shutdownAll("SIGTERM - Processo Finalizado"));
+process.on("SIGHUP", () => shutdownAll("SIGHUP - Janela/Terminal Fechado"));
 
 // ==================== INICIALIZAÇÃO DOS MÓDULOS ====================
 // O cache precisa ser carregado para inicializar o SQLite imediatamente
