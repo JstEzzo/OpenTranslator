@@ -270,6 +270,16 @@ const handlers = {
     const id = afterId || 0;
     return global.serverLogs.filter((l) => l.id > id);
   },
+  ping() {
+    global.lastClientHeartbeat = Date.now();
+    global.hasHadClient = true;
+    return true;
+  },
+  heartbeat() {
+    global.lastClientHeartbeat = Date.now();
+    global.hasHadClient = true;
+    return true;
+  },
   saveCfg(cfg) {
     return saveCfg(cfg);
   },

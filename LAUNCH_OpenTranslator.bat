@@ -78,5 +78,5 @@ if not exist "%INJECT%" (
 :: [5] Executar o OpenTranslator
 :: ----------------------------------------------------------------
 :RUN
-powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*OpenTranslator*' } | Stop-Process -Force -ErrorAction SilentlyContinue"
 wscript "%TOOL%\OpenTranslator.vbs" "%NODE%"

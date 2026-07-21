@@ -17,9 +17,32 @@ const MIME = {
   ".ico": "image/x-icon",
 };
 
+global.lastClientHeartbeat = Date.now();
+global.hasHadClient = false;
+
+setInterval(() => {
+  if (!global.hasHadClient) return;
+  if (Date.now() - global.lastClientHeartbeat > 7000) {
+    if (typeof global.shutdownAll === "function") {
+      global.shutdownAll("Nenhuma janela de UI ativa por mais de 7s");
+    }
+  }
+}, 3000);
+
 const server = http.createServer((req, res) => {
   const parsed = new URL(req.url, "http://localhost");
   const pathname = parsed.pathname;
+
+  if (pathname === "/api/ping" || pathname === "/api/heartbeat") {
+    global.lastClientHeartbeat = Date.now();
+    global.hasHadClient = true;
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
 
   if (pathname === "/api/shutdown") {
     res.writeHead(200, {
@@ -28,7 +51,7 @@ const server = http.createServer((req, res) => {
     });
     res.end(JSON.stringify({ ok: true, message: "Encerrando servidor..." }));
     if (typeof global.shutdownAll === "function") {
-      setTimeout(() => global.shutdownAll("Fechamento via janela/browser do usuário"), 100);
+      setTimeout(() => global.shutdownAll("Fechamento via janela do usuário"), 100);
     }
     return;
   }

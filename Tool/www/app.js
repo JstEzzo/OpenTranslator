@@ -1,11 +1,20 @@
 (async function () {
   "use strict";
 
-  window.addEventListener("beforeunload", () => {
+  function triggerShutdown() {
     try {
       navigator.sendBeacon("/api/shutdown");
     } catch (e) {}
-  });
+  }
+  window.addEventListener("beforeunload", triggerShutdown);
+  window.addEventListener("unload", triggerShutdown);
+  window.addEventListener("pagehide", triggerShutdown);
+
+  // Heartbeat para manter o servidor ativo enquanto a UI estiver aberta
+  setInterval(() => {
+    fetch("/api/ping", { method: "GET" }).catch(() => {});
+  }, 2500);
+  fetch("/api/ping", { method: "GET" }).catch(() => {});
 
   async function rpc(method, params) {
     const r = await fetch("/api/rpc", {
