@@ -1,9 +1,12 @@
 (async function () {
   "use strict";
 
+  let SESSION_TOKEN = "";
+
   function triggerShutdown() {
     try {
-      navigator.sendBeacon("/api/shutdown");
+      const url = "/api/shutdown" + (SESSION_TOKEN ? "?token=" + SESSION_TOKEN : "");
+      navigator.sendBeacon(url);
     } catch (e) {}
   }
   window.addEventListener("beforeunload", triggerShutdown);
@@ -11,10 +14,15 @@
   window.addEventListener("pagehide", triggerShutdown);
 
   // Heartbeat para manter o servidor ativo enquanto a UI estiver aberta
-  setInterval(() => {
-    fetch("/api/ping", { method: "GET" }).catch(() => {});
-  }, 2500);
-  fetch("/api/ping", { method: "GET" }).catch(() => {});
+  async function pingServer() {
+    try {
+      const r = await fetch("/api/ping", { method: "GET" });
+      const j = await r.json();
+      if (j && j.token) SESSION_TOKEN = j.token;
+    } catch (e) {}
+  }
+  setInterval(pingServer, 2500);
+  pingServer();
 
   async function rpc(method, params) {
     const r = await fetch("/api/rpc", {

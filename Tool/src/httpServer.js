@@ -19,12 +19,16 @@ const MIME = {
 
 global.lastClientHeartbeat = Date.now();
 global.hasHadClient = false;
+global.SESSION_START = Date.now();
+global.SESSION_TOKEN = Math.random().toString(36).slice(2);
 
 setInterval(() => {
   if (!global.hasHadClient) return;
-  if (Date.now() - global.lastClientHeartbeat > 7000) {
+  // Grace period de 30s após boot — ignora beacons antigos
+  if (Date.now() - global.SESSION_START < 30000) return;
+  if (Date.now() - global.lastClientHeartbeat > 10000) {
     if (typeof global.shutdownAll === "function") {
-      global.shutdownAll("Nenhuma janela de UI ativa por mais de 7s");
+      global.shutdownAll("Nenhuma janela de UI ativa por mais de 10s");
     }
   }
 }, 3000);
@@ -40,11 +44,18 @@ const server = http.createServer((req, res) => {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
     });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, token: global.SESSION_TOKEN }));
     return;
   }
 
   if (pathname === "/api/shutdown") {
+    const token = parsed.searchParams.get("token");
+    // Rejeita beacons de instâncias antigas (sem token ou token diferente)
+    if (token && token !== global.SESSION_TOKEN) {
+      res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+      res.end(JSON.stringify({ ok: false, reason: "stale_session" }));
+      return;
+    }
     res.writeHead(200, {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
