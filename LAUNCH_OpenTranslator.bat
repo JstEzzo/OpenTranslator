@@ -90,8 +90,17 @@ wscript "%TOOL%\OpenTranslator.vbs" "%NODE%"
 :: ----------------------------------------------------------------
 ping -n 3 127.0.0.1 >nul
 powershell -NoProfile -NonInteractive -Command ^
+  "$url='http://127.0.0.1:3000';" ^
   "$ok=$false;" ^
   "for($i=0;$i -lt 10;$i++){" ^
-  "  try{$r=Invoke-WebRequest -Uri 'http://127.0.0.1:3000' -UseBasicParsing -TimeoutSec 1 -EA Stop;$ok=$true;break}catch{Start-Sleep -Milliseconds 600}" ^
+  "  try{Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 1 -EA Stop|Out-Null;$ok=$true;break}catch{Start-Sleep -Milliseconds 600}" ^
   "}" ^
-  "if($ok){Start-Process 'http://127.0.0.1:3000'}else{Write-Host 'ERRO: Servidor nao respondeu. Verifique Node.js.'}"
+  "if(-not $ok){Write-Host 'ERRO: Servidor nao respondeu.';exit}" ^
+  "$appArg="""--app=$url --window-size=1100,700""" ;" ^
+  "$edge='C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe';" ^
+  "$chrome='C:\Program Files\Google\Chrome\Application\chrome.exe';" ^
+  "$chromium='C:\Program Files\Chromium\Application\chrome.exe';" ^
+  "if(Test-Path $edge){Start-Process $edge -ArgumentList $appArg}" ^
+  "elseif(Test-Path $chrome){Start-Process $chrome -ArgumentList $appArg}" ^
+  "elseif(Test-Path $chromium){Start-Process $chromium -ArgumentList $appArg}" ^
+  "else{Start-Process $url}"
