@@ -769,13 +769,21 @@ const handlers = {
       return { ok: false, error: e.message };
     }
   },
-  sendCheatCommand({ code }) {
-    global.log("info", "Enfileirando comando de cheat: " + code);
-    global.pendingCheatCommands.push({ code });
+  sendCheatCommand(params) {
+    const code = params.code || params.command || "";
+    global.log("info", "Enfileirando comando de cheat: " + JSON.stringify(params));
+    if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
+      try {
+        global.activeCheatSocket.send(JSON.stringify(params));
+      } catch (e) {}
+    }
+    global.pendingCheatCommands.push(params);
     return { ok: true };
   },
   getGameState() {
-    const connected = Date.now() - global.lastCheatPollTime < 3000;
+    const isRecentPoll = Date.now() - global.lastCheatPollTime < 8000;
+    const isSocketOpen = global.activeCheatSocket !== null && global.activeCheatSocket.readyState === 1;
+    const connected = (isRecentPoll || isSocketOpen) && global.lastGameState !== null;
     return { connected, state: global.lastGameState };
   },
   async translate({ text, sl, tl }) {

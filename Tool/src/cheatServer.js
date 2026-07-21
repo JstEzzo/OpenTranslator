@@ -216,6 +216,7 @@ function startHookServer() {
           if (data && typeof data === "object") {
             if (data.type === "register_cheat_client") {
               global.activeCheatSocket = ws;
+              global.lastCheatPollTime = Date.now();
               global.log(
                 "success",
                 "Cheat overlay client registered successfully on WebSocket 16005"
@@ -224,6 +225,7 @@ function startHookServer() {
             }
             if (data.type === "game_state") {
               global.lastGameState = data;
+              global.lastCheatPollTime = Date.now();
               return;
             }
           }
