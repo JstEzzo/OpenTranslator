@@ -34,9 +34,11 @@ function startHookServer() {
         req.on("end", () => {
           try {
             const state = JSON.parse(body);
+            if (!global.lastGameState) {
+              global.log("success", "CheatOverlay conectado! Menu de cheats ativo.");
+            }
             global.lastGameState = state;
             global.lastCheatPollTime = Date.now();
-            global.log("success", "Cheat poll recebido do jogo com sucesso!");
             res.writeHead(200, {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*",

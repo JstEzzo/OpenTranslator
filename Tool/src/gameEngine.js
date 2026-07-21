@@ -998,20 +998,16 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
     const htmlPath = path.join(wwwDir, "index.html");
     if (fs.existsSync(htmlPath)) {
       try {
-        const isMZ =
-          fs.existsSync(path.join(gameDir, "effects")) ||
-          fs.existsSync(path.join(wwwDir, "effects"));
-        if (!isMZ) {
-          let html = fs.readFileSync(htmlPath, "utf8");
-          if (!html.includes("CheatOverlay.js")) {
-            html = html.replace(
-              "</head>",
-              '<script type="text/javascript" src="CheatOverlay.js"></script></head>'
-            );
-            fs.writeFileSync(htmlPath, html, "utf8");
-          }
-          const cheatScriptPath = path.join(wwwDir, "CheatOverlay.js");
-          const cheatScriptContent = `(function() {
+        let html = fs.readFileSync(htmlPath, "utf8");
+        if (!html.includes("CheatOverlay.js")) {
+          html = html.replace(
+            "</head>",
+            '<script type="text/javascript" src="CheatOverlay.js"></script></head>'
+          );
+          fs.writeFileSync(htmlPath, html, "utf8");
+        }
+        const cheatScriptPath = path.join(wwwDir, "CheatOverlay.js");
+        const cheatScriptContent = `(function() {
           var fs;
           try { fs = require('fs'); } catch(e) {}
           function logToFile(msg) {
@@ -1140,7 +1136,6 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
         })();`;
           fs.writeFileSync(cheatScriptPath, cheatScriptContent, "utf8");
           global.log("success", "CheatOverlay injetado com sucesso no jogo.");
-        }
       } catch (e) {
         global.log("error", "Falha ao injetar CheatOverlay: " + e.message);
       }
