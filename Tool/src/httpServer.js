@@ -188,25 +188,14 @@ function tryListen(port) {
         "Microsoft\\Edge\\Application\\msedge.exe"
       ),
     ];
-    let chromePath = chromePaths.find((p) => fs.existsSync(p));
     let edgePath = edgePaths.find((p) => fs.existsSync(p));
+    let chromePath = chromePaths.find((p) => fs.existsSync(p));
+    const browserPath = edgePath || chromePath;
 
     try {
-      if (chromePath) {
+      if (browserPath) {
         exec(
-          'start "" "' +
-            chromePath +
-            '" --app="' +
-            url +
-            '" --window-size=960,660'
-        );
-      } else if (edgePath) {
-        exec(
-          'start "" "' +
-            edgePath +
-            '" --app="' +
-            url +
-            '" --window-size=960,660'
+          '"' + browserPath + '" --app="' + url + '" --window-size=1100,700'
         );
       } else {
         exec('start "" "' + url + '"');

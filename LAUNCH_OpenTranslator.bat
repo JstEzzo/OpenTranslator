@@ -85,18 +85,4 @@ powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 
 :: ----------------------------------------------------------------
 wscript "%TOOL%\OpenTranslator.vbs" "%NODE%"
 
-:: ----------------------------------------------------------------
-:: [7] Aguardar servidor subir e abrir como janela standalone (modo app)
-:: ----------------------------------------------------------------
-ping -n 3 127.0.0.1 >nul
-powershell -NoProfile -NonInteractive -Command ^
-  "$url='http://127.0.0.1:3000';" ^
-  "$ok=$false;" ^
-  "for($i=0;$i -lt 10;$i++){try{Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 1 -EA Stop|Out-Null;$ok=$true;break}catch{Start-Sleep -Milliseconds 600}}" ^
-  "if(-not $ok){Write-Host 'ERRO: Servidor nao respondeu.';exit}" ^
-  "$appArgs=@(\"--app=$url\",\"--window-size=1100,700\");" ^
-  "$edge='C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe';" ^
-  "$chrome='C:\Program Files\Google\Chrome\Application\chrome.exe';" ^
-  "if(Test-Path $edge){Start-Process -FilePath $edge -ArgumentList $appArgs}" ^
-  "elseif(Test-Path $chrome){Start-Process -FilePath $chrome -ArgumentList $appArgs}" ^
-  "else{Start-Process $url}"
+
