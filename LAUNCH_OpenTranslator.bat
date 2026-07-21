@@ -41,7 +41,9 @@ set "NODE=%NODE_EXE%"
 if not exist "%MODS%\ws\package.json" (
     echo Instalando dependencias NPM...
     cd /d "%TOOL%"
-    "%NODE%" "%BIN%\npm" install --prefer-offline >nul 2>nul
+    if exist "%BIN%\npm" (
+        "%NODE%" "%BIN%\npm" install --prefer-offline >nul 2>nul
+    )
     if not exist "%MODS%\ws\package.json" (
         call npm install >nul 2>nul
     )
@@ -66,17 +68,30 @@ if not exist "%GODOT%\gdre_tools.exe" (
 )
 
 :: ----------------------------------------------------------------
-:: [4] Avisar sobre inject.exe se ausente (nao ha download automatico)
+:: [4] Avisar sobre inject.exe se ausente (sem parenteses na variavel)
 :: ----------------------------------------------------------------
 if not exist "%INJECT%" (
     echo AVISO: inject.exe nao encontrado. Hook de processo indisponivel.
-    echo        Baixe o MTool em https://mtool.app/ e copie inject.exe para:
-    echo        %INJECT%
 )
 
 :: ----------------------------------------------------------------
-:: [5] Executar o OpenTranslator
+:: [5] Matar instancias antigas do servidor na porta 3000
 :: ----------------------------------------------------------------
 :RUN
-powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*OpenTranslator*' } | Stop-Process -Force -ErrorAction SilentlyContinue"
+powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+
+:: ----------------------------------------------------------------
+:: [6] Iniciar servidor Node em segundo plano (sem janela)
+:: ----------------------------------------------------------------
 wscript "%TOOL%\OpenTranslator.vbs" "%NODE%"
+
+:: ----------------------------------------------------------------
+:: [7] Aguardar servidor subir e abrir no navegador padrao
+:: ----------------------------------------------------------------
+ping -n 3 127.0.0.1 >nul
+powershell -NoProfile -NonInteractive -Command ^
+  "$ok=$false;" ^
+  "for($i=0;$i -lt 10;$i++){" ^
+  "  try{$r=Invoke-WebRequest -Uri 'http://127.0.0.1:3000' -UseBasicParsing -TimeoutSec 1 -EA Stop;$ok=$true;break}catch{Start-Sleep -Milliseconds 600}" ^
+  "}" ^
+  "if($ok){Start-Process 'http://127.0.0.1:3000'}else{Write-Host 'ERRO: Servidor nao respondeu. Verifique Node.js.'}"
