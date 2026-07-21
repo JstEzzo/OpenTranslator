@@ -1,6 +1,10 @@
 {
     "name": "OpenTranslator",
     "version": "1.0.0",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
     "private": true,
     "dependencies": {
         "adm-zip": "^0.6.0",
