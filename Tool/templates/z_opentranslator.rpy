@@ -1,26 +1,25 @@
 init python:
     import sys
     import json
-    import threading
 
     PY2 = sys.version_info[0] == 2
 
     if PY2:
         import urllib2
         import urllib
-        def post_rpc_raw(payload_str):
+        def post_rpc_fast(payload_str):
             req = urllib2.Request("http://127.0.0.1:3000/api/rpc", data=payload_str)
             req.add_header('Content-Type', 'application/json')
             req.add_header('User-Agent', 'OpenTranslator-RenPy')
-            resp = urllib2.urlopen(req, timeout=2.0)
+            resp = urllib2.urlopen(req, timeout=1.2)
             data = resp.read()
             resp.close()
             return data.decode('utf-8')
-        def fetch_fallback_raw(clean_encoded):
+        def fetch_fallback_fast(clean_encoded):
             url = "http://127.0.0.1:16005/translate?text=" + urllib.quote(clean_encoded)
             req = urllib2.Request(url)
             req.add_header('User-Agent', 'OpenTranslator-RenPy')
-            resp = urllib2.urlopen(req, timeout=2.0)
+            resp = urllib2.urlopen(req, timeout=1.2)
             data = resp.read()
             resp.close()
             return data.decode('utf-8')
@@ -31,64 +30,23 @@ init python:
     else:
         import urllib.request
         import urllib.parse
-        def post_rpc_raw(payload_str):
+        def post_rpc_fast(payload_str):
             req = urllib.request.Request("http://127.0.0.1:3000/api/rpc", data=payload_str.encode('utf-8'), headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
-            with urllib.request.urlopen(req, timeout=2.0) as resp:
+            with urllib.request.urlopen(req, timeout=1.2) as resp:
                 return resp.read().decode('utf-8')
-        def fetch_fallback_raw(clean_encoded):
+        def fetch_fallback_fast(clean_encoded):
             url = "http://127.0.0.1:16005/translate?text=" + urllib.parse.quote(clean_encoded)
             req = urllib.request.Request(url, headers={'User-Agent': 'OpenTranslator-RenPy'})
-            with urllib.request.urlopen(req, timeout=2.0) as resp:
+            with urllib.request.urlopen(req, timeout=1.2) as resp:
                 return resp.read().decode('utf-8')
         def encode_utf8(s):
             return s.encode('utf-8') if isinstance(s, str) else s
 
     _opent_cache = {}
-    _opent_pending = set()
-    _opent_lock = threading.Lock()
 
-    def _fetch_translation_worker(clean):
-        tr = None
-        for attempt in range(2):
-            try:
-                payload = {
-                    "method": "translate_realtime",
-                    "params": {
-                        "text": clean,
-                        "engine": "renpy"
-                    }
-                }
-                raw = post_rpc_raw(json.dumps(payload))
-                if raw:
-                    res = json.loads(raw)
-                    if res.get("ok") and "data" in res and "translated" in res["data"]:
-                        candidate = res["data"]["translated"]
-                        if candidate and candidate.strip():
-                            tr = candidate
-                            break
-            except Exception:
-                try:
-                    raw_fb = fetch_fallback_raw(encode_utf8(clean))
-                    if raw_fb:
-                        res_fb = json.loads(raw_fb)
-                        candidate_fb = res_fb.get("translated") or res_fb.get("text")
-                        if candidate_fb and candidate_fb.strip():
-                            tr = candidate_fb
-                            break
-                except Exception:
-                    pass
-
-        with _opent_lock:
-            if tr:
-                _opent_cache[clean] = tr
-            else:
-                _opent_cache[clean] = clean
-            if clean in _opent_pending:
-                _opent_pending.remove(clean)
-
+    def opent_debug_log(msg):
         try:
-            if hasattr(renpy, 'restart_interaction'):
-                renpy.restart_interaction()
+            print("[OpenTranslator-Debug] " + str(msg))
         except Exception:
             pass
 
@@ -98,19 +56,54 @@ init python:
         clean = text.strip()
         if len(clean) < 1:
             return text
+        if clean in _opent_cache:
+            return _opent_cache[clean]
 
-        with _opent_lock:
-            if clean in _opent_cache:
-                return _opent_cache[clean]
-            if clean in _opent_pending:
-                return text
-            _opent_pending.add(clean)
+        tr = None
+        try:
+            payload = {
+                "method": "translate_realtime",
+                "params": {
+                    "text": clean,
+                    "engine": "renpy"
+                }
+            }
+            raw = post_rpc_fast(json.dumps(payload))
+            if raw:
+                res = json.loads(raw)
+                if res.get("ok") and "data" in res and "translated" in res["data"]:
+                    candidate = res["data"]["translated"]
+                    if candidate and candidate.strip():
+                        tr = candidate
+        except Exception as e:
+            opent_debug_log("Erro RPC: " + str(e))
+            try:
+                raw_fb = fetch_fallback_fast(encode_utf8(clean))
+                if raw_fb:
+                    res_fb = json.loads(raw_fb)
+                    candidate_fb = res_fb.get("translated") or res_fb.get("text")
+                    if candidate_fb and candidate_fb.strip():
+                        tr = candidate_fb
+            except Exception as e2:
+                opent_debug_log("Erro Fallback: " + str(e2))
 
-        t = threading.Thread(target=_fetch_translation_worker, args=(clean,))
-        t.daemon = True
-        t.start()
-
-        return text
+        if tr:
+            _opent_cache[clean] = tr
+            try:
+                if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'string_translators'):
+                    st = renpy.translation.string_translators
+                    if '' in st:
+                        st[''][clean] = tr
+                    elif None in st:
+                        st[None][clean] = tr
+            except Exception:
+                pass
+            opent_debug_log("SUCESSO: '" + clean + "' -> '" + tr + "'")
+            return tr
+        else:
+            _opent_cache[clean] = clean
+            opent_debug_log("SEM TRADUCAO: '" + clean + "'")
+            return clean
 
     # HOOK CENTRAL: Modifica a função de tradução de strings oficial do motor Ren'Py
     try:
