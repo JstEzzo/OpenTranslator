@@ -1,4 +1,4 @@
-init python:
+init 9999 python:
     import sys
     import json
 
@@ -11,7 +11,7 @@ init python:
             req = urllib2.Request("http://127.0.0.1:3000/api/rpc", data=payload_str)
             req.add_header('Content-Type', 'application/json')
             req.add_header('User-Agent', 'OpenTranslator-RenPy')
-            resp = urllib2.urlopen(req, timeout=1.2)
+            resp = urllib2.urlopen(req, timeout=1.5)
             data = resp.read()
             resp.close()
             return data.decode('utf-8')
@@ -19,7 +19,7 @@ init python:
             url = "http://127.0.0.1:16005/translate?text=" + urllib.quote(clean_encoded)
             req = urllib2.Request(url)
             req.add_header('User-Agent', 'OpenTranslator-RenPy')
-            resp = urllib2.urlopen(req, timeout=1.2)
+            resp = urllib2.urlopen(req, timeout=1.5)
             data = resp.read()
             resp.close()
             return data.decode('utf-8')
@@ -32,12 +32,12 @@ init python:
         import urllib.parse
         def post_rpc_fast(payload_str):
             req = urllib.request.Request("http://127.0.0.1:3000/api/rpc", data=payload_str.encode('utf-8'), headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
-            with urllib.request.urlopen(req, timeout=1.2) as resp:
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
                 return resp.read().decode('utf-8')
         def fetch_fallback_fast(clean_encoded):
             url = "http://127.0.0.1:16005/translate?text=" + urllib.parse.quote(clean_encoded)
             req = urllib.request.Request(url, headers={'User-Agent': 'OpenTranslator-RenPy'})
-            with urllib.request.urlopen(req, timeout=1.2) as resp:
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
                 return resp.read().decode('utf-8')
         def encode_utf8(s):
             return s.encode('utf-8') if isinstance(s, str) else s
@@ -48,9 +48,8 @@ init python:
         if not text:
             return text
         clean = text.strip()
-        if len(clean) < 1 or clean.startswith("[") or clean.startswith("{"):
-            if not clean or len(clean) < 1:
-                return text
+        if len(clean) < 1:
+            return text
         if clean in _opent_cache:
             return _opent_cache[clean]
 
@@ -97,7 +96,20 @@ init python:
             _opent_cache[clean] = clean
             return clean
 
-    # HOOK UNIVERSAL 1: Intercepta a interpolação de strings do Ren'Py (renpy.substitute)
+    # HOOK UNIVERSAL 1: Intercepta a chamada direta de fala de personagens (renpy.exports.say)
+    try:
+        if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'say'):
+            _old_say = renpy.exports.say
+            def _opent_say(who, what, *args, **kwargs):
+                what = opent_translate(what)
+                return _old_say(who, what, *args, **kwargs)
+            renpy.exports.say = _opent_say
+            if hasattr(renpy, 'say'):
+                renpy.say = _opent_say
+    except Exception:
+        pass
+
+    # HOOK UNIVERSAL 2: Intercepta a interpolação de strings no renderizador (renpy.substitute)
     try:
         if hasattr(renpy, 'substitute'):
             _old_substitute = renpy.substitute
@@ -110,7 +122,7 @@ init python:
     except Exception:
         pass
 
-    # HOOK UNIVERSAL 2: Intercepta o tradutor interno de strings (renpy.translation.translate_string)
+    # HOOK UNIVERSAL 3: Intercepta o tradutor interno de strings (renpy.translation.translate_string)
     try:
         if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'translate_string'):
             _old_translate_string = renpy.translation.translate_string
@@ -123,7 +135,7 @@ init python:
     except Exception:
         pass
 
-    # HOOK UNIVERSAL 3: Intercepta o filtro de menus e caixas de diálogos
+    # HOOK UNIVERSAL 4: Intercepta o filtro de menus e caixas de diálogos
     try:
         old_filter = getattr(config, 'say_menu_text_filter', None)
         def opent_text_filter(text):
