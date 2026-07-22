@@ -423,16 +423,116 @@ const handlers = {
           if (fs.existsSync(cacheDir)) {
             try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) {}
           }
-          // Cria a estrutura nativa de tradução do Ren'Py em game/tl/pt/strings.rpy
+          // Cria a estrutura nativa de tradução do Ren'Py em game/tl/pt/strings.rpy (Baseado no renpy-translator)
           const tlPtDir = path.join(gameSubDir, "tl", "pt");
           if (!fs.existsSync(tlPtDir)) {
             try { fs.mkdirSync(tlPtDir, { recursive: true }); } catch (e) {}
           }
           const tlStringsFile = path.join(tlPtDir, "strings.rpy");
           if (!fs.existsSync(tlStringsFile)) {
-            try {
-              fs.writeFileSync(tlStringsFile, '# Ren\'Py Native Translation File (OpenTranslator)\ntranslate pt strings:\n    old "Start Game"\n    new "Iniciar Jogo"\n', 'utf8');
-            } catch (e) {}
+            const nativeDict = `
+# Ren'Py Native Translation File (OpenTranslator Auto-Generated)
+translate pt strings:
+    old "Start Game"
+    new "Iniciar Jogo"
+
+    old "Start"
+    new "Iniciar"
+
+    old "Load Game"
+    new "Carregar Jogo"
+
+    old "Load"
+    new "Carregar"
+
+    old "Preferences"
+    new "Preferências"
+
+    old "Prefs"
+    new "Preferências"
+
+    old "Options"
+    new "Opções"
+
+    old "Help"
+    new "Ajuda"
+
+    old "About"
+    new "Sobre"
+
+    old "Bonus"
+    new "Bônus"
+
+    old "Quit Game"
+    new "Sair do Jogo"
+
+    old "Quit"
+    new "Sair"
+
+    old "History"
+    new "Histórico"
+
+    old "Save"
+    new "Salvar"
+
+    old "Save Game"
+    new "Salvar Jogo"
+
+    old "Back"
+    new "Voltar"
+
+    old "Skip"
+    new "Pular"
+
+    old "Auto"
+    new "Automático"
+
+    old "Q.Save"
+    new "Salvar Rápido"
+
+    old "Q.Load"
+    new "Carregar Rápido"
+
+    old "Main Menu"
+    new "Menu Principal"
+
+    old "Return"
+    new "Retornar"
+
+    old "Display"
+    new "Exibição"
+
+    old "Window"
+    new "Janela"
+
+    old "Fullscreen"
+    new "Tela Cheia"
+
+    old "Unseen Text"
+    new "Texto Não Visto"
+
+    old "After Choices"
+    new "Após Escolhas"
+
+    old "Transitions"
+    new "Transições"
+
+    old "Sound Volume"
+    new "Volume do Som"
+
+    old "Music Volume"
+    new "Volume da Música"
+
+    old "Voice Volume"
+    new "Volume da Voz"
+
+    old "Text Speed"
+    new "Velocidade do Texto"
+
+    old "Auto-Forward Time"
+    new "Tempo do Auto-Avanço"
+`;
+            try { fs.writeFileSync(tlStringsFile, nativeDict.trim(), 'utf8'); } catch (e) {}
           }
 
           const rpyTemplate = path.join(global.ROOT, "templates", "z_opentranslator.rpy");
@@ -465,12 +565,7 @@ const handlers = {
           shell: false,
           windowsHide: false,
         });
-
-        const escapedExe = exe.replace(/'/g, "''");
-        const escapedDir = gameDir.replace(/'/g, "''");
-        try {
-          execSync(`powershell -NoProfile -Command "Start-Process -FilePath '${escapedExe}' -WorkingDirectory '${escapedDir}'"`);
-        } catch (e) {}
+        proc.unref();
 
         global.log(
           "success",
