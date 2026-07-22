@@ -1,4 +1,4 @@
-init python:
+init -999 python:
     import sys
     import json
 
@@ -38,56 +38,53 @@ init python:
         if len(clean) < 1:
             return text
 
-        tr = None
         if clean in _opent_cache:
-            tr = _opent_cache[clean]
-        else:
-            try:
-                url = "http://127.0.0.1:3000/api/rpc"
-                payload = {"method": "translate_realtime", "params": {"text": clean, "engine": "renpy"}}
-                data = json.dumps(payload).encode('utf-8')
-                req = urllib_req.Request(url, data=data, headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
-                resp = urllib_req.urlopen(req, timeout=1.0)
-                raw = resp.read().decode('utf-8')
-                resp.close()
-                if raw:
-                    res_json = json.loads(raw)
-                    if res_json.get("ok") and "data" in res_json and "translated" in res_json["data"]:
-                        candidate = res_json["data"]["translated"]
-                        if candidate and candidate.strip():
-                            tr = candidate
-            except Exception:
-                pass
+            return _opent_cache[clean]
 
-            if tr:
-                _opent_cache[clean] = tr
-            else:
-                _opent_cache[clean] = clean
-                tr = clean
+        tr = None
+        try:
+            url = "http://127.0.0.1:3000/api/rpc"
+            payload = {"method": "translate_realtime", "params": {"text": clean, "engine": "renpy"}}
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib_req.Request(url, data=data, headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
+            resp = urllib_req.urlopen(req, timeout=1.0)
+            raw = resp.read().decode('utf-8')
+            resp.close()
+            if raw:
+                res_json = json.loads(raw)
+                if res_json.get("ok") and "data" in res_json and "translated" in res_json["data"]:
+                    candidate = res_json["data"]["translated"]
+                    if candidate and candidate.strip():
+                        tr = candidate
+        except Exception:
+            pass
+
+        if not tr:
+            tr = clean
+
+        _opent_cache[clean] = tr
 
         if clean not in _opent_extracted:
             _opent_extracted[clean] = tr
             _save_extracted_file()
 
         try:
+            import renpy
             if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'string_translators'):
                 st = renpy.translation.string_translators
-                if '' in st:
-                    st[''][clean] = tr
-                elif None in st:
-                    st[None][clean] = tr
+                for lang_key in ['', None, 'pt', 'portuguese']:
+                    if lang_key in st:
+                        st[lang_key][clean] = tr
         except Exception:
             pass
 
         return tr
 
-    # 1. Filtro de Diálogos e Menus
     try:
         config.say_menu_text_filter = opentranslator_filter
     except Exception:
         pass
 
-    # 2. Filtro Universal de Renderização de Textos de Telas e Botões
     try:
         _old_replace_text = getattr(config, 'replace_text', None)
         def opent_replace_text_hook(s):
