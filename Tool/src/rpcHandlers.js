@@ -423,6 +423,18 @@ const handlers = {
           if (fs.existsSync(cacheDir)) {
             try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) {}
           }
+          // Cria a estrutura nativa de tradução do Ren'Py em game/tl/pt/strings.rpy
+          const tlPtDir = path.join(gameSubDir, "tl", "pt");
+          if (!fs.existsSync(tlPtDir)) {
+            try { fs.mkdirSync(tlPtDir, { recursive: true }); } catch (e) {}
+          }
+          const tlStringsFile = path.join(tlPtDir, "strings.rpy");
+          if (!fs.existsSync(tlStringsFile)) {
+            try {
+              fs.writeFileSync(tlStringsFile, '# Ren\'Py Native Translation File (OpenTranslator)\ntranslate pt strings:\n    old "Start Game"\n    new "Iniciar Jogo"\n', 'utf8');
+            } catch (e) {}
+          }
+
           const rpyTemplate = path.join(global.ROOT, "templates", "z_opentranslator.rpy");
           const targetRpy = path.join(gameSubDir, "z_opentranslator.rpy");
           const targetRpyc = path.join(gameSubDir, "z_opentranslator.rpyc");
@@ -431,7 +443,7 @@ const handlers = {
           }
           if (fs.existsSync(rpyTemplate)) {
             fs.copyFileSync(rpyTemplate, targetRpy);
-            global.log("success", "✨ [REN'PY AUTO-PATCH] Script de tradução universal ativado em: game/z_opentranslator.rpy");
+            global.log("success", "✨ [REN'PY AUTO-PATCH] Script de tradução universal ativado em: game/z_opentranslator.rpy e game/tl/pt/strings.rpy");
           }
         } catch (e) {
           global.log("warn", "Aviso ao aplicar auto-patch Ren'Py: " + e.message);
