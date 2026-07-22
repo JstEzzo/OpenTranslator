@@ -419,6 +419,10 @@ const handlers = {
       const gameSubDir = path.join(gameDir, "game");
       if (fs.existsSync(gameSubDir)) {
         try {
+          const cacheDir = path.join(gameSubDir, "cache");
+          if (fs.existsSync(cacheDir)) {
+            try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) {}
+          }
           const rpyTemplate = path.join(global.ROOT, "templates", "z_opentranslator.rpy");
           const targetRpy = path.join(gameSubDir, "z_opentranslator.rpy");
           const targetRpyc = path.join(gameSubDir, "z_opentranslator.rpyc");
