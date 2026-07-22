@@ -1,50 +1,25 @@
-init 9999 python:
+init python:
     import sys
     import json
 
+    # Compatibilidade de biblioteca HTTP para Python 2 (Ren'Py 6/7) e Python 3 (Ren'Py 8+)
     PY2 = sys.version_info[0] == 2
-
     if PY2:
-        import urllib2
-        import urllib
-        def post_rpc_fast(payload_str):
-            req = urllib2.Request("http://127.0.0.1:3000/api/rpc", data=payload_str)
-            req.add_header('Content-Type', 'application/json')
-            req.add_header('User-Agent', 'OpenTranslator-RenPy')
-            resp = urllib2.urlopen(req, timeout=1.5)
-            data = resp.read()
-            resp.close()
-            return data.decode('utf-8')
-        def fetch_fallback_fast(clean_encoded):
-            url = "http://127.0.0.1:16005/translate?text=" + urllib.quote(clean_encoded)
-            req = urllib2.Request(url)
-            req.add_header('User-Agent', 'OpenTranslator-RenPy')
-            resp = urllib2.urlopen(req, timeout=1.5)
-            data = resp.read()
-            resp.close()
-            return data.decode('utf-8')
-        def encode_utf8(s):
+        import urllib2 as urllib_req
+        import urllib as urllib_parse
+        def encode_str(s):
             if isinstance(s, unicode):
                 return s.encode('utf-8')
             return s
     else:
-        import urllib.request
-        import urllib.parse
-        def post_rpc_fast(payload_str):
-            req = urllib.request.Request("http://127.0.0.1:3000/api/rpc", data=payload_str.encode('utf-8'), headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
-            with urllib.request.urlopen(req, timeout=1.5) as resp:
-                return resp.read().decode('utf-8')
-        def fetch_fallback_fast(clean_encoded):
-            url = "http://127.0.0.1:16005/translate?text=" + urllib.parse.quote(clean_encoded)
-            req = urllib.request.Request(url, headers={'User-Agent': 'OpenTranslator-RenPy'})
-            with urllib.request.urlopen(req, timeout=1.5) as resp:
-                return resp.read().decode('utf-8')
-        def encode_utf8(s):
+        import urllib.request as urllib_req
+        import urllib.parse as urllib_parse
+        def encode_str(s):
             return s.encode('utf-8') if isinstance(s, str) else s
 
     _opent_cache = {}
 
-    def opent_translate(text):
+    def opentranslator_filter(text):
         if not text:
             return text
         clean = text.strip()
@@ -54,7 +29,9 @@ init 9999 python:
             return _opent_cache[clean]
 
         tr = None
+        # 1. Tenta tradução via RPC principal (Porta 3000)
         try:
+            url = "http://127.0.0.1:3000/api/rpc"
             payload = {
                 "method": "translate_realtime",
                 "params": {
@@ -62,16 +39,25 @@ init 9999 python:
                     "engine": "renpy"
                 }
             }
-            raw = post_rpc_fast(json.dumps(payload))
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib_req.Request(url, data=data, headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
+            resp = urllib_req.urlopen(req, timeout=1.0)
+            raw = resp.read().decode('utf-8')
+            resp.close()
             if raw:
-                res = json.loads(raw)
-                if res.get("ok") and "data" in res and "translated" in res["data"]:
-                    candidate = res["data"]["translated"]
+                res_json = json.loads(raw)
+                if res_json.get("ok") and "data" in res_json and "translated" in res_json["data"]:
+                    candidate = res_json["data"]["translated"]
                     if candidate and candidate.strip():
                         tr = candidate
         except Exception:
+            # 2. Fallback via Dual Hook Server HTTP (Porta 16005)
             try:
-                raw_fb = fetch_fallback_fast(encode_utf8(clean))
+                fb_url = "http://127.0.0.1:16005/translate?text=" + urllib_parse.quote(encode_str(clean))
+                req_fb = urllib_req.Request(fb_url, headers={'User-Agent': 'OpenTranslator-RenPy'})
+                resp_fb = urllib_req.urlopen(req_fb, timeout=1.0)
+                raw_fb = resp_fb.read().decode('utf-8')
+                resp_fb.close()
                 if raw_fb:
                     res_fb = json.loads(raw_fb)
                     candidate_fb = res_fb.get("translated") or res_fb.get("text")
@@ -96,63 +82,14 @@ init 9999 python:
             _opent_cache[clean] = clean
             return clean
 
-    # HOOK DEFINITIVO 1: Intercepta diretamente o set_text da classe Text do Ren'Py
+    # Acopla a função de tradução nativa e segura para diálogos e menus
     try:
-        if hasattr(renpy, 'text') and hasattr(renpy.text, 'text') and hasattr(renpy.text.text, 'Text'):
-            _old_set_text = renpy.text.text.Text.set_text
-            def _opent_set_text(self, text, scope=None, substitute=False, update=True):
-                if isinstance(text, (str, unicode if PY2 else str)):
-                    text = opent_translate(text)
-                elif isinstance(text, list):
-                    new_list = []
-                    for item in text:
-                        if isinstance(item, (str, unicode if PY2 else str)):
-                            new_list.append(opent_translate(item))
-                        else:
-                            new_list.append(item)
-                    text = new_list
-                return _old_set_text(self, text, scope, substitute, update)
-            renpy.text.text.Text.set_text = _opent_set_text
+        config.say_menu_text_filter = opentranslator_filter
     except Exception:
         pass
 
-    # HOOK DEFINITIVO 2: Intercepta a chamada de fala de personagens (renpy.exports.say)
     try:
-        if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'say'):
-            _old_say = renpy.exports.say
-            def _opent_say(who, what, *args, **kwargs):
-                if isinstance(what, (str, unicode if PY2 else str)):
-                    what = opent_translate(what)
-                return _old_say(who, what, *args, **kwargs)
-            renpy.exports.say = _opent_say
-            if hasattr(renpy, 'say'):
-                renpy.say = _opent_say
-    except Exception:
-        pass
-
-    # HOOK DEFINITIVO 3: Intercepta renpy.substitute
-    try:
-        if hasattr(renpy, 'substitute'):
-            _old_substitute = renpy.substitute
-            def _opent_substitute(s, scope=None, force=False, translate=True):
-                res, changed = _old_substitute(s, scope=force if force else scope, force=force, translate=translate) if hasattr(_old_substitute, '__code__') and _old_substitute.__code__.co_argcount >= 4 else (_old_substitute(s, scope, force) if hasattr(_old_substitute, '__code__') and _old_substitute.__code__.co_argcount == 3 else (_old_substitute(s), False))
-                if isinstance(res, (str, unicode if PY2 else str)):
-                    tr = opent_translate(res)
-                    return tr, (tr != s or changed)
-                return res, changed
-            renpy.substitute = _opent_substitute
-    except Exception:
-        pass
-
-    # HOOK DEFINITIVO 4: Intercepta tradução de strings (renpy.translation.translate_string)
-    try:
-        if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'translate_string'):
-            _old_translate_string = renpy.translation.translate_string
-            def _opent_translate_string(s, language=None):
-                res = _old_translate_string(s, language)
-                if isinstance(res, (str, unicode if PY2 else str)):
-                    return opent_translate(res)
-                return res
-            renpy.translation.translate_string = _opent_translate_string
+        if hasattr(config, 'say_thought_text_filter'):
+            config.say_thought_text_filter = opentranslator_filter
     except Exception:
         pass
