@@ -101,7 +101,8 @@ init 9999 python:
         if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'say'):
             _old_say = renpy.exports.say
             def _opent_say(who, what, *args, **kwargs):
-                what = opent_translate(what)
+                if isinstance(what, (str, unicode if PY2 else str)):
+                    what = opent_translate(what)
                 return _old_say(who, what, *args, **kwargs)
             renpy.exports.say = _opent_say
             if hasattr(renpy, 'say'):
@@ -109,15 +110,16 @@ init 9999 python:
     except Exception:
         pass
 
-    # HOOK UNIVERSAL 2: Intercepta a interpolação de strings no renderizador (renpy.substitute)
+    # HOOK UNIVERSAL 2: Intercepta renpy.substitute (Trata a tupla (string, bool) nativa do Ren'Py)
     try:
         if hasattr(renpy, 'substitute'):
             _old_substitute = renpy.substitute
-            def _opent_substitute(s, scope=None, force=False):
-                res = _old_substitute(s, scope, force)
+            def _opent_substitute(s, scope=None, force=False, translate=True):
+                res, changed = _old_substitute(s, scope=force if force else scope, force=force, translate=translate) if hasattr(_old_substitute, '__code__') and _old_substitute.__code__.co_argcount >= 4 else (_old_substitute(s, scope, force) if hasattr(_old_substitute, '__code__') and _old_substitute.__code__.co_argcount == 3 else (_old_substitute(s), False))
                 if isinstance(res, (str, unicode if PY2 else str)):
-                    return opent_translate(res)
-                return res
+                    tr = opent_translate(res)
+                    return tr, (tr != s or changed)
+                return res, changed
             renpy.substitute = _opent_substitute
     except Exception:
         pass
@@ -128,9 +130,9 @@ init 9999 python:
             _old_translate_string = renpy.translation.translate_string
             def _opent_translate_string(s, language=None):
                 res = _old_translate_string(s, language)
-                if res and res != s:
-                    return res
-                return opent_translate(s)
+                if isinstance(res, (str, unicode if PY2 else str)):
+                    return opent_translate(res)
+                return res
             renpy.translation.translate_string = _opent_translate_string
     except Exception:
         pass
