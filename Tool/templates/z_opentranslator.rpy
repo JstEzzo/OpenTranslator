@@ -83,29 +83,35 @@ init python:
 
         return text
 
-    # HOOK 1: Intercepta substituição universal de renderização de texto na tela
-    if hasattr(config, 'replace_text'):
-        old_replace_text = config.replace_text
+    # HOOK 1: Replace Text Universal Seguro (Renderização Visual de Textos)
+    try:
+        old_replace_text = getattr(config, 'replace_text', None)
         def opent_replace_text_hook(s):
             if old_replace_text:
                 s = old_replace_text(s)
             return opent_translate(s)
         config.replace_text = opent_replace_text_hook
+    except Exception:
+        pass
 
-    # HOOK 2: Intercepta filtragem de diálogos e menus
-    if hasattr(config, 'say_menu_text_filter'):
-        old_filter = config.say_menu_text_filter
+    # HOOK 2: Say Menu Text Filter Seguro (Diálogos e Menus)
+    try:
+        old_filter = getattr(config, 'say_menu_text_filter', None)
         def opent_text_filter(text):
             if old_filter:
                 text = old_filter(text)
             return opent_translate(text)
         config.say_menu_text_filter = opent_text_filter
+    except Exception:
+        pass
 
-    # HOOK 3: Intercepta pensamentos e falas de personagens
-    if hasattr(config, 'say_thought_text_filter'):
-        old_thought_filter = config.say_thought_text_filter
+    # HOOK 3: Say Thought Text Filter Seguro (Pensamentos)
+    try:
+        old_thought_filter = getattr(config, 'say_thought_text_filter', None)
         def opent_thought_filter(text):
             if old_thought_filter:
                 text = old_thought_filter(text)
             return opent_translate(text)
         config.say_thought_text_filter = opent_thought_filter
+    except Exception:
+        pass
