@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "slots": {
+    "TyranoBuilder": {
+      "mode": "default"
+    },
+    "RenPy": {
+      "mode": "default"
+    },
+    "RPGMakerMVMZ": {
+      "mode": "default"
+    },
+    "RPGMakerVXAce": {
+      "mode": "default"
+    },
+    "RPGMakerVX": {
+      "mode": "default"
+    },
+    "RPGMakerXP": {
+      "mode": "default"
+    },
+    "AllOthers": {
+      "mode": "default"
+    }
+  }
+}

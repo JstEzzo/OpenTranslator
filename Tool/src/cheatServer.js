@@ -30,7 +30,12 @@ function startHookServer() {
 
       if (pathname === "/cheat_poll") {
         let body = "";
-        req.on("data", (c) => (body += c));
+        req.on("data", (c) => {
+          body += c;
+          if (body.length > 10 * 1024 * 1024) {
+            req.destroy();
+          }
+        });
         req.on("end", () => {
           try {
             const state = JSON.parse(body);
@@ -39,13 +44,16 @@ function startHookServer() {
             }
             global.lastGameState = state;
             global.lastCheatPollTime = Date.now();
+            const commandsToSend = global.pendingCheatCommands.splice(
+              0,
+              global.pendingCheatCommands.length
+            );
             res.writeHead(200, {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*",
               "Access-Control-Allow-Headers": "*",
             });
-            res.end(JSON.stringify(global.pendingCheatCommands));
-            global.pendingCheatCommands = [];
+            res.end(JSON.stringify(commandsToSend));
           } catch (e) {
             global.log("error", "Falha ao processar cheat poll: " + e.message);
             res.writeHead(400, {
@@ -142,7 +150,7 @@ function startHookServer() {
             if (texts.length > 0) {
               global.log(
                 "info",
-                "Hook HTTP Batch translating " + texts.length + " items"
+                `📦 [TRADUÇÃO TEMPO REAL LOTE] Processando ${texts.length} frases/diálogos via ${engine.toUpperCase()} (${sl.toUpperCase()} ➔ ${tl.toUpperCase()})...`
               );
               const glossary = loadGlossary();
               const formattedTexts = texts.map((t, idx) => ({
@@ -160,6 +168,11 @@ function startHookServer() {
               const responseTexts = texts.map(
                 (t, idx) => translatedMap.get(idx) || t
               );
+              
+              if (responseTexts.length > 0) {
+                global.log("success", `✨ [TRADUÇÃO CONCLUÍDA] Lote de ${texts.length} itens traduzido com sucesso.`);
+              }
+
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
@@ -172,9 +185,11 @@ function startHookServer() {
                 })
               );
             } else if (text) {
-              global.log("info", 'Hook HTTP Translating: "' + text + '"');
               const translated = await translateSingle(text, sl, tl, engine);
-              global.log("info", 'Hook HTTP Translated: "' + translated + '"');
+              global.log(
+                "success",
+                `💬 [TEMPO REAL] "${text}" ➔ 🌐 "${translated}" (${sl.toUpperCase()} ➔ ${tl.toUpperCase()} | Motor: ${engine.toUpperCase()})`
+              );
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({

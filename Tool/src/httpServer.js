@@ -22,16 +22,52 @@ global.hasHadClient = false;
 global.SESSION_START = Date.now();
 global.SESSION_TOKEN = Math.random().toString(36).slice(2);
 
-setInterval(() => {
-  if (!global.hasHadClient) return;
-  // Grace period de 30s após boot — ignora beacons antigos
-  if (Date.now() - global.SESSION_START < 30000) return;
-  if (Date.now() - global.lastClientHeartbeat > 10000) {
-    if (typeof global.shutdownAll === "function") {
-      global.shutdownAll("Nenhuma janela de UI ativa por mais de 10s");
-    }
+function terminateAllProcessesAndExit(reason) {
+  console.log(`[Shutdown] Encerramento solicitado (${reason || "App fechado"}). Matando todos os processos...`);
+
+  if (global.launchedProc) {
+    try {
+      global.launchedProc.kill("SIGKILL");
+    } catch (e) {}
+    global.launchedProc = null;
   }
-}, 3000);
+
+  if (global.launchedPid) {
+    try {
+      const { execSync } = require("child_process");
+      execSync(`taskkill /F /PID ${global.launchedPid} /T`, { stdio: "ignore" });
+    } catch (e) {}
+    global.launchedPid = null;
+  }
+
+  if (global.launchedGameExe && fs.existsSync(global.launchedGameExe)) {
+    try {
+      const { execSync } = require("child_process");
+      const exeName = path.basename(global.launchedGameExe);
+      execSync(`taskkill /F /IM "${exeName}" /T`, { stdio: "ignore" });
+    } catch (e) {}
+  }
+
+  const auxiliaryExes = ["inject.exe", "PIDDLLInject64.exe", "JoyCon2Mapper.exe", "BakinLauncher.exe"];
+  auxiliaryExes.forEach((exe) => {
+    try {
+      const { execSync } = require("child_process");
+      execSync(`taskkill /F /IM "${exe}" /T`, { stdio: "ignore" });
+    } catch (e) {}
+  });
+
+  try {
+    const { closeDb } = require("./cache");
+    closeDb();
+  } catch (e) {}
+
+  setTimeout(() => {
+    process.exit(0);
+  }, 100);
+}
+
+process.on("SIGINT", () => terminateAllProcessesAndExit("SIGINT"));
+process.on("SIGTERM", () => terminateAllProcessesAndExit("SIGTERM"));
 
 const server = http.createServer((req, res) => {
   const parsed = new URL(req.url, "http://localhost");
@@ -48,28 +84,24 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathname === "/api/shutdown") {
-    const token = parsed.searchParams.get("token");
-    // Rejeita beacons de instâncias antigas (sem token ou token diferente)
-    if (token && token !== global.SESSION_TOKEN) {
-      res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-      res.end(JSON.stringify({ ok: false, reason: "stale_session" }));
-      return;
-    }
+  if (pathname === "/api/close_app" || pathname === "/api/shutdown") {
     res.writeHead(200, {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
     });
-    res.end(JSON.stringify({ ok: true, message: "Encerrando servidor..." }));
-    if (typeof global.shutdownAll === "function") {
-      setTimeout(() => global.shutdownAll("Fechamento via janela do usuário"), 100);
-    }
+    res.end(JSON.stringify({ ok: true, message: "Encerrando aplicação e jogo..." }));
+    terminateAllProcessesAndExit("Encerramento por solicitação do usuário");
     return;
   }
 
   if (pathname === "/api/rpc" && req.method === "POST") {
     let body = "";
-    req.on("data", (c) => (body += c));
+    req.on("data", (c) => {
+      body += c;
+      if (body.length > 10 * 1024 * 1024) {
+        req.destroy();
+      }
+    });
     req.on("end", async () => {
       try {
         const { method, params } = JSON.parse(body);
@@ -101,6 +133,15 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname === "/favicon.ico") {
+    const iconPath = path.join(global.WWW_DIR, "favicon.ico");
+    if (fs.existsSync(iconPath)) {
+      res.writeHead(200, { "Content-Type": "image/png" });
+      res.end(fs.readFileSync(iconPath));
+      return;
+    }
+  }
+
   let filePath = path.join(
     global.WWW_DIR,
     pathname === "/" ? "index.html" : pathname
@@ -123,30 +164,38 @@ const server = http.createServer((req, res) => {
         pathname.startsWith("/loaders/") ||
         pathname.startsWith("/resources/")
       ) {
-        fs.readFile(
-          path.join(global.ROOT, pathname.replace(/^\//, "")),
-          (e2, d2) => {
-            if (e2) {
-              res.writeHead(404);
-              res.end("Not found");
-            } else {
-              res.writeHead(200, {
-                "Content-Type": MIME[ext] || "application/octet-stream",
-              });
-              res.end(d2);
-            }
-          }
+        const targetPath = path.normalize(
+          path.join(global.ROOT, pathname.replace(/^\//, ""))
         );
-        return;
+        if (
+          !targetPath.startsWith(global.ROOT + path.sep) &&
+          targetPath !== global.ROOT
+        ) {
+          res.writeHead(403);
+          res.end("Forbidden");
+          return;
+        }
+        fs.readFile(targetPath, (e2, d2) => {
+          if (e2) {
+            res.writeHead(404);
+            res.end("Not found");
+          } else {
+            res.writeHead(200, {
+              "Content-Type": MIME[ext] || "application/octet-stream",
+            });
+            res.end(d2);
+          }
+        });
+      } else {
+        res.writeHead(404);
+        res.end("Not found");
       }
-      res.writeHead(404);
-      res.end("Not found");
-      return;
+    } else {
+      res.writeHead(200, {
+        "Content-Type": MIME[ext] || "application/octet-stream",
+      });
+      res.end(data);
     }
-    res.writeHead(200, {
-      "Content-Type": MIME[ext] || "application/octet-stream",
-    });
-    res.end(data);
   });
 });
 
@@ -188,14 +237,25 @@ function tryListen(port) {
         "Microsoft\\Edge\\Application\\msedge.exe"
       ),
     ];
-    let edgePath = edgePaths.find((p) => fs.existsSync(p));
     let chromePath = chromePaths.find((p) => fs.existsSync(p));
-    const browserPath = edgePath || chromePath;
+    let edgePath = edgePaths.find((p) => fs.existsSync(p));
+    const browserPath = chromePath || edgePath;
+
+    const userDataDir = path.join(
+      process.env.LocalAppData || global.DATA_DIR,
+      "OpenTranslatorProfile"
+    );
 
     try {
       if (browserPath) {
         exec(
-          '"' + browserPath + '" --app="' + url + '" --window-size=1100,700'
+          '"' +
+            browserPath +
+            '" --app="' +
+            url +
+            '" --user-data-dir="' +
+            userDataDir +
+            '" --window-size=1100,700 --name="OpenTranslator"'
         );
       } else {
         exec('start "" "' + url + '"');

@@ -95,6 +95,7 @@ async function translateBingSingle(text, sl, tl) {
       );
       rq.on("error", rej);
       rq.setTimeout(12000, () => {
+        if (rq.socket) rq.socket.destroy();
         rq.destroy();
         rej(new Error("timeout"));
       });
@@ -470,6 +471,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
           );
           rq.on("error", (e) => rej(e));
           rq.setTimeout(15000, () => {
+            if (rq.socket) rq.socket.destroy();
             rq.destroy();
             rej(new Error("timeout"));
           });

@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { isTranslatableText, logWarn } = require("./utils");
 
 let db = null;
 try {
@@ -17,12 +18,21 @@ try {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_lang_original ON global_cache (lang_key, original)
   `).run();
 } catch (e) {
-  global.log("error", "Falha ao inicializar o banco SQLite: " + e.message);
+  if (typeof global.log === "function") {
+    global.log("info", "Sistema de cache de alta performance ativado no modo JSON.");
+  }
 }
 
-// Para evitar dependência circular imediata, importamos isTranslatableText sob demanda
-function getIsTranslatableText() {
-  return require("./extractor").isTranslatableText;
+function closeDb() {
+  if (db) {
+    try {
+      db.pragma("wal_checkpoint(TRUNCATE)");
+      db.close();
+      db = null;
+    } catch (e) {
+      logWarn("Aviso ao fechar banco de dados SQLite: " + e.message);
+    }
+  }
 }
 
 function migrateJsonCacheToSqlite() {
@@ -60,15 +70,25 @@ function migrateJsonCacheToSqlite() {
 function loadGlobalCacheForLang(sl, tl) {
   const langKey = sl + "|" + tl;
   const dict = {};
-  if (!db) return dict;
-  const isTrans = getIsTranslatableText();
+  if (!db) {
+    const jsonPath = path.join(global.DATA_DIR, "global_trans_cache.json");
+    const bakPath = path.join(global.DATA_DIR, "global_trans_cache.json.bak");
+    const targetJson = fs.existsSync(jsonPath) ? jsonPath : (fs.existsSync(bakPath) ? bakPath : null);
+    if (targetJson) {
+      try {
+        const data = JSON.parse(fs.readFileSync(targetJson, "utf8"));
+        if (data[langKey]) return data[langKey];
+      } catch (e) {}
+    }
+    return dict;
+  }
   try {
     const stmt = db.prepare(
       "SELECT original, translated FROM global_cache WHERE lang_key = ?"
     );
     const rows = stmt.all(langKey);
     for (const row of rows) {
-      if (isTrans(row.original) && isTrans(row.translated)) {
+      if (isTranslatableText(row.original) && isTranslatableText(row.translated)) {
         dict[row.original] = row.translated;
       }
     }
@@ -79,16 +99,32 @@ function loadGlobalCacheForLang(sl, tl) {
 }
 
 function saveNewGlobalTranslations(sl, tl, translationsArray) {
-  if (!db || translationsArray.length === 0) return;
+  if (translationsArray.length === 0) return;
   const langKey = sl + "|" + tl;
-  const isTrans = getIsTranslatableText();
+  if (!db) {
+    const jsonPath = path.join(global.DATA_DIR, "global_trans_cache.json");
+    try {
+      let data = {};
+      if (fs.existsSync(jsonPath)) {
+        data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+      }
+      if (!data[langKey]) data[langKey] = {};
+      for (const [orig, tr] of translationsArray) {
+        if (isTranslatableText(orig) && isTranslatableText(tr)) {
+          data[langKey][orig] = tr;
+        }
+      }
+      fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2));
+    } catch (e) {}
+    return;
+  }
   try {
     const stmt = db.prepare(
       "INSERT OR REPLACE INTO global_cache (lang_key, original, translated) VALUES (?, ?, ?)"
     );
     const transaction = db.transaction((items) => {
       for (const [orig, tr] of items) {
-        if (isTrans(orig) && isTrans(tr)) {
+        if (isTranslatableText(orig) && isTranslatableText(tr)) {
           stmt.run(langKey, orig, tr);
         }
       }
@@ -164,6 +200,7 @@ function saveCfg(cfg) {
 
 module.exports = {
   getDb: () => db,
+  closeDb,
   loadGlobalCacheForLang,
   saveNewGlobalTranslations,
   loadCommonTranslations,
@@ -171,5 +208,5 @@ module.exports = {
   loadGlossary,
   saveGlossary,
   loadCfg,
-  saveCfg
+  saveCfg,
 };

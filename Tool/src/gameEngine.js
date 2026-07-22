@@ -48,116 +48,128 @@ function findDataDir(gameDir) {
 }
 
 function detectEngine(exePath, exeDir) {
-  const name = path.basename(exePath).toLowerCase();
-  const dir = exeDir || path.dirname(exePath);
-  if (!fs.existsSync(exePath)) {
-    return "mz";
+  if (!exePath || typeof exePath !== "string") return "mz";
+  
+  let targetFile = exePath;
+  let dir = exeDir;
+
+  // Se o caminho passado for um diretório (ex: a pasta do jogo)
+  if (fs.existsSync(targetFile)) {
+    try {
+      const st = fs.statSync(targetFile);
+      if (st.isDirectory()) {
+        dir = targetFile;
+        const subFiles = fs.readdirSync(dir);
+        const exeMatch = subFiles.find((f) => f.toLowerCase().endsWith(".exe"));
+        if (exeMatch) {
+          targetFile = path.join(dir, exeMatch);
+        }
+      } else {
+        dir = exeDir || path.dirname(targetFile);
+      }
+    } catch (e) {}
+  } else if (dir && fs.existsSync(dir)) {
+    const candidate = path.join(dir, path.basename(targetFile));
+    if (fs.existsSync(candidate)) {
+      targetFile = candidate;
+    }
   }
-  try {
-    const buf = fs
-      .readFileSync(exePath, { encoding: "utf8", flag: "r" })
-      .substring(0, 100000);
-    if (
-      buf.includes("RPGVXAce") ||
-      buf.includes("RGSS3") ||
-      buf.includes("RGSS2")
-    )
-      return "rgss";
-    if (buf.includes("WolfRPG") || buf.includes("Wolf RPG Editor"))
-      return "wolf";
-    if (buf.includes("TyranoBuilder") || buf.includes("tyranoscript"))
-      return "tyrano";
-    if (buf.includes("UnityPlayer") || buf.includes("UnityEngine"))
-      return "unity";
-    if (
-      buf.includes("renpy") ||
-      buf.includes("Ren'Py") ||
-      buf.includes("renpython")
-    )
-      return "python";
-    if (buf.includes("BootKirikiriZ")) return "krkrz";
-    if (buf.includes("Kirikiri") || buf.includes("TVP")) return "krkr";
-    if (buf.includes("SRPG Studio") || buf.includes("SRPG")) return "srpg";
-    if (buf.includes("SmileBoom") || buf.includes("ActionGameToolkit"))
-      return "agtk";
-    if (buf.includes("Bakin")) return "bakin";
-    if (buf.includes("kmy")) return "kmy";
-    if (
-      buf.includes("www/") ||
-      buf.includes("System.png") ||
-      buf.includes("rpg_core")
-    )
-      return "mz";
-  } catch (e) {}
-  try {
-    const files = fs.readdirSync(dir);
-    const fl = files.map((f) => f.toLowerCase());
-    if (
-      fl.some(
-        (f) => f === "www" && fs.statSync(path.join(dir, "www")).isDirectory()
-      )
-    )
-      return "mz";
-    if (
-      fl.some((f) => f === "index.html") &&
-      fl.some((f) => f === "package.json") &&
-      fl.some((f) => f.startsWith("nw."))
-    )
-      return "mz";
-    if (fl.some((f) => f === "rmmz_core.js" || f === "rpg_core.js"))
-      return "mz";
-    if (fl.includes("js")) {
-      try {
-        const jsFiles = fs
-          .readdirSync(path.join(dir, "js"))
-          .map((f) => f.toLowerCase());
-        if (jsFiles.some((f) => f === "rmmz_core.js" || f === "rpg_core.js"))
-          return "mz";
-      } catch (e) {}
-    }
-    if (fl.includes("renpy") || fl.some((f) => f.endsWith(".rpy")))
-      return "python";
-    if (fl.some((f) => f.endsWith(".xp3"))) return "krkr";
-    if (
-      fl.some(
-        (f) =>
-          f === "game.rvproj2" || f === "game.rxproj" || f === "game.rvproj"
-      )
-    )
-      return "rgss";
-    if (
-      fl.some(
-        (f) =>
-          f.endsWith(".rvdata2") ||
-          f.endsWith(".rvdata") ||
-          f.endsWith(".rxdata")
-      )
-    )
-      return "rgss";
-    if (
-      fl.some(
-        (f) => f === "data.wolf" || f === "game.ini" || f === "editor.ini"
-      )
-    )
-      return "wolf";
-    if (fl.includes("data")) {
-      try {
-        const sub = fs
-          .readdirSync(path.join(dir, "Data"))
-          .map((f) => f.toLowerCase());
-        if (
-          sub.includes("basicdata") ||
-          sub.includes("mapdata") ||
-          sub.some((f) => f.endsWith(".wolf") || f === "basicdata.zip")
-        )
-          return "wolf";
-      } catch (e) {}
-    }
-    if (fl.some((f) => f === "tyranoscript" || f === "tyranobuilder.html"))
-      return "tyrano";
-  } catch (e) {}
-  if (name.includes("rpg") || name.includes("game")) return "mz";
-  if (name.includes("unity") || name.includes("win")) return "unity";
+
+  const baseName = path.basename(targetFile, path.extname(targetFile)).toLowerCase();
+  const fullExeName = path.basename(targetFile).toLowerCase();
+
+  // 1. CHECAGEM POR ESTRUTURA DE DIRETÓRIOS E ARQUIVOS CARACTERÍSTICOS
+  if (dir && fs.existsSync(dir)) {
+    try {
+      const files = fs.readdirSync(dir);
+      const fl = files.map((f) => f.toLowerCase());
+
+      // CHECAGEM DEFINITIVA DE REN'PY
+      // Ren'Py possui inconfundivelmente: pasta 'renpy', pasta 'game', arquivo .py com nome do exe, ou scripts .rpy/.rpyc/.rpa
+      const hasRenpyFolder = fl.includes("renpy");
+      const hasGameFolder = fl.includes("game");
+      const hasLibFolder = fl.includes("lib");
+      const hasPyScript = fl.includes(baseName + ".py") || fl.some((f) => f.endsWith(".py") && f !== "setup.py");
+      const hasRpyFile = fl.some((f) => f.endsWith(".rpy") || f.endsWith(".rpyc") || f.endsWith(".rpa"));
+
+      if (hasRenpyFolder || (hasGameFolder && (hasLibFolder || hasPyScript || hasRpyFile))) {
+        return "python";
+      }
+
+      // Verificação profunda dentro da pasta game/ para Ren'Py
+      if (hasGameFolder) {
+        try {
+          const gameSubFiles = fs.readdirSync(path.join(dir, "game")).map((f) => f.toLowerCase());
+          if (gameSubFiles.some((f) => f.endsWith(".rpy") || f.endsWith(".rpyc") || f.endsWith(".rpa") || f === "script.rpy")) {
+            return "python";
+          }
+        } catch (e) {}
+      }
+
+      // RPG Maker MZ / MV
+      if (fl.some((f) => f === "www" && fs.statSync(path.join(dir, "www")).isDirectory())) return "mz";
+      if (fl.some((f) => f === "index.html") && fl.some((f) => f === "package.json") && fl.some((f) => f.startsWith("nw."))) return "mz";
+      if (fl.some((f) => f === "rmmz_core.js" || f === "rpg_core.js")) return "mz";
+      if (fl.includes("js")) {
+        try {
+          const jsFiles = fs.readdirSync(path.join(dir, "js")).map((f) => f.toLowerCase());
+          if (jsFiles.some((f) => f === "rmmz_core.js" || f === "rpg_core.js")) return "mz";
+        } catch (e) {}
+      }
+
+      // Kirikiri
+      if (fl.some((f) => f.endsWith(".xp3"))) return "krkr";
+
+      // RGSS (XP / VX / VXAce)
+      if (fl.some((f) => f === "game.rvproj2" || f === "game.rxproj" || f === "game.rvproj" || f.endsWith(".rvdata2") || f.endsWith(".rvdata") || f.endsWith(".rxdata"))) {
+        return "rgss";
+      }
+
+      // Wolf RPG
+      if (fl.some((f) => f === "data.wolf" || f === "game.ini" || f === "editor.ini")) return "wolf";
+      if (fl.includes("data")) {
+        try {
+          const sub = fs.readdirSync(path.join(dir, "Data")).map((f) => f.toLowerCase());
+          if (sub.includes("basicdata") || sub.includes("mapdata") || sub.some((f) => f.endsWith(".wolf") || f === "basicdata.zip")) {
+            return "wolf";
+          }
+        } catch (e) {}
+      }
+
+      // TyranoScript
+      if (fl.some((f) => f === "tyranoscript" || f === "tyranobuilder.html")) return "tyrano";
+
+      // Unity (Presença de pasta <GameName>_Data)
+      if (fl.some((f) => f === baseName + "_data" || (f.endsWith("_data") && fs.statSync(path.join(dir, f)).isDirectory()))) {
+        return "unity";
+      }
+    } catch (e) {}
+  }
+
+  // 2. CHECAGEM VIA CONTEÚDO BINÁRIO DO EXECUTÁVEL (.EXE)
+  if (fs.existsSync(targetFile)) {
+    try {
+      const buf = fs.readFileSync(targetFile, { encoding: "utf8", flag: "r" }).substring(0, 200000);
+      if (buf.includes("renpy") || buf.includes("Ren'Py") || buf.includes("renpython") || buf.includes("renpy.bootstrap")) return "python";
+      if (buf.includes("RPGVXAce") || buf.includes("RGSS3") || buf.includes("RGSS2")) return "rgss";
+      if (buf.includes("WolfRPG") || buf.includes("Wolf RPG Editor")) return "wolf";
+      if (buf.includes("TyranoBuilder") || buf.includes("tyranoscript")) return "tyrano";
+      if (buf.includes("UnityPlayer") || buf.includes("UnityEngine")) return "unity";
+      if (buf.includes("BootKirikiriZ")) return "krkrz";
+      if (buf.includes("Kirikiri") || buf.includes("TVP")) return "krkr";
+      if (buf.includes("SRPG Studio") || buf.includes("SRPG")) return "srpg";
+      if (buf.includes("SmileBoom") || buf.includes("ActionGameToolkit")) return "agtk";
+      if (buf.includes("Bakin")) return "bakin";
+      if (buf.includes("kmy")) return "kmy";
+      if (buf.includes("www/") || buf.includes("System.png") || buf.includes("rpg_core")) return "mz";
+    } catch (e) {}
+  }
+
+  // 3. FALLBACKS POR NOME
+  if (baseName.includes("renpy") || baseName.includes("ren_py")) return "python";
+  if (baseName.includes("rpg") || baseName.includes("game")) return "mz";
+  if (baseName.includes("unity") || baseName.includes("win")) return "unity";
+
   return "mz";
 }
 
@@ -179,6 +191,11 @@ function getExeArch(exePath) {
 
 function getHookDll(eng, exePath) {
   const arch = getExeArch(exePath);
+  // RPG Maker MV e MZ utilizam patch estático nativo de JSON/plugins.js + CheatOverlay.js.
+  // Injeção de DLL em executáveis NW.js (Chromium) causa crash imediato no motor.
+  if (eng === "mz" || eng === "mv") {
+    return null;
+  }
   if (eng === "wolf") {
     try {
       const stats = fs.statSync(exePath);
@@ -428,6 +445,22 @@ function patchGameData(gameDir, texts, translations) {
         if (!success) continue;
         const lastKey = realKeys[realKeys.length - 1];
         if (obj && typeof obj === "object" && lastKey in obj) {
+          const origVal = String(obj[lastKey]).trim();
+          if (
+            /\.(png|jpg|jpeg|gif|bmp|webp|ogg|wav|mp3|m4a|json|efkefc|atlas|skel)$/i.test(origVal) ||
+            /^(img|audio|fonts|js|data|icon|css|locales|movies)[\/\\]/i.test(origVal)
+          ) {
+            continue;
+          }
+
+          const parentCmd = getValueAtPath(data, realKeys.slice(0, -2));
+          if (parentCmd && typeof parentCmd.code === "number") {
+            const nonDialogueCodes = new Set([231, 232, 281, 241, 245, 249, 250, 132, 133, 139, 322, 323]);
+            if (nonDialogueCodes.has(parentCmd.code)) {
+              continue;
+            }
+          }
+
           let restored = restoreEscapeCodes(entry.tr, entry.escapeParts);
 
           if (isJs && entry.isJsString) {
@@ -626,43 +659,57 @@ function checkProcessRunning() {
   }
 }
 
-function findGameOnDisk(fileName) {
+async function findGameOnDisk(fileName) {
+  const fsp = fs.promises;
+  const desktopPath = path.join(os.homedir(), "Desktop");
   const roots = [
+    desktopPath,
+    path.join(desktopPath, "Nova pasta"),
+    path.join(os.homedir(), "Downloads"),
+    path.join(os.homedir(), "Documents"),
+    path.resolve(global.ROOT, ".."),
     path.resolve(global.ROOT, "..", ".."),
-    path.join(os.homedir(), "Desktop"),
-    path.join(os.homedir(), "Desktop", "Nova pasta"),
   ];
   const results = [];
+
   for (const root of roots) {
     try {
-      if (!fs.existsSync(root)) continue;
-      function scan(dir, depth) {
-        if (depth > 3) return;
+      if (!(await fsp.stat(root).catch(() => null))) continue;
+
+      async function scan(dir, depth) {
+        if (depth > 4) return;
         try {
-          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          const entries = await fsp.readdir(dir, { withFileTypes: true });
           for (const e of entries) {
             if (!e.isDirectory() || e.name.startsWith(".")) continue;
             const sub = path.join(dir, e.name);
             try {
               const target = path.join(sub, fileName);
-              if (fs.existsSync(target)) {
-                const st = fs.statSync(target);
+              const st = await fsp.stat(target).catch(() => null);
+              if (st && st.isFile()) {
+                const detectedEng = detectEngine(target, sub);
                 results.push({
                   name: e.name,
                   exePath: target,
-                  engine: "mz",
+                  engine: detectedEng,
                   size: st.size,
                   mtime: st.mtimeMs,
                 });
                 continue;
               }
-            } catch (er) {}
-            scan(sub, depth + 1);
+            } catch (er) {
+              logWarn(`[findGameOnDisk] Falha ao verificar ${sub}: ${er.message}`);
+            }
+            await scan(sub, depth + 1);
           }
-        } catch (e) {}
+        } catch (e) {
+          logWarn(`[findGameOnDisk] Falha ao ler diretório ${dir}: ${e.message}`);
+        }
       }
-      scan(root, 0);
-    } catch (e) {}
+      await scan(root, 0);
+    } catch (e) {
+      logWarn(`[findGameOnDisk] Falha na varredura da raiz ${root}: ${e.message}`);
+    }
   }
   const seen = new Set();
   return results.filter((r) => {
@@ -672,46 +719,45 @@ function findGameOnDisk(fileName) {
   });
 }
 
-function runPythonScript(scriptPath, args) {
-  return new Promise((res, rej) => {
-    const localPython = path.join(
-      global.ROOT,
-      "resources",
-      "renpy",
-      "python",
-      "python.exe"
-    );
-    const pythonCmds = [];
-    if (fs.existsSync(localPython)) {
-      pythonCmds.push(localPython);
-    }
-    pythonCmds.push("python", "python3", "py");
+async function runPythonScript(scriptPath, args) {
+  const localPython = path.join(
+    global.ROOT,
+    "resources",
+    "renpy",
+    "python",
+    "python.exe"
+  );
+  const pythonCmds = [];
+  if (fs.existsSync(localPython)) {
+    pythonCmds.push(localPython);
+  }
+  pythonCmds.push("python", "python3", "py");
 
-    function tryCmd(idx) {
-      if (idx >= pythonCmds.length) {
-        rej(
-          new Error(
-            "Python nao foi encontrado no sistema ou na pasta de recursos. Por favor, instale o Python."
-          )
-        );
-        return;
-      }
-      const proc = spawn(pythonCmds[idx], [scriptPath, ...args], {
-        timeout: 60000,
+  let lastError = null;
+  for (const cmd of pythonCmds) {
+    try {
+      const output = await new Promise((resolve, reject) => {
+        const proc = spawn(cmd, [scriptPath, ...args], { timeout: 60000 });
+        let stdout = "";
+        let stderr = "";
+        proc.stdout.on("data", (d) => (stdout += d));
+        proc.stderr.on("data", (d) => (stderr += d));
+        proc.on("error", (err) => reject(err));
+        proc.on("exit", (code) => {
+          if (code === 0) resolve(stdout || "Done");
+          else reject(new Error(stderr || `Python exit code ${code}`));
+        });
       });
-      let stdout = "",
-        stderr = "";
-      proc.stdout.on("data", (d) => (stdout += d));
-      proc.stderr.on("data", (d) => (stderr += d));
-      proc.on("error", () => tryCmd(idx + 1));
-      proc.on("exit", (code) => {
-        if (code === 0) res(stdout || "Done");
-        else if (idx < pythonCmds.length - 1) tryCmd(idx + 1);
-        else rej(new Error(stderr || "Exit code " + code));
-      });
+      return output;
+    } catch (e) {
+      lastError = e;
     }
-    tryCmd(0);
-  });
+  }
+  throw new Error(
+    `Python não foi encontrado ou falhou ao executar. Erro: ${
+      lastError ? lastError.message : "Desconhecido"
+    }`
+  );
 }
 
 function healGameData(gameDir) {
@@ -1007,135 +1053,11 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
           fs.writeFileSync(htmlPath, html, "utf8");
         }
         const cheatScriptPath = path.join(wwwDir, "CheatOverlay.js");
-        const cheatScriptContent = `(function() {
-          var fs;
-          try { fs = require('fs'); } catch(e) {}
-          function logToFile(msg) {
-            if (!fs) return;
-            try {
-              fs.appendFileSync('cheat_overlay.log', '[' + new Date().toLocaleTimeString() + '] ' + msg + '\\n');
-            } catch(e) {}
-          }
-          logToFile('Iniciando CheatOverlay...');
-          var pollUrl = 'http://127.0.0.1:16005/cheat_poll';
-          function pollCheat() {
-            try {
-              if (!window.$gameParty || !window.$gamePlayer || !window.$gameSystem || !window.$gameMap) {
-                logToFile('Aguardando inicialização do jogo...');
-                setTimeout(pollCheat, 1000);
-                return;
-              }
-              var state;
-              try {
-                var ownedItems = [];
-                var allDbItems = [];
-                if (typeof $dataItems !== 'undefined' && $dataItems) {
-                  try {
-                    $gameParty.items().forEach(function(item) {
-                      if (item && item.name) ownedItems.push({ id: item.id, name: item.name, type: 'item', count: $gameParty.numItems(item) });
-                    });
-                    $gameParty.weapons().forEach(function(item) {
-                      if (item && item.name) ownedItems.push({ id: item.id, name: item.name, type: 'weapon', count: $gameParty.numItems(item) });
-                    });
-                    $gameParty.armors().forEach(function(item) {
-                      if (item && item.name) ownedItems.push({ id: item.id, name: item.name, type: 'armor', count: $gameParty.numItems(item) });
-                    });
-                    
-                    $dataItems.forEach(function(item) {
-                      if (item && item.name) allDbItems.push({ id: item.id, name: item.name, type: 'item' });
-                    });
-                    $dataWeapons.forEach(function(item) {
-                      if (item && item.name) allDbItems.push({ id: item.id, name: item.name, type: 'weapon' });
-                    });
-                    $dataArmors.forEach(function(item) {
-                      if (item && item.name) allDbItems.push({ id: item.id, name: item.name, type: 'armor' });
-                    });
-                  } catch(e) {
-                    logToFile('Erro ao ler itens: ' + e.message);
-                  }
-                }
-                
-                state = {
-                  gold: typeof $gameParty.gold === 'function' ? $gameParty.gold() : 0,
-                  mapId: typeof $gameMap.mapId === 'function' ? $gameMap.mapId() : 0,
-                  x: $gamePlayer.x !== undefined ? $gamePlayer.x : 0,
-                  y: $gamePlayer.y !== undefined ? $gamePlayer.y : 0,
-                  through: typeof $gamePlayer.isThrough === 'function' ? $gamePlayer.isThrough() : false,
-                  encounterDisabled: !$gameSystem.isEncounterEnabled(),
-                  actors: (typeof $gameParty.members === 'function' ? $gameParty.members() : []).map(function(a, idx) {
-                    return {
-                      idx: idx, name: typeof a.name === 'function' ? a.name() : '', hp: a.hp || 0, mhp: a.mhp || 0, mp: a.mp || 0, mmp: a.mmp || 0, tp: a.tp || 0, level: a.level || 1
-                    };
-                  }),
-                  ownedItems: ownedItems,
-                  allDbItems: allDbItems
-                };
-              } catch(err) {
-                logToFile('Erro ao extrair propriedades do jogo: ' + err.message);
-                setTimeout(pollCheat, 1000);
-                return;
-              }
-              
-              logToFile('Enviando cheat_poll. Ouro: ' + state.gold);
-              var xhr = new XMLHttpRequest();
-              xhr.open('POST', pollUrl, true);
-              xhr.setRequestHeader('Content-Type', 'application/json');
-              xhr.onload = function() {
-                logToFile('cheat_poll respondido com status: ' + xhr.status);
-                if (xhr.status === 200) {
-                  try {
-                    var commands = JSON.parse(xhr.responseText);
-                    if (Array.isArray(commands) && commands.length > 0) {
-                      logToFile('Processando ' + commands.length + ' comandos...');
-                      commands.forEach(function(cmd) {
-                        try { 
-                          logToFile('Executando: ' + cmd.code);
-                          eval(cmd.code); 
-                        } catch(ex) {
-                          logToFile('Erro no eval: ' + ex.message);
-                        }
-                      });
-                    }
-                  } catch(e) {
-                    logToFile('Erro ao processar resposta: ' + e.message);
-                  }
-                }
-                setTimeout(pollCheat, 1000);
-              };
-              xhr.onerror = function() {
-                logToFile('Erro na requisição cheat_poll');
-                setTimeout(pollCheat, 2000);
-              };
-              xhr.send(JSON.stringify(state));
-            } catch(e) {
-              logToFile('Erro na execução do pollCheat: ' + e.message);
-              setTimeout(pollCheat, 2000);
-            }
-          }
-          setInterval(function() {
-            try {
-              if (window.godHP && window.$gameParty && typeof window.$gameParty.members === 'function') {
-                var members = window.$gameParty.members();
-                if (Array.isArray(members)) {
-                  members.forEach(function(a) {
-                    if (a && typeof a.setHp === 'function') a.setHp(a.mhp);
-                  });
-                }
-              }
-              if (window.godMP && window.$gameParty && typeof window.$gameParty.members === 'function') {
-                var members = window.$gameParty.members();
-                if (Array.isArray(members)) {
-                  members.forEach(function(a) {
-                    if (a && typeof a.setMp === 'function') a.setMp(a.mmp);
-                  });
-                }
-              }
-            } catch(e) {}
-          }, 100);
-          pollCheat();
-        })();`;
-          fs.writeFileSync(cheatScriptPath, cheatScriptContent, "utf8");
+        const templatePath = path.join(global.ROOT, "templates", "CheatOverlayTemplate.js");
+        if (fs.existsSync(templatePath)) {
+          fs.copyFileSync(templatePath, cheatScriptPath);
           global.log("success", "CheatOverlay injetado com sucesso no jogo.");
+        }
       } catch (e) {
         global.log("error", "Falha ao injetar CheatOverlay: " + e.message);
       }

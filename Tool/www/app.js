@@ -3,16 +3,6 @@
 
   let SESSION_TOKEN = "";
 
-  function triggerShutdown() {
-    try {
-      const url = "/api/shutdown" + (SESSION_TOKEN ? "?token=" + SESSION_TOKEN : "");
-      navigator.sendBeacon(url);
-    } catch (e) {}
-  }
-  window.addEventListener("beforeunload", triggerShutdown);
-  window.addEventListener("unload", triggerShutdown);
-  window.addEventListener("pagehide", triggerShutdown);
-
   // Heartbeat para manter o servidor ativo enquanto a UI estiver aberta
   async function pingServer() {
     try {
@@ -273,24 +263,118 @@
     log("success", t("configSaved"));
   }
 
-  // ==================== LANGUAGE CODES ====================
   const LANGS = {
     auto: "Auto Detect",
-    ja: "Japanese",
+    af: "Afrikaans",
+    sq: "Albanian",
+    am: "Amharic",
+    ar: "Arabic",
+    hy: "Armenian",
+    az: "Azerbaijani",
+    eu: "Basque",
+    be: "Belarusian",
+    bn: "Bengali",
+    bs: "Bosnian",
+    bg: "Bulgarian",
+    ca: "Catalan",
+    ceb: "Cebuano",
+    zh: "Chinese (Simplified)",
+    "zh-TW": "Chinese (Traditional)",
+    co: "Corsican",
+    hr: "Croatian",
+    cs: "Czech",
+    da: "Danish",
+    nl: "Dutch",
     en: "English",
-    zh: "Chinese",
-    ko: "Korean",
-    pt: "Portuguese",
-    es: "Spanish",
+    eo: "Esperanto",
+    et: "Estonian",
+    tl: "Filipino / Tagalog",
+    fi: "Finnish",
     fr: "French",
+    fy: "Frisian",
+    gl: "Galician",
+    ka: "Georgian",
     de: "German",
-    it: "Italian",
-    ru: "Russian",
-    th: "Thai",
-    vi: "Vietnamese",
+    el: "Greek",
+    gu: "Gujarati",
+    ht: "Haitian Creole",
+    ha: "Hausa",
+    haw: "Hawaiian",
+    he: "Hebrew",
+    hi: "Hindi",
+    hmn: "Hmong",
+    hu: "Hungarian",
+    is: "Icelandic",
+    ig: "Igbo",
     id: "Indonesian",
+    ga: "Irish",
+    it: "Italian",
+    ja: "Japanese",
+    jv: "Javanese",
+    kn: "Kannada",
+    kk: "Kazakh",
+    km: "Khmer",
+    rw: "Kinyarwanda",
+    ko: "Korean",
+    ku: "Kurdish",
+    ky: "Kyrgyz",
+    lo: "Lao",
+    la: "Latin",
+    lv: "Latvian",
+    lt: "Lithuanian",
+    lb: "Luxembourgish",
+    mk: "Macedonian",
+    mg: "Malagasy",
     ms: "Malay",
-    tl: "Filipino",
+    ml: "Malayalam",
+    mt: "Maltese",
+    mi: "Maori",
+    mr: "Marathi",
+    mn: "Mongolian",
+    my: "Myanmar (Burmese)",
+    ne: "Nepali",
+    no: "Norwegian",
+    ny: "Nyanja (Chichewa)",
+    or: "Odia (Oriya)",
+    ps: "Pashto",
+    fa: "Persian",
+    pl: "Polish",
+    pt: "Portuguese (Brazil)",
+    "pt-PT": "Portuguese (Portugal)",
+    pa: "Punjabi",
+    ro: "Romanian",
+    ru: "Russian",
+    sm: "Samoan",
+    gd: "Scots Gaelic",
+    sr: "Serbian",
+    st: "Sesotho",
+    sn: "Shona",
+    sd: "Sindhi",
+    si: "Sinhala",
+    sk: "Slovak",
+    sl: "Slovenian",
+    so: "Somali",
+    es: "Spanish",
+    su: "Sundanese",
+    sw: "Swahili",
+    sv: "Swedish",
+    tg: "Tajik",
+    ta: "Tamil",
+    tt: "Tatar",
+    te: "Telugu",
+    th: "Thai",
+    tr: "Turkish",
+    tk: "Turkmen",
+    uk: "Ukrainian",
+    ur: "Urdu",
+    ug: "Uyghur",
+    uz: "Uzbek",
+    vi: "Vietnamese",
+    cy: "Welsh",
+    xh: "Xhosa",
+    yi: "Yiddish",
+    yo: "Yoruba",
+    zu: "Zulu"
   };
 
   // ==================== I18N ====================
@@ -2160,8 +2244,13 @@ select option {
   $("cfgAppLang")?.addEventListener("change", async function () {
     _lang = this.value;
     S.cfg.lang = this.value;
-    await saveCfg();
-    location.reload();
+    window.isReloading = true;
+    try {
+      await saveCfg();
+      location.reload();
+    } catch (e) {
+      showToast("Erro ao alterar idioma: " + (e.message || e), "error");
+    }
   });
   $("cfgSL")?.addEventListener("change", saveCfg);
   $("cfgTL")?.addEventListener("change", saveCfg);
@@ -3006,6 +3095,14 @@ select option {
         : "$gameSystem.enableEncounter()";
       await rpc("sendCheatCommand", { code });
       log("info", "Encontro com inimigos definido: " + !target.checked);
+    }
+  });
+
+  window.addEventListener("beforeunload", function () {
+    if (!window.isReloading) {
+      try {
+        navigator.sendBeacon("/api/close_app", JSON.stringify({ close: true }));
+      } catch (e) {}
     }
   });
 })();
