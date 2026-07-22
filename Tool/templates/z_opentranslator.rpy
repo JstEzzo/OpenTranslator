@@ -1,32 +1,47 @@
 init -9999 python:
     import sys
     import json
+    import renpy
 
     PY2 = sys.version_info[0] == 2
 
     if PY2:
         import urllib2
         import urllib
-        def fetch_url(url):
+        def post_rpc(payload_str):
+            req = urllib2.Request("http://127.0.0.1:3000/api/rpc", data=payload_str)
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('User-Agent', 'OpenTranslator-RenPy')
+            resp = urllib2.urlopen(req, timeout=1.5)
+            data = resp.read()
+            resp.close()
+            return data.decode('utf-8')
+        def fetch_fallback(clean_encoded):
+            url = "http://127.0.0.1:16005/translate?text=" + urllib.quote(clean_encoded)
             req = urllib2.Request(url)
             req.add_header('User-Agent', 'OpenTranslator-RenPy')
             resp = urllib2.urlopen(req, timeout=1.5)
             data = resp.read()
             resp.close()
             return data.decode('utf-8')
-        def quote_str(s):
+        def encode_utf8(s):
             if isinstance(s, unicode):
-                s = s.encode('utf-8')
-            return urllib.quote(s)
+                return s.encode('utf-8')
+            return s
     else:
         import urllib.request
         import urllib.parse
-        def fetch_url(url):
+        def post_rpc(payload_str):
+            req = urllib.request.Request("http://127.0.0.1:3000/api/rpc", data=payload_str.encode('utf-8'), headers={'Content-Type': 'application/json', 'User-Agent': 'OpenTranslator-RenPy'})
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
+                return resp.read().decode('utf-8')
+        def fetch_fallback(clean_encoded):
+            url = "http://127.0.0.1:16005/translate?text=" + urllib.parse.quote(clean_encoded)
             req = urllib.request.Request(url, headers={'User-Agent': 'OpenTranslator-RenPy'})
             with urllib.request.urlopen(req, timeout=1.5) as resp:
                 return resp.read().decode('utf-8')
-        def quote_str(s):
-            return urllib.parse.quote(s.encode('utf-8') if isinstance(s, str) else s)
+        def encode_utf8(s):
+            return s.encode('utf-8') if isinstance(s, str) else s
 
     _opent_cache = {}
 
@@ -40,20 +55,45 @@ init -9999 python:
             return _opent_cache[clean]
 
         try:
-            q = quote_str(clean)
-            url = "http://127.0.0.1:16005/translate?text=" + q
-            raw = fetch_url(url)
+            payload = {
+                "method": "translate_realtime",
+                "params": {
+                    "text": clean,
+                    "engine": "renpy"
+                }
+            }
+            raw = post_rpc(json.dumps(payload))
             if raw:
                 res = json.loads(raw)
-                tr = res.get("translated") or res.get("text")
-                if tr:
+                if res.get("ok") and "data" in res and "translated" in res["data"]:
+                    tr = res["data"]["translated"]
                     _opent_cache[clean] = tr
                     return tr
         except Exception:
-            pass
+            try:
+                raw_fb = fetch_fallback(encode_utf8(clean))
+                if raw_fb:
+                    res_fb = json.loads(raw_fb)
+                    tr_fb = res_fb.get("translated") or res_fb.get("text")
+                    if tr_fb:
+                        _opent_cache[clean] = tr_fb
+                        return tr_fb
+            except Exception:
+                pass
 
         return text
 
+    # HOOK 1: Intercepta falas registradas via renpy.exports.say
+    if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'say'):
+        _old_say = renpy.exports.say
+        def _opent_say(who, what, *args, **kwargs):
+            what = opent_translate(what)
+            return _old_say(who, what, *args, **kwargs)
+        renpy.exports.say = _opent_say
+        if hasattr(renpy, 'say'):
+            renpy.say = _opent_say
+
+    # HOOK 2: Intercepta menus de escolha e caixas de diálogos
     if hasattr(config, 'say_menu_text_filter'):
         old_filter = config.say_menu_text_filter
         def opent_text_filter(text):

@@ -323,6 +323,23 @@ const handlers = {
   detectEngine({ exePath, exeDir }) {
     return detectEngine(exePath, exeDir);
   },
+  async translate_realtime({ text, engine }) {
+    if (!text || typeof text !== "string") return { ok: false, error: "Texto inválido ou vazio" };
+    const clean = text.trim();
+    if (!clean) return { ok: false, error: "Texto vazio" };
+    
+    const cfg = handlers.loadCfg();
+    const sl = cfg.sl || "auto";
+    const tl = cfg.tl || "pt";
+    const eng = cfg.engine || "google";
+
+    const translated = await translateSingle(clean, sl, tl, eng);
+    global.log(
+      "success",
+      `💬 [RPC REALTIME] "${clean}" ➔ 🌐 "${translated}" (${sl.toUpperCase()} ➔ ${tl.toUpperCase()} | Motor: ${eng.toUpperCase()})`
+    );
+    return { ok: true, data: { translated, text: translated } };
+  },
   async launchGame({ key }) {
     if (global.isLaunchingGame) {
       global.log("warn", "launchGame: inicialização de jogo já em andamento");
