@@ -76,8 +76,8 @@ init python:
                     st[''][clean] = tr
                 elif None in st:
                     st[None][clean] = tr
-            except Exception:
-                pass
+        except Exception:
+            pass
 
         return tr
 
