@@ -294,15 +294,18 @@ function startHookServer() {
       });
     });
     hookHttpServer.on("error", (e) => {
-      global.log("error", "Dual Hook Server error: " + e.message);
-      console.error("Dual Hook Server error:", e.message);
+      if (e.code === "EADDRINUSE") {
+        global.log("warn", "Dual Hook Server: Porta 16005 já está em uso por uma instância ativa. Reutilizando porta.");
+      } else {
+        global.log("error", "Dual Hook Server error: " + e.message);
+      }
     });
 
     hookHttpServer.listen(16005, "127.0.0.1", () => {
       global.log("success", "Dual Hook Server listening on port 16005");
     });
   } catch (e) {
-    global.log("error", "Failed to initialize Dual Hook Server: " + e.message);
+    global.log("warn", "Dual Hook Server status: " + e.message);
   }
 }
 

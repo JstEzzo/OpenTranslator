@@ -446,67 +446,10 @@ const handlers = {
           windowsHide: false,
         });
 
-        if (hookDll) {
-          const hookPath = path.join(global.ROOT, "loaders", hookDll);
-          const mainPid = proc ? proc.pid : null;
-          setTimeout(() => {
-            const exeName = path.basename(exe, ".exe");
-            const escapedDir = gameDir.replace(/'/g, "''");
-            const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-Process -Name '${exeName}' -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '${escapedDir}\\\\*' } | Select-Object -ExpandProperty Id"`;
-
-            exec(psCmd, (err, stdout) => {
-              const pidsToInject = [];
-              if (mainPid) {
-                try {
-                  if (process.kill(mainPid, 0)) {
-                    pidsToInject.push(mainPid);
-                  }
-                } catch (e) {}
-              }
-              if (!err && stdout) {
-                const activePids = stdout
-                  .trim()
-                  .split("\n")
-                  .map((p) => parseInt(p.trim(), 10))
-                  .filter((p) => !isNaN(p) && p > 0);
-                pidsToInject.push(...activePids);
-              }
-
-              const uniquePids = [...new Set(pidsToInject)];
-              global.log(
-                "info",
-                `🔎 PIDs ativos identificados para o jogo: ${
-                  uniquePids.join(", ") || "Nenhum"
-                }`
-              );
-
-              uniquePids.forEach((pid) => {
-                try {
-                  global.log(
-                    "info",
-                    `🚀 Injetando gancho de tradução (${hookDll}) no PID ativo do Ren'Py: ${pid}`
-                  );
-                  const arch = getExeArch(exe);
-                  const runtimeInjector =
-                    arch === 64
-                      ? path.join(global.ROOT, "loaders", "PIDDLLInject64.exe")
-                      : path.join(global.ROOT, "loaders", "inject.exe");
-                  spawn(runtimeInjector, [String(pid), hookPath], {
-                    stdio: "ignore",
-                    detached: true,
-                    shell: false,
-                    windowsHide: false,
-                  });
-                } catch (e) {
-                  global.log(
-                    "error",
-                    `Falha ao injetar no PID ${pid}: ` + e.message
-                  );
-                }
-              });
-            });
-          }, 2500);
-        }
+        global.log(
+          "success",
+          "✨ Jogo Ren'Py inicializado com sucesso! Tradução nativa ativa via game/z_opentranslator.rpy."
+        );
       } catch (e) {
         global.log("error", "Falha ao iniciar jogo Ren'Py: " + e.message);
         return { ok: false, error: "Spawn failed: " + e.message };
