@@ -96,7 +96,27 @@ init 9999 python:
             _opent_cache[clean] = clean
             return clean
 
-    # HOOK UNIVERSAL 1: Intercepta a chamada direta de fala de personagens (renpy.exports.say)
+    # HOOK DEFINITIVO 1: Intercepta diretamente o set_text da classe Text do Ren'Py
+    try:
+        if hasattr(renpy, 'text') and hasattr(renpy.text, 'text') and hasattr(renpy.text.text, 'Text'):
+            _old_set_text = renpy.text.text.Text.set_text
+            def _opent_set_text(self, text, scope=None, substitute=False, update=True):
+                if isinstance(text, (str, unicode if PY2 else str)):
+                    text = opent_translate(text)
+                elif isinstance(text, list):
+                    new_list = []
+                    for item in text:
+                        if isinstance(item, (str, unicode if PY2 else str)):
+                            new_list.append(opent_translate(item))
+                        else:
+                            new_list.append(item)
+                    text = new_list
+                return _old_set_text(self, text, scope, substitute, update)
+            renpy.text.text.Text.set_text = _opent_set_text
+    except Exception:
+        pass
+
+    # HOOK DEFINITIVO 2: Intercepta a chamada de fala de personagens (renpy.exports.say)
     try:
         if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'say'):
             _old_say = renpy.exports.say
@@ -110,7 +130,7 @@ init 9999 python:
     except Exception:
         pass
 
-    # HOOK UNIVERSAL 2: Intercepta renpy.substitute (Trata a tupla (string, bool) nativa do Ren'Py)
+    # HOOK DEFINITIVO 3: Intercepta renpy.substitute
     try:
         if hasattr(renpy, 'substitute'):
             _old_substitute = renpy.substitute
@@ -124,7 +144,7 @@ init 9999 python:
     except Exception:
         pass
 
-    # HOOK UNIVERSAL 3: Intercepta o tradutor interno de strings (renpy.translation.translate_string)
+    # HOOK DEFINITIVO 4: Intercepta tradução de strings (renpy.translation.translate_string)
     try:
         if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'translate_string'):
             _old_translate_string = renpy.translation.translate_string
@@ -134,16 +154,5 @@ init 9999 python:
                     return opent_translate(res)
                 return res
             renpy.translation.translate_string = _opent_translate_string
-    except Exception:
-        pass
-
-    # HOOK UNIVERSAL 4: Intercepta o filtro de menus e caixas de diálogos
-    try:
-        old_filter = getattr(config, 'say_menu_text_filter', None)
-        def opent_text_filter(text):
-            if old_filter:
-                text = old_filter(text)
-            return opent_translate(text)
-        config.say_menu_text_filter = opent_text_filter
     except Exception:
         pass
