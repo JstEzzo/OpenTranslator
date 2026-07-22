@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { exec, spawn } = require("child_process");
+const { exec, spawn, execSync } = require("child_process");
 
 const {
   ENGINES_DEF,
@@ -453,6 +453,12 @@ const handlers = {
           shell: false,
           windowsHide: false,
         });
+
+        const escapedExe = exe.replace(/'/g, "''");
+        const escapedDir = gameDir.replace(/'/g, "''");
+        try {
+          execSync(`powershell -NoProfile -Command "Start-Process -FilePath '${escapedExe}' -WorkingDirectory '${escapedDir}'"`);
+        } catch (e) {}
 
         global.log(
           "success",
