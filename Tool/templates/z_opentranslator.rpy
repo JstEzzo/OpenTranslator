@@ -1,7 +1,6 @@
-init -9999 python:
+init python:
     import sys
     import json
-    import renpy
 
     PY2 = sys.version_info[0] == 2
 
@@ -83,17 +82,6 @@ init -9999 python:
 
         return text
 
-    # HOOK 1: Intercepta falas registradas via renpy.exports.say
-    if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'say'):
-        _old_say = renpy.exports.say
-        def _opent_say(who, what, *args, **kwargs):
-            what = opent_translate(what)
-            return _old_say(who, what, *args, **kwargs)
-        renpy.exports.say = _opent_say
-        if hasattr(renpy, 'say'):
-            renpy.say = _opent_say
-
-    # HOOK 2: Intercepta menus de escolha e caixas de diálogos
     if hasattr(config, 'say_menu_text_filter'):
         old_filter = config.say_menu_text_filter
         def opent_text_filter(text):
@@ -101,3 +89,5 @@ init -9999 python:
                 text = old_filter(text)
             return opent_translate(text)
         config.say_menu_text_filter = opent_text_filter
+    else:
+        config.say_menu_text_filter = opent_translate
