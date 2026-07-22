@@ -44,18 +44,13 @@ init python:
 
     _opent_cache = {}
 
-    def opent_debug_log(msg):
-        try:
-            print("[OpenTranslator-Debug] " + str(msg))
-        except Exception:
-            pass
-
     def opent_translate(text):
         if not text:
             return text
         clean = text.strip()
-        if len(clean) < 1:
-            return text
+        if len(clean) < 1 or clean.startswith("[") or clean.startswith("{"):
+            if not clean or len(clean) < 1:
+                return text
         if clean in _opent_cache:
             return _opent_cache[clean]
 
@@ -75,8 +70,7 @@ init python:
                     candidate = res["data"]["translated"]
                     if candidate and candidate.strip():
                         tr = candidate
-        except Exception as e:
-            opent_debug_log("Erro RPC: " + str(e))
+        except Exception:
             try:
                 raw_fb = fetch_fallback_fast(encode_utf8(clean))
                 if raw_fb:
@@ -84,8 +78,8 @@ init python:
                     candidate_fb = res_fb.get("translated") or res_fb.get("text")
                     if candidate_fb and candidate_fb.strip():
                         tr = candidate_fb
-            except Exception as e2:
-                opent_debug_log("Erro Fallback: " + str(e2))
+            except Exception:
+                pass
 
         if tr:
             _opent_cache[clean] = tr
@@ -98,14 +92,25 @@ init python:
                         st[None][clean] = tr
             except Exception:
                 pass
-            opent_debug_log("SUCESSO: '" + clean + "' -> '" + tr + "'")
             return tr
         else:
             _opent_cache[clean] = clean
-            opent_debug_log("SEM TRADUCAO: '" + clean + "'")
             return clean
 
-    # HOOK CENTRAL: Modifica a função de tradução de strings oficial do motor Ren'Py
+    # HOOK UNIVERSAL 1: Intercepta a interpolação de strings do Ren'Py (renpy.substitute)
+    try:
+        if hasattr(renpy, 'substitute'):
+            _old_substitute = renpy.substitute
+            def _opent_substitute(s, scope=None, force=False):
+                res = _old_substitute(s, scope, force)
+                if isinstance(res, (str, unicode if PY2 else str)):
+                    return opent_translate(res)
+                return res
+            renpy.substitute = _opent_substitute
+    except Exception:
+        pass
+
+    # HOOK UNIVERSAL 2: Intercepta o tradutor interno de strings (renpy.translation.translate_string)
     try:
         if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'translate_string'):
             _old_translate_string = renpy.translation.translate_string
@@ -118,18 +123,7 @@ init python:
     except Exception:
         pass
 
-    # HOOK AUXILIAR: Intercepta substituição de textos em telas
-    try:
-        old_replace_text = getattr(config, 'replace_text', None)
-        def opent_replace_text_hook(s):
-            if old_replace_text:
-                s = old_replace_text(s)
-            return opent_translate(s)
-        config.replace_text = opent_replace_text_hook
-    except Exception:
-        pass
-
-    # HOOK AUXILIAR: Intercepta menus de escolhas
+    # HOOK UNIVERSAL 3: Intercepta o filtro de menus e caixas de diálogos
     try:
         old_filter = getattr(config, 'say_menu_text_filter', None)
         def opent_text_filter(text):

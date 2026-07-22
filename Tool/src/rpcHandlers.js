@@ -421,6 +421,10 @@ const handlers = {
         try {
           const rpyTemplate = path.join(global.ROOT, "templates", "z_opentranslator.rpy");
           const targetRpy = path.join(gameSubDir, "z_opentranslator.rpy");
+          const targetRpyc = path.join(gameSubDir, "z_opentranslator.rpyc");
+          if (fs.existsSync(targetRpyc)) {
+            try { fs.unlinkSync(targetRpyc); } catch (e) {}
+          }
           if (fs.existsSync(rpyTemplate)) {
             fs.copyFileSync(rpyTemplate, targetRpy);
             global.log("success", "✨ [REN'PY AUTO-PATCH] Script de tradução universal ativado em: game/z_opentranslator.rpy");
