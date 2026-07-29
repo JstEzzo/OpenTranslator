@@ -790,6 +790,12 @@ translate ${targetLang} strings:
                                 return True
                             return False
 
+                        def _sanitize_val(val):
+                            if isinstance(val, float):
+                                if val != val or val == float('inf') or val == float('-inf'):
+                                    return 9999999
+                            return val
+
                         if isinstance(obj, dict):
                             for k, v in list(obj.items()):
                                 k_str = str(k)
@@ -798,7 +804,7 @@ translate ${targetLang} strings:
                                 path = (prefix + "." + k_str) if prefix else k_str
                                 if isinstance(v, (int, float, str, bool)):
                                     v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
-                                    res.append({'id': path, 'name': path, 'value': v, 'type': v_type})
+                                    res.append({'id': path, 'name': path, 'value': _sanitize_val(v), 'type': v_type})
                                 elif isinstance(v, (dict, list, tuple)) or hasattr(v, '__dict__'):
                                     res.extend(_scan_nested_vars(v, path, visited, depth + 1))
 
@@ -811,7 +817,7 @@ translate ${targetLang} strings:
                                 path = prefix + "[" + item_str + "]"
                                 if isinstance(item, (int, float, str, bool)):
                                     v_type = 'number' if isinstance(item, (int, float)) else ('boolean' if isinstance(item, bool) else 'string')
-                                    res.append({'id': path, 'name': path, 'value': item, 'type': v_type})
+                                    res.append({'id': path, 'name': path, 'value': _sanitize_val(item), 'type': v_type})
                                 elif isinstance(item, (dict, list, tuple)) or hasattr(item, '__dict__'):
                                     res.extend(_scan_nested_vars(item, path, visited, depth + 1))
 
@@ -823,7 +829,7 @@ translate ${targetLang} strings:
                                 path = (prefix + "." + k_str) if prefix else k_str
                                 if isinstance(v, (int, float, str, bool)):
                                     v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
-                                    res.append({'id': path, 'name': path, 'value': v, 'type': v_type})
+                                    res.append({'id': path, 'name': path, 'value': _sanitize_val(v), 'type': v_type})
                                 elif isinstance(v, (dict, list, tuple)) or hasattr(v, '__dict__'):
                                     res.extend(_scan_nested_vars(v, path, visited, depth + 1))
                     except Exception:

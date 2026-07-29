@@ -40,7 +40,11 @@ function startHookServer() {
         });
         req.on("end", () => {
           try {
-            const state = JSON.parse(body);
+            const safeBody = body
+              .replace(/:\s*Infinity\b/gi, ": 9999999")
+              .replace(/:\s*-Infinity\b/gi, ": -9999999")
+              .replace(/:\s*NaN\b/gi, ": 0");
+            const state = JSON.parse(safeBody);
             if (!global.lastGameState) {
               global.log("success", "CheatOverlay conectado! Menu de cheats ativo.");
             }
