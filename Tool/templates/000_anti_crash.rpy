@@ -1,5 +1,5 @@
 # OpenTranslator Ren'Py Anti-Crash & Cheat Handler
-init -990 python:
+init -999999 python:
     def _opent_bootstrap_runtime():
         try:
             import renpy
@@ -27,6 +27,31 @@ init -990 python:
 
             if not hasattr(renpy, 'register_persistent'):
                 renpy.register_persistent = lambda name, func=None, *args, **kwargs: None
+
+            # Patch renpy.translation to suppress duplicate string translation exceptions
+            try:
+                import renpy.translation
+                orig_add_string = getattr(renpy.translation, 'add_string_translation', None)
+                if orig_add_string:
+                    def _safe_add_string_translation(language, old, new, loc):
+                        try:
+                            orig_add_string(language, old, new, loc)
+                        except Exception:
+                            pass
+                    renpy.translation.add_string_translation = _safe_add_string_translation
+
+                if hasattr(renpy.translation, 'StringTranslates'):
+                    st_cls = renpy.translation.StringTranslates
+                    orig_st_add = getattr(st_cls, 'add', None)
+                    if orig_st_add:
+                        def _safe_st_add(self, old, new, loc):
+                            try:
+                                orig_st_add(self, old, new, loc)
+                            except Exception:
+                                pass
+                        st_cls.add = _safe_st_add
+            except Exception:
+                pass
 
             # 2. Resolve renpy.curry module-shadowing & attribute lookup bug
             if hasattr(renpy, 'curry'):
