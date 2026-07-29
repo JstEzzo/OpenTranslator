@@ -763,6 +763,68 @@ translate ${targetLang} strings:
                     except Exception:
                         pass
 
+                def _scan_nested_vars(obj, prefix="", visited=None, depth=0):
+                    if depth > 3:
+                        return []
+                    if visited is None:
+                        visited = set()
+                    obj_id = id(obj)
+                    if obj_id in visited:
+                        return []
+                    visited.add(obj_id)
+
+                    res = []
+                    try:
+                        if isinstance(obj, dict):
+                            for k, v in list(obj.items()):
+                                k_str = str(k)
+                                if k_str.startswith('_') or k_str in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                    continue
+                                path = (prefix + "." + k_str) if prefix else k_str
+                                if isinstance(v, (int, float, str, bool)):
+                                    v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
+                                    res.append({'id': path, 'name': path, 'value': v, 'type': v_type})
+                                elif isinstance(v, (dict, list, tuple)) or hasattr(v, '__dict__'):
+                                    res.extend(_scan_nested_vars(v, path, visited, depth + 1))
+
+                        elif isinstance(obj, (list, tuple)):
+                            for idx, item in enumerate(list(obj)):
+                                item_name = getattr(item, 'id', None) or getattr(item, 'name', None) or getattr(item, 'item_id', None)
+                                item_str = str(item_name) if item_name else str(idx)
+                                path = prefix + "[" + item_str + "]"
+                                if isinstance(item, (int, float, str, bool)):
+                                    v_type = 'number' if isinstance(item, (int, float)) else ('boolean' if isinstance(item, bool) else 'string')
+                                    res.append({'id': path, 'name': path, 'value': item, 'type': v_type})
+                                elif isinstance(item, (dict, list, tuple)) or hasattr(item, '__dict__'):
+                                    res.extend(_scan_nested_vars(item, path, visited, depth + 1))
+
+                        elif hasattr(obj, '__dict__'):
+                            for k, v in list(getattr(obj, '__dict__', {}).items()):
+                                k_str = str(k)
+                                if k_str.startswith('_') or k_str in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                    continue
+                                path = (prefix + "." + k_str) if prefix else str(k)
+                                if isinstance(v, (int, float, str, bool)):
+                                    v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
+                                    res.append({'id': path, 'name': path, 'value': v, 'type': v_type})
+                                elif isinstance(v, (dict, list, tuple)) or hasattr(v, '__dict__'):
+                                    res.extend(_scan_nested_vars(v, path, visited, depth + 1))
+                    except Exception:
+                        pass
+                    return res
+
+                def _set_path_val(st, path_str, val):
+                    try:
+                        exec(path_str + " = " + repr(val), st.__dict__)
+                    except Exception:
+                        pass
+                    try:
+                        setattr(st, path_str, val)
+                        st.__dict__[path_str] = val
+                    except Exception:
+                        pass
+                    _deep_mutate_var(st, path_str, val)
+
                 def _opent_renpy_cheat_loop():
                     import sys
                     if sys.version_info[0] >= 3:
@@ -782,11 +844,7 @@ translate ${targetLang} strings:
                             if st and _opent_frozen_vars:
                                 for f_key, f_val in list(_opent_frozen_vars.items()):
                                     try:
-                                        setattr(st, f_key, f_val)
-                                        st.__dict__[f_key] = f_val
-                                        try: exec(f_key + " = " + repr(f_val), st.__dict__)
-                                        except Exception: pass
-                                        _deep_mutate_var(st, f_key, f_val)
+                                        _set_path_val(st, f_key, f_val)
                                     except Exception:
                                         pass
 
@@ -799,11 +857,7 @@ translate ${targetLang} strings:
 
                             scanned_vars = []
                             if st:
-                                for k, v in list(st.__dict__.items()):
-                                    if not k.startswith('_') and k not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
-                                        if isinstance(v, (int, float, str, bool)):
-                                            v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
-                                            scanned_vars.append({'id': k, 'name': k, 'value': v, 'type': v_type})
+                                scanned_vars = _scan_nested_vars(st)
 
                             payload = {
                                 'engine': 'renpy',
@@ -843,14 +897,7 @@ translate ${targetLang} strings:
                                                     # Lock variable into Memory Freeze Map
                                                     _opent_frozen_vars[var_key] = var_val
 
-                                                    setattr(st, var_key, var_val)
-                                                    st.__dict__[var_key] = var_val
-                                                    try:
-                                                        exec(var_key + " = " + repr(var_val), st.__dict__)
-                                                    except Exception:
-                                                        pass
-
-                                                    _deep_mutate_var(st, var_key, var_val)
+                                                    _set_path_val(st, var_key, var_val)
 
                                                     # Safe UI Refresh (Cross-Thread)
                                                     try:
