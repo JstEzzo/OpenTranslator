@@ -2999,42 +2999,51 @@ select option {
       }
 
       if (state.variables && Array.isArray(state.variables)) {
-        renderRenpyVariables(state.variables);
+        latestRenpyVariables = state.variables;
       }
     } catch (e) {}
   }, 500);
 
+  let latestRenpyVariables = [];
+  let renpyCategoryFilter = "all";
+
   function renderRenpyVariables(variables) {
     const container = $("renpy-var-list") || $("cheat-vars-grid");
     if (!container) return;
-    if (!variables || variables.length === 0) {
-      container.innerHTML = '<div style="text-align: center; color: var(--txt3); font-size: 10px;">Clique em "Scan Variables" para ler renpy.store</div>';
+    const varsToRender = variables || latestRenpyVariables;
+    if (!varsToRender || varsToRender.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--txt3); font-size: 10px;">Clique em "Scan Variables" para ler a memória do renpy.store</div>';
       return;
     }
 
     const query = ($("cheatRenpySearch")?.value || "").toLowerCase();
     let html = "";
 
-    variables.forEach((v) => {
-      if (query && !v.name.toLowerCase().includes(query) && !String(v.id).toLowerCase().includes(query)) {
+    varsToRender.forEach((v) => {
+      const vName = String(v.name || v.id || "");
+      if (query && !vName.toLowerCase().includes(query)) {
         return;
       }
 
       const vType = v.type || typeof v.value;
-      const vKey = esc(v.name || v.id);
+      const vKey = esc(vName);
+
+      if (renpyCategoryFilter === "switches" && vType !== "boolean") return;
+      if (renpyCategoryFilter === "stats" && vType !== "number") return;
+      if (renpyCategoryFilter === "texts" && vType !== "string") return;
 
       if (vType === 'boolean' || typeof v.value === 'boolean') {
         const isChecked = Boolean(v.value) ? "checked" : "";
         html += `
           <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(bool)</span></span>
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(switch)</span></span>
             <input class="renpy-var-toggle" data-key="${vKey}" type="checkbox" ${isChecked}>
           </div>
         `;
       } else if (vType === 'number' || typeof v.value === 'number') {
         html += `
           <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(num = ${v.value})</span></span>
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(stat = ${v.value})</span></span>
             <div style="display:flex;gap:4px;align-items:center">
               <input class="renpy-var-input" data-key="${vKey}" type="number" style="width:80px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${v.value}">
               <button class="renpy-var-btn btn sm" data-key="${vKey}" data-type="number" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
@@ -3044,7 +3053,7 @@ select option {
       } else {
         html += `
           <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(str)</span></span>
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(text)</span></span>
             <div style="display:flex;gap:4px;align-items:center">
               <input class="renpy-var-input" data-key="${vKey}" type="text" style="width:110px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${esc(String(v.value))}">
               <button class="renpy-var-btn btn sm" data-key="${vKey}" data-type="string" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
@@ -3060,13 +3069,19 @@ select option {
     container.innerHTML = html;
   }
 
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "cheatRenpySearch") {
+      renderRenpyVariables(latestRenpyVariables);
+    }
+  });
+
   document.addEventListener("change", async (e) => {
     const target = e.target;
     if (target.classList.contains("renpy-var-toggle")) {
       const key = target.getAttribute("data-key");
       const val = target.checked;
       await rpc("setGameVar", { id: key, value: val });
-      log("success", `[Ren'Py Memory] Variable '${key}' set to ${val}`);
+      log("success", `[Ren'Py Memory] Switch '${key}' set to ${val}`);
     }
   });
 
@@ -3076,27 +3091,31 @@ select option {
     if (target.id === "cheatRenpyScanBtn") {
       const res = await rpc("scanGameVariables");
       if (res && res.ok && res.variables) {
-        renderRenpyVariables(res.variables);
+        latestRenpyVariables = res.variables;
+        renderRenpyVariables(latestRenpyVariables);
         log("success", `[Ren'Py Memory Scanner] Mapeadas ${res.variables.length} variáveis do renpy.store com sucesso!`);
       } else {
         log("warn", "Aguardando sincronização com a memória do Ren'Py...");
       }
     }
 
+    if (target.classList.contains("renpy-cat-btn")) {
+      qsa(".renpy-cat-btn").forEach(b => b.classList.remove("active"));
+      target.classList.add("active");
+      renpyCategoryFilter = target.getAttribute("data-cat") || "all";
+      renderRenpyVariables(latestRenpyVariables);
+    }
+
     if (target.classList.contains("renpy-var-btn")) {
       const key = target.getAttribute("data-key");
       const type = target.getAttribute("data-type");
-      const inputs = document.querySelectorAll(".renpy-var-input");
-      let val = null;
-      inputs.forEach((inp) => {
-        if (inp.getAttribute("data-key") === key) {
-          val = inp.value;
-        }
-      });
-      if (val !== null) {
-        const finalVal = type === 'number' ? Number(val) : String(val);
+      const inp = document.querySelector(`.renpy-var-input[data-key="${CSS.escape(key)}"]`);
+      if (inp) {
+        let rawVal = inp.value;
+        let finalVal = type === 'number' ? Number(rawVal) : String(rawVal);
+        if (type === 'number' && isNaN(finalVal)) finalVal = 0;
         await rpc("setGameVar", { id: key, value: finalVal });
-        log("success", `[Ren'Py Memory] Variable '${key}' set to ${finalVal}`);
+        log("success", `[Ren'Py Memory] Variable '${key}' (${type}) set to ${finalVal}`);
       }
     }
 

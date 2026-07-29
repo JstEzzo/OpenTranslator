@@ -742,6 +742,16 @@ translate ${targetLang} strings:
                                             if cmd_type in ('set_var', 'set_renpy_var') and st:
                                                 var_key = str(cmd.get('id') if cmd.get('id') is not None else cmd.get('key'))
                                                 var_val = cmd.get('valor') if 'valor' in cmd else cmd.get('value')
+                                                if hasattr(st, var_key):
+                                                    orig_val = getattr(st, var_key)
+                                                    if isinstance(orig_val, bool):
+                                                        var_val = bool(var_val)
+                                                    elif isinstance(orig_val, int) and not isinstance(orig_val, bool):
+                                                        try: var_val = int(var_val)
+                                                        except Exception: pass
+                                                    elif isinstance(orig_val, float):
+                                                        try: var_val = float(var_val)
+                                                        except Exception: pass
                                                 setattr(st, var_key, var_val)
                                             elif cmd.get('code'):
                                                 exec(cmd.get('code'), st.__dict__ if st else globals())
