@@ -3119,7 +3119,8 @@ select option {
     if (target.classList.contains("renpy-var-btn")) {
       const key = target.getAttribute("data-key");
       const type = target.getAttribute("data-type");
-      const inp = document.querySelector(`.renpy-var-input[data-key="${CSS.escape(key)}"]`);
+      const parentDiv = target.closest("div");
+      const inp = parentDiv ? parentDiv.querySelector(".renpy-var-input") : document.querySelector(`.renpy-var-input[data-key="${CSS.escape(key)}"]`);
       if (inp) {
         let rawVal = inp.value;
         let finalVal = type === 'number' ? Number(rawVal) : String(rawVal);

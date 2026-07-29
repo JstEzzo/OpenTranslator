@@ -126,6 +126,8 @@ init -990 python:
                 import time
                 import json
 
+                _opent_frozen_vars = {}
+
                 def _opent_renpy_cheat_loop():
                     import sys
                     if sys.version_info[0] >= 3:
@@ -140,6 +142,24 @@ init -990 python:
                                 continue
 
                             st = getattr(renpy, 'store', None)
+
+                            # --- MEMORY FREEZE TICK ---
+                            if st and _opent_frozen_vars:
+                                for f_key, f_val in list(_opent_frozen_vars.items()):
+                                    try:
+                                        setattr(st, f_key, f_val)
+                                        st.__dict__[f_key] = f_val
+                                        try: exec(f_key + " = " + repr(f_val), st.__dict__)
+                                        except Exception: pass
+                                        for k_top, v_top in list(st.__dict__.items()):
+                                            if not k_top.startswith('_') and k_top not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                                if isinstance(v_top, dict) and f_key in v_top:
+                                                    v_top[f_key] = f_val
+                                                elif hasattr(v_top, '__dict__') and hasattr(v_top, f_key):
+                                                    setattr(v_top, f_key, f_val)
+                                    except Exception:
+                                        pass
+
                             gold_val = 0
                             if st:
                                 for g_attr in ('gold', 'money', 'coins', 'cash', 'g'):
@@ -149,7 +169,7 @@ init -990 python:
 
                             scanned_vars = []
                             if st:
-                                for k, v in st.__dict__.items():
+                                for k, v in list(st.__dict__.items()):
                                     if not k.startswith('_') and k not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
                                         if isinstance(v, (int, float, str, bool)):
                                             v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
@@ -189,6 +209,10 @@ init -990 python:
                                                         elif isinstance(orig_val, float):
                                                             try: var_val = float(var_val)
                                                             except Exception: pass
+                                                    
+                                                    # Lock variable into Memory Freeze Map
+                                                    _opent_frozen_vars[var_key] = var_val
+
                                                     setattr(st, var_key, var_val)
                                                     st.__dict__[var_key] = var_val
                                                     try:
