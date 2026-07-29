@@ -189,6 +189,11 @@ init -990 python:
                                                         try: var_val = float(var_val)
                                                         except Exception: pass
                                                 setattr(st, var_key, var_val)
+                                                try:
+                                                    if hasattr(renpy, 'restart_interaction'):
+                                                        renpy.restart_interaction()
+                                                except Exception:
+                                                    pass
                                             elif cmd.get('code'):
                                                 exec(cmd.get('code'), st.__dict__ if st else globals())
                                         except Exception:

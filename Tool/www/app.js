@@ -1688,30 +1688,36 @@ select option {
         c.style.display = t.includes(sq) ? "" : "none";
       });
     }
-    qsa(".glPlay").forEach((b) => {
-      b.onclick = function (e) {
-        e.stopPropagation();
-        const c = this.closest(".gc");
-        if (c) launchGame(c.dataset.key);
-      };
-    });
-    qsa(".glEdit").forEach((b) => {
-      b.onclick = function (e) {
-        e.stopPropagation();
-        const c = this.closest(".gc");
-        if (c) openEdit(c.dataset.key);
-      };
-    });
-    qsa(".glDel").forEach((b) => {
-      b.onclick = async function (e) {
-        e.stopPropagation();
-        const c = this.closest(".gc");
-        if (c && (await customConfirm(t("deleteConfirm")))) {
-          await delGame(c.dataset.key);
-          renderGames();
+    const glList = $("gl-list");
+    if (glList && !glList.dataset.bound) {
+      glList.dataset.bound = "true";
+      glList.addEventListener("click", async function (e) {
+        const playBtn = e.target.closest(".glPlay");
+        if (playBtn) {
+          e.stopPropagation();
+          const c = playBtn.closest(".gc");
+          if (c && c.dataset.key) launchGame(c.dataset.key);
+          return;
         }
-      };
-    });
+        const editBtn = e.target.closest(".glEdit");
+        if (editBtn) {
+          e.stopPropagation();
+          const c = editBtn.closest(".gc");
+          if (c && c.dataset.key) openEdit(c.dataset.key);
+          return;
+        }
+        const delBtn = e.target.closest(".glDel");
+        if (delBtn) {
+          e.stopPropagation();
+          const c = delBtn.closest(".gc");
+          if (c && c.dataset.key && (await customConfirm(t("deleteConfirm")))) {
+            await delGame(c.dataset.key);
+            renderGames();
+          }
+          return;
+        }
+      });
+    }
     updSB();
   }
 
