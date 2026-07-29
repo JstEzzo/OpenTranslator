@@ -28,9 +28,23 @@ init -990 python:
             if not hasattr(renpy, 'register_persistent'):
                 renpy.register_persistent = lambda name, func=None, *args, **kwargs: None
 
-            # 2. Resolve renpy.curry module-shadowing bug
-            if hasattr(renpy, 'curry') and isinstance(renpy.curry, types.ModuleType):
-                renpy.curry = getattr(renpy.curry, 'curry', getattr(renpy.curry, 'Curry', renpy.curry))
+            # 2. Resolve renpy.curry module-shadowing & attribute lookup bug
+            if hasattr(renpy, 'curry'):
+                curry_target = None
+                if isinstance(renpy.curry, types.ModuleType):
+                    curry_target = getattr(renpy.curry, 'curry', getattr(renpy.curry, 'Curry', renpy.curry))
+                elif callable(renpy.curry):
+                    curry_target = renpy.curry
+
+                if curry_target:
+                    class _CurryWrapper(object):
+                        def __init__(self, target):
+                            self._target = target
+                            self.curry = target
+                        def __call__(self, *args, **kwargs):
+                            return self._target(*args, **kwargs)
+
+                    renpy.curry = _CurryWrapper(curry_target)
 
             # 3. Polyfill GL2 shader registration
             if not hasattr(renpy, 'register_shader'):
