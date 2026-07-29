@@ -719,13 +719,29 @@ translate ${targetLang} strings:
                     visited.add(obj_id)
 
                     try:
+                        def _is_heavy(k_name, val):
+                            if isinstance(val, (int, float, str, bool)):
+                                return False
+                            k_s = str(k_name)
+                            if k_s.startswith('_'):
+                                return True
+                            if k_s in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme', 'persistent', 'python', 'sys', 'os', 'main'):
+                                return True
+                            if callable(val) or isinstance(val, type):
+                                return True
+                            mod = getattr(type(val), '__module__', '') or ''
+                            if mod.startswith(('renpy.', 'pygame.', 'sys', 'threading')):
+                                return True
+                            return False
+
                         if isinstance(obj, dict):
                             if var_key in obj:
                                 try: obj[var_key] = var_val
                                 except Exception: pass
-                            for sub_val in list(obj.values()):
-                                if isinstance(sub_val, (dict, list, tuple)) or hasattr(sub_val, '__dict__'):
-                                    _deep_mutate_var(sub_val, var_key, var_val, visited, depth + 1)
+                            for sub_k, sub_v in list(obj.items()):
+                                if not _is_heavy(sub_k, sub_v):
+                                    if isinstance(sub_v, (dict, list, tuple)) or hasattr(sub_v, '__dict__'):
+                                        _deep_mutate_var(sub_v, var_key, var_val, visited, depth + 1)
 
                         elif isinstance(obj, (list, tuple)):
                             for item in list(obj):
@@ -735,7 +751,7 @@ translate ${targetLang} strings:
                                         except Exception: pass
                                     item_id_val = str(getattr(item, 'id', '') or getattr(item, 'name', '') or getattr(item, 'item_id', '')).lower()
                                     if item_id_val and (item_id_val in var_key.lower() or var_key.lower() in item_id_val):
-                                        for attr_name in ('durability', 'dur', 'count', 'qty', 'amount', 'val', 'value'):
+                                        for attr_name in ('durability', 'dur', 'count', 'qty', 'amount', 'val', 'value', 'level', 'hp', 'mp'):
                                             if hasattr(item, attr_name):
                                                 try: setattr(item, attr_name, var_val)
                                                 except Exception: pass
@@ -745,7 +761,7 @@ translate ${targetLang} strings:
                                         except Exception: pass
                                     item_id_val = str(item.get('id') or item.get('name') or item.get('item_id') or '').lower()
                                     if item_id_val and (item_id_val in var_key.lower() or var_key.lower() in item_id_val):
-                                        for attr_name in ('durability', 'dur', 'count', 'qty', 'amount', 'val', 'value'):
+                                        for attr_name in ('durability', 'dur', 'count', 'qty', 'amount', 'val', 'value', 'level', 'hp', 'mp'):
                                             if attr_name in item:
                                                 try: item[attr_name] = var_val
                                                 except Exception: pass
@@ -757,7 +773,7 @@ translate ${targetLang} strings:
                                 try: setattr(obj, var_key, var_val)
                                 except Exception: pass
                             for k_attr, v_attr in list(getattr(obj, '__dict__', {}).items()):
-                                if not k_attr.startswith('_') and k_attr not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                if not _is_heavy(k_attr, v_attr):
                                     if isinstance(v_attr, (dict, list, tuple)) or hasattr(v_attr, '__dict__'):
                                         _deep_mutate_var(v_attr, var_key, var_val, visited, depth + 1)
                     except Exception:
