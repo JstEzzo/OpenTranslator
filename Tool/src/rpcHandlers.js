@@ -391,6 +391,8 @@ const handlers = {
       return { ok: false, error: "A game is already running" };
     }
 
+    global.serverLogs = [];
+    global.logSeq = 0;
     global.isLaunchingGame = true;
     global.launchTime = Date.now();
     try {
@@ -785,13 +787,23 @@ translate ${targetLang} strings:
                                                     except Exception:
                                                         pass
 
+                                                    # Safe UI Refresh (Cross-Thread)
                                                     try:
-                                                        if hasattr(renpy, 'restart_interaction'):
-                                                            renpy.restart_interaction()
-                                                        elif hasattr(getattr(renpy, 'exports', None), 'restart_interaction'):
-                                                            renpy.exports.restart_interaction()
-                                                        elif hasattr(getattr(getattr(renpy, 'game', None), 'interface', None), 'restart_interaction'):
-                                                            renpy.game.interface.restart_interaction()
+                                                        def _force_ui_update():
+                                                            try:
+                                                                if hasattr(renpy, 'restart_interaction'):
+                                                                    renpy.restart_interaction()
+                                                                elif hasattr(getattr(renpy, 'exports', None), 'restart_interaction'):
+                                                                    renpy.exports.restart_interaction()
+                                                                elif hasattr(getattr(getattr(renpy, 'game', None), 'interface', None), 'restart_interaction'):
+                                                                    renpy.game.interface.restart_interaction()
+                                                            except Exception:
+                                                                pass
+
+                                                        if hasattr(renpy, 'invoke_in_main_thread'):
+                                                            renpy.invoke_in_main_thread(_force_ui_update)
+                                                        else:
+                                                            _force_ui_update()
                                                     except Exception:
                                                         pass
                                                 except Exception as ex_set:

@@ -688,6 +688,8 @@
     }
     launchMutex = true;
     S.isLaunching = true;
+    lastLogId = 0;
+    if ($("lb")) $("lb").innerHTML = "";
     const ld = $("gl-loading"),
       lm = $("gl-loading-msg");
     if (ld) ld.style.display = "block";
