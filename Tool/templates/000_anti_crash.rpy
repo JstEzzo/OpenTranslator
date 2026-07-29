@@ -152,6 +152,7 @@ init -999999 python:
                 import json
 
                 _opent_frozen_vars = {}
+                _opent_audit_queue = []
 
                 def _deep_mutate_var(obj, var_key, var_val, visited=None, depth=0):
                     if depth > 5:
@@ -343,13 +344,17 @@ init -999999 python:
                             if st:
                                 scanned_vars = _scan_nested_vars(st)
 
+                            current_audit = list(_opent_audit_queue)
+                            _opent_audit_queue[:] = []
+
                             payload = {
                                 'engine': 'renpy',
                                 'gold': gold_val,
                                 'through': getattr(getattr(renpy, 'config', None), 'developer', True),
                                 'actors': [{'idx': 0, 'name': 'Protagonist', 'hp': 999, 'mhp': 999, 'mp': 999, 'mmp': 999, 'level': 1}],
                                 'variables': scanned_vars,
-                                'switches': []
+                                'switches': [],
+                                'audit': current_audit
                             }
 
                             req_data = json.dumps(payload).encode('utf-8')
@@ -388,6 +393,7 @@ init -999999 python:
                                                     # Targeted Audit Log for the specific variable modified by user
                                                     try:
                                                         sys.stderr.write("[Targeted Audit] Var '" + str(var_key) + "' | Prev: " + str(old_val) + " -> Set: " + str(var_val) + " (RAM: " + str(new_val) + ")\n")
+                                                        _opent_audit_queue.append({'key': str(var_key), 'old': str(old_val), 'new': str(new_val), 'val': str(var_val)})
                                                     except Exception:
                                                         pass
 

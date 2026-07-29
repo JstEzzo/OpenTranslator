@@ -48,6 +48,11 @@ function startHookServer() {
             if (!global.lastGameState) {
               global.log("success", "CheatOverlay conectado! Menu de cheats ativo.");
             }
+            if (state && Array.isArray(state.audit)) {
+              state.audit.forEach(item => {
+                global.log("success", `[RAM Audit] 🎯 Item '${item.key}': RAM value mutated from ${item.old} to ${item.new} (Frozen at ${item.val})`);
+              });
+            }
             global.lastGameState = state;
             global.lastCheatPollTime = Date.now();
             const commandsToSend = global.pendingCheatCommands.splice(
