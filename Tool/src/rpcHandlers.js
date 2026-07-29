@@ -1348,6 +1348,7 @@ init 999 python:
 
           // Limpeza final de bytecodes .rpyc para forçar o Ren'Py a compilar os .rpy traduzidos no boot
           cleanRpyc(tlTargetDir);
+          cleanRpyc(gameSubDir);
           cleanRpyc(path.join(gameSubDir, "cache"));
 
           global.log("success", "[Pré-Patch] ✨ Tradução Ren'Py finalizada com sucesso!");
