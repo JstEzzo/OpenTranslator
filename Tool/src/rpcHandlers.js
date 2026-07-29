@@ -850,7 +850,7 @@ translate ${targetLang} strings:
                                                     except Exception:
                                                         pass
 
-                                                     _deep_mutate_var(st, var_key, var_val)
+                                                    _deep_mutate_var(st, var_key, var_val)
 
                                                     # Safe UI Refresh (Cross-Thread)
                                                     try:
