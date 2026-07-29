@@ -785,8 +785,15 @@ translate ${targetLang} strings:
                                                     except Exception:
                                                         pass
 
-                                                    if hasattr(renpy, 'restart_interaction'):
-                                                        renpy.restart_interaction()
+                                                    try:
+                                                        if hasattr(renpy, 'restart_interaction'):
+                                                            renpy.restart_interaction()
+                                                        elif hasattr(getattr(renpy, 'exports', None), 'restart_interaction'):
+                                                            renpy.exports.restart_interaction()
+                                                        elif hasattr(getattr(getattr(renpy, 'game', None), 'interface', None), 'restart_interaction'):
+                                                            renpy.game.interface.restart_interaction()
+                                                    except Exception:
+                                                        pass
                                                 except Exception as ex_set:
                                                     sys.stderr.write("[OpenTranslator Cheat Set Error] " + str(ex_set) + "\\n")
                                             elif cmd.get('code'):
