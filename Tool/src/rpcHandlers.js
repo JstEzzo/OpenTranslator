@@ -756,22 +756,27 @@ translate ${targetLang} strings:
                                             if cmd_type in ('set_var', 'set_renpy_var') and st:
                                                 var_key = str(cmd.get('id') if cmd.get('id') is not None else cmd.get('key'))
                                                 var_val = cmd.get('valor') if 'valor' in cmd else cmd.get('value')
-                                                if hasattr(st, var_key):
-                                                    orig_val = getattr(st, var_key)
-                                                    if isinstance(orig_val, bool):
-                                                        var_val = bool(var_val)
-                                                    elif isinstance(orig_val, int) and not isinstance(orig_val, bool):
-                                                        try: var_val = int(var_val)
-                                                        except Exception: pass
-                                                    elif isinstance(orig_val, float):
-                                                        try: var_val = float(var_val)
-                                                        except Exception: pass
-                                                setattr(st, var_key, var_val)
                                                 try:
+                                                    if hasattr(st, var_key):
+                                                        orig_val = getattr(st, var_key)
+                                                        if isinstance(orig_val, bool):
+                                                            var_val = bool(str(var_val).lower() in ('true', '1', 'yes'))
+                                                        elif isinstance(orig_val, int) and not isinstance(orig_val, bool):
+                                                            try: var_val = int(var_val)
+                                                            except Exception: pass
+                                                        elif isinstance(orig_val, float):
+                                                            try: var_val = float(var_val)
+                                                            except Exception: pass
+                                                    setattr(st, var_key, var_val)
+                                                    st.__dict__[var_key] = var_val
+                                                    try:
+                                                        exec(var_key + " = " + repr(var_val), st.__dict__)
+                                                    except Exception:
+                                                        pass
                                                     if hasattr(renpy, 'restart_interaction'):
                                                         renpy.restart_interaction()
-                                                except Exception:
-                                                    pass
+                                                except Exception as ex_set:
+                                                    sys.stderr.write("[OpenTranslator Cheat Set Error] " + str(ex_set) + "\n")
                                             elif cmd.get('code'):
                                                 exec(cmd.get('code'), st.__dict__ if st else globals())
                                         except Exception:

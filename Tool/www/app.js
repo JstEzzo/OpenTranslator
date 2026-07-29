@@ -3087,6 +3087,8 @@ select option {
       const key = target.getAttribute("data-key");
       const val = target.checked;
       await rpc("setGameVar", { id: key, value: val });
+      const item = latestRenpyVariables.find(v => String(v.name || v.id) === key);
+      if (item) item.value = val;
       log("success", `[Ren'Py Memory] Switch '${key}' set to ${val}`);
     }
   });
@@ -3120,8 +3122,18 @@ select option {
         let rawVal = inp.value;
         let finalVal = type === 'number' ? Number(rawVal) : String(rawVal);
         if (type === 'number' && isNaN(finalVal)) finalVal = 0;
-        await rpc("setGameVar", { id: key, value: finalVal });
-        log("success", `[Ren'Py Memory] Variable '${key}' (${type}) set to ${finalVal}`);
+
+        const res = await rpc("setGameVar", { id: key, value: finalVal });
+        
+        // Update local memory state & re-render item immediately
+        const item = latestRenpyVariables.find(v => String(v.name || v.id) === key);
+        if (item) {
+          item.value = finalVal;
+        }
+        renderRenpyVariables(latestRenpyVariables);
+
+        showToast(`[Ren'Py] Variable '${key}' set to ${finalVal}`, "success");
+        log("success", `[Ren'Py Memory] Variable '${key}' (${type}) defined as ${finalVal}`);
       }
     }
 
