@@ -838,7 +838,7 @@ translate ${targetLang} strings:
 
                 def _set_path_val(st, path_str, val):
                     try:
-                        exec(path_str + " = " + repr(val), st.__dict__)
+                        exec(path_str + " = " + repr(val), globals(), st.__dict__)
                     except Exception:
                         pass
                     try:

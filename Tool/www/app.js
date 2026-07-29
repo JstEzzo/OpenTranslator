@@ -3008,10 +3008,18 @@ select option {
 
       if (state.variables && Array.isArray(state.variables)) {
         latestRenpyVariables = state.variables;
+        // Re-apply user frozen overrides
+        for (const [fKey, fVal] of Object.entries(pendingUserFrozenVars)) {
+          const vItem = latestRenpyVariables.find(v => String(v.name || v.id) === fKey);
+          if (vItem) {
+            vItem.value = fVal;
+          }
+        }
       }
     } catch (e) {}
   }, 500);
 
+  const pendingUserFrozenVars = {};
   let latestRenpyVariables = [];
   let renpyCategoryFilter = "all";
 
@@ -3126,6 +3134,7 @@ select option {
         let finalVal = type === 'number' ? Number(rawVal) : String(rawVal);
         if (type === 'number' && isNaN(finalVal)) finalVal = 0;
 
+        pendingUserFrozenVars[key] = finalVal;
         const res = await rpc("setGameVar", { id: key, value: finalVal });
         
         // Update local memory state & re-render item immediately
