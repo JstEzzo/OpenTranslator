@@ -195,6 +195,18 @@ init -990 python:
                                                         exec(var_key + " = " + repr(var_val), st.__dict__)
                                                     except Exception:
                                                         pass
+                                                    
+                                                    # Walk nested objects & dicts in store to ensure all occurrences update
+                                                    try:
+                                                        for k_top, v_top in list(st.__dict__.items()):
+                                                            if not k_top.startswith('_') and k_top not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                                                if isinstance(v_top, dict) and var_key in v_top:
+                                                                    v_top[var_key] = var_val
+                                                                elif hasattr(v_top, '__dict__') and hasattr(v_top, var_key):
+                                                                    setattr(v_top, var_key, var_val)
+                                                    except Exception:
+                                                        pass
+
                                                     if hasattr(renpy, 'restart_interaction'):
                                                         renpy.restart_interaction()
                                                 except Exception as ex_set:
