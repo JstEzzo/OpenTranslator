@@ -776,6 +776,8 @@ translate ${targetLang} strings:
                     res = []
                     try:
                         def _is_heavy(k_name, val):
+                            if isinstance(val, (int, float, str, bool)):
+                                return False
                             k_s = str(k_name)
                             if k_s.startswith('_'):
                                 return True
@@ -784,7 +786,7 @@ translate ${targetLang} strings:
                             if callable(val) or isinstance(val, type):
                                 return True
                             mod = getattr(type(val), '__module__', '') or ''
-                            if mod.startswith(('renpy.', 'pygame.', 'sys', 'builtins', 'threading')):
+                            if mod.startswith(('renpy.', 'pygame.', 'sys', 'threading')):
                                 return True
                             return False
 
