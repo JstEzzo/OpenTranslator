@@ -3144,7 +3144,8 @@ select option {
         }
         renderRenpyVariables(latestRenpyVariables);
 
-        showToast(`[Ren'Py] Variable '${key}' set to ${finalVal}`, "success");
+        showToast(`[Targeted Audit] '${key}' -> ${finalVal}`, "success");
+        log("info", `🔍 [Targeted Audit] Monitoring '${key}' (${type}) -> Value requested: ${finalVal}`);
         log("success", `[Ren'Py Memory] Variable '${key}' (${type}) defined as ${finalVal}`);
       }
     }

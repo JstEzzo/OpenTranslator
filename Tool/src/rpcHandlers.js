@@ -961,7 +961,15 @@ translate ${targetLang} strings:
                                                     # Lock variable into Memory Freeze Map
                                                     _opent_frozen_vars[var_key] = var_val
 
+                                                    old_val = getattr(st, var_key, None)
                                                     _set_path_val(st, var_key, var_val)
+                                                    new_val = getattr(st, var_key, None)
+
+                                                    # Targeted Audit Log for the specific variable modified by user
+                                                    try:
+                                                        sys.stderr.write("[Targeted Audit] Var '" + str(var_key) + "' | Prev: " + str(old_val) + " -> Set: " + str(var_val) + " (RAM: " + str(new_val) + ")\\n")
+                                                    except Exception:
+                                                        pass
 
                                                     # Safe UI Refresh (Cross-Thread)
                                                     try:
