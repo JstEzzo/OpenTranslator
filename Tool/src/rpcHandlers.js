@@ -292,8 +292,22 @@ const handlers = {
         .filter((f) => f.endsWith(".gljson"))
         .forEach((k) => {
           try {
-            const d = JSON.parse(fs.readFileSync(path.join(global.GL_DIR, k), "utf8"));
-            games[k.replace(".gljson", "")] = d;
+            const filePath = path.join(global.GL_DIR, k);
+            const d = JSON.parse(fs.readFileSync(filePath, "utf8"));
+            const key = k.replace(".gljson", "");
+
+            // Auto-heal/re-verify engine for existing games in library
+            if (d && d.constArgs && d.constArgs.gameExe && fs.existsSync(d.constArgs.gameExe)) {
+              const currentEng = detectEngine(d.constArgs.gameExe);
+              if (currentEng && currentEng !== d.constArgs.engine) {
+                d.constArgs.engine = currentEng;
+                try {
+                  fs.writeFileSync(filePath, JSON.stringify(d, null, 2), "utf8");
+                } catch (e) {}
+              }
+            }
+
+            games[key] = d;
           } catch (e) {}
         });
     } catch (e) {}
@@ -302,6 +316,12 @@ const handlers = {
   saveGame({ key, data }) {
     try {
       if (!fs.existsSync(global.GL_DIR)) fs.mkdirSync(global.GL_DIR, { recursive: true });
+      if (data && data.constArgs && data.constArgs.gameExe && fs.existsSync(data.constArgs.gameExe)) {
+        const reDetect = detectEngine(data.constArgs.gameExe);
+        if (reDetect && reDetect !== data.constArgs.engine) {
+          data.constArgs.engine = reDetect;
+        }
+      }
       fs.writeFileSync(
         path.join(global.GL_DIR, key + ".gljson"),
         JSON.stringify(data, null, 2)
@@ -320,7 +340,13 @@ const handlers = {
       return false;
     }
   },
-  detectEngine({ exePath, exeDir }) {
+  detectEngine(params) {
+    let exePath = params;
+    let exeDir = undefined;
+    if (params && typeof params === "object") {
+      exePath = params.exePath || params.targetFile || params.path || params;
+      exeDir = params.exeDir || params.dir;
+    }
     return detectEngine(exePath, exeDir);
   },
   async translate_realtime({ text, engine }) {
@@ -328,6 +354,8 @@ const handlers = {
     const clean = text.trim();
     if (!clean) return { ok: false, error: "Texto vazio" };
     
+    global.lastRpcTimestamp = Date.now();
+
     const cfg = handlers.loadCfg();
     const sl = cfg.sl || "auto";
     const tl = cfg.tl || "pt";
@@ -338,6 +366,19 @@ const handlers = {
       "success",
       `💬 [RPC REALTIME] "${clean}" ➔ 🌐 "${translated}" (${sl.toUpperCase()} ➔ ${tl.toUpperCase()} | Motor: ${eng.toUpperCase()})`
     );
+
+    try {
+      if (global.activeGameDir) {
+        const jsonPath = path.join(global.activeGameDir, "game", "opent_translated.json");
+        let dict = {};
+        if (fs.existsSync(jsonPath)) {
+          try { dict = JSON.parse(fs.readFileSync(jsonPath, 'utf8')); } catch (e) {}
+        }
+        dict[clean] = translated;
+        fs.writeFileSync(jsonPath, JSON.stringify(dict, null, 2), 'utf8');
+      }
+    } catch (e) {}
+
     return { ok: true, data: { translated, text: translated } };
   },
   async launchGame({ key }) {
@@ -351,6 +392,7 @@ const handlers = {
     }
 
     global.isLaunchingGame = true;
+    global.launchTime = Date.now();
     try {
       if (global.restoreTimeout) {
         clearTimeout(global.restoreTimeout);
@@ -369,19 +411,44 @@ const handlers = {
 
       if (!exe || !fs.existsSync(exe)) {
         global.log("warn", `Executable "${exe}" não existe diretamente. Procurando auto-resolução no disco...`);
-        const searchName = exe ? path.basename(exe) : (title + ".exe");
-        const found = await findGameOnDisk(searchName);
-        if (found && found.length > 0) {
-          exe = found[0].exePath;
-          eng = found[0].engine || detectEngine(exe);
+        let resolvedExe = null;
+
+        const possibleDir = exe ? path.dirname(exe) : null;
+        if (possibleDir && fs.existsSync(possibleDir) && fs.statSync(possibleDir).isDirectory()) {
+          try {
+            const files = fs.readdirSync(possibleDir);
+            const exes = files.filter(f => f.toLowerCase().endsWith(".exe") && !f.toLowerCase().includes("unitycrashhandler"));
+            if (exes.length > 0) {
+              const pref = exes.find(f => f.toLowerCase() === "game.exe" || f.toLowerCase() === "nw.exe" || f.toLowerCase().includes(title.toLowerCase().split(" ")[0])) || exes[0];
+              resolvedExe = path.join(possibleDir, pref);
+            }
+          } catch (e) {}
+        }
+
+        if (!resolvedExe) {
+          const searchName = exe ? path.basename(exe) : (title + ".exe");
+          const found = await findGameOnDisk(searchName);
+          if (found && found.length > 0) {
+            resolvedExe = found[0].exePath;
+          }
+        }
+
+        if (resolvedExe && fs.existsSync(resolvedExe)) {
+          exe = resolvedExe;
+          eng = detectEngine(exe);
           g.constArgs = { ...g.constArgs, gameExe: exe, engine: eng };
           handlers.saveGame({ key, data: g });
           global.log("info", `Auto-resolvido executável do jogo "${title}": ${exe} (Engine: ${eng})`);
         }
       }
 
-      if (!eng && exe && fs.existsSync(exe)) {
-        eng = detectEngine(exe);
+      if (exe && fs.existsSync(exe)) {
+        const detected = detectEngine(exe);
+        if (detected && (detected !== eng || !eng)) {
+          eng = detected;
+          g.constArgs = { ...g.constArgs, engine: eng };
+          try { handlers.saveGame({ key, data: g }); } catch (e) {}
+        }
       }
       const gameDir = exe ? path.dirname(exe) : "";
       const cfg = handlers.loadCfg();
@@ -414,8 +481,9 @@ const handlers = {
       bakDir = await executeTranslationPipeline(gameDir, cfg, title);
     }
 
-    // AUTO-PATCH NATIVO PARA REN'PY
+    // AUTO-PATCH NATIVO PARA REN'PY (SUPORTE MULTI-IDIOMA)
     if (eng === "python") {
+      const targetLang = (cfg && (cfg.tl || cfg.targetLang || cfg.target_language || cfg.language || cfg.toLang)) || "pt";
       const gameSubDir = path.join(gameDir, "game");
       if (fs.existsSync(gameSubDir)) {
         try {
@@ -423,128 +491,650 @@ const handlers = {
           if (fs.existsSync(cacheDir)) {
             try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) {}
           }
-          // Cria a estrutura nativa de tradução do Ren'Py em game/tl/pt/strings.rpy (Baseado no renpy-translator)
-          const tlPtDir = path.join(gameSubDir, "tl", "pt");
-          if (!fs.existsSync(tlPtDir)) {
-            try { fs.mkdirSync(tlPtDir, { recursive: true }); } catch (e) {}
+          // Cria a estrutura nativa de tradução do Ren'Py em game/tl/<targetLang>/
+          const tlTargetDir = path.join(gameSubDir, "tl", targetLang);
+          if (!fs.existsSync(tlTargetDir)) {
+            try { fs.mkdirSync(tlTargetDir, { recursive: true }); } catch (e) {}
           }
-          const tlStringsFile = path.join(tlPtDir, "strings.rpy");
+          const tlStringsFile = path.join(tlTargetDir, "strings.rpy");
           if (!fs.existsSync(tlStringsFile)) {
             const nativeDict = `
 # Ren'Py Native Translation File (OpenTranslator Auto-Generated)
-translate pt strings:
+translate ${targetLang} strings:
     old "Start Game"
-    new "Iniciar Jogo"
-
-    old "Start"
-    new "Iniciar"
-
-    old "Load Game"
-    new "Carregar Jogo"
-
-    old "Load"
-    new "Carregar"
-
-    old "Preferences"
-    new "Preferências"
-
-    old "Prefs"
-    new "Preferências"
-
-    old "Options"
-    new "Opções"
-
-    old "Help"
-    new "Ajuda"
-
-    old "About"
-    new "Sobre"
-
-    old "Bonus"
-    new "Bônus"
-
-    old "Quit Game"
-    new "Sair do Jogo"
-
-    old "Quit"
-    new "Sair"
-
-    old "History"
-    new "Histórico"
-
-    old "Save"
-    new "Salvar"
-
-    old "Save Game"
-    new "Salvar Jogo"
-
-    old "Back"
-    new "Voltar"
-
-    old "Skip"
-    new "Pular"
-
-    old "Auto"
-    new "Automático"
-
-    old "Q.Save"
-    new "Salvar Rápido"
-
-    old "Q.Load"
-    new "Carregar Rápido"
-
-    old "Main Menu"
-    new "Menu Principal"
-
-    old "Return"
-    new "Retornar"
-
-    old "Display"
-    new "Exibição"
-
-    old "Window"
-    new "Janela"
-
-    old "Fullscreen"
-    new "Tela Cheia"
-
-    old "Unseen Text"
-    new "Texto Não Visto"
-
-    old "After Choices"
-    new "Após Escolhas"
-
-    old "Transitions"
-    new "Transições"
-
-    old "Sound Volume"
-    new "Volume do Som"
-
-    old "Music Volume"
-    new "Volume da Música"
-
-    old "Voice Volume"
-    new "Volume da Voz"
-
-    old "Text Speed"
-    new "Velocidade do Texto"
-
-    old "Auto-Forward Time"
-    new "Tempo do Auto-Avanço"
+    new "Start Game"
 `;
             try { fs.writeFileSync(tlStringsFile, nativeDict.trim(), 'utf8'); } catch (e) {}
           }
 
-          const rpyTemplate = path.join(global.ROOT, "templates", "z_opentranslator.rpy");
-          const targetRpy = path.join(gameSubDir, "z_opentranslator.rpy");
-          const targetRpyc = path.join(gameSubDir, "z_opentranslator.rpyc");
-          if (fs.existsSync(targetRpyc)) {
-            try { fs.unlinkSync(targetRpyc); } catch (e) {}
+          // Helper function to purge stale .rpy/.rpyc files from target directory
+          const cleanTlPt = (targetDir) => {
+            if (!targetDir || !fs.existsSync(targetDir)) return;
+            try {
+              const entries = fs.readdirSync(targetDir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(targetDir, entry.name);
+                if (entry.isDirectory()) {
+                  try { fs.rmSync(fullPath, { recursive: true, force: true }); } catch (e) {}
+                } else if (entry.isFile()) {
+                  const lower = entry.name.toLowerCase();
+                  if ((lower.endsWith(".rpy") && lower !== "font.rpy") || lower.endsWith(".rpyc")) {
+                    try { fs.unlinkSync(fullPath); } catch (e) {}
+                  }
+                }
+              }
+            } catch (e) {}
+          };
+
+          const cleanRpyc = (targetDir) => {
+            if (!targetDir || !fs.existsSync(targetDir)) return;
+            try {
+              const entries = fs.readdirSync(targetDir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(targetDir, entry.name);
+                if (entry.isDirectory()) {
+                  cleanRpyc(fullPath);
+                } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".rpyc")) {
+                  try { fs.unlinkSync(fullPath); } catch (e) {}
+                }
+              }
+            } catch (e) {}
+          };
+
+          // Limpeza inicial de bytecodes e scripts defeituosos no diretório de destino
+          cleanTlPt(tlTargetDir);
+          cleanRpyc(gameSubDir);
+
+          // PASSO 2 & 3: Logs detalhados e desempacotamento de pacotes .rpa
+          global.log("info", "[Pré-Patch] 🧹 Limpeza de bytecodes (.rpyc) e scripts legados executada.");
+          global.log("info", "[Pré-Patch] 🔍 Procurando arquivos .rpa na pasta game...");
+
+          const rpaFiles = fs.readdirSync(gameSubDir).filter(f => f.endsWith('.rpa'));
+          const unpackScript = path.join(global.ROOT, "resources", "renpy", "unpack_renpy_all.py");
+
+          if (rpaFiles.length > 0 && fs.existsSync(unpackScript)) {
+            global.log("info", `[Pré-Patch] 📦 Encontrados ${rpaFiles.length} arquivos .rpa (${rpaFiles.join(', ')}). Descompactando scripts de jogo...`);
+            try {
+              const { execSync } = require('child_process');
+              execSync(`python "${unpackScript}" -i "${gameSubDir}" -o "${gameSubDir}"`, { cwd: global.ROOT, stdio: 'ignore' });
+              global.log("success", "[Pré-Patch] ✓ Descompactação e decompilação de pacotes .rpa concluída!");
+            } catch (eUnpack) {
+              global.log("warn", `[Pré-Patch] Aviso na descompactação de pacotes .rpa: ${eUnpack.message}`);
+            }
+          } else {
+            global.log("info", "[Pré-Patch] Nenhum arquivo .rpa pendente de desempacotamento.");
           }
-          if (fs.existsSync(rpyTemplate)) {
-            fs.copyFileSync(rpyTemplate, targetRpy);
-            global.log("success", "✨ [REN'PY AUTO-PATCH] Script de tradução universal ativado em: game/z_opentranslator.rpy e game/tl/pt/strings.rpy");
+
+          global.log("info", "[Pré-Patch] ✨ Extrator nativo ativado para leitura completa dos scripts.");
+
+          // Removida qualquer injeção de hooks legados/duplicados no Ren'Py
+          ["z_opentranslator.rpy", "z_opentranslator.rpyc", "zz_opent_runtime.rpy", "zz_opent_runtime.rpyc", "000_opent_runtime.rpy", "000_opent_runtime.rpyc", "00_anti_crash.rpy", "00_anti_crash.rpyc", "000_anti_crash.rpy", "000_anti_crash.rpyc", "zz_anti_crash.rpy", "zz_anti_crash.rpyc"].forEach(f => {
+            const p = path.join(gameSubDir, f);
+            if (fs.existsSync(p)) try { fs.unlinkSync(p); } catch (e) {}
+          });
+
+          // Injeta Hook de Runtime Nativo do Ren'Py em 00_opent_runtime.rpy (Carregamento Prioritário Alfabetico)
+          const runtimeHookFile = path.join(gameSubDir, "00_opent_runtime.rpy");
+          const runtimeHookFileC = path.join(gameSubDir, "00_opent_runtime.rpyc");
+          if (fs.existsSync(runtimeHookFileC)) try { fs.unlinkSync(runtimeHookFileC); } catch (e) {}
+          const runtimeHookContent = `init -990 python:
+    def _opent_bootstrap_runtime():
+        try:
+            import renpy
+            import types
+            import sys
+
+            # Single reusable dummy class for polyfilling missing displayables, actions and audio
+            class _OpenTranslatorDummy(object):
+                def __init__(self, *args, **kwargs): pass
+                def __call__(self, *args, **kwargs): return self
+                def __getattr__(self, name): return lambda *args, **kwargs: None
+
+            # Helper for clean nested attribute resolution
+            def _get_nested_attr(root, path):
+                curr = root
+                for p in path.split('.'):
+                    curr = getattr(curr, p, None)
+                    if curr is None:
+                        break
+                return curr
+
+            # 1. Polyfill basic functions
+            if not hasattr(renpy, 'pure'):
+                renpy.pure = lambda fn_or_name: fn_or_name
+
+            if not hasattr(renpy, 'register_persistent'):
+                renpy.register_persistent = lambda name, func=None, *args, **kwargs: None
+
+            # 2. Resolve renpy.curry module-shadowing bug
+            if hasattr(renpy, 'curry') and isinstance(renpy.curry, types.ModuleType):
+                renpy.curry = getattr(renpy.curry, 'curry', getattr(renpy.curry, 'Curry', renpy.curry))
+
+            # 3. Polyfill GL2 shader registration
+            if not hasattr(renpy, 'register_shader'):
+                reg_sh = getattr(getattr(renpy, 'exports', None), 'register_shader', None)
+                if not reg_sh:
+                    reg_sh = _get_nested_attr(renpy, 'gl2.gl2shadercache.register_shader')
+                renpy.register_shader = reg_sh if reg_sh else (lambda *args, **kwargs: None)
+
+            # 4. Resolve Ren'Py export functions using a factory to avoid late-binding closure bugs
+            def _make_dummy_fn(default_val):
+                return lambda *args, **kwargs: default_val
+
+            _export_fns = {
+                'has_screen': ('display.screen', False),
+                'get_screen': ('display.screen', None),
+                'show_display_say': ('character', None),
+                'predict_show_display_say': ('character', None)
+            }
+            for fname, (fmod, fdefault) in _export_fns.items():
+                if not hasattr(renpy, fname):
+                    found_fn = getattr(getattr(renpy, 'exports', None), fname, None)
+                    if not found_fn:
+                        found_fn = _get_nested_attr(renpy, fmod + '.' + fname)
+                    setattr(renpy, fname, found_fn if found_fn else _make_dummy_fn(fdefault))
+
+            # 5. Resolve dynamic class mappings
+            _renpy_mappings = {
+                'Displayable': ['display.core', 'display.displayable', 'display.layout'],
+                'ParameterizedText': ['text.extras', 'character', 'display.text'],
+                'Action': ['display.behavior'],
+                'BarValue': ['display.behavior'],
+                'FieldValue': ['display.behavior'],
+                'Container': ['display.layout', 'display.core']
+            }
+            for attr, submods in _renpy_mappings.items():
+                if not hasattr(renpy, attr):
+                    found_cls = None
+                    for sub in submods:
+                        found_cls = _get_nested_attr(renpy, sub + '.' + attr)
+                        if found_cls:
+                            break
+                    setattr(renpy, attr, found_cls if found_cls else _OpenTranslatorDummy)
+
+            # 6. Audio polyfills
+            if not hasattr(renpy, 'music'):
+                renpy.music = getattr(getattr(renpy, 'audio', None), 'music', _OpenTranslatorDummy())
+            elif not hasattr(renpy.music, 'register_channel'):
+                renpy.music.register_channel = lambda *args, **kwargs: None
+
+            if not hasattr(renpy, 'sound'):
+                renpy.sound = getattr(getattr(renpy, 'audio', None), 'sound', _OpenTranslatorDummy())
+
+            # 7. Safe Preference wrapper with dummy action fallback
+            pref_cls = _get_nested_attr(renpy, 'display.behavior.Preference')
+            if pref_cls:
+                null_act = getattr(_get_nested_attr(renpy, 'display.behavior'), 'NullAction', _OpenTranslatorDummy)
+                def _safe_Pref(name, value=None, *args, **kwargs):
+                    try:
+                        return pref_cls(name, value, *args, **kwargs)
+                    except Exception:
+                        return null_act() if callable(null_act) else _OpenTranslatorDummy()
+                renpy.display.behavior.Preference = _safe_Pref
+                try:
+                    import store
+                    store.Preference = _safe_Pref
+                except Exception:
+                    pass
+
+            # 8. Enable developer/cheat config options cleanly
+            if 'config' in globals():
+                config.developer = True
+                config.console = True
+                config.rollback_enabled = True
+                config.fast_skipping = True
+
+            # 9. Ren'Py Cheat Telemetry & Remote Control Thread (Port 16005)
+            try:
+                import threading
+                import time
+                import json
+
+                def _opent_renpy_cheat_loop():
+                    import sys
+                    if sys.version_info[0] >= 3:
+                        import urllib.request as _urlreq
+                    else:
+                        import urllib2 as _urlreq
+
+                    while True:
+                        try:
+                            time.sleep(1.0)
+                            if not hasattr(renpy, 'game') or not renpy.game.context():
+                                continue
+
+                            st = getattr(renpy, 'store', None)
+                            gold_val = 0
+                            if st:
+                                for g_attr in ('gold', 'money', 'coins', 'cash', 'g'):
+                                    if hasattr(st, g_attr) and isinstance(getattr(st, g_attr), (int, float)):
+                                        gold_val = int(getattr(st, g_attr))
+                                        break
+
+                            scanned_vars = []
+                            if st:
+                                for k, v in st.__dict__.items():
+                                    if not k.startswith('_') and k not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                        if isinstance(v, (int, float, str, bool)):
+                                            v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
+                                            scanned_vars.append({'id': k, 'name': k, 'value': v, 'type': v_type})
+
+                            payload = {
+                                'engine': 'renpy',
+                                'gold': gold_val,
+                                'through': getattr(getattr(renpy, 'config', None), 'developer', True),
+                                'actors': [{'idx': 0, 'name': 'Protagonist', 'hp': 999, 'mhp': 999, 'mp': 999, 'mmp': 999, 'level': 1}],
+                                'variables': scanned_vars,
+                                'switches': []
+                            }
+
+                            req_data = json.dumps(payload).encode('utf-8')
+                            req = _urlreq.Request('http://127.0.0.1:16005/cheat_poll', data=req_data, headers={'Content-Type': 'application/json'})
+                            resp = _urlreq.urlopen(req, timeout=2.0)
+                            resp_data = resp.read().decode('utf-8')
+
+                            if resp_data:
+                                cmds = json.loads(resp_data)
+                                if isinstance(cmds, list):
+                                    for cmd in cmds:
+                                        try:
+                                            cmd_type = cmd.get('comando') or cmd.get('cmd')
+                                            if cmd_type in ('set_var', 'set_renpy_var') and st:
+                                                var_key = str(cmd.get('id') if cmd.get('id') is not None else cmd.get('key'))
+                                                var_val = cmd.get('valor') if 'valor' in cmd else cmd.get('value')
+                                                setattr(st, var_key, var_val)
+                                            elif cmd.get('code'):
+                                                exec(cmd.get('code'), st.__dict__ if st else globals())
+                                        except Exception:
+                                            pass
+                        except Exception:
+                            pass
+
+                t = threading.Thread(target=_opent_renpy_cheat_loop)
+                t.daemon = True
+                t.start()
+            except Exception:
+                pass
+
+        except Exception:
+            pass
+
+    _opent_bootstrap_runtime()
+    del _opent_bootstrap_runtime
+
+init 999 python:
+    import json, os, pickle, re
+    try:
+        opent_dict = {}
+        pkl_path = os.path.join(config.gamedir, "opent_translated.pkl")
+        dict_path = os.path.join(config.gamedir, "opent_translated.json")
+        if not os.path.exists(pkl_path) or not os.path.exists(dict_path):
+            tl_dir = os.path.join(config.gamedir, "tl")
+            if os.path.exists(tl_dir):
+                for sub in os.listdir(tl_dir):
+                    sub_path = os.path.join(tl_dir, sub)
+                    if os.path.isdir(sub_path):
+                        test_pkl = os.path.join(sub_path, "opent_translated.pkl")
+                        test_json = os.path.join(sub_path, "opent_translated.json")
+                        if os.path.exists(test_pkl) and not os.path.exists(pkl_path):
+                            pkl_path = test_pkl
+                        if os.path.exists(test_json) and not os.path.exists(dict_path):
+                            dict_path = test_json
+
+        if os.path.exists(pkl_path):
+            with open(pkl_path, "rb") as f:
+                opent_dict = pickle.load(f)
+        elif os.path.exists(dict_path):
+            with open(dict_path, "r") as f:
+                opent_dict = json.load(f)
+
+        ui_defaults = {
+            "Preferences": "Preferências", "Start": "Iniciar", "Load": "Carregar",
+            "Save": "Salvar", "Quit": "Sair", "Return": "Retornar", "Main Menu": "Menu Principal",
+            "About": "Sobre", "Help": "Ajuda", "History": "Histórico", "Display": "Exibição",
+            "Skip": "Pular", "After Choices": "Após Escolhas", "Window": "Janela",
+            "Fullscreen": "Tela Cheia", "Text Speed": "Velocidade do Texto",
+            "Auto-Forward Time": "Tempo de Auto-Avanço", "Music Volume": "Volume da Música",
+            "Sound Volume": "Volume do Som", "Voice Volume": "Volume da Voz",
+            "Jukebox": "Jukebox / Músicas", "Next": "Próximo", "Previous": "Anterior",
+            "Currently Playing": "Tocando Agora", "Track": "Faixa", "Screen Filters": "Filtros de Tela",
+            "Unlock Page": "Desbloquear Página", "Talk": "Conversar",
+            "Inventory/Status": "Inventário/Status", "Inventory": "Inventário", "Status": "Status",
+            "Skip Week": "Pular Semana", "It's always good to see you back": "É sempre bom ver você de volta",
+            "Back": "Voltar", "Auto": "Automático", "Q.Save": "Salvar Rápido", "Q.Load": "Carregar Rápido",
+            "Prefs": "Opções", "Gallery": "Galeria", "Replay": "Replay", "Music": "Música",
+            "Sound": "Som", "Voice": "Voz", "Scene Gallery": "Galeria de Cenas", "CG Gallery": "Galeria de CGs",
+            "Language": "Idioma", "Confirm": "Confirmar", "Yes": "Sim", "No": "Não",
+            "Are you sure?": "Você tem certeza?", "Delete": "Excluir", "Empty Slot": "Espaço Vazio",
+            "Page": "Página", "Name": "Nome", "Close": "Fechar", "Log": "Registro",
+            "Skip unseen text": "Pular texto não visto", "Skip after choices": "Pular após escolhas",
+            "Contacts": "Contatos", "Student": "Estudante", "Teacher": "Professora",
+            "Home": "Casa", "Town": "Cidade",
+            "Are you sure you want to quit?": "Tem certeza de que deseja sair?",
+            "Font override": "Sobrescrever fonte",
+            "Dimensionamento de texto": "Dimensionamento de texto",
+            "Text scaling": "Dimensionamento de texto",
+            "Line spacing": "Espaçamento entre linhas",
+            "Character spacing": "Espaçamento entre caracteres",
+            "High contrast text": "Texto de alto contraste",
+            "Force mono output": "Forçar áudio monofônico",
+            "Self-voicing": "Voz de acessibilidade",
+            "Self-voicing volume drop": "Redução de volume da voz"
+        }
+        for uik, uiv in ui_defaults.items():
+            if uik not in opent_dict:
+                opent_dict[uik] = uiv
+
+        RENPY_PREFERENCE_ACTION_NAMES = {
+            "high contrast text", "high contrast", "self-voicing", "self voicing",
+            "self-voicing volume drop", "self voicing volume drop", "font override",
+            "text scaling", "dimensionamento de texto", "line spacing", "character spacing",
+            "force mono output", "after choices", "skip after choices", "skip unseen text",
+            "unseen text", "text speed", "auto-forward time", "sound volume", "music volume",
+            "voice volume", "display", "fullscreen", "window", "transitions", "skip",
+            "sound", "music", "voice", "joystick", "auto-forward", "toggle", "enable",
+            "disable", "mixer", "rollback", "rollback side", "rollback_side", "slow text", "slow_text", "mono audio",
+            "mono", "stereo", "renderer", "powersave"
+        }
+
+        RENPY_INTERNAL_PREFS = {
+            "display", "fullscreen", "window", "transitions", "skip", "sound", "music",
+            "voice", "joystick", "auto-forward", "toggle", "enable", "disable", "mixer",
+            "rollback", "rollback side", "rollback_side", "slow text", "slow_text", "mono audio", "mono", "stereo"
+        }
+
+        KNOWN_FILE_EXTENSIONS = {
+            ".txt", ".exe", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tga",
+            ".ogg", ".wav", ".mp3", ".flac", ".aac", ".m4a", ".opus",
+            ".ttf", ".otf", ".woff", ".woff2", ".css", ".js", ".html", ".htm",
+            ".rpy", ".rpyc", ".rpym", ".rpymc", ".py", ".pyc", ".pyo",
+            ".zip", ".rpa", ".rar", ".7z", ".gz", ".tar", ".bat", ".ps1",
+            ".dll", ".so", ".dylib", ".bin", ".dat", ".save", ".log", ".json"
+        }
+
+        def is_filename_or_path(s):
+            if not s or not isinstance(s, str if 'str' in globals() else unicode):
+                return False
+            s_clean = s.strip().lower()
+            if ' ' not in s_clean:
+                for ext in KNOWN_FILE_EXTENSIONS:
+                    if s_clean.endswith(ext):
+                        return True
+                if '/' in s_clean or '\\\\' in s_clean:
+                    return True
+            return False
+
+        def is_system_preference_key(s):
+            if not s or not isinstance(s, str if 'str' in globals() else unicode):
+                return False
+            if is_filename_or_path(s):
+                return True
+            sl = s.lower().strip()
+            if sl in RENPY_INTERNAL_PREFS or sl in RENPY_PREFERENCE_ACTION_NAMES:
+                return True
+            if any(t in sl for t in ("font", "voicing", "volume", "transform", "rollback")):
+                return True
+            return False
+
+        to_delete = [k for k in list(opent_dict.keys()) if is_filename_or_path(str(k))]
+        for k in to_delete:
+            opent_dict.pop(k, None)
+
+        def remove_accents(s):
+            if not s: return s
+            try:
+                import unicodedata
+                if isinstance(s, str if 'str' in globals() else unicode):
+                    nfkd = unicodedata.normalize('NFD', s)
+                    return "".join([c for c in nfkd if not unicodedata.combining(c)])
+            except Exception:
+                pass
+            return s
+
+        clean_dict = {}
+        for k, v in opent_dict.items():
+            if k and v:
+                clean_dict[k] = remove_accents(v)
+                k_strip = k.strip()
+                if k_strip not in clean_dict:
+                    clean_dict[k_strip] = remove_accents(v)
+                if "\\\\n" in k or "\\\\t" in k:
+                    clean_dict[k.replace("\\\\n", chr(10)).replace("\\\\t", chr(9))] = remove_accents(v).replace("\\\\n", chr(10)).replace("\\\\t", chr(9))
+                if chr(10) in k or chr(9) in k:
+                    clean_dict[k.replace(chr(10), "\\\\n").replace(chr(9), "\\\\t")] = remove_accents(v)
+        opent_dict = clean_dict
+
+        try:
+            if hasattr(config, 'translations'):
+                for k, v in opent_dict.items():
+                    if k.lower().strip() not in RENPY_PREFERENCE_ACTION_NAMES and not is_filename_or_path(k):
+                        if k not in config.translations:
+                            config.translations[k] = v
+        except Exception:
+            pass
+
+        def norm_key(s):
+            if not s: return ""
+            import re
+            s_clean = re.sub(r'\\{.*?\\}', '', str(s))
+            s_clean = re.sub(r'^[•\\-\\*\\>\\s▪]+', '', s_clean)
+            return re.sub(r'\\s+', ' ', s_clean).strip().lower().replace("'", "").replace("’", "").replace("\`", "")
+
+        norm_dict = {}
+        for k, v in opent_dict.items():
+            nk = norm_key(k)
+            if nk and nk not in norm_dict:
+                norm_dict[nk] = v
+
+        # Hook seguro no translate_string do Ren'Py para capturar telas de biografias e menus
+        try:
+            if hasattr(renpy, 'translation') and hasattr(renpy.translation, 'translate_string'):
+                curr_ts = renpy.translation.translate_string
+                if not getattr(curr_ts, '_opent_hooked', False):
+                    _orig_ts = curr_ts
+                    def _opent_safe_ts(s, *args, **kwargs):
+                        if not s or is_system_preference_key(s):
+                            return _orig_ts(s, *args, **kwargs)
+                        try:
+                            clean = str(s).strip()
+                            if clean in opent_dict:
+                                return opent_dict[clean]
+                            if s in opent_dict:
+                                return opent_dict[s]
+                            nk = norm_key(clean)
+                            if nk in norm_dict:
+                                return norm_dict[nk]
+                        except Exception:
+                            pass
+                        return _orig_ts(s, *args, **kwargs)
+                    _opent_safe_ts._opent_hooked = True
+                    renpy.translation.translate_string = _opent_safe_ts
+        except Exception:
+            pass
+
+        def opent_text_filter(text):
+            if not text or not isinstance(text, basestring if 'basestring' in globals() else str):
+                return text
+            if is_system_preference_key(text):
+                return text
+
+            if text in opent_dict:
+                return opent_dict[text]
+
+            clean = text.strip()
+            if clean in opent_dict:
+                return opent_dict[clean]
+
+            text_escaped = text.replace(chr(10), "\\n")
+            if text_escaped in opent_dict:
+                return opent_dict[text_escaped]
+
+            nk = norm_key(clean)
+            if nk in norm_dict:
+                translated = norm_dict[nk]
+                import re
+                bullet_match = re.match(r'^([•\\-\\*\\>\\s▪]+)', clean)
+                bullet_prefix = bullet_match.group(1) if bullet_match else ""
+                clean_no_bullet = clean[len(bullet_prefix):].strip()
+                tag_start_match = re.match(r'^((?:\\{.*?\\})+)', clean_no_bullet)
+                tag_end_match = re.search(r'((?:\\{/.*?\\})+)$', clean_no_bullet)
+                prefix = bullet_prefix + (tag_start_match.group(1) if tag_start_match else "")
+                suffix = tag_end_match.group(1) if tag_end_match else ""
+                if (prefix or suffix) and not translated.startswith("{") and not translated.startswith("•"):
+                    return prefix + translated + suffix
+                return translated
+
+            # Suporte a frases dinâmicas de fim de história / WIP ("... story will return in future updates.")
+            import re
+            m_story = re.match(r'^([•\\-\\*\\>\\s▪]*)(?:\\{.*?\\})?(.+?)(?:\\\'s|’s)\\s+story will return in future updates\\.(?:\\{/.*?\\}|\\s)*$', clean, re.IGNORECASE)
+            if m_story:
+                bullet_part = m_story.group(1) or ""
+                char_name = m_story.group(2).strip()
+                char_trans = opent_dict.get(char_name, norm_dict.get(norm_key(char_name), char_name))
+                has_tag = "{i}" in clean or clean.startswith("{i}")
+                res = "A história de " + str(char_trans) + " retornará em atualizações futuras."
+                if has_tag:
+                    res = "{i}" + res + "{/i}"
+                if bullet_part:
+                    res = bullet_part + res
+                return res
+
+            m_main = re.match(r'^([•\\-\\*\\>\\s▪]*)(?:\\{.*?\\})?the main story will return in future updates\\.(?:\\{/.*?\\}|\\s)*$', clean, re.IGNORECASE)
+            if m_main:
+                bullet_part = m_main.group(1) or ""
+                has_tag = "{i}" in clean or clean.startswith("{i}")
+                res = "A história principal retornará em atualizações futuras."
+                if has_tag:
+                    res = "{i}" + res + "{/i}"
+                if bullet_part:
+                    res = bullet_part + res
+                return res
+
+            # Suporte universal a textos multilinha e biografias de personagens (paragrafo por paragrafo)
+            if "\\n" in clean or chr(10) in clean:
+                paragraphs = clean.split(chr(10)) if chr(10) in clean else clean.split("\\n")
+                translated_paragraphs = []
+                any_translated = False
+                for p in paragraphs:
+                    p_clean = p.strip()
+                    if not p_clean:
+                        translated_paragraphs.append(p)
+                        continue
+                    if p_clean in opent_dict:
+                        translated_paragraphs.append(opent_dict[p_clean])
+                        any_translated = True
+                    elif norm_key(p_clean) in norm_dict:
+                        translated_paragraphs.append(norm_dict[norm_key(p_clean)])
+                        any_translated = True
+                    else:
+                        translated_paragraphs.append(p)
+                if any_translated:
+                    return (chr(10) if chr(10) in clean else "\\n").join(translated_paragraphs)
+
+            if len(clean) > 1 and clean[0] in ("•", "-", "*", ">", "o", "▪"):
+                bullet = clean[0]
+                sub_clean = clean[1:].strip()
+                if sub_clean in opent_dict:
+                    return bullet + " " + opent_dict[sub_clean]
+                sub_nk = norm_key(sub_clean)
+                if sub_nk in norm_dict:
+                    return bullet + " " + norm_dict[sub_nk]
+
+            return text
+
+        config.say_menu_text_filter = opent_text_filter
+        config.text_filter = opent_text_filter
+        try:
+            config.replace_text = opent_text_filter
+        except Exception:
+            pass
+        try:
+            if hasattr(renpy, 'display') and hasattr(renpy.display, 'text'):
+                renpy.display.text.text_filter = opent_text_filter
+        except Exception:
+            pass
+        try:
+            config.use_menu_text_filter = True
+            if hasattr(config, 'say_menu_text_filters') and isinstance(config.say_menu_text_filters, list):
+                if opent_text_filter not in config.say_menu_text_filters:
+                    config.say_menu_text_filters.append(opent_text_filter)
+        except Exception:
+            pass
+    except Exception:
+        pass
+`;
+          try {
+            const rpycFile = runtimeHookFile + "c";
+            if (fs.existsSync(rpycFile)) {
+              try { fs.unlinkSync(rpycFile); } catch (e) {}
+            }
+            fs.writeFileSync(runtimeHookFile, runtimeHookContent, 'utf8');
+          } catch (e) {}
+
+          // Injeta font.rpy limpo para o idioma de destino e força DejaVuSans.ttf universal para acentuação UTF-8 perfeita
+          const fontRpyFile = path.join(tlTargetDir, "font.rpy");
+          const fontRpyFileC = path.join(tlTargetDir, "font.rpyc");
+          if (fs.existsSync(fontRpyFileC)) try { fs.unlinkSync(fontRpyFileC); } catch (e) {}
+          const fontContent = `init 999 python:
+    config.language = "${targetLang}"
+    try:
+        config.font = "DejaVuSans.ttf"
+    except Exception:
+        pass
+`;
+          try { fs.writeFileSync(fontRpyFile, fontContent, 'utf8'); } catch (e) {}
+
+          // DISPARO AUTOMÁTICO DO OPEN_TRANSLATOR.PY COM LOGS EM TEMPO REAL PARA JOGOS REN'PY
+          const openTranslatorPy = path.join(global.ROOT || process.cwd(), "open_translator.py");
+          if (fs.existsSync(openTranslatorPy)) {
+            global.log("info", `[OpenTranslator Engine] 🤖 Iniciando varredura e tradução dos scripts de '${gameSubDir}' para o idioma '${targetLang}'...`);
+            try {
+              const { spawn } = require('child_process');
+              const pyProcess = spawn('python', ['-u', openTranslatorPy, '-i', gameSubDir, '-o', tlTargetDir, '-l', targetLang, '-y'], {
+                cwd: global.ROOT,
+                env: { ...process.env, PYTHONUNBUFFERED: "1" }
+              });
+
+              await new Promise((resolve) => {
+                pyProcess.stdout.on('data', (data) => {
+                  const str = data.toString('utf8');
+                  const lines = str.split(/\r?\n/).filter(l => l.trim());
+                  for (const line of lines) {
+                    global.log("info", `[OpenTranslator Engine] ${line.trim()}`);
+                  }
+                });
+
+                pyProcess.stderr.on('data', (data) => {
+                  const str = data.toString('utf8');
+                  const lines = str.split(/\r?\n/).filter(l => l.trim());
+                  for (const line of lines) {
+                    if (!line.includes('%|') && !line.includes('tqdm')) {
+                      global.log("info", `[OpenTranslator Engine] ${line.trim()}`);
+                    }
+                  }
+                });
+
+                pyProcess.on('close', (code) => {
+                  resolve(code);
+                });
+
+                pyProcess.on('error', (err) => {
+                  global.log("error", `[OpenTranslator Engine] Erro no processo Python: ${err.message}`);
+                  resolve(1);
+                });
+              });
+
+              global.log("success", `[OpenTranslator Engine] ✓ Tradução e integração automatizada concluídas com sucesso!`);
+            } catch (errPy) {
+              global.log("warn", `[OpenTranslator Engine] Aviso ao executar a tradução automatizada: ${errPy.message}`);
+            }
           }
+
+          // Limpeza final de bytecodes .rpyc para forçar o Ren'Py a compilar os .rpy traduzidos no boot
+          cleanRpyc(tlTargetDir);
+          cleanRpyc(path.join(gameSubDir, "cache"));
+
+          global.log("success", "[Pré-Patch] ✨ Tradução Ren'Py finalizada com sucesso!");
         } catch (e) {
           global.log("warn", "Aviso ao aplicar auto-patch Ren'Py: " + e.message);
         }
@@ -556,11 +1146,13 @@ translate pt strings:
     let proc;
 
     if (eng === "python") {
-      global.log("info", `🚀 Disparando o motor do Ren'Py de forma limpa (PID principal)...`);
+      global.log("info", `🚀 Disparando o motor do Ren'Py de forma limpa e autônoma (PID principal)...`);
       try {
+        let nulFd;
+        try { nulFd = fs.openSync('NUL', 'w'); } catch (e) { nulFd = 'ignore'; }
         proc = spawn(exe, [], {
           cwd: gameDir,
-          stdio: "ignore",
+          stdio: ['ignore', nulFd, nulFd],
           detached: true,
           shell: false,
           windowsHide: false,
@@ -569,7 +1161,7 @@ translate pt strings:
 
         global.log(
           "success",
-          "✨ Jogo Ren'Py inicializado com sucesso! Tradução nativa ativa via game/z_opentranslator.rpy."
+          "✨ Jogo Ren'Py inicializado com sucesso! Execução 100% autônoma ativa via game/tl/pt/."
         );
       } catch (e) {
         global.log("error", "Falha ao iniciar jogo Ren'Py: " + e.message);
@@ -701,6 +1293,13 @@ translate pt strings:
           " signal=" +
           (sig || "none")
       );
+      if (code === 0 || eng === "python") {
+        global.log(
+          "info",
+          "🚀 Lançador inicial finalizado. Mantendo monitoramento ativo do jogo via RPC/Subprocessos."
+        );
+        return;
+      }
       if (global.launchedBak) {
         const bakToRestore = global.launchedBak;
         global.launchedBak = null;
@@ -1141,6 +1740,8 @@ translate pt strings:
       }
       const pluginSrc = path.join(
         global.ROOT,
+        "resources",
+        "unity",
         "xunity_plugin",
         "UltraBatchEndpoint.dll"
       );
@@ -1309,10 +1910,83 @@ translate pt strings:
         }
       });
       proc.on("error", (err) => {
-        global.log("error", `Erro ao empacotar com UberWolfCli: ${err.message}`);
-        res({ ok: false, error: err.message });
       });
     });
+  },
+  async selectFolder(params = {}) {
+    const title = params.title || "";
+    try {
+      const desc = title || "Selecione a pasta de destino para descompactar o jogo Ren'Py";
+      const psScript = `
+        Add-Type -AssemblyName System.Windows.Forms
+        $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dialog.Description = '${desc.replace(/'/g, "''")}'
+        $dialog.ShowNewFolderButton = $true
+        if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+          Write-Output $dialog.SelectedPath
+        }
+      `;
+      const folderPath = execSync(`powershell -NoProfile -NonInteractive -Command "${psScript.replace(/\r?\n/g, ' ')}"`, { encoding: 'utf8' }).trim();
+      return { ok: true, folderPath };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  },
+  async unpackRenpyFull({ key, targetDir }) {
+    const games = handlers.loadGames().games;
+    const g = games[key];
+    if (!g) return { ok: false, error: "Jogo não encontrado." };
+    const exe = g.constArgs?.gameExe || "";
+    if (!exe || !fs.existsSync(exe)) return { ok: false, error: "Executável do jogo não encontrado." };
+    const gameDir = path.dirname(exe);
+    const title = g.libConf?.title || path.basename(gameDir);
+
+    const outDir = targetDir || path.join(path.dirname(gameDir), title + "_Descompactado");
+    const script = path.join(global.ROOT, "resources", "renpy", "unpack_renpy_all.py");
+    if (!fs.existsSync(script)) {
+      return { ok: false, error: "Script unpack_renpy_all.py não encontrado." };
+    }
+
+    global.log("info", `============================================================`);
+    global.log("info", `📦 DESCOMPACTAÇÃO TOTAL REN'PY: "${title}"`);
+    global.log("info", `📁 Origem: ${gameDir}`);
+    global.log("info", `🎯 Destino: ${outDir}`);
+    global.log("info", `============================================================`);
+
+    const gameSubDir = fs.existsSync(path.join(gameDir, "game")) ? path.join(gameDir, "game") : gameDir;
+    try {
+      const { spawn } = require('child_process');
+      const pyProcess = spawn('python', ['-u', script, '-i', gameSubDir, '-o', outDir], {
+        cwd: global.ROOT,
+        env: { ...process.env, PYTHONUNBUFFERED: "1" }
+      });
+
+      await new Promise((resolve) => {
+        pyProcess.stdout.on('data', (data) => {
+          const lines = data.toString('utf8').split(/\r?\n/).filter(l => l.trim());
+          for (const l of lines) {
+            global.log("info", l.trim());
+          }
+        });
+        pyProcess.stderr.on('data', (data) => {
+          const lines = data.toString('utf8').split(/\r?\n/).filter(l => l.trim());
+          for (const l of lines) {
+            global.log("info", l.trim());
+          }
+        });
+        pyProcess.on('close', (code) => resolve(code));
+        pyProcess.on('error', (err) => {
+          global.log("error", `Erro no processo de descompactação: ${err.message}`);
+          resolve(1);
+        });
+      });
+
+      global.log("success", `✨ Descompactação total concluída! Todos os arquivos salvos em: '${outDir}'`);
+      return { ok: true, outDir };
+    } catch (e) {
+      global.log("error", `Falha na descompactação total: ${e.message}`);
+      return { ok: false, error: e.message };
+    }
   },
   async unpackEvb({ exePath, destDir }) {
     if (!exePath || !fs.existsSync(exePath))
@@ -1548,6 +2222,125 @@ translate pt strings:
       return { ok: false, error: e.message };
     }
   },
+  deleteGameCache({ gameKey }) {
+    try {
+      const games = handlers.loadGames().games || {};
+      const g = games[gameKey];
+      if (!g) return { ok: false, error: "Game not found" };
+
+      const exe = g.constArgs?.gameExe || "";
+      const gameDir = exe ? path.dirname(exe) : "";
+      const gameSubDir = gameDir ? (fs.existsSync(path.join(gameDir, "game")) ? path.join(gameDir, "game") : gameDir) : "";
+
+      let deletedCount = 0;
+      const targets = [
+        path.join(gameDir, "opent_translated.json"),
+        path.join(gameDir, "opent_translated.pkl"),
+        path.join(gameDir, "translation_cache.json"),
+        path.join(gameDir, "UltraTranslations.json"),
+        path.join(gameSubDir, "opent_translated.json"),
+        path.join(gameSubDir, "opent_translated.pkl"),
+        path.join(gameSubDir, "000_opent_runtime.rpy"),
+        path.join(gameSubDir, "000_opent_runtime.rpyc"),
+        path.join(gameSubDir, "000_anti_crash.rpy"),
+        path.join(gameSubDir, "000_anti_crash.rpyc"),
+        path.join(gameSubDir, "zz_opent_runtime.rpy"),
+        path.join(gameSubDir, "zz_opent_runtime.rpyc"),
+        path.join(gameSubDir, "zz_anti_crash.rpy"),
+        path.join(gameSubDir, "zz_anti_crash.rpyc"),
+        path.join(global.ROOT || "", "translation_cache.json"),
+        path.join(process.cwd(), "translation_cache.json")
+      ];
+
+      const tlDir = path.join(gameSubDir, "tl");
+      if (fs.existsSync(tlDir)) {
+        try {
+          const subs = fs.readdirSync(tlDir);
+          for (const sub of subs) {
+            const subPath = path.join(tlDir, sub);
+            if (fs.statSync(subPath).isDirectory()) {
+              targets.push(path.join(subPath, "opent_translated.json"));
+              targets.push(path.join(subPath, "opent_translated.pkl"));
+              targets.push(path.join(subPath, "font.rpy"));
+              targets.push(path.join(subPath, "font.rpyc"));
+            }
+          }
+        } catch (e) {}
+      }
+
+      for (const t of targets) {
+        if (t && fs.existsSync(t)) {
+          try {
+            fs.unlinkSync(t);
+            deletedCount++;
+          } catch (e) {}
+        }
+      }
+
+      global.log("success", `[Cache] 🗑️ Cache de tradução deletado com sucesso para "${g.title || gameKey}" (${deletedCount} arquivos limpos)!`);
+      return { ok: true, count: deletedCount };
+    } catch (e) {
+      global.log("error", "Falha ao deletar cache: " + e.message);
+      return { ok: false, error: e.message };
+    }
+  },
+  exportGameTexts({ gameKey }) {
+    try {
+      const games = handlers.loadGames().games || {};
+      const g = games[gameKey];
+      if (!g) return { ok: false, error: "Game not found" };
+
+      const exe = g.constArgs?.gameExe || "";
+      const gameDir = exe ? path.dirname(exe) : "";
+      const gameSubDir = gameDir ? (fs.existsSync(path.join(gameDir, "game")) ? path.join(gameDir, "game") : gameDir) : "";
+
+      const jsonFile = path.join(gameSubDir, "opent_translated.json");
+      if (!fs.existsSync(jsonFile)) return { ok: false, error: "Nenhum arquivo de tradução encontrado para este jogo." };
+
+      const exportPath = path.join(gameDir, "Exported_Texts_PTBR.txt");
+      const dict = JSON.parse(fs.readFileSync(jsonFile, "utf8"));
+      const lines = ["# OpenTranslator Exported Texts", "# ============================================================"];
+      for (const [k, v] of Object.entries(dict)) {
+        lines.push(`ORIGINAL: ${k}`);
+        lines.push(`TRADUÇÃO: ${v}`);
+        lines.push("------------------------------------------------------------");
+      }
+      fs.writeFileSync(exportPath, lines.join("\n"), "utf8");
+      global.log("success", `[Exportar Textos] 📄 Textos exportados com sucesso para: ${exportPath}`);
+      return { ok: true, exportPath };
+    } catch (e) {
+      global.log("error", "Falha ao exportar textos: " + e.message);
+      return { ok: false, error: e.message };
+    }
+  },
+  scanGameVariables() {
+    if (!global.lastGameState) {
+      return { ok: false, error: "Nenhum jogo conectado ao Cheat Overlay." };
+    }
+    return {
+      ok: true,
+      variables: global.lastGameState.variables || [],
+      switches: global.lastGameState.switches || []
+    };
+  },
+  setGameVar({ id, value }) {
+    const cmd = { comando: "set_var", id: id, valor: value };
+    if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
+      try { global.activeCheatSocket.send(JSON.stringify(cmd)); } catch (e) {}
+    }
+    global.pendingCheatCommands.push(cmd);
+    global.log("success", `[Cheat] Injetado no jogo ao vivo: Variable #${id} = ${value}`);
+    return { ok: true };
+  },
+  setGameSwitch({ id, value }) {
+    const cmd = { comando: "set_switch", id: id, valor: Boolean(value) };
+    if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
+      try { global.activeCheatSocket.send(JSON.stringify(cmd)); } catch (e) {}
+    }
+    global.pendingCheatCommands.push(cmd);
+    global.log("success", `[Cheat] Injetado no jogo ao vivo: Switch #${id} = ${value}`);
+    return { ok: true };
+  },
 };
 
 module.exports = {
@@ -1584,22 +2377,38 @@ function verifyAndDiagnoseGame(gameDir, exe, pid) {
       }
 
       if (!isRunning) {
-        global.log(
-          "error",
-          `[Erro de Boot] O processo do jogo (${exeName}) foi encerrado logo após a inicialização.`
-        );
-        const debugLogPath = path.join(gameDir, "debug.log");
-        if (fs.existsSync(debugLogPath)) {
-          try {
-            const content = fs.readFileSync(debugLogPath, "utf8").trim();
-            const lines = content.split("\n").filter((l) => l.trim().length > 0);
-            const lastLines = lines.slice(-5).join("\n  -> ");
+        const psCheckChild = `powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith('${escapedDir}', [System.StringComparison]::OrdinalIgnoreCase) } | Select-Object -ExpandProperty Id"`;
+        exec(psCheckChild, (errChild, stdoutChild) => {
+          const childPids = (stdoutChild || "")
+            .trim()
+            .split("\n")
+            .map((p) => parseInt(p.trim(), 10))
+            .filter((p) => !isNaN(p) && p > 0);
+          if (childPids.length > 0) {
+            global.launchedPid = childPids[0];
             global.log(
               "info",
-              "Logs de erro do jogo (debug.log):\n  -> " + lastLines
+              `[Verificação de Saúde] Processo ativo do jogo (${exeName}, PID ${childPids[0]}) detectado em execução.`
             );
-          } catch (e) {}
-        }
+            return;
+          }
+          global.log(
+            "error",
+            `[Erro de Boot] O processo do jogo (${exeName}) foi encerrado logo após a inicialização.`
+          );
+          const debugLogPath = path.join(gameDir, "debug.log");
+          if (fs.existsSync(debugLogPath)) {
+            try {
+              const content = fs.readFileSync(debugLogPath, "utf8").trim();
+              const lines = content.split("\n").filter((l) => l.trim().length > 0);
+              const lastLines = lines.slice(-5).join("\n  -> ");
+              global.log(
+                "info",
+                "Logs de erro do jogo (debug.log):\n  -> " + lastLines
+              );
+            } catch (e) {}
+          }
+        });
         return;
       }
 

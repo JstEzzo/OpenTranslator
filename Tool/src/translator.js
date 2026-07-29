@@ -124,7 +124,7 @@ async function translateBingBatch(texts, sl, tl) {
 
   global.log("info", `Traduzindo ${unique.length} textos únicos usando Bing...`);
   let completed = 0;
-  const CONCURRENCY_LIMIT = 5;
+  const CONCURRENCY_LIMIT = 6;
 
   await limitConcurrency(
     CONCURRENCY_LIMIT,
@@ -315,7 +315,7 @@ async function translateDeepLBatchUnique(unique, sl, tl, config) {
   const results = new Map();
   global.log("info", `Traduzindo ${unique.length} textos únicos usando DeepL...`);
   let completed = 0;
-  const CONCURRENCY_LIMIT = 5;
+  const CONCURRENCY_LIMIT = 6;
 
   await limitConcurrency(
     CONCURRENCY_LIMIT,
@@ -436,7 +436,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     `Dividido em ${unique.length} textos únicos em ${batches.length} lotes para tradução.`
   );
 
-  const CONCURRENCY_LIMIT = 5;
+  const CONCURRENCY_LIMIT = 6;
   let completedUniqueTexts = 0;
   let completedBatchesCount = 0;
   const startTime = Date.now();
@@ -483,7 +483,8 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
         throw new Error("Resposta inválida (não JSON)");
       } catch (err) {
         if (attempt < maxRetries) {
-          const backoff = Math.pow(2, attempt) * 1000 + Math.floor(Math.random() * 500);
+          // Exponential backoff: 2s (attempt 0), 4s (attempt 1), 8s (attempt 2) + jitter
+          const backoff = Math.pow(2, attempt + 1) * 1000 + Math.floor(Math.random() * 250);
           await new Promise((r) => setTimeout(r, backoff));
         } else {
           throw err;

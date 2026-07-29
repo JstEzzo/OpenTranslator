@@ -187,7 +187,6 @@ class TextExtractor {
 
   buildMediaIndex() {
     this.gameMediaFiles.clear();
-    const findDataDir = getFindDataDir();
     const dataDir = findDataDir(this.gameDir);
     const wwwDir = dataDir ? path.dirname(dataDir) : this.gameDir;
 
@@ -223,7 +222,6 @@ class TextExtractor {
   }
 
   extract() {
-    const findDataDir = getFindDataDir();
     const dataDir = findDataDir(this.gameDir);
     if (!dataDir) return [];
 

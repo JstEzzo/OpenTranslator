@@ -10,6 +10,8 @@ global.lastCheatPollTime = 0;
 
 let hookHttpServer = null;
 
+const activeWsClients = new Set();
+
 function startHookServer() {
   try {
     hookHttpServer = whttp.createServer(async (req, res) => {
@@ -219,6 +221,7 @@ function startHookServer() {
       console.error("WS Hook Server error:", e.message);
     });
     hookWss.on("connection", (ws) => {
+      activeWsClients.add(ws);
       global.log("info", "Game hook connected via WebSocket to 16005");
       ws.on("message", async (message) => {
         try {
@@ -286,6 +289,7 @@ function startHookServer() {
         }
       });
       ws.on("close", () => {
+        activeWsClients.delete(ws);
         global.log("info", "Game hook WebSocket connection closed");
         if (ws === global.activeCheatSocket) {
           global.activeCheatSocket = null;
@@ -310,6 +314,13 @@ function startHookServer() {
 }
 
 function stopHookServer() {
+  for (const ws of activeWsClients) {
+    try {
+      ws.close();
+    } catch (e) {}
+  }
+  activeWsClients.clear();
+
   if (global.activeCheatSocket) {
     try {
       global.activeCheatSocket.close();

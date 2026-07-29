@@ -1,21 +1,21 @@
 /**
- * OpenTranslator — Módulo de Utilitários Compartilhados (Utils)
+ * OpenTranslator — Shared Utilities Module (Utils)
  *
- * Centraliza funções utilitárias, constantes de filtragem e buscas de diretórios,
- * eliminando dependências cíclicas entre extractor.js, gameEngine.js e cache.js.
+ * Centralizes utility functions, filtering constants, and directory searches,
+ * eliminating circular dependencies between extractor.js, gameEngine.js, and cache.js.
  */
 
 const fs = require("fs");
 const path = require("path");
 
-// ==================== CONSTANTES DE FILTRAGEM ====================
+// ==================== FILTERING CONSTANTS ====================
 const MEDIA_EXT_RE = /\.(png|jpg|jpeg|gif|bmp|webp|ogg|wav|mp3|m4a|json|efkefc|atlas|skel|bin|db|ttf|otf|woff|woff2)$/i;
 const RESOURCE_PATH_RE = /^(img|audio|fonts|js|data|icon|css|locales|movies)[\/\\]/i;
 
-// Regex estrito para códigos de escape e condicionais inline do RPG Maker
-const ESC_RE = /\\([A-Za-z0-9_]+)(\[[^\]]*\])?|\\([{}!.\|^$><\\%])|if\s*\([^)]*\)|\b[vs]\[\d+\]|<[^>]+>/gi;
+// Strict regex for escape codes (supporting optional multiple backslashes \\+) and RPG Maker inline conditionals
+const ESC_RE = /\\+([A-Za-z0-9_]+)(\[[^\]]*\])?|\\+([{}!.\|^$><\\%])|if\s*\([^)]*\)|\b[vs]\[\d+\]|<[^>]+>/gi;
 
-// ==================== UTILITÁRIOS DE NAVEGAÇÃO E STRINGS ====================
+// ==================== STRING AND NAVIGATION UTILITIES ====================
 function logWarn(msg) {
   if (typeof global.log === "function") {
     global.log("warn", msg);

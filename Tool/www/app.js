@@ -437,20 +437,15 @@
       glossarySave: "Save Glossary",
       glossarySaved: "Glossary saved ({n} terms)",
       btnExtractRpa: "Extract RPA",
-      btnPackRpa: "Pack RPA",
-      btnDecompileRpyc: "Decompile .rpyc",
       btnInstallUnity: "Install XUnity + Plugin",
       btnInstallOverlay: "Install RPG Maker Overlay",
       btnExtractWolf: "Extract Wolf Game",
       btnPackWolf: "Pack Wolf Directory",
       btnExportExcel: "Export to Excel (.xlsx) 📊",
       btnImportExcel: "Import from Excel (.xlsx) 📥",
-      toolsRenpy: "Ren'Py Tools",
       toolsUnity: "Unity Tools",
       toolsRpgm: "RPG Maker Tools",
       toolsWolf: "Wolf RPG Tools",
-      descRenpy:
-        "Extract assets (.rpa) and decompile scripts of games made on the Ren'Py engine.",
       descUnity:
         "Install and configure the XUnity AutoTranslator plugin for real-time translation.",
       descWolf: "Decompress data files (.wolf) or repack modified directories.",
@@ -580,21 +575,15 @@
       glossaryAdd: "Adicionar",
       glossarySave: "Salvar Glossário",
       glossarySaved: "Glossário salvo ({n} termos)",
-      btnExtractRpa: "Extrair RPA",
-      btnPackRpa: "Empacotar RPA",
-      btnDecompileRpyc: "Descompilar .rpyc",
       btnInstallUnity: "Instalar XUnity + Plugin",
       btnInstallOverlay: "Instalar Overlay RPG Maker",
       btnExtractWolf: "Extrair Jogo Wolf",
       btnPackWolf: "Empacotar Pasta Wolf",
       btnExportExcel: "Exportar para Excel (.xlsx) 📊",
       btnImportExcel: "Importar do Excel (.xlsx) 📥",
-      toolsRenpy: "Ferramentas Ren'Py",
       toolsUnity: "Ferramentas Unity",
       toolsRpgm: "Ferramentas RPG Maker",
       toolsWolf: "Ferramentas Wolf RPG",
-      descRenpy:
-        "Extraia assets (.rpa) e descompile scripts de jogos feitos na engine Ren'Py.",
       descUnity:
         "Instale e configure o plugin XUnity AutoTranslator para tradução em tempo real.",
       descWolf:
@@ -689,13 +678,15 @@
   // ==================== PRE-TRANSLATION PIPELINE ====================
   // (handled server-side via RPC)
 
+  let launchMutex = false;
   async function launchGame(key) {
     const g = S.games[key];
     if (!g) return;
-    if (S.launchedKey || S.isLaunching) {
-      log("warn", "A game is already running or launch is in progress");
+    if (launchMutex || S.launchedKey || S.isLaunching) {
+      log("warn", "A game launch is already in progress or running");
       return;
     }
+    launchMutex = true;
     S.isLaunching = true;
     const ld = $("gl-loading"),
       lm = $("gl-loading-msg");
@@ -716,7 +707,6 @@
       }, d),
     );
     const title = g.libConf?.title || key;
-    log("info", "Launching game: " + title);
     try {
       const r = await rpc("launchGame", { key });
       loadingVisible = false;
@@ -734,6 +724,7 @@
       log("error", "Launch failed: " + e.message);
     } finally {
       S.isLaunching = false;
+      setTimeout(() => { launchMutex = false; }, 3000);
     }
   }
 
@@ -772,12 +763,12 @@
     rgss: { label: "RGSS (XP/VX/Ace)", js: false, icon: "\u2699" },
     unity: { label: "Unity", js: false, icon: "\ud83c\udf10" },
     python: { label: "Ren'Py", js: false, icon: "\ud83d\udc0d" },
+    renpy: { label: "Ren'Py", js: false, icon: "\ud83d\udc0d" },
     srpg: { label: "SRPG Studio", js: false, icon: "\u2694" },
     agtk: { label: "Action Game Toolkit", js: false, icon: "\ud83c\udff0" },
     kmy: { label: "KMY", js: false, icon: "\ud83d\udd2e" },
     bakin: { label: "Bakin", js: false, icon: "\ud83c\udfad" },
     tyrano: { label: "TyranoScript", js: true, icon: "\ud83d\udcdd" },
-    renpy: { label: "Ren'Py (JS)", js: true, icon: "\ud83d\udc0d" },
   };
 
   async function detectEngine(exePath, exeDir) {
@@ -808,7 +799,6 @@
 @font-face{font-family:'Noto Emoji';src:url('NotoSans/emoji/NotoColorEmoji-Regular.ttf') format('truetype');font-weight:400;font-style:normal}
 @font-face{font-family:'Unifont Smooth';src:url('unifont-all.ttf') format('truetype');font-weight:400;font-style:normal}
 @font-face{font-family:'OpenT PGMMV';src:url('../loaders/opent_PGMMV_font.ttf') format('truetype');font-weight:400;font-style:normal}
-@font-face{font-family:'OpenT RenPy';src:url('../loaders/opent_renpy_font.ttf') format('truetype');font-weight:400;font-style:normal}
 @font-face{font-family:'Notdef Fallback';src:url('rawres/notdef.ttf') format('truetype');font-weight:400;font-style:normal}
 :root{
   --bg:#08080c;
@@ -833,7 +823,7 @@
   --orange:#fdcb6e;
   --purple:#e84393;
   --font:'Outfit','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  --fontGame:'Unifont Smooth','NotoSansCJK','Noto Emoji','OpenT PGMMV','OpenT RenPy',sans-serif;
+  --fontGame:'Unifont Smooth','NotoSansCJK','Noto Emoji','OpenT PGMMV',sans-serif;
   --radius:8px;
   --radius-sm:6px;
   --radius-lg:12px;
@@ -1280,15 +1270,7 @@ select option {
             </div>
           </div>
         </div>
-        <div class="cg">
-          <h4>${t("toolsRenpy")}</h4>
-          <span class="help-tip">${t("descRenpy")}</span>
-          <div class="tools-grid">
-            <button class="btn sm rpa-extract">${t("btnExtractRpa")}</button>
-            <button class="btn sm rpa-pack">${t("btnPackRpa")}</button>
-            <button class="btn sm rpyc-decompile">${t("btnDecompileRpyc")}</button>
-          </div>
-        </div>
+
         <div class="cg">
           <h4>${t("toolsUnity")}</h4>
           <span class="help-tip">${t("descUnity")}</span>
@@ -1389,6 +1371,24 @@ select option {
               <h4>${t("cheatTools")}</h4>
               <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px">
                 <button id="cheatOpenDevTools" class="btn sm">${t("cheatDevTools")}</button>
+              </div>
+            </div>
+
+            <!-- Live Memory Scanner (renpy.store / Universal) -->
+            <div class="cg" id="renpy-live-scanner" style="margin-bottom:0">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:0 6px">
+                <h4>Live Memory Scanner (renpy.store)</h4>
+                <button id="cheatRenpyScanBtn" class="btn sm pri">Scan Variables</button>
+              </div>
+              
+              <div style="padding: 6px;">
+                <input id="cheatRenpySearch" type="text" placeholder="Filter variables (e.g., points, love, money)..." style="width:100%; padding:4px; font-size:10px; background:var(--bg); color:var(--txt); border:1px solid var(--bd); border-radius:3px">
+              </div>
+
+              <div class="cg-body" id="renpy-var-list" style="display:flex; flex-direction:column; gap:4px; padding:8px 12px; max-height:400px; overflow-y:auto">
+                <div style="text-align: center; color: var(--txt3); font-size: 10px;">
+                  Click "Scan Variables" to read renpy.store
+                </div>
               </div>
             </div>
           </div>
@@ -1559,7 +1559,7 @@ select option {
       }
     }
     const key = "g_" + Date.now();
-    const eng = isFullPath ? await rpc("detectEngine", { exePath }) : "mz";
+    const eng = await detectEngine(exePath);
     await saveGame(key, {
       constArgs: { gameExe: exePath, engine: eng },
       libConf: { title: name, libConfKey: key, added: Date.now(), tags: [] },
@@ -1752,7 +1752,7 @@ select option {
     <div class="mc2">
       <div class="f"><label>${t("tags")}</label><input id="mTags" value="${esc(tags)}" placeholder="Separated by comma"></div>
       <div class="f"><label>${t("note")}</label><textarea id="mNote" rows="2" style="resize:vertical;padding:3px 5px;background:var(--bg2);border:1px solid var(--bd);color:var(--txt);border-radius:3px;font-size:10px;font-family:var(--font)">${esc(lc.note || "")}</textarea></div>
-      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${ei.icon || ""} ${ei.label || curEng} ${ei.js ? "(JS)" : "(unsupported)"}</span></div>
+      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${ei.icon || ""} ${ei.label || curEng} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(Suportado)" : "(Nativo)")}</span></div>
       <div class="fi"><label>${t("lastLaunch")}:</label><span class="fv">${esc(lastLaunch)}</span></div>
       <div class="fi"><label>${t("firstLaunch")}:</label><span class="fv">${esc(firstLaunch)}</span></div>
       <div class="fi"><label>${t("keyLabel")}:</label><span class="fv" style="font-size:9px;color:var(--txt3)">${esc(key || "-")}</span></div>
@@ -1765,6 +1765,7 @@ select option {
       <button id="mDecryptImages" class="btn sm">${t("extractImages")}</button>
       <button id="mDecryptAudio" class="btn sm">${t("extractAudio")}</button>
       <button id="mPatchFonts" class="btn sm">${t("patchFonts")}</button>
+      <button id="mUnpackAll" class="btn sm" style="background:var(--accent);color:#fff" title="Descompactar 100% dos arquivos (.rpa, mídias e scripts) para uma pasta">Descompactar Tudo 📦</button>
       <button id="mDelCache" class="btn sm dgr">${t("deleteCache")}</button>
       <button id="mExportCache" class="btn sm">${t("exportTexts")}</button>
     </div>
@@ -1901,6 +1902,52 @@ select option {
         } finally {
           btn.textContent = origText;
           btn.disabled = false;
+        }
+      }
+    });
+
+    $("mUnpackAll")?.addEventListener("click", async () => {
+      let folderPath = "";
+      try {
+        const folderRes = await rpc("selectFolder", { title: "Selecione a pasta onde deseja salvar a descompactação total do jogo" });
+        if (folderRes && folderRes.ok && folderRes.folderPath) {
+          folderPath = folderRes.folderPath;
+        }
+      } catch (err) {}
+
+      if (!folderPath) {
+        const userChoice = prompt("Digite o caminho da pasta onde deseja descompactar 100% dos arquivos:", "C:\\Users\\Public\\Documents\\Descompactado");
+        if (userChoice && userChoice.trim()) {
+          folderPath = userChoice.trim();
+        }
+      }
+
+      if (!folderPath) return;
+
+      const btn = $("mUnpackAll");
+      const origText = btn ? btn.textContent : "Descompactar Tudo 📦";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Descompactando... ⏳";
+      }
+
+      log("info", "📦 Iniciando descompactação total para: " + folderPath);
+      try {
+        const res = await rpc("unpackRenpyFull", { key, targetDir: folderPath });
+        if (res && res.ok) {
+          log("success", "✅ Descompactação total concluída! Todos os arquivos salvos em: " + res.outDir);
+          alert("Sucesso! Todos os arquivos do jogo foram descompactados em:\n" + res.outDir);
+        } else {
+          log("error", "Falha na descompactação: " + (res?.error || "Erro desconhecido"));
+          alert("Falha na descompactação: " + (res?.error || "Erro desconhecido"));
+        }
+      } catch (err) {
+        log("error", "Erro ao descompactar: " + err.message);
+        alert("Erro ao descompactar: " + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = origText;
         }
       }
     });
@@ -2054,9 +2101,7 @@ select option {
     $("mSave").addEventListener("click", async () => {
       const k = m.dataset.key || "g_" + Date.now();
       const exeVal = $("mExe").value;
-      const meng = exeVal
-        ? await rpc("detectEngine", { exePath: exeVal })
-        : "mz";
+      const meng = await detectEngine(exeVal);
       const tagArr = $("mTags")
         .value.split(",")
         .map((t) => t.trim())
@@ -2708,8 +2753,10 @@ select option {
 
   // ==================== KEYBOARD ====================
   document.addEventListener("keydown", function (e) {
-    if (e.key === "F12") {
-      /* browser handles devtools natively */
+    if (e.key === "F5" || e.keyCode === 116 || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) {
+      e.preventDefault();
+      console.log("[OpenTranslator UI] Recarregando interface...");
+      window.location.href = window.location.pathname;
     }
     if (e.key === "Escape") {
       const m = $("modal");
@@ -2718,10 +2765,6 @@ select option {
     if (e.ctrlKey && e.key === "l") {
       e.preventDefault();
       if ($("lb")) $("lb").innerHTML = "";
-    }
-    if (e.ctrlKey && e.key === "r") {
-      e.preventDefault();
-      location.reload();
     }
   });
 
@@ -2783,7 +2826,7 @@ select option {
         renderGames();
       }
     } catch (e) {
-      log("warn", "Poll error: " + e.message);
+      // Silently catch temporary poll errors without polluting UI console logs
     }
   }, 3000);
 
@@ -2840,6 +2883,21 @@ select option {
       if (panel) panel.style.display = "flex";
 
       const state = res.state;
+      const isRenPy = (state.engine === 'renpy');
+
+      const tabGrupo = $("cheatSubTabGrupo");
+      const tabInv = $("cheatSubTabInv");
+      if (tabGrupo) tabGrupo.style.display = isRenPy ? "none" : "inline-block";
+      if (tabInv) tabInv.style.display = isRenPy ? "none" : "inline-block";
+
+      const battleGroup = document.querySelector("#cheat-sec-geral .cg:nth-child(2)");
+      if (battleGroup) battleGroup.style.display = isRenPy ? "none" : "block";
+
+      const noclipRow = document.querySelector("#cheatThrough")?.closest(".ci");
+      if (noclipRow) noclipRow.style.display = isRenPy ? "none" : "flex";
+
+      const encounterRow = document.querySelector("#cheatNoEncounter")?.closest(".ci");
+      if (encounterRow) encounterRow.style.display = isRenPy ? "none" : "flex";
 
       const goldVal = $("cheatGoldVal");
       if (goldVal && document.activeElement !== goldVal) {
@@ -2939,11 +2997,108 @@ select option {
         }
         invList.innerHTML = html;
       }
+
+      if (state.variables && Array.isArray(state.variables)) {
+        renderRenpyVariables(state.variables);
+      }
     } catch (e) {}
   }, 500);
 
+  function renderRenpyVariables(variables) {
+    const container = $("renpy-var-list") || $("cheat-vars-grid");
+    if (!container) return;
+    if (!variables || variables.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--txt3); font-size: 10px;">Clique em "Scan Variables" para ler renpy.store</div>';
+      return;
+    }
+
+    const query = ($("cheatRenpySearch")?.value || "").toLowerCase();
+    let html = "";
+
+    variables.forEach((v) => {
+      if (query && !v.name.toLowerCase().includes(query) && !String(v.id).toLowerCase().includes(query)) {
+        return;
+      }
+
+      const vType = v.type || typeof v.value;
+      const vKey = esc(v.name || v.id);
+
+      if (vType === 'boolean' || typeof v.value === 'boolean') {
+        const isChecked = Boolean(v.value) ? "checked" : "";
+        html += `
+          <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(bool)</span></span>
+            <input class="renpy-var-toggle" data-key="${vKey}" type="checkbox" ${isChecked}>
+          </div>
+        `;
+      } else if (vType === 'number' || typeof v.value === 'number') {
+        html += `
+          <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(num = ${v.value})</span></span>
+            <div style="display:flex;gap:4px;align-items:center">
+              <input class="renpy-var-input" data-key="${vKey}" type="number" style="width:80px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${v.value}">
+              <button class="renpy-var-btn btn sm" data-key="${vKey}" data-type="number" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(str)</span></span>
+            <div style="display:flex;gap:4px;align-items:center">
+              <input class="renpy-var-input" data-key="${vKey}" type="text" style="width:110px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${esc(String(v.value))}">
+              <button class="renpy-var-btn btn sm" data-key="${vKey}" data-type="string" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    if (!html) {
+      html = '<div style="text-align:center;padding:12px;color:var(--txt3);font-size:10px">Nenhuma variável corresponde ao filtro.</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  document.addEventListener("change", async (e) => {
+    const target = e.target;
+    if (target.classList.contains("renpy-var-toggle")) {
+      const key = target.getAttribute("data-key");
+      const val = target.checked;
+      await rpc("setGameVar", { id: key, value: val });
+      log("success", `[Ren'Py Memory] Variable '${key}' set to ${val}`);
+    }
+  });
+
   document.addEventListener("click", async (e) => {
     const target = e.target;
+
+    if (target.id === "cheatRenpyScanBtn") {
+      const res = await rpc("scanGameVariables");
+      if (res && res.ok && res.variables) {
+        renderRenpyVariables(res.variables);
+        log("success", `[Ren'Py Memory Scanner] Mapeadas ${res.variables.length} variáveis do renpy.store com sucesso!`);
+      } else {
+        log("warn", "Aguardando sincronização com a memória do Ren'Py...");
+      }
+    }
+
+    if (target.classList.contains("renpy-var-btn")) {
+      const key = target.getAttribute("data-key");
+      const type = target.getAttribute("data-type");
+      const inputs = document.querySelectorAll(".renpy-var-input");
+      let val = null;
+      inputs.forEach((inp) => {
+        if (inp.getAttribute("data-key") === key) {
+          val = inp.value;
+        }
+      });
+      if (val !== null) {
+        const finalVal = type === 'number' ? Number(val) : String(val);
+        await rpc("setGameVar", { id: key, value: finalVal });
+        log("success", `[Ren'Py Memory] Variable '${key}' set to ${finalVal}`);
+      }
+    }
 
     if (target.id === "cheatSubTabGeral") {
       currentSubTab = "geral";
@@ -2961,8 +3116,12 @@ select option {
     if (target.id === "cheatGoldBtn") {
       const val = parseInt($("cheatGoldVal").value, 10);
       if (!isNaN(val)) {
-        await rpc("sendCheatCommand", { code: "$gameParty._gold = " + val });
-        log("success", "Definido ouro do grupo para: " + val);
+        await rpc("sendCheatCommand", { 
+          code: "if (typeof $gameParty !== 'undefined') { $gameParty._gold = " + val + "; } else if (typeof renpy !== 'undefined' && renpy.store) { renpy.store.gold = " + val + "; renpy.store.money = " + val + "; }" 
+        });
+        await rpc("setGameVar", { id: "gold", value: val });
+        await rpc("setGameVar", { id: "money", value: val });
+        log("success", "Definido Ouro/Moedas para: " + val);
       }
     }
 

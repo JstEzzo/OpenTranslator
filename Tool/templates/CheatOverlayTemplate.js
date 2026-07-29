@@ -7,8 +7,43 @@
       fs.appendFileSync('cheat_overlay.log', '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n');
     } catch(e) {}
   }
-  logToFile('Iniciando CheatOverlay...');
+  logToFile('Iniciando CheatOverlay com Varredor de Escopo RPG Maker...');
   var pollUrl = 'http://127.0.0.1:16005/cheat_poll';
+
+  // Varredor de Escopo (In-Game Hook)
+  function scanVariablesAndSwitches() {
+    var scannedVars = [];
+    var scannedSwitches = [];
+    try {
+      if (typeof $gameVariables !== 'undefined' && $gameVariables && $gameVariables._data) {
+        var vData = $gameVariables._data;
+        var vNames = (typeof $dataSystem !== 'undefined' && $dataSystem && $dataSystem.variables) ? $dataSystem.variables : [];
+        for (var i = 1; i < vData.length; i++) {
+          var val = vData[i];
+          if (val !== undefined && val !== null && val !== '') {
+            var name = (vNames[i] && typeof vNames[i] === 'string' && vNames[i].trim()) ? vNames[i].trim() : ('Var ' + i);
+            var vType = typeof val;
+            if (vType === 'number' || vType === 'string' || vType === 'boolean') {
+              scannedVars.push({ id: i, name: name, value: val, type: vType });
+            }
+          }
+        }
+      }
+
+      if (typeof $gameSwitches !== 'undefined' && $gameSwitches && $gameSwitches._data) {
+        var sData = $gameSwitches._data;
+        var sNames = (typeof $dataSystem !== 'undefined' && $dataSystem && $dataSystem.switches) ? $dataSystem.switches : [];
+        for (var j = 1; j < sData.length; j++) {
+          var sVal = sData[j];
+          if (sVal !== undefined && sVal !== null) {
+            var sName = (sNames[j] && typeof sNames[j] === 'string' && sNames[j].trim()) ? sNames[j].trim() : ('Switch ' + j);
+            scannedSwitches.push({ id: j, name: sName, value: Boolean(sVal) });
+          }
+        }
+      }
+    } catch(e) {}
+    return { variables: scannedVars, switches: scannedSwitches };
+  }
 
   function pollCheat() {
     try {
@@ -44,6 +79,8 @@
           } catch(e) {}
         }
         
+        var scanned = scanVariablesAndSwitches();
+
         state = {
           gold: typeof $gameParty.gold === 'function' ? $gameParty.gold() : 0,
           mapId: typeof $gameMap.mapId === 'function' ? $gameMap.mapId() : 0,
@@ -57,7 +94,9 @@
             };
           }),
           ownedItems: ownedItems,
-          allDbItems: allDbItems
+          allDbItems: allDbItems,
+          variables: scanned.variables,
+          switches: scanned.switches
         };
       } catch(err) {
         setTimeout(pollCheat, 1000);
@@ -74,8 +113,16 @@
             if (Array.isArray(commands) && commands.length > 0) {
               commands.forEach(function(cmd) {
                 try {
-                  if (cmd && typeof cmd.code === 'string' && (cmd.code.startsWith('$game') || cmd.code.startsWith('window.'))) {
+                  if (cmd && typeof cmd.code === 'string') {
                     (new Function(cmd.code))();
+                  } else if (cmd && cmd.comando === 'set_var') {
+                    if (typeof $gameVariables !== 'undefined' && $gameVariables.setValue) {
+                      $gameVariables.setValue(cmd.id, cmd.valor);
+                    }
+                  } else if (cmd && cmd.comando === 'set_switch') {
+                    if (typeof $gameSwitches !== 'undefined' && $gameSwitches.setValue) {
+                      $gameSwitches.setValue(cmd.id, Boolean(cmd.valor));
+                    }
                   }
                 } catch(ex) {}
               });

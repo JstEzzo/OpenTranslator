@@ -29,14 +29,13 @@ const ENGINES_DEF = {
   krkrz: { label: "Kirikiri Z", js: false, icon: "\u2728" },
   wolf: { label: "Wolf RPG", js: false, icon: "\ud83d\udc3a" },
   rgss: { label: "RGSS (XP/VX/Ace)", js: false, icon: "\u2699" },
-  unity: { label: "Unity", js: false, icon: "\ud83c\udf10" },
-  python: { label: "Ren'Py", js: false, icon: "\ud83d\udc0d" },
+  unity: { label: "Unity", js: false, icon: "🌐" },
+  python: { label: "Ren'Py", js: false, icon: "🐍" },
   srpg: { label: "SRPG Studio", js: false, icon: "\u2694" },
   agtk: { label: "Action Game Toolkit", js: false, icon: "\ud83c\udff0" },
   kmy: { label: "KMY", js: false, icon: "\ud83d\udd2e" },
   bakin: { label: "Bakin", js: false, icon: "\ud83c\udfad" },
   tyrano: { label: "TyranoScript", js: true, icon: "\ud83d\udcdd" },
-  renpy: { label: "Ren'Py (JS)", js: true, icon: "\ud83d\udc0d" },
 };
 
 function findDataDir(gameDir) {
@@ -48,6 +47,10 @@ function findDataDir(gameDir) {
 }
 
 function detectEngine(exePath, exeDir) {
+  if (exePath && typeof exePath === "object") {
+    exeDir = exePath.exeDir || exePath.dir || exeDir;
+    exePath = exePath.exePath || exePath.targetFile || exePath.path;
+  }
   if (!exePath || typeof exePath !== "string") return "mz";
   
   let targetFile = exePath;
@@ -84,19 +87,16 @@ function detectEngine(exePath, exeDir) {
       const files = fs.readdirSync(dir);
       const fl = files.map((f) => f.toLowerCase());
 
-      // CHECAGEM DEFINITIVA DE REN'PY
-      // Ren'Py possui inconfundivelmente: pasta 'renpy', pasta 'game', arquivo .py com nome do exe, ou scripts .rpy/.rpyc/.rpa
+      // DETECÇÃO AUTOMÁTICA DE JOGOS REN'PY
       const hasRenpyFolder = fl.includes("renpy");
       const hasGameFolder = fl.includes("game");
-      const hasLibFolder = fl.includes("lib");
-      const hasPyScript = fl.includes(baseName + ".py") || fl.some((f) => f.endsWith(".py") && f !== "setup.py");
+      const hasPyScript = fl.some((f) => f.endsWith(".py") && f !== "setup.py");
       const hasRpyFile = fl.some((f) => f.endsWith(".rpy") || f.endsWith(".rpyc") || f.endsWith(".rpa"));
 
-      if (hasRenpyFolder || (hasGameFolder && (hasLibFolder || hasPyScript || hasRpyFile))) {
+      if (hasRenpyFolder || (hasGameFolder && (hasPyScript || hasRpyFile))) {
         return "python";
       }
 
-      // Verificação profunda dentro da pasta game/ para Ren'Py
       if (hasGameFolder) {
         try {
           const gameSubFiles = fs.readdirSync(path.join(dir, "game")).map((f) => f.toLowerCase());
@@ -105,6 +105,8 @@ function detectEngine(exePath, exeDir) {
           }
         } catch (e) {}
       }
+
+
 
       // RPG Maker MZ / MV
       if (fl.some((f) => f === "www" && fs.statSync(path.join(dir, "www")).isDirectory())) return "mz";
@@ -149,8 +151,6 @@ function detectEngine(exePath, exeDir) {
   // 2. CHECAGEM VIA CONTEÚDO BINÁRIO DO EXECUTÁVEL (.EXE)
   if (fs.existsSync(targetFile)) {
     try {
-      const buf = fs.readFileSync(targetFile, { encoding: "utf8", flag: "r" }).substring(0, 200000);
-      if (buf.includes("renpy") || buf.includes("Ren'Py") || buf.includes("renpython") || buf.includes("renpy.bootstrap")) return "python";
       if (buf.includes("RPGVXAce") || buf.includes("RGSS3") || buf.includes("RGSS2")) return "rgss";
       if (buf.includes("WolfRPG") || buf.includes("Wolf RPG Editor")) return "wolf";
       if (buf.includes("TyranoBuilder") || buf.includes("tyranoscript")) return "tyrano";
@@ -165,8 +165,6 @@ function detectEngine(exePath, exeDir) {
     } catch (e) {}
   }
 
-  // 3. FALLBACKS POR NOME
-  if (baseName.includes("renpy") || baseName.includes("ren_py")) return "python";
   if (baseName.includes("rpg") || baseName.includes("game")) return "mz";
   if (baseName.includes("unity") || baseName.includes("win")) return "unity";
 
@@ -236,7 +234,8 @@ function autoWrapText(text, maxChars) {
   }
   if (text.length <= maxChars) return text;
 
-  const tokenRegex = /(\\[A-Za-z]+\[\d+\]|\\[A-Za-z]+|[^\s\\]+|\\)/g;
+  // Tokenize words and escape codes (supporting single \\ or multiple \\\\ backslashes like \\V[1] or \\C[2])
+  const tokenRegex = /(\\+[A-Za-z0-9_]+(\[[^\]]*\])?|\\+[{}!.\|^$><\\%]|[^\s\\]+|\\)/gi;
   const tokens = text.match(tokenRegex) || [];
 
   let lines = [];
@@ -244,13 +243,14 @@ function autoWrapText(text, maxChars) {
   let currentLength = 0;
 
   for (const token of tokens) {
-    const tokenLen = token.length;
+    const isEscapeToken = /^\\+[A-Za-z0-9_]+(\[[^\]]*\])?/i.test(token) || /^\\+[{}!.\|^$><\\%]/.test(token);
+    const visibleLen = isEscapeToken ? 0 : token.length;
 
-    if (currentLength + tokenLen + (currentLength > 0 ? 1 : 0) > maxChars) {
+    if (currentLength + visibleLen + (currentLength > 0 ? 1 : 0) > maxChars) {
       if (currentLine) {
         lines.push(currentLine);
         currentLine = token;
-        currentLength = tokenLen;
+        currentLength = visibleLen;
       } else {
         lines.push(token);
         currentLine = "";
@@ -259,10 +259,10 @@ function autoWrapText(text, maxChars) {
     } else {
       if (currentLine) {
         currentLine += " " + token;
-        currentLength += 1 + tokenLen;
+        currentLength += 1 + visibleLen;
       } else {
         currentLine = token;
-        currentLength = tokenLen;
+        currentLength = visibleLen;
       }
     }
   }
@@ -648,15 +648,34 @@ function restoreOldestBackup(gameDir) {
 }
 
 function checkProcessRunning() {
-  if (!global.launchedProc) return { key: null, running: false, exitCode: null };
-  try {
-    const ec = global.launchedProc.exitCode;
-    return ec === null
-      ? { key: global.launchedKey, running: true, exitCode: null }
-      : { key: null, running: false, exitCode: ec };
-  } catch (e) {
-    return { key: null, running: false, exitCode: null };
+  if (!global.launchedKey) return { key: null, running: false, exitCode: null };
+
+  if (global.lastRpcTimestamp && (Date.now() - global.lastRpcTimestamp < 60000)) {
+    return { key: global.launchedKey, running: true, exitCode: null };
   }
+
+  if (global.launchedPid && global.launchedPid > 0) {
+    try {
+      if (process.kill(global.launchedPid, 0)) {
+        return { key: global.launchedKey, running: true, exitCode: null };
+      }
+    } catch (e) {}
+  }
+
+  if (global.launchTime && (Date.now() - global.launchTime < 15000)) {
+    return { key: global.launchedKey, running: true, exitCode: null };
+  }
+
+  if (global.launchedProc) {
+    try {
+      const ec = global.launchedProc.exitCode;
+      if (ec === null) {
+        return { key: global.launchedKey, running: true, exitCode: null };
+      }
+    } catch (e) {}
+  }
+
+  return { key: null, running: false, exitCode: global.launchedProc?.exitCode ?? 0 };
 }
 
 async function findGameOnDisk(fileName) {
@@ -723,7 +742,7 @@ async function runPythonScript(scriptPath, args) {
   const localPython = path.join(
     global.ROOT,
     "resources",
-    "renpy",
+    "unity",
     "python",
     "python.exe"
   );

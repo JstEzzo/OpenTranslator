@@ -4,7 +4,7 @@
 
 # OpenTranslator
 
-**Game translation and modding tool — offline-first, no ads, no tracking.**
+**Ferramenta de tradução e modding offline-first para jogos — Sem anúncios, sem rastreamento.**
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
@@ -14,77 +14,64 @@
 
 ---
 
-## Supported Engines
+## 🎮 Motores Suportados (Supported Engines)
 
-| Engine | File Translation | Real-Time Hook |
-|--------|:----------------:|:--------------:|
-| RPG Maker MZ / MV | ✅ | ✅ |
-| TyranoScript | ✅ | ✅ |
-| Wolf RPG | ✅ | ✅ |
-| Ren'Py | ✅ | — |
-| Godot Engine | ✅ | — |
-| Unity | ✅ | — |
-| KRKR / SRPG Studio | — | ✅ |
+| Engine | Tradução de Arquivos | Hook em Tempo Real |
+|--------|:-------------------:|:------------------:|
+| **Ren'Py (Python)** | ✅ (Ultra-Rápida / 32 Threads) | ✅ (Autônoma) |
+| **RPG Maker MZ / MV** | ✅ | ✅ |
+| **TyranoScript** | ✅ | ✅ |
+| **Wolf RPG** | ✅ | ✅ |
+| **Godot Engine** | ✅ | — |
+| **Unity / XUnity** | ✅ | ✅ |
+| **Kirikiri (KRKR)** | — | ✅ |
+| **SRPG Studio** | — | ✅ |
 
 ---
 
-## Quick Start
+## 🚀 Início Rápido (Quick Start)
 
+### 1. Clone o repositório
 ```bash
 git clone https://github.com/JstEzzo/OpenTranslator.git
 ```
 
-Then double-click **`LAUNCH_OpenTranslator.bat`**.
+### 2. Execute
+Duplo clique em qualquer um dos inicializadores:
+- **`OpenTranslator.lnk`** (Atalho nativo com ícone personalizado)
+- **`OpenTranslator.bat`** (Launcher inteligente e silencioso)
 
-On first run, the launcher automatically detects and downloads everything that's missing (Node.js, NPM dependencies, engine tools).
-
----
-
-## How It Works
-
-```
- [LAUNCH_OpenTranslator.bat]
-          │
-          ▼
- [Backend Server — Node.js :3000]  ←→  [Web UI — Chromium]
-          │
-          ├── JSON/data file translation (permanent patch)
-          ├── Real-time hook via WebSocket :16005
-          ├── XOR image/audio decryption
-          ├── Smart auto word-wrap
-          └── Save and backup management
-```
-
-The server listens **exclusively on `127.0.0.1`** — no ports are exposed to the local network or internet.
+Na primeira execução, o launcher verifica e baixa automaticamente tudo o que estiver faltando (Node.js portátil) de forma 100% autônoma e silenciosa.
 
 ---
 
-## Translation Engines
+## 🛠️ Requisitos de Sistema
 
-- Google Translate
-- Bing / Microsoft Translator
-- DeepL
-- LibreTranslate (self-hosted)
-- Local LLM models (via OpenAI-compatible API)
+- **OS**: Windows 10 / Windows 11 (64-bit) — Compatível com **Windows Sandbox (`WDAGUtilityAccount`)** e contas sem privilégios de Administrador.
+- **Rede**: Conexão com a internet apenas no primeiro boot (para baixar o Node.js portátil se não houver instalado).
+- **Node.js**: v18+ (caso não haja no sistema, o launcher baixa a versão v20.18.3 LTS automaticamente).
 
 ---
 
-## Project Structure
+## 📐 Estrutura do Projeto
 
-```
+```text
 OpenTranslator/
-├── LAUNCH_OpenTranslator.bat   ← Entry point
-└── Tool/
-    ├── server.js               ← Main backend
-    ├── src/                    ← Server modules
-    ├── www/                    ← Web interface
-    ├── loaders/                ← Per-engine hooks
-    ├── resources/              ← Per-engine tools
-    └── gameLib/                ← Engine detection
+├── OpenTranslator.bat           ← Launcher principal silencioso
+├── OpenTranslator.lnk           ← Atalho com ícone personalizado
+├── Tool/                        ← Executáveis, módulo Node.js e UI
+│   ├── server.js                ← Backend Node.js (porta 3000)
+│   ├── open_translator.py       ← Motor agregador paralelo (32 threads)
+│   ├── src/                     ← Código-fonte modular (utilitários, RPC, motores, cache)
+│   ├── bin/                     ← Executáveis e scripts nativos (download_node.ps1)
+│   ├── www/                     ← Interface web (UI Glassmorphism)
+│   ├── loaders/                 ← Hooks e injetores por engine
+│   └── resources/               ← Sidecars por engine (Python, Unity, EVB, Godot)
+└── skills_whitepaper/           ← Documentação técnica completa (WHITEPAPER.md)
 ```
 
 ---
 
 <div align="center">
-  <sub>Built for players. Translation without the hassle.</sub>
+  <sub>Construído para jogadores. Tradução universal com alta performance.</sub>
 </div>

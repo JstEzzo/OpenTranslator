@@ -57,6 +57,11 @@ function terminateAllProcessesAndExit(reason) {
   });
 
   try {
+    const { stopHookServer } = require("./cheatServer");
+    stopHookServer();
+  } catch (e) {}
+
+  try {
     const { closeDb } = require("./cache");
     closeDb();
   } catch (e) {}
@@ -187,8 +192,14 @@ const server = http.createServer((req, res) => {
           }
         });
       } else {
-        res.writeHead(404);
-        res.end("Not found");
+        const indexFallback = path.join(global.WWW_DIR, "index.html");
+        if (fs.existsSync(indexFallback)) {
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(fs.readFileSync(indexFallback));
+        } else {
+          res.writeHead(404);
+          res.end("Not found");
+        }
       }
     } else {
       res.writeHead(200, {

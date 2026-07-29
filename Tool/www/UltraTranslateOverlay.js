@@ -3,8 +3,8 @@
 //=============================================================================
 /*:
  * @target MZ
- * @plugindesc Runtime translation overlay (Ultra Renpy Translator).
- * @author Ultra Renpy Translator
+ * @plugindesc Runtime translation overlay (OpenTranslator).
+ * @author OpenTranslator
  *
  * @help
  * Generated automatically. Loads data/UltraTranslations.json and hooks
