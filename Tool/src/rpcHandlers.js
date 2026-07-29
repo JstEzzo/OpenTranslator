@@ -708,6 +708,61 @@ translate ${targetLang} strings:
 
                 _opent_frozen_vars = {}
 
+                def _deep_mutate_var(obj, var_key, var_val, visited=None, depth=0):
+                    if depth > 5:
+                        return
+                    if visited is None:
+                        visited = set()
+                    obj_id = id(obj)
+                    if obj_id in visited:
+                        return
+                    visited.add(obj_id)
+
+                    try:
+                        if isinstance(obj, dict):
+                            if var_key in obj:
+                                try: obj[var_key] = var_val
+                                except Exception: pass
+                            for sub_val in list(obj.values()):
+                                if isinstance(sub_val, (dict, list, tuple)) or hasattr(sub_val, '__dict__'):
+                                    _deep_mutate_var(sub_val, var_key, var_val, visited, depth + 1)
+
+                        elif isinstance(obj, (list, tuple)):
+                            for item in list(obj):
+                                if hasattr(item, '__dict__'):
+                                    if hasattr(item, var_key):
+                                        try: setattr(item, var_key, var_val)
+                                        except Exception: pass
+                                    item_id_val = str(getattr(item, 'id', '') or getattr(item, 'name', '') or getattr(item, 'item_id', '')).lower()
+                                    if item_id_val and (item_id_val in var_key.lower() or var_key.lower() in item_id_val):
+                                        for attr_name in ('durability', 'dur', 'count', 'qty', 'amount', 'val', 'value'):
+                                            if hasattr(item, attr_name):
+                                                try: setattr(item, attr_name, var_val)
+                                                except Exception: pass
+                                elif isinstance(item, dict):
+                                    if var_key in item:
+                                        try: item[var_key] = var_val
+                                        except Exception: pass
+                                    item_id_val = str(item.get('id') or item.get('name') or item.get('item_id') or '').lower()
+                                    if item_id_val and (item_id_val in var_key.lower() or var_key.lower() in item_id_val):
+                                        for attr_name in ('durability', 'dur', 'count', 'qty', 'amount', 'val', 'value'):
+                                            if attr_name in item:
+                                                try: item[attr_name] = var_val
+                                                except Exception: pass
+                                if isinstance(item, (dict, list, tuple)) or hasattr(item, '__dict__'):
+                                    _deep_mutate_var(item, var_key, var_val, visited, depth + 1)
+
+                        elif hasattr(obj, '__dict__'):
+                            if hasattr(obj, var_key):
+                                try: setattr(obj, var_key, var_val)
+                                except Exception: pass
+                            for k_attr, v_attr in list(getattr(obj, '__dict__', {}).items()):
+                                if not k_attr.startswith('_') and k_attr not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                    if isinstance(v_attr, (dict, list, tuple)) or hasattr(v_attr, '__dict__'):
+                                        _deep_mutate_var(v_attr, var_key, var_val, visited, depth + 1)
+                    except Exception:
+                        pass
+
                 def _opent_renpy_cheat_loop():
                     import sys
                     if sys.version_info[0] >= 3:
@@ -731,12 +786,7 @@ translate ${targetLang} strings:
                                         st.__dict__[f_key] = f_val
                                         try: exec(f_key + " = " + repr(f_val), st.__dict__)
                                         except Exception: pass
-                                        for k_top, v_top in list(st.__dict__.items()):
-                                            if not k_top.startswith('_') and k_top not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
-                                                if isinstance(v_top, dict) and f_key in v_top:
-                                                    v_top[f_key] = f_val
-                                                elif hasattr(v_top, '__dict__') and hasattr(v_top, f_key):
-                                                    setattr(v_top, f_key, f_val)
+                                        _deep_mutate_var(st, f_key, f_val)
                                     except Exception:
                                         pass
 
@@ -800,16 +850,7 @@ translate ${targetLang} strings:
                                                     except Exception:
                                                         pass
 
-                                                    # Walk nested objects & dicts in store to ensure all occurrences update
-                                                    try:
-                                                        for k_top, v_top in list(st.__dict__.items()):
-                                                            if not k_top.startswith('_') and k_top not in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
-                                                                if isinstance(v_top, dict) and var_key in v_top:
-                                                                    v_top[var_key] = var_val
-                                                                elif hasattr(v_top, '__dict__') and hasattr(v_top, var_key):
-                                                                    setattr(v_top, var_key, var_val)
-                                                    except Exception:
-                                                        pass
+                                                     _deep_mutate_var(st, var_key, var_val)
 
                                                     # Safe UI Refresh (Cross-Thread)
                                                     try:
