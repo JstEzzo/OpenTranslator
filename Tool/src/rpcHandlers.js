@@ -876,21 +876,44 @@ translate ${targetLang} strings:
                         pass
                     return res
 
+                def _get_path_val(st, path_str):
+                    try:
+                        return eval("renpy.store." + path_str, globals(), st.__dict__)
+                    except Exception:
+                        try:
+                            return eval(path_str, globals(), st.__dict__)
+                        except Exception:
+                            return getattr(st, path_str, None)
+
                 def _set_path_val(st, path_str, val):
+                    success = False
                     try:
                         exec("renpy.store." + path_str + " = " + repr(val), globals(), st.__dict__)
+                        success = True
                     except Exception:
                         pass
-                    try:
-                        exec(path_str + " = " + repr(val), globals(), st.__dict__)
-                    except Exception:
-                        pass
-                    try:
-                        setattr(st, path_str, val)
-                        st.__dict__[path_str] = val
-                    except Exception:
-                        pass
+                    if not success:
+                        try:
+                            exec(path_str + " = " + repr(val), globals(), st.__dict__)
+                            success = True
+                        except Exception:
+                            pass
+                    if not success:
+                        try:
+                            setattr(st, path_str, val)
+                            st.__dict__[path_str] = val
+                        except Exception:
+                            pass
                     _deep_mutate_var(st, path_str, val)
+
+                def _force_choice_path(target_label):
+                    try:
+                        if hasattr(renpy, 'jump'):
+                            renpy.jump(target_label)
+                        elif hasattr(getattr(renpy, 'exports', None), 'jump'):
+                            renpy.exports.jump(target_label)
+                    except Exception:
+                        pass
 
                 def _opent_python_callback():
                     try:
