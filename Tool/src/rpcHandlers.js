@@ -990,7 +990,7 @@ translate ${targetLang} strings:
 
                                                     # Targeted Audit Log for the specific variable modified by user
                                                     try:
-                                                        sys.stderr.write("[Targeted Audit] Var '" + str(var_key) + "' | Prev: " + str(old_val) + " -> Set: " + str(var_val) + " (RAM: " + str(new_val) + ")\n")
+                                                        sys.stderr.write("[Targeted Audit] Var '" + str(var_key) + "' | Prev: " + str(old_val) + " -> Set: " + str(var_val) + " (RAM: " + str(new_val) + ")\\n")
                                                         _opent_audit_queue.append({'key': str(var_key), 'old': str(old_val), 'new': str(new_val), 'val': str(var_val)})
                                                     except Exception:
                                                         pass
