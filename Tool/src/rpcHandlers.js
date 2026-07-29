@@ -843,7 +843,7 @@ translate ${targetLang} strings:
                                 k_str = str(k)
                                 if _is_heavy(k_str, v):
                                     continue
-                                path = (prefix + "." + k_str) if prefix else k_str
+                                path = (prefix + '["' + k_str + '"]') if prefix else k_str
                                 if isinstance(v, (int, float, str, bool)):
                                     v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
                                     res.append({'id': path, 'name': path, 'value': _sanitize_val(v), 'type': v_type})
@@ -854,9 +854,7 @@ translate ${targetLang} strings:
                             for idx, item in enumerate(list(obj)):
                                 if _is_heavy(idx, item):
                                     continue
-                                item_name = getattr(item, 'id', None) or getattr(item, 'name', None) or getattr(item, 'item_id', None)
-                                item_str = str(item_name) if item_name else str(idx)
-                                path = prefix + "[" + item_str + "]"
+                                path = (prefix + "[" + str(idx) + "]") if prefix else ("[" + str(idx) + "]")
                                 if isinstance(item, (int, float, str, bool)):
                                     v_type = 'number' if isinstance(item, (int, float)) else ('boolean' if isinstance(item, bool) else 'string')
                                     res.append({'id': path, 'name': path, 'value': _sanitize_val(item), 'type': v_type})
@@ -880,6 +878,10 @@ translate ${targetLang} strings:
 
                 def _set_path_val(st, path_str, val):
                     try:
+                        exec("renpy.store." + path_str + " = " + repr(val), globals(), st.__dict__)
+                    except Exception:
+                        pass
+                    try:
                         exec(path_str + " = " + repr(val), globals(), st.__dict__)
                     except Exception:
                         pass
@@ -889,6 +891,22 @@ translate ${targetLang} strings:
                     except Exception:
                         pass
                     _deep_mutate_var(st, path_str, val)
+
+                def _opent_python_callback():
+                    try:
+                        st = getattr(renpy, 'store', None)
+                        if st and _opent_frozen_vars:
+                            for f_key, f_val in list(_opent_frozen_vars.items()):
+                                _set_path_val(st, f_key, f_val)
+                    except Exception:
+                        pass
+
+                try:
+                    if hasattr(renpy, 'config') and hasattr(renpy.config, 'python_callbacks'):
+                        if _opent_python_callback not in renpy.config.python_callbacks:
+                            renpy.config.python_callbacks.append(_opent_python_callback)
+                except Exception:
+                    pass
 
                 def _opent_renpy_cheat_loop():
                     import sys
