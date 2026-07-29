@@ -775,10 +775,23 @@ translate ${targetLang} strings:
 
                     res = []
                     try:
+                        def _is_heavy(k_name, val):
+                            k_s = str(k_name)
+                            if k_s.startswith('_'):
+                                return True
+                            if k_s in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme', 'persistent', 'python', 'sys', 'os', 'main'):
+                                return True
+                            if callable(val) or isinstance(val, type):
+                                return True
+                            mod = getattr(type(val), '__module__', '') or ''
+                            if mod.startswith(('renpy.', 'pygame.', 'sys', 'builtins', 'threading')):
+                                return True
+                            return False
+
                         if isinstance(obj, dict):
                             for k, v in list(obj.items()):
                                 k_str = str(k)
-                                if k_str.startswith('_') or k_str in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                if _is_heavy(k_str, v):
                                     continue
                                 path = (prefix + "." + k_str) if prefix else k_str
                                 if isinstance(v, (int, float, str, bool)):
@@ -789,6 +802,8 @@ translate ${targetLang} strings:
 
                         elif isinstance(obj, (list, tuple)):
                             for idx, item in enumerate(list(obj)):
+                                if _is_heavy(idx, item):
+                                    continue
                                 item_name = getattr(item, 'id', None) or getattr(item, 'name', None) or getattr(item, 'item_id', None)
                                 item_str = str(item_name) if item_name else str(idx)
                                 path = prefix + "[" + item_str + "]"
@@ -801,9 +816,9 @@ translate ${targetLang} strings:
                         elif hasattr(obj, '__dict__'):
                             for k, v in list(getattr(obj, '__dict__', {}).items()):
                                 k_str = str(k)
-                                if k_str.startswith('_') or k_str in ('config', 'renpy', 'store', 'style', 'ui', 'adv', 'nvl', 'theme'):
+                                if _is_heavy(k_str, v):
                                     continue
-                                path = (prefix + "." + k_str) if prefix else str(k)
+                                path = (prefix + "." + k_str) if prefix else k_str
                                 if isinstance(v, (int, float, str, bool)):
                                     v_type = 'number' if isinstance(v, (int, float)) else ('boolean' if isinstance(v, bool) else 'string')
                                     res.append({'id': path, 'name': path, 'value': v, 'type': v_type})
