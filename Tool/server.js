@@ -46,49 +46,36 @@ require("./src/logger");
 
 // ==================== TRATAMENTO DE EXCEÇÕES ====================
 process.on("uncaughtException", (err) => {
-  global.log(
-    "error",
-    "Uncaught Exception detectada: " +
-      (err ? err.stack || err.message || err : "desconhecida")
-  );
-  console.error("Uncaught Exception:", err);
+  global.log("error", err);
 });
 
 process.on("unhandledRejection", (reason) => {
-  global.log(
-    "error",
-    "Unhandled Rejection detectada: " +
-      (reason ? reason.stack || reason.message || reason : "desconhecido")
-  );
-  console.error("Unhandled Rejection reason:", reason);
+  global.log("error", reason instanceof Error ? reason : new Error("Unhandled Rejection: " + reason));
 });
 
 // ==================== GERENCIAMENTO DE INSTÂNCIAS (PID) ====================
 const PID_FILE = path.join(global.DATA_DIR, "server.pid");
 try {
   if (process.platform === "win32") {
-    try {
-      execSync(
-        `powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`
-      );
-    } catch (e) {}
+    execSync(
+      `powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort ${global.PORT} -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`,
+      { stdio: "ignore" }
+    );
   }
   if (fs.existsSync(PID_FILE)) {
     const oldPid = parseInt(fs.readFileSync(PID_FILE, "utf8").trim(), 10);
     if (oldPid > 0 && oldPid !== process.pid) {
-      try {
-        const cmd =
-          process.platform === "win32"
-            ? "taskkill /PID " + oldPid + " /F 2>nul"
-            : "kill -9 " + oldPid + " 2>/dev/null";
-        execSync(cmd);
-      } catch (e) {}
-      try {
-        fs.unlinkSync(PID_FILE);
-      } catch (e) {}
+      const cmd =
+        process.platform === "win32"
+          ? `taskkill /PID ${oldPid} /F 2>nul`
+          : `kill -9 ${oldPid} 2>/dev/null`;
+      execSync(cmd, { stdio: "ignore" });
+      fs.unlinkSync(PID_FILE);
     }
   }
-} catch (e) {}
+} catch (e) {
+  // Erros na limpeza inicial do PID/porta são silenciosos, não críticos.
+}
 
 let isCleaningUp = false;
 function shutdownAll(reason = "App Shutdown") {
@@ -104,12 +91,12 @@ function shutdownAll(reason = "App Shutdown") {
       if (pid && pid > 0) {
         global.log("info", `Encerrando processo de jogo ativo (PID ${pid})...`);
         if (process.platform === "win32") {
-          execSync(`taskkill /F /T /PID ${pid} 2>nul`);
+          execSync(`taskkill /F /T /PID ${pid} 2>nul`, { stdio: "ignore" });
         } else {
           process.kill(pid, "SIGKILL");
         }
       }
-    } catch (e) {}
+    } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
     global.launchedProc = null;
   }
 
@@ -118,7 +105,7 @@ function shutdownAll(reason = "App Shutdown") {
     try {
       const { restoreGameData } = require("./src/gameEngine");
       restoreGameData(global.launchedBak);
-    } catch (e) {}
+    } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
   }
 
   // 3. Fechar porta do servidor HTTP (3000)
@@ -127,20 +114,20 @@ function shutdownAll(reason = "App Shutdown") {
     if (server && server.listening) {
       server.close();
     }
-  } catch (e) {}
+  } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
 
   // 4. Fechar portas e sockets do Hook Server (16005)
   try {
     const { stopHookServer } = require("./src/cheatServer");
     stopHookServer();
-  } catch (e) {}
+  } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
 
   // 5. Limpar arquivo de PID
   try {
     if (fs.existsSync(PID_FILE)) {
       fs.unlinkSync(PID_FILE);
     }
-  } catch (e) {}
+  } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
 
   setTimeout(() => process.exit(0), 250);
 }

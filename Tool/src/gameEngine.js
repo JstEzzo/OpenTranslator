@@ -43,7 +43,18 @@ function findDataDir(gameDir) {
     return path.join(gameDir, "www", "data");
   if (fs.existsSync(path.join(gameDir, "data")))
     return path.join(gameDir, "data");
-  return "";
+  return null;
+}
+
+function unpackNwExe(exePath, gameDir) {
+  if (!exePath || !fs.existsSync(exePath)) return false;
+  try {
+    const pyCode = `import zipfile, sys; z = zipfile.ZipFile(sys.argv[1]); z.extractall(sys.argv[2]); print("OK")`;
+    const res = execSync(`python -c "${pyCode}" "${exePath}" "${gameDir}"`, { encoding: "utf-8", stdio: "pipe" });
+    return res && res.includes("OK");
+  } catch (e) {
+    return false;
+  }
 }
 
 function detectEngine(exePath, exeDir) {
@@ -70,7 +81,7 @@ function detectEngine(exePath, exeDir) {
       } else {
         dir = exeDir || path.dirname(targetFile);
       }
-    } catch (e) {}
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
   } else if (dir && fs.existsSync(dir)) {
     const candidate = path.join(dir, path.basename(targetFile));
     if (fs.existsSync(candidate)) {
@@ -103,7 +114,7 @@ function detectEngine(exePath, exeDir) {
           if (gameSubFiles.some((f) => f.endsWith(".rpy") || f.endsWith(".rpyc") || f.endsWith(".rpa") || f === "script.rpy")) {
             return "python";
           }
-        } catch (e) {}
+        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
       }
 
 
@@ -116,7 +127,7 @@ function detectEngine(exePath, exeDir) {
         try {
           const jsFiles = fs.readdirSync(path.join(dir, "js")).map((f) => f.toLowerCase());
           if (jsFiles.some((f) => f === "rmmz_core.js" || f === "rpg_core.js")) return "mz";
-        } catch (e) {}
+        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
       }
 
       // Kirikiri
@@ -135,7 +146,7 @@ function detectEngine(exePath, exeDir) {
           if (sub.includes("basicdata") || sub.includes("mapdata") || sub.some((f) => f.endsWith(".wolf") || f === "basicdata.zip")) {
             return "wolf";
           }
-        } catch (e) {}
+        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
       }
 
       // TyranoScript
@@ -145,7 +156,7 @@ function detectEngine(exePath, exeDir) {
       if (fl.some((f) => f === baseName + "_data" || (f.endsWith("_data") && fs.statSync(path.join(dir, f)).isDirectory()))) {
         return "unity";
       }
-    } catch (e) {}
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
   }
 
   // 2. CHECAGEM VIA CONTEÚDO BINÁRIO DO EXECUTÁVEL (.EXE)
@@ -162,7 +173,7 @@ function detectEngine(exePath, exeDir) {
       if (buf.includes("Bakin")) return "bakin";
       if (buf.includes("kmy")) return "kmy";
       if (buf.includes("www/") || buf.includes("System.png") || buf.includes("rpg_core")) return "mz";
-    } catch (e) {}
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
   }
 
   if (baseName.includes("rpg") || baseName.includes("game")) return "mz";
@@ -183,7 +194,7 @@ function getExeArch(exePath) {
     const machine = machineBuf.readUInt16LE(0);
     if (machine === 0x8664) return 64;
     if (machine === 0x014c) return 32;
-  } catch (e) {}
+  } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
   return 32;
 }
 
@@ -200,7 +211,7 @@ function getHookDll(eng, exePath) {
       if (stats.size > 4000000) {
         return "wolfHook.dll";
       }
-    } catch (e) {}
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
     return "wolfHook3.dll";
   }
   if (eng === "krkrz") {
@@ -316,7 +327,7 @@ function patchGameData(gameDir, texts, translations) {
                       patchParamObject(parsed, [...keys, "__json__"]);
                       return JSON.stringify(parsed);
                     }
-                  } catch (e) {}
+                  } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
                 }
 
                 if (isJsCode(val)) {
@@ -445,6 +456,18 @@ function patchGameData(gameDir, texts, translations) {
         if (!success) continue;
         const lastKey = realKeys[realKeys.length - 1];
         if (obj && typeof obj === "object" && lastKey in obj) {
+          const SKIP_KEYS = new Set([
+            "characterName", "battlerName", "faceName", "parallaxName",
+            "battleback1Name", "battleback2Name", "pictureName", "title1Name",
+            "title2Name", "bgName", "seName", "bgmName", "fontFace",
+            "fontFileName", "file", "fileName", "graphic", "src", "path",
+            "url", "icon", "audio", "bgm", "bgs", "me", "se", "note",
+            "code", "meta"
+          ]);
+          if (typeof lastKey === "string" && SKIP_KEYS.has(lastKey)) {
+            continue;
+          }
+
           const origVal = String(obj[lastKey]).trim();
           if (
             /\.(png|jpg|jpeg|gif|bmp|webp|ogg|wav|mp3|m4a|json|efkefc|atlas|skel)$/i.test(origVal) ||
@@ -480,12 +503,6 @@ function patchGameData(gameDir, texts, translations) {
             }
           } else {
             const parentCmd = getValueAtPath(data, realKeys.slice(0, -2));
-            if (
-              parentCmd &&
-              (parentCmd.code === 355 || parentCmd.code === 655)
-            ) {
-              restored = "テキスト-" + restored;
-            }
             if (parentCmd && parentCmd.code === 401) {
               const cfg = loadCfg();
               const wrapLimit = parseInt(cfg.wordWrapLimit, 10) || 0;
@@ -528,13 +545,13 @@ function backupGameData(gameDir) {
     if (fs.existsSync(htmlPath)) {
       try {
         fs.copyFileSync(htmlPath, path.join(bakDir, "index.html"));
-      } catch (e) {}
+      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
     }
     const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
     if (fs.existsSync(pluginsJsPath)) {
       try {
         fs.copyFileSync(pluginsJsPath, path.join(bakDir, "plugins.js_bak"));
-      } catch (e) {}
+      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
     }
     global.log("info", "Backup: " + path.basename(bakDir));
     return bakDir;
@@ -560,7 +577,7 @@ function restoreGameData(bakDir) {
         const htmlPath = path.join(wwwDir, "index.html");
         if (fs.existsSync(htmlPath)) fs.unlinkSync(htmlPath);
         fs.copyFileSync(bakHtml, htmlPath);
-      } catch (e) {}
+      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
     }
     const bakPlugins = path.join(bakDir, "plugins.js_bak");
     const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
@@ -568,13 +585,13 @@ function restoreGameData(bakDir) {
       try {
         if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
         fs.copyFileSync(bakPlugins, pluginsJsPath);
-      } catch (e) {}
+      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
     }
     const cheatScript = path.join(wwwDir, "CheatOverlay.js");
     if (fs.existsSync(cheatScript)) {
       try {
         fs.unlinkSync(cheatScript);
-      } catch (e) {}
+      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
     }
     fs.rmSync(bakDir, { recursive: true, force: true });
     global.log("info", "Restored original data from backup");
@@ -629,7 +646,7 @@ function restoreOldestBackup(gameDir) {
         try {
           if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
           fs.copyFileSync(bakPlugins, pluginsJsPath);
-        } catch (e) {}
+        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
       }
 
       for (const bak of backups) {
@@ -656,10 +673,15 @@ function checkProcessRunning() {
 
   if (global.launchedPid && global.launchedPid > 0) {
     try {
-      if (process.kill(global.launchedPid, 0)) {
-        return { key: global.launchedKey, running: true, exitCode: null };
+      process.kill(global.launchedPid, 0);
+      return { key: global.launchedKey, running: true, exitCode: null };
+    } catch (e) {
+      if (e.code === 'ESRCH') {
+        global.launchedPid = null;
+      } else {
+        global.log("warn", `gameEngine: ${e.message}`);
       }
-    } catch (e) {}
+    }
   }
 
   if (global.launchTime && (Date.now() - global.launchTime < 15000)) {
@@ -672,7 +694,7 @@ function checkProcessRunning() {
       if (ec === null) {
         return { key: global.launchedKey, running: true, exitCode: null };
       }
-    } catch (e) {}
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
   }
 
   return { key: null, running: false, exitCode: global.launchedProc?.exitCode ?? 0 };
@@ -906,7 +928,7 @@ function healFonts(gameDir) {
                 "info",
                 `Self-Healing Fontes: Criado alias de fonte automático "${alias}" a partir de "${f}".`
               );
-            } catch (e) {}
+            } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
           }
         }
       }
@@ -962,7 +984,7 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
   let globalCacheMatches = 0;
   let commonMatches = 0;
 
-  const globalLangCache = loadGlobalCacheForLang(sl, tl);
+  const globalLangCache = loadGlobalCacheForLang(sl, tl, engine);
   const commonTrans = loadCommonTranslations();
 
   if (cacheTranslations) {
@@ -978,13 +1000,29 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
   for (const t of texts) {
     if (translations.has(t.id)) continue;
 
-    if (globalLangCache[t.clean]) {
-      translations.set(t.id, globalLangCache[t.clean]);
+    const orig = t.original ? t.original.trim() : "";
+    const clean = t.clean ? t.clean.trim() : "";
+    const cleanNoTags = clean ? clean.replace(/\\[VvNnCcGgPpIi](\[\d+\])?/g, "").replace(/\\[A-Za-z]+(\[\d+\])?/g, "").trim() : "";
+
+    const norm = (s) => {
+      if (typeof s !== "string") return s;
+      let r = s.trim();
+      if (r.length >= 2 && ((r[0] === '"' && r[r.length - 1] === '"') || (r[0] === "'" && r[r.length - 1] === "'"))) {
+        r = r.slice(1, -1);
+      }
+      return r;
+    };
+
+    const cachedTr = globalLangCache[orig] || globalLangCache[clean] || (cleanNoTags ? globalLangCache[cleanNoTags] : null)
+      || globalLangCache[norm(orig)] || globalLangCache[norm(clean)] || (cleanNoTags ? globalLangCache[norm(cleanNoTags)] : null);
+
+    if (cachedTr) {
+      translations.set(t.id, cachedTr);
       globalCacheMatches++;
       continue;
     }
 
-    const commonTr = getCommonTranslation(t.clean, sl, tl, commonTrans);
+    const commonTr = getCommonTranslation(clean || orig, sl, tl, commonTrans);
     if (commonTr) {
       translations.set(t.id, commonTr);
       commonMatches++;
@@ -1012,7 +1050,7 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
       glossary,
       (toSaveChunk) => {
         if (toSaveChunk && toSaveChunk.length > 0) {
-          saveNewGlobalTranslations(sl, tl, toSaveChunk);
+          saveNewGlobalTranslations(sl, tl, toSaveChunk, engine);
           savedCount += toSaveChunk.length;
         }
       }
@@ -1033,6 +1071,35 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
       "info",
       `Cache global SQLite atualizado incrementalmente com ${toSave.length} novas traduções.`
     );
+  }
+
+  // ===== VERIFICAÇÃO DE INTEGRIDADE =====
+  // Ao iniciar, confere se TODOS os textos extraídos têm tradução aplicada.
+  // Textos novos (jogo atualizado) ou falhas do motor ficam sem tradução e
+  // são reportados por arquivo — a re-extração já acontece a cada boot, então
+  // quando o motor responder, os faltantes são traduzidos automaticamente.
+  const untranslatedByFile = new Map();
+  for (const t of texts) {
+    const tr = translations.get(t.id);
+    if (!tr || tr === t.clean || tr.trim().length === 0) {
+      untranslatedByFile.set(t.file, (untranslatedByFile.get(t.file) || 0) + 1);
+    }
+  }
+  const untranslatedCount = [...untranslatedByFile.values()].reduce((a, b) => a + b, 0);
+  const pct = texts.length > 0 ? Math.round(((texts.length - untranslatedCount) / texts.length) * 100) : 100;
+  global.log(
+    "info",
+    `[Integridade] ${texts.length - untranslatedCount}/${texts.length} textos traduzidos (${pct}%).`
+  );
+  if (untranslatedCount > 0) {
+    global.log(
+      "warn",
+      `[Integridade] ${untranslatedCount} textos SEM tradução — provável motor bloqueado/rate-limited ou arquivos novos do jogo. Top arquivos:`
+    );
+    const top = [...untranslatedByFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    for (const [f, c] of top) {
+      global.log("warn", `  ${f}: ${c} textos faltando`);
+    }
   }
 
   try {
@@ -1094,10 +1161,97 @@ function getValueAtPath(obj, pathArr) {
   return cur;
 }
 
+function detectRenpyVersion(gameDir) {
+  if (!gameDir || !fs.existsSync(gameDir)) {
+    return { major: 7, minor: 4, patch: 0, raw: "7.4.0" };
+  }
+
+  // 1. Check log.txt
+  const logPath = path.join(gameDir, "log.txt");
+  if (fs.existsSync(logPath)) {
+    try {
+      const content = fs.readFileSync(logPath, "utf8");
+      const match = content.match(/Ren'Py\s+([0-9]+\.[0-9]+\.[0-9]+)/i);
+      if (match) {
+        const parts = match[1].split(".").map(n => parseInt(n, 10));
+        return { major: parts[0] || 7, minor: parts[1] || 0, patch: parts[2] || 0, raw: match[1] };
+      }
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+  }
+
+  // 2. Check lib/ folder structure for Python 3 vs Python 2
+  const libDir = path.join(gameDir, "lib");
+  if (fs.existsSync(libDir)) {
+    try {
+      const entries = fs.readdirSync(libDir);
+      if (entries.some(e => e.includes("py3") || e.includes("python3"))) {
+        if (entries.some(e => e.includes("8.5") || e.includes("py3.11"))) {
+          return { major: 8, minor: 5, patch: 0, raw: "8.5.0" };
+        }
+        return { major: 8, minor: 2, patch: 0, raw: "8.2.0" };
+      }
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+  }
+
+  // 3. Check renpy/vc_version.py if present
+  const vcPath = path.join(gameDir, "renpy", "vc_version.py");
+  if (fs.existsSync(vcPath)) {
+    try {
+      const content = fs.readFileSync(vcPath, "utf8");
+      const match = content.match(/official_version\s*=\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]/);
+      if (match) {
+        const parts = match[1].split(".").map(n => parseInt(n, 10));
+        return { major: parts[0] || 7, minor: parts[1] || 0, patch: parts[2] || 0, raw: match[1] };
+      }
+    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+  }
+
+  return { major: 7, minor: 4, patch: 0, raw: "7.4.0" };
+}
+
+function resolveRouterEngineType(exePath, gameDir) {
+  const dir = gameDir || (exePath ? path.dirname(exePath) : "");
+  const baseEng = detectEngine(exePath, dir);
+
+  if (baseEng === "python") {
+    const v = detectRenpyVersion(dir);
+    return v.major >= 8 ? "RENPY_8" : "RENPY_7";
+  }
+
+  if (baseEng === "rgss") {
+    if (dir && fs.existsSync(path.join(dir, "Data"))) {
+      try {
+        const files = fs.readdirSync(path.join(dir, "Data")).map(f => f.toLowerCase());
+        if (files.some(f => f.endsWith(".rvdata2") || f === "game.rvproj2")) return "RPG_MAKER_VX_ACE";
+        if (files.some(f => f.endsWith(".rvdata") || f === "game.rvproj")) return "RPG_MAKER_VX";
+        if (files.some(f => f.endsWith(".rxdata") || f === "game.rxproj")) return "RPG_MAKER_XP";
+      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+    }
+    return "RPG_MAKER_VX_ACE";
+  }
+
+  if (baseEng === "mz") {
+    if (dir) {
+      const isMz = !fs.existsSync(path.join(dir, "www"));
+      return isMz ? "RPG_MAKER_MZ" : "RPG_MAKER_MV";
+    }
+    return "RPG_MAKER_MZ";
+  }
+
+  if (baseEng === "RENPY_7" || baseEng === "RENPY_8" || (typeof baseEng === 'string' && baseEng.startsWith("RPG_MAKER"))) {
+    return baseEng;
+  }
+
+  return "RPG_MAKER_MZ";
+}
+
 module.exports = {
   ENGINES_DEF,
   findDataDir,
+  unpackNwExe,
   detectEngine,
+  detectRenpyVersion,
+  resolveRouterEngineType,
   getExeArch,
   getHookDll,
   autoWrapText,
@@ -1111,3 +1265,4 @@ module.exports = {
   healGameData,
   executeTranslationPipeline
 };
+

@@ -1,4 +1,149 @@
-# OpenTranslator Ren'Py Anti-Crash & Cheat Handler
+python early:
+    def _opent_early_bootstrap():
+        try:
+            import renpy
+            if not hasattr(renpy, 'suppress_transition'):
+                def _safe_suppress_transition(*args, **kwargs):
+                    try:
+                        if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'suppress_transition'):
+                            return renpy.exports.suppress_transition(*args, **kwargs)
+                        if hasattr(renpy, 'game') and hasattr(renpy.game, 'interface') and hasattr(renpy.game.interface, 'suppress_transition'):
+                            return renpy.game.interface.suppress_transition(*args, **kwargs)
+                    except Exception:
+                        pass
+                    return False
+                try: setattr(renpy, 'suppress_transition', _safe_suppress_transition)
+                except Exception: pass
+
+            if hasattr(renpy, 'exports'):
+                for export_name in dir(renpy.exports):
+                    if not export_name.startswith('_') and not hasattr(renpy, export_name):
+                        try: setattr(renpy, export_name, getattr(renpy.exports, export_name))
+                        except Exception: pass
+
+            try:
+                import types
+                import renpy.display.behavior as _rdb
+                def _safe_rdb_run(action, *args, **kwargs):
+                    if action is None:
+                        return None
+                    elif isinstance(action, (list, tuple)):
+                        for i in action:
+                            _safe_rdb_run(i, *args, **kwargs)
+                        return None
+                    elif isinstance(action, types.ModuleType):
+                        return None
+                    elif callable(action):
+                        try:
+                            return action(*args, **kwargs)
+                        except TypeError as e:
+                            if 'not callable' in str(e):
+                                return None
+                            raise
+                    else:
+                        return None
+                _rdb.run = _safe_rdb_run
+            except Exception:
+                pass
+        except Exception:
+            pass
+    _opent_early_bootstrap()
+
+init -1500 python:
+    # Ren'Py 8.5+ Compatibility Polyfill for restart_interaction
+    def _opent_polyfill_restart_interaction():
+        try:
+            import renpy
+            if not hasattr(renpy, 'restart_interaction'):
+                def _safe_restart_interaction(*args, **kwargs):
+                    try:
+                        if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'restart_interaction'):
+                            return renpy.exports.restart_interaction(*args, **kwargs)
+                        if hasattr(renpy, 'game') and hasattr(renpy.game, 'interface') and hasattr(renpy.game.interface, 'restart_interaction'):
+                            return renpy.game.interface.restart_interaction(*args, **kwargs)
+                    except Exception:
+                        pass
+                    return None
+                try: setattr(renpy, 'restart_interaction', _safe_restart_interaction)
+                except Exception: pass
+
+            if hasattr(renpy, 'exports') and not hasattr(renpy.exports, 'restart_interaction'):
+                try: setattr(renpy.exports, 'restart_interaction', getattr(renpy, 'restart_interaction'))
+                except Exception: pass
+        except Exception:
+            pass
+    _opent_polyfill_restart_interaction()
+
+    # Dynamic Cross-Version Layout & Preferences Proxy Binder & Transitions Polyfill (Ren'Py 7.x -> 8.x)
+    try:
+        import sys, os, renpy
+        if hasattr(renpy, 'store'):
+            st = renpy.store
+            class SafeCallable(object):
+                def __call__(self, *args, **kwargs): return None
+                def __contains__(self, item): return True
+                def __iter__(self): return iter([])
+                def __bool__(self): return True
+                def __nonzero__(self): return True
+
+            class LayoutProxy(object):
+                def __init__(self):
+                    self.provided = set(['compat', 'navigation', 'main_menu', 'classic', 'roundrect'])
+                def __getattr__(self, name):
+                    if name == 'provided':
+                        return self.provided
+                    return SafeCallable()
+                def __call__(self, *args, **kwargs):
+                    return self
+
+            if not hasattr(st, '_layout') or st._layout is None:
+                st._layout = LayoutProxy()
+            else:
+                if not hasattr(st._layout, 'provided') or not isinstance(getattr(st._layout, 'provided', None), (set, list, tuple, dict)):
+                    try: setattr(st._layout, 'provided', set(['compat', 'navigation', 'main_menu', 'classic', 'roundrect']))
+                    except Exception: pass
+
+            if not hasattr(st, 'layout') or st.layout is None:
+                st.layout = st._layout
+
+            if not hasattr(st, 'preferences'):
+                pref_obj = getattr(getattr(renpy, 'game', None), 'preferences', None)
+                if not pref_obj:
+                    pref_obj = getattr(renpy, 'preferences', None)
+                if pref_obj:
+                    st.preferences = pref_obj
+                    st._preferences = pref_obj
+                else:
+                    class PreferencesProxy(object):
+                        def __getattr__(self, name): return None
+                        def __setattr__(self, name, val): pass
+                    proxy_pref = PreferencesProxy()
+                    st.preferences = proxy_pref
+                    st._preferences = proxy_pref
+
+            transitions_list = [
+                'dissolve', 'fade', 'pixellate', 'move', 'ease', 'pushright', 'pushleft',
+                'pushup', 'pushdown', 'vpunch', 'hpunch', 'blinds', 'squares', 'wipeleft',
+                'wiperight', 'wipeup', 'wipedown', 'slideleft', 'slideright', 'slideup',
+                'slidedown', 'slideawayleft', 'slideawayright', 'slideawayup', 'slideawaydown',
+                'irisin', 'irisout', 'Dissolve', 'Fade', 'ImageDissolve'
+            ]
+            for tname in transitions_list:
+                if not hasattr(st, tname):
+                    try:
+                        orig_t = getattr(renpy.exports, tname, None) if hasattr(renpy, 'exports') else None
+                        if orig_t:
+                            setattr(st, tname, orig_t)
+                        else:
+                            class DummyTransition(object):
+                                def __init__(self, *a, **kw): pass
+                                def __call__(self, *a, **kw): return self
+                            setattr(st, tname, DummyTransition())
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
 init -999999 python:
     def _opent_bootstrap_runtime():
         try:
@@ -138,12 +283,97 @@ init -999999 python:
                 except Exception:
                     pass
 
-            # 8. Enable developer/cheat config options cleanly
-            if 'config' in globals():
-                config.developer = True
-                config.console = True
-                config.rollback_enabled = True
-                config.fast_skipping = True
+            # 8. Enable developer/cheat config options cleanly & SafeList for config layers
+            if 'config' in globals() or hasattr(renpy, 'config'):
+                try:
+                    config.developer = True
+                    config.console = True
+                    config.rollback_enabled = True
+                    config.fast_skipping = True
+                except Exception: pass
+
+                try:
+                    class SafeList(list):
+                        def remove(self, x):
+                            try:
+                                if x in self:
+                                    super(SafeList, self).remove(x)
+                            except Exception:
+                                pass
+
+                    for k in dir(renpy.config):
+                        if 'layer' in k.lower():
+                            v = getattr(renpy.config, k, None)
+                            if isinstance(v, list) and not isinstance(v, SafeList):
+                                try: setattr(renpy.config, k, SafeList(v))
+                                except Exception: pass
+                            elif v is None:
+                                try: setattr(renpy.config, k, SafeList(['bottom', 'master', 'transient', 'screens', 'overlay']))
+                                except Exception: pass
+
+                    for lname in ['bottom_layers', 'top_layers', 'layers', 'context_clear_layers', 'overlay_layers', 'clear_layers', 'menu_clear_layers', 'sticky_layers', 'hide_layers']:
+                        curr_l = getattr(renpy.config, lname, None)
+                        if curr_l is None:
+                            try: setattr(renpy.config, lname, SafeList(['bottom', 'master', 'transient', 'screens', 'overlay']))
+                            except Exception: pass
+                        elif not isinstance(curr_l, SafeList):
+                            try: setattr(renpy.config, lname, SafeList(curr_l))
+                            except Exception: pass
+
+                    cfg_cls = type(renpy.config)
+                    _orig_cfg_setattr = getattr(cfg_cls, '__setattr__', None)
+                    def _safe_cfg_setattr(self, name, value):
+                        if isinstance(value, list) and not isinstance(value, SafeList):
+                            value = SafeList(value)
+                        if _orig_cfg_setattr:
+                            try:
+                                _orig_cfg_setattr(self, name, value)
+                            except Exception:
+                                self.__dict__[name] = value
+                        else:
+                            self.__dict__[name] = value
+                    try:
+                        cfg_cls.__setattr__ = _safe_cfg_setattr
+                    except Exception:
+                        pass
+                except Exception: pass
+
+            # 8.5 Dynamic Style Interceptor
+            if hasattr(renpy, 'style'):
+                try:
+                    if hasattr(renpy.style, 'get_style'):
+                        _orig_get_style = renpy.style.get_style
+                        def _safe_get_style(name, *args, **kwargs):
+                            try:
+                                return _orig_get_style(name, *args, **kwargs)
+                            except Exception:
+                                try:
+                                    if hasattr(renpy.style, 'Style'):
+                                        return renpy.style.Style('default')
+                                except Exception:
+                                    pass
+                                return None
+                        renpy.style.get_style = _safe_get_style
+
+                    if hasattr(renpy.style, 'StyleManager'):
+                        sm_cls = renpy.style.StyleManager
+                        _orig_sm_getattr = getattr(sm_cls, '__getattr__', None)
+                        def _safe_sm_getattr(self, name):
+                            try:
+                                if _orig_sm_getattr:
+                                    val = _orig_sm_getattr(self, name)
+                                    if val is not None:
+                                        return val
+                            except Exception:
+                                pass
+                            try:
+                                if hasattr(renpy.style, 'get_style'):
+                                    return renpy.style.get_style(name)
+                            except Exception:
+                                pass
+                            return None
+                        sm_cls.__getattr__ = _safe_sm_getattr
+                except Exception: pass
 
             # 9. Ren'Py Cheat Telemetry & Remote Control Thread (Port 16005)
             try:
@@ -351,6 +581,29 @@ init -999999 python:
                 except Exception:
                     pass
 
+                def _opent_after_load_callback():
+                    try:
+                        st = getattr(renpy, 'store', None)
+                        if st and _opent_frozen_vars:
+                            for f_key, f_val in list(_opent_frozen_vars.items()):
+                                try:
+                                    if hasattr(st, f_key) or '[' in f_key or '.' in f_key:
+                                        _set_path_val(st, f_key, f_val)
+                                except Exception:
+                                    pass
+                        if hasattr(renpy, 'restart_interaction'):
+                            renpy.restart_interaction()
+                    except Exception:
+                        pass
+
+                try:
+                    if hasattr(renpy, 'config') and hasattr(renpy.config, 'after_load_callbacks'):
+                        if _opent_after_load_callback not in renpy.config.after_load_callbacks:
+                            renpy.config.after_load_callbacks.append(_opent_after_load_callback)
+                except Exception:
+                    pass
+
+
                 def _opent_renpy_cheat_loop():
                     import sys
                     if sys.version_info[0] >= 3:
@@ -392,6 +645,8 @@ init -999999 python:
                                 'engine': 'renpy',
                                 'gold': gold_val,
                                 'through': getattr(getattr(renpy, 'config', None), 'developer', True),
+                                'savedir': str(getattr(getattr(renpy, 'config', None), 'savedir', '') or ''),
+                                'save_directory': str(getattr(getattr(renpy, 'config', None), 'save_directory', '') or ''),
                                 'actors': [{'idx': 0, 'name': 'Protagonist', 'hp': 999, 'mhp': 999, 'mp': 999, 'mmp': 999, 'level': 1}],
                                 'variables': scanned_vars,
                                 'switches': [],

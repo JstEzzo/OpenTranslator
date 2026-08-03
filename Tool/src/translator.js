@@ -3,6 +3,7 @@ const { loadGlossary, loadCfg } = require("./cache");
 
 let bingToken = null,
   bingTokenExpiry = 0;
+let mobileBatchRateLimited = false;
 
 async function limitConcurrency(concurrency, items, asyncFn) {
   const results = [];
@@ -103,8 +104,10 @@ async function translateBingSingle(text, sl, tl) {
       rq.end();
     });
     const j = JSON.parse(raw);
-    if (Array.isArray(j) && j[0] && j[0].translations && j[0].translations[0])
-      return j[0].translations[0].text;
+    if (Array.isArray(j) && j[0] && j[0].translations && j[0].translations[0]) {
+      const tr = j[0].translations[0].text;
+      return tr !== text ? fixTranslation(text, tr) : text;
+    }
     if (j.errcode) return text;
     return text;
   } catch (e) {
@@ -358,32 +361,312 @@ async function translateMultiBatch(texts, sl, tl, glossary) {
   return googleResults;
 }
 
+const USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Android; Mobile; rv:124.0) Gecko/124.0 Firefox/124.0",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+];
+
+function getRandomUA() {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
+async function translateGoogleMobileSingle(text, sl, tl) {
+  if (!text || !text.trim()) return text;
+  try {
+    const url = `https://translate.google.com/m?sl=${encodeURIComponent(sl || "auto")}&tl=${encodeURIComponent(tl || "pt")}&q=${encodeURIComponent(text)}`;
+    const html = await new Promise((res, rej) => {
+      const rq = https.get(
+        url,
+        {
+          headers: {
+            "User-Agent": getRandomUA()
+          }
+        },
+        (rsp) => {
+          let d = "";
+          rsp.setEncoding("utf8");
+          rsp.on("data", (c) => (d += c));
+          rsp.on("end", () => res(d));
+        }
+      );
+      rq.on("error", rej);
+      rq.setTimeout(6000, () => {
+        if (rq.socket) rq.socket.destroy();
+        rq.destroy();
+        rej(new Error("timeout"));
+      });
+    });
+    const match = html.match(/class="result-container">(.*?)<\/div>/s);
+    if (match && match[1]) {
+      const unescaped = match[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .trim();
+      if (unescaped && unescaped !== text) return unescaped;
+    }
+  } catch (e) { /* erro de rede: tratado pelo lote (reportFailure) */ }
+  return null;
+}
+
+async function translateGoogleMobileBatch(joinedText, sl, tl) {
+  if (!joinedText || !joinedText.trim()) return null;
+  const path = `/m?sl=${encodeURIComponent(sl || "auto")}&tl=${encodeURIComponent(tl || "pt")}&q=${encodeURIComponent(joinedText)}`;
+  try {
+    const html = await new Promise((res, rej) => {
+      const rq = https.get(
+        "https://translate.google.com" + path,
+        {
+          headers: {
+            "User-Agent": getRandomUA(),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+          }
+        },
+        (rsp) => {
+          let d = "";
+          rsp.setEncoding("utf8");
+          rsp.on("data", (c) => (d += c));
+          rsp.on("end", () => res({ status: rsp.statusCode, html: d }));
+        }
+      );
+      rq.on("error", rej);
+      rq.setTimeout(6000, () => {
+        if (rq.socket) rq.socket.destroy();
+        rq.destroy();
+        rej(new Error("timeout"));
+      });
+    });
+
+    if (html.status !== 200) {
+      global.log("warn", `translator: MobileBatch HTTP ${html.status} (usa GET, não POST).`);
+      return null;
+    }
+    const match = html.html.match(/class="result-container">(.*?)<\/div>/s);
+    if (match && match[1]) {
+      const unescaped = match[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .trim();
+      if (unescaped) return unescaped;
+    }
+    const blocked = /sorry\/index|unusual traffic|not a robot|recaptcha|captcha/i.test(
+      html.html
+    );
+    global.log(
+      "warn",
+      `translator: Google Mobile não retornou resultado (${blocked ? "bloqueio anti-bot/429" : "HTML inesperado"}), len=${html.html.length}.`
+    );
+    return null;
+  } catch (e) {
+    global.log("warn", `translator: MobileBatch request falhou: ${e.message}`);
+  }
+  return null;
+}
+
+function detectLang(text) {
+  if (/[\u3040-\u30ff]/.test(text)) return "ja";
+  if (/[\uac00-\ud7af]/.test(text)) return "ko";
+  if (/[\u4e00-\u9fff]/.test(text)) return "zh-CN";
+  return "en";
+}
+
+let mymemoryLastReq = 0;
+let mymemoryExhausted = false;
+
+const MM_SEP = "\n[|]\n";
+const MM_MAX_CHARS = 480;
+
+async function translateMyMemoryOne(q, src, dst) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${encodeURIComponent(src)}%7C${encodeURIComponent(dst)}`;
+  const raw = await new Promise((res, rej) => {
+    const rq = https.get(url, { headers: { "User-Agent": getRandomUA() } }, (rsp) => {
+      let d = "";
+      rsp.setEncoding("utf8");
+      rsp.on("data", (c) => (d += c));
+      rsp.on("end", () => res({ status: rsp.statusCode, body: d }));
+    });
+    rq.on("error", rej);
+    rq.setTimeout(10000, () => {
+      if (rq.socket) rq.socket.destroy();
+      rq.destroy();
+      rej(new Error("timeout"));
+    });
+  });
+  if (raw.status !== 200) return null;
+  const j = JSON.parse(raw.body);
+  if (j.responseStatus === 429) return null;
+  const tr = j.responseData && j.responseData.translatedText;
+  if (tr && /MYMEMORY WARNING: YOU USED ALL/i.test(tr)) {
+    mymemoryExhausted = true;
+    global.log("error", "translator: MyMemory quota diária esgotada.");
+    return null;
+  }
+  if (tr && tr !== q && tr.length > 0 && !/MYMEMORY WARNING/i.test(tr)) {
+    return tr;
+  }
+  return null;
+}
+
+async function translateMyMemoryBatch(joinedText, sl, tl) {
+  if (!joinedText || !joinedText.trim() || mymemoryExhausted) return null;
+  const src = sl && sl !== "auto" ? sl : detectLang(joinedText);
+  const dst = (tl || "pt").toUpperCase();
+
+  const items = joinedText.split(MM_SEP);
+  const chunks = [];
+  let cur = [];
+  let curLen = 0;
+  for (const it of items) {
+    const addLen = it.length + (cur.length > 0 ? MM_SEP.length : 0);
+    if (cur.length > 0 && curLen + addLen > MM_MAX_CHARS) {
+      chunks.push(cur);
+      cur = [it];
+      curLen = it.length;
+    } else {
+      cur.push(it);
+      curLen += addLen;
+    }
+  }
+  if (cur.length > 0) chunks.push(cur);
+
+  const results = [];
+  for (const chunk of chunks) {
+    const wait = mymemoryLastReq + 900 - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    const chunkText = chunk.join(MM_SEP);
+    let tr = await translateMyMemoryOne(chunkText, src, dst);
+    if (tr === null) {
+      await new Promise((r) => setTimeout(r, 2500));
+      const wait2 = mymemoryLastReq + 900 - Date.now();
+      if (wait2 > 0) await new Promise((r) => setTimeout(r, wait2));
+      tr = await translateMyMemoryOne(chunkText, src, dst);
+    }
+    if (tr === null) return null;
+    results.push(tr);
+  }
+  return results.join(MM_SEP);
+}
+
+let _cachedGlossary = null;
+let _cachedGlossaryMap = null;
+function getGlossaryMap(glossary) {
+  if (glossary === _cachedGlossary && _cachedGlossaryMap) return _cachedGlossaryMap;
+  _cachedGlossary = glossary;
+  _cachedGlossaryMap = new Map();
+  if (Array.isArray(glossary)) {
+    for (const g of glossary) {
+      if (g && g.term && g.translation) {
+        _cachedGlossaryMap.set(g.term, g.translation);
+      }
+    }
+  }
+  return _cachedGlossaryMap;
+}
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function applyGlossaryPost(tr, glossary) {
+  if (!tr || typeof tr !== "string") return tr;
+  const gm = getGlossaryMap(glossary);
+  if (gm.size === 0) return tr;
+  let out = tr;
+  for (const [term, trans] of gm) {
+    if (out.includes(term)) {
+      out = out.split(term).join(trans);
+    } else if (out.toLowerCase().includes(term.toLowerCase())) {
+      const re = new RegExp(escapeRegExp(term), "gi");
+      out = out.replace(re, (m) => trans);
+    }
+  }
+  return out;
+}
+
+// Palavras inglesas comuns que começam com maiúscula mas NÃO são nomes próprios
+// (evita proteger "Then", "What", "This"... de serem reescritas)
+const EN_CAPITALIZED_STOP = new Set([
+  "The", "Then", "This", "That", "These", "Those", "What", "When", "Where",
+  "Which", "Who", "Whom", "Whose", "Why", "How", "But", "And", "Or", "Nor",
+  "Yes", "No", "Oh", "Ah", "Eh", "Hm", "Um", "Uh", "Hey", "Hello", "Hi",
+  "Well", "Yeah", "Yep", "Okay", "Ok", "Please", "Sorry", "Wait", "Look",
+  "Listen", "Come", "Go", "Get", "Let", "One", "Two", "Three", "They",
+  "Their", "There", "I", "You", "We", "He", "She", "It", "They", "Do",
+  "Don", "Can", "Could", "Will", "Would", "Should", "Shall", "May", "Might",
+  "Must", "Not", "All", "Just", "Very", "Really", "Sure", "Right", "After",
+  "Before", "Later", "Today", "Tomorrow", "Now", "So", "Man", "Girl", "Boy",
+  "Lady", "Sir", "Mom", "Dad", "Baby", "God", "Alright", "Anyway", "Also",
+  "First", "Last", "Next", "Another", "Someone", "Something", "Somewhere",
+  "Everyone", "Everything", "Nobody", "Nothing", "No one", "Everyone",
+  "Because", "Though", "Although", "Until", "Since", "While", "Both",
+  "Each", "Every", "Either", "Neither", "Anyway", "Some", "Many", "Much",
+  "Few", "Whole", "That's", "It's", "He's", "She's", "I'm", "You're", "We're",
+  "They're", "There's", "What's", "Who's", "Here", "There", "Here's",
+  "Yeah", "Nah", "Yup", "Oops", "Huh", "Pff", "Gah", "Ugh", "Argh", "Hmm",
+]);
+
+// Detecta se uma palavra em maiúscula no original é nome próprio provável:
+// começa com maiúscula e não é palavra inglesa comum (funciona p/ qualquer
+// idioma DESTINO — só analisa o idioma FONTE).
+function isLikelyProperNoun(word) {
+  if (!/^[A-Z][a-z]{1,20}$/.test(word)) return false;
+  if (EN_CAPITALIZED_STOP.has(word)) return false;
+  return true;
+}
+
+// Protege nomes próprios envolvendo-os em tokens antes de enviar ao tradutor.
+// Se o motor preservar o token, o nome volta intacto; se não, remove os
+// colchetes e mantém o que veio (nunca piora).
+const NAME_TOKEN_RE = /⟦([^⟧]+)⟧/g;
+function protectProperNames(text) {
+  let out = text;
+  const names = text.match(/[A-Z][a-z]{1,20}/g) || [];
+  for (const n of names) {
+    if (isLikelyProperNoun(n)) {
+      out = out.split(n).join("⟦" + n + "⟧");
+    }
+  }
+  return out;
+}
+function restoreProperNames(text) {
+  if (!text || typeof text !== "string") return text;
+  return text.replace(NAME_TOKEN_RE, "$1");
+}
+
+// Corrige a tradução: conserta pontuação e espaços (independente de idioma).
+function fixTranslation(orig, tr) {
+  if (!tr || typeof tr !== "string" || tr === orig) return tr;
+  let out = tr;
+  // Espaço antes de pontuação: " ," -> "," (erro comum de tradutores)
+  out = out.replace(/\s+([,.;:!?…])/g, "$1");
+  // Espaço após \dac e outros códigos de voz (visual)
+  out = out.replace(/(\\dac)(\S)/g, "$1 $2");
+  return out;
+}
+
 async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated) {
+  const startTime = Date.now();
   if (!engine || engine === "auto") engine = "google";
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
   if (engine === "multi") return translateMultiBatch(texts, sl, tl, glossary);
   const results = new Map();
   if (texts.length === 0) return results;
 
-  // Pre-apply glossary
-  const glos = glossary || loadGlossary();
-  const glossaryMap = new Map();
-  for (const g of glos) {
-    if (g.term && g.translation) {
-      glossaryMap.set(g.term.toLowerCase(), g.translation);
-    }
-  }
   const dedup = new Map();
   for (const t of texts) {
     let clean = t.clean;
-    // Apply glossary substitutions before dedup
-    if (glossaryMap.size > 0) {
-      for (const [term, tr] of glossaryMap) {
-        const idx = clean.toLowerCase().indexOf(term);
-        if (idx >= 0) {
-          const before = clean.slice(0, idx);
-          const after = clean.slice(idx + term.length);
-          clean = before + tr + after;
+    if (glossary && Array.isArray(glossary)) {
+      for (const g of glossary) {
+        if (g && g.term && g.translation && clean.includes(g.term)) {
+          clean = clean.split(g.term).join(g.translation);
         }
       }
     }
@@ -402,25 +685,21 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
   }
 
   const SEP = "\n[|]\n";
-  const SEP_LEN = 15;
-  const MAX_URL_LEN = 6000;
-  const BASE_URL =
-    "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
-    sl +
-    "&tl=" +
-    tl +
-    "&dt=t&q=";
-  const BASE_LEN = BASE_URL.length;
+  const SEP_LEN = 5;
+  const MAX_POST_LEN = 700;
+  const MAX_ITEMS_PER_BATCH = 100;
 
   const batches = [];
   let batchIdx = 0;
   while (batchIdx < unique.length) {
     let batchSize = 0,
-      estLen = BASE_LEN;
+      estLen = 0;
     for (let j = batchIdx; j < unique.length; j++) {
-      const addLen =
-        encodeURIComponent(unique[j][0]).length + (j > batchIdx ? SEP_LEN : 0);
-      if ((estLen + addLen > MAX_URL_LEN || batchSize >= 15) && batchSize > 0)
+      const addLen = unique[j][0].length + (j > batchIdx ? SEP_LEN : 0);
+      if (
+        (estLen + addLen > MAX_POST_LEN || batchSize >= MAX_ITEMS_PER_BATCH) &&
+        batchSize > 0
+      )
         break;
       estLen += addLen;
       batchSize++;
@@ -433,24 +712,46 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
 
   global.log(
     "info",
-    `Dividido em ${unique.length} textos únicos em ${batches.length} lotes para tradução.`
+    `Dividido em ${unique.length} textos únicos em ${batches.length} lotes para tradução em alta velocidade.`
   );
 
-  const CONCURRENCY_LIMIT = 6;
+  const CONCURRENCY_LIMIT = 10;
+  const BATCH_DELAY_MS = 250;
   let completedUniqueTexts = 0;
   let completedBatchesCount = 0;
-  const startTime = Date.now();
+  let totalTranslatedCount = 0;
+  let failedBatchCount = 0;
 
-  const fetchGoogleBatchWithRetry = async (url, maxRetries = 3) => {
+  const reportFailure = (msg) => {
+    failedBatchCount++;
+    if (failedBatchCount <= 10 || failedBatchCount % 100 === 0) {
+      global.log(
+        "warn",
+        `translator: ${msg} (falhas acumuladas: ${failedBatchCount})`
+      );
+    }
+  };
+
+  const fetchGoogleBatchPostWithRetry = async (joinedText, maxRetries = 3) => {
+    if (useMobileDirect) {
+      throw new Error("HTTP 429 Rate Limit (Direct Mode)");
+    }
+    const postBody = "q=" + encodeURIComponent(joinedText);
+    const postData = Buffer.from(postBody, "utf8");
+    const targetUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t`;
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const raw = await new Promise((res, rej) => {
-          const rq = https.get(
-            url,
+          const rq = https.request(
+            targetUrl,
             {
+              method: "POST",
               headers: {
                 "User-Agent":
                   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Content-Length": postData.length,
                 Accept: "application/json, text/plain, */*",
               },
             },
@@ -470,21 +771,23 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
             }
           );
           rq.on("error", (e) => rej(e));
-          rq.setTimeout(15000, () => {
+          rq.setTimeout(3500, () => {
             if (rq.socket) rq.socket.destroy();
             rq.destroy();
             rej(new Error("timeout"));
           });
+          rq.write(postData);
+          rq.end();
         });
 
         if (raw && raw.trim().startsWith("[")) {
           return JSON.parse(raw);
         }
-        throw new Error("Resposta inválida (não JSON)");
+        const preview = raw ? raw.slice(0, 200).replace(/\n/g, " ") : "(vazio)";
+        throw new Error(`Resposta inválida (não JSON): ${preview}`);
       } catch (err) {
         if (attempt < maxRetries) {
-          // Exponential backoff: 2s (attempt 0), 4s (attempt 1), 8s (attempt 2) + jitter
-          const backoff = Math.pow(2, attempt + 1) * 1000 + Math.floor(Math.random() * 250);
+          const backoff = 600 * (attempt + 1) + Math.floor(Math.random() * 300);
           await new Promise((r) => setTimeout(r, backoff));
         } else {
           throw err;
@@ -493,93 +796,141 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     }
   };
 
+  let useMobileDirect = false;
+
   const processBatch = async (batch, bIdx) => {
-    await new Promise((r) => setTimeout(r, Math.random() * 50 + 20));
-    const joined = batch.map(([clean]) => clean).join(SEP);
+    await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+    const joined = batch.map(([clean]) => protectProperNames(clean)).join(SEP);
+    const toSaveBatch = [];
+    const finalize = (clean, tr) => applyGlossaryPost(fixTranslation(clean, tr), glossary);
+    let translatedJoined = null;
+    let usedEngine = "google-mobile";
+
+    // Attempt 1: Google Mobile Batch
     try {
-      const q = encodeURIComponent(joined);
-      const url = BASE_URL + q;
-      const j = await fetchGoogleBatchWithRetry(url, 3);
-      const translated = j[0]
-        .map((x) => x[0])
-        .filter(Boolean)
-        .join("");
-      const parts = translated.split(/\s*\[\s*\|\s*\]\s*/).map((p) => p.trim());
-      if (parts.length !== batch.length) {
-        throw new Error(
-          `Alinhamento de lote incorreto (esperado: ${batch.length}, obtido: ${parts.length})`
+      translatedJoined = await translateGoogleMobileBatch(joined, sl, tl);
+    } catch (eMb) {
+      reportFailure(`MobileBatch request: ${eMb.message}`);
+    }
+
+    if (!translatedJoined) {
+      // Attempt 2: Google GTX batch (joined com \n, segmentos alinhados)
+      try {
+        const j = await fetchGoogleBatchPostWithRetry(
+          batch.map(([clean]) => clean).join("\n"),
+          sl,
+          tl
         );
-      }
-      const toSaveBatch = [];
-      for (let j = 0; j < batch.length; j++) {
-        const [clean, related] = batch[j];
-        const tr = parts[j] || clean;
-        for (const t of related) results.set(t.id, tr);
-        if (tr && tr !== clean && tr.length > 0) {
-          toSaveBatch.push([clean, tr]);
+        const segs = Array.isArray(j) && Array.isArray(j[0]) ? j[0] : null;
+        if (segs && segs.length === batch.length) {
+          for (let jj = 0; jj < batch.length; jj++) {
+            const [clean, related] = batch[jj];
+            const tr = finalize(clean, restoreProperNames((segs[jj] && segs[jj][0]) || clean));
+            for (const t of related) results.set(t.id, tr);
+            if (tr && tr !== clean && tr.length > 0) {
+              toSaveBatch.push([clean, tr]);
+              totalTranslatedCount++;
+            }
+          }
+          usedEngine = "google-gtx";
+        } else {
+          reportFailure(
+            `GTX devolveu ${segs ? segs.length : 0} segmentos p/ ${batch.length} itens (fora de sincronia).`
+          );
         }
+      } catch (eGtx) {
+        reportFailure(`GTX batch falhou: ${eGtx.message}`);
       }
-
-      if (toSaveBatch.length > 0 && typeof onBatchTranslated === "function") {
-        try {
-          onBatchTranslated(toSaveBatch);
-        } catch (e) {}
-      }
-
-      completedUniqueTexts += batch.length;
-      completedBatchesCount++;
-      const pct = ((completedUniqueTexts / unique.length) * 100).toFixed(1);
-      if (completedBatchesCount % 20 === 0 || completedBatchesCount === batches.length) {
-        global.log(
-          "info",
-          `Lote ${completedBatchesCount}/${batches.length} (${batch.length} textos) traduzido com sucesso. Progresso: ${completedUniqueTexts}/${unique.length} (${pct}%)`
-        );
-      }
-    } catch (e) {
-      global.log(
-        "warn",
-        `Falha no lote ${bIdx + 1} (${e.message}). Iniciando tradução individual para este lote...`
-      );
-      const toSaveFallback = [];
-      await limitConcurrency(2, batch, async ([clean, related]) => {
-        try {
-          const q = encodeURIComponent(clean);
-          const url =
-            "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
-            sl +
-            "&tl=" +
-            tl +
-            "&dt=t&q=" +
-            q;
-          const j = await fetchGoogleBatchWithRetry(url, 2);
-          const tr =
-            j[0]
-              .map((x) => x[0])
-              .filter(Boolean)
-              .join("") || clean;
+    } else {
+      const parts = translatedJoined
+        .split(/\s*\[\s*\|\s*\]\s*/)
+        .map((p) => p.trim());
+      if (parts.length === batch.length) {
+        for (let j = 0; j < batch.length; j++) {
+          const [clean, related] = batch[j];
+          const tr = finalize(clean, restoreProperNames(parts[j] || clean));
           for (const t of related) results.set(t.id, tr);
           if (tr && tr !== clean && tr.length > 0) {
-            toSaveFallback.push([clean, tr]);
+            toSaveBatch.push([clean, tr]);
+            totalTranslatedCount++;
           }
-        } catch (e2) {
-          global.log(
-            "error",
-            `Falha na tradução via fallback individual: ${e2.message}`
-          );
-          for (const t of related) results.set(t.id, clean);
         }
-      });
-      if (toSaveFallback.length > 0 && typeof onBatchTranslated === "function") {
-        try {
-          onBatchTranslated(toSaveFallback);
-        } catch (e) {}
+      } else {
+        reportFailure(
+          `${usedEngine} devolveu ${parts.length} partes p/ ${batch.length} itens (fora de sincronia).`
+        );
       }
-      completedUniqueTexts += batch.length;
-      completedBatchesCount++;
-      const pct = ((completedUniqueTexts / unique.length) * 100).toFixed(1);
+    }
+
+    // Attempt 3: MyMemory Batch (falha do Google 302/rate-limit)
+    if (toSaveBatch.length === 0) {
+      try {
+        const myTr = await translateMyMemoryBatch(joined, sl, tl);
+        if (myTr) {
+          const parts = myTr
+            .split(/\s*\[\s*\|\s*\]\s*/)
+            .map((p) => p.trim());
+          if (parts.length === batch.length) {
+            for (let j = 0; j < batch.length; j++) {
+              const [clean, related] = batch[j];
+              const tr = parts[j] || clean;
+              for (const t of related) results.set(t.id, tr);
+              if (tr && tr !== clean && tr.length > 0) {
+                toSaveBatch.push([clean, tr]);
+                totalTranslatedCount++;
+              }
+            }
+          } else {
+            reportFailure(
+              `MyMemory devolveu ${parts.length} partes p/ ${batch.length} itens (fora de sincronia).`
+            );
+          }
+        }
+      } catch (eMM) {
+        reportFailure(`MyMemory batch falhou: ${eMM.message}`);
+      }
+    }
+
+    // Attempt 4: Individual Mobile Translation
+    if (toSaveBatch.length === 0) {
+      if (mobileBatchRateLimited) {
+        for (const [, related] of batch) {
+          for (const t of related) results.set(t.id, t.clean);
+        }
+        reportFailure(
+          `lote ${completedBatchesCount + 1} sem tradução (Google Mobile rate-limited; fallback individual desligado para não piorar o bloqueio).`
+        );
+      } else {
+        await limitConcurrency(15, batch, async ([clean, related]) => {
+          try {
+            const tr = finalize(clean, await translateGoogleMobileSingle(clean, sl, tl));
+            for (const t of related) results.set(t.id, tr || clean);
+            if (tr && tr !== clean && tr.length > 0) {
+              toSaveBatch.push([clean, tr]);
+              totalTranslatedCount++;
+            }
+          } catch (e2) {
+            for (const t of related) results.set(t.id, clean);
+          }
+        });
+        if (toSaveBatch.length === 0) {
+          reportFailure(
+            `lote ${completedBatchesCount + 1} sem nenhuma tradução (motores bloqueados/rate-limited).`
+          );
+        }
+      }
+    }
+
+    if (toSaveBatch.length > 0 && typeof onBatchTranslated === "function") {
+      try { onBatchTranslated(toSaveBatch); } catch (e) { global.log("warn", `translator: ${e.message}`); }
+    }
+    completedUniqueTexts += batch.length;
+    completedBatchesCount++;
+    const pct = ((completedUniqueTexts / unique.length) * 100).toFixed(1);
+    if (completedBatchesCount % 20 === 0 || completedBatchesCount === batches.length) {
       global.log(
         "info",
-        `Concluído lote ${completedBatchesCount}/${batches.length} (via fallback). Progresso: ${completedUniqueTexts}/${unique.length} (${pct}%)`
+        `Progresso da tradução em lote: ${completedBatchesCount}/${batches.length} lotes (${pct}%), ${totalTranslatedCount} textos traduzidos de verdade.`
       );
     }
   };
@@ -592,8 +943,16 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   global.log(
     "info",
-    `Tradução concluída: ${unique.length} textos únicos em ${elapsed}s.`
+    `Tradução concluída: ${unique.length} textos únicos em ${elapsed}s (${totalTranslatedCount} realmente traduzidos).`
   );
+  if (totalTranslatedCount === 0) {
+    global.log(
+      "error",
+      `translator: NENHUMA tradução nova obtida em ${batches.length} lotes (${failedBatchCount} lotes falharam). ` +
+        `Google Mobile e GTX estão bloqueados/rate-limited. Textos permaneceram originais; traduções aplicadas vieram só do cache local. ` +
+        `Aguarde o reset do rate limit, use proxy/IP diferente, ou configure LLM/DeepL nas configurações.`
+    );
+  }
   return results;
 }
 
@@ -633,12 +992,13 @@ async function translateSingle(text, sl, tl, engine) {
       });
     });
     const j = JSON.parse(raw);
-    return j && j[0]
+    const translated = j && j[0]
       ? j[0]
           .map((x) => x[0])
           .filter(Boolean)
           .join("")
       : text;
+    return translated !== text ? fixTranslation(text, translated) : text;
   } catch (e) {
     return text;
   }

@@ -159,5 +159,162 @@
       }
     } catch(e) {}
   }, 100);
+
+  // ===== SPEED HACK (técnica paramonos: updateScene + acumulador de taxa) =====
+  // Multiplica SceneManager.updateScene com acúmulo fracionário (1.5 = 1 frame
+  // extra a cada 2 frames) — suave e não dobra o CPU todo frame como 2x.
+  window.__opentSpeedMult = window.__opentSpeedMult || 1.5;
+  window.__opentSpeedKey = window.__opentSpeedKey || 'ControlLeft';
+  window.__opentHotkeys = window.__opentHotkeys || {};
+  var _opentSpeedDown = false;
+  var _opentHooked = false;
+  var _opentRateAccum = 0;
+
+  function opentSpeedActive() {
+    var key = window.__opentSpeedKey || 'ControlLeft';
+    var mult = window.__opentSpeedMult || 1;
+    return _opentSpeedDown && mult > 1;
+  }
+
+  function opentSetupSpeedHack() {
+    if (typeof SceneManager === 'undefined' || !SceneManager.updateScene) return;
+    var cur = SceneManager.updateScene;
+    if (_opentHooked && cur === _opentSceneUpdateWrapper) return;
+    var orig = cur.bind(SceneManager);
+    var wrapper = function() {
+      if (opentSpeedActive()) {
+        var rate = window.__opentSpeedMult || 1;
+        if (rate <= 1) { orig(); return; }
+        _opentRateAccum += rate;
+        var step = Math.floor(_opentRateAccum);
+        _opentRateAccum -= step;
+        if (step > 0) {
+          try { orig(); } catch (e) {}
+          for (var i = 0; i < step - 1; i++) {
+            // atualiza input/cena nas frames extras p/ não duplicar clique
+            try { if (SceneManager.updateInputData) SceneManager.updateInputData(); } catch (e) {}
+            try { if (SceneManager.changeScene) SceneManager.changeScene(); } catch (e) {}
+            try { orig(); } catch (e) {}
+          }
+        }
+      } else {
+        try { orig(); } catch (e) {}
+      }
+    };
+    SceneManager.updateScene = wrapper;
+    _opentSceneUpdateWrapper = wrapper;
+    _opentHooked = true;
+  }
+
+  // ===== SKIP MESSAGE (acelera diálogos enquanto a tecla é segurada) =====
+  var _opentSkipMsg = false;
+  var _opentSkipHooked = false;
+  function opentSetupSkipMessage() {
+    if (_opentSkipHooked) return;
+    if (typeof Window_Message === 'undefined' || !Window_Message.prototype) return;
+    _opentSkipHooked = true;
+    var _oUSF = Window_Message.prototype.updateShowFast;
+    Window_Message.prototype.updateShowFast = function() {
+      _oUSF.call(this);
+      if (_opentSkipMsg) { this._showFast = true; this._pauseSkip = true; }
+    };
+    var _oUI = Window_Message.prototype.updateInput;
+    Window_Message.prototype.updateInput = function() {
+      var ret = _oUI.call(this);
+      if (this.pause && _opentSkipMsg) {
+        this.pause = false;
+        if (!this._textState) this.terminateMessage();
+        return true;
+      }
+      return ret;
+    };
+  }
+
+  function opentHotkeyAction(action) {
+    try {
+      switch (action) {
+        case 'victory':
+          if (typeof BattleManager !== 'undefined' && SceneManager._scene instanceof Scene_Battle) {
+            $gameTroop.members().forEach(function(e){ e.addNewState(e.deathStateId()); });
+            BattleManager.processVictory();
+          }
+          break;
+        case 'defeat':
+          if (typeof BattleManager !== 'undefined' && SceneManager._scene instanceof Scene_Battle) {
+            $gameParty.members().forEach(function(a){ a.addNewState(a.deathStateId()); });
+            BattleManager.processDefeat();
+          }
+          break;
+        case 'escape':
+          if (typeof BattleManager !== 'undefined' && SceneManager._scene instanceof Scene_Battle) {
+            $gameParty.performEscape(); BattleManager._escaped = true; BattleManager.processEscape();
+          }
+          break;
+        case 'groupHp0':
+          if (typeof $gameParty !== 'undefined') $gameParty.members().forEach(function(a){ a.setHp(0); });
+          break;
+        case 'groupHp1':
+          if (typeof $gameParty !== 'undefined') $gameParty.members().forEach(function(a){ a.setHp(1); });
+          break;
+        case 'groupHpMax':
+          if (typeof $gameParty !== 'undefined') $gameParty.members().forEach(function(a){ a.setHp(a.mhp); });
+          break;
+        case 'groupRecover':
+          if (typeof $gameParty !== 'undefined') $gameParty.members().forEach(function(a){ a.setHp(a.mhp); a.setMp(a.mmp); if (typeof a.setTp === 'function') a.setTp(a.maxTp ? a.maxTp() : 100); });
+          break;
+        case 'enemyHp0':
+          if (typeof $gameTroop !== 'undefined') $gameTroop.members().forEach(function(e){ e.setHp(0); });
+          break;
+        case 'enemyHp1':
+          if (typeof $gameTroop !== 'undefined') $gameTroop.members().forEach(function(e){ e.setHp(1); });
+          break;
+        case 'enemyHpMax':
+          if (typeof $gameTroop !== 'undefined') $gameTroop.members().forEach(function(e){ e.setHp(e.mhp); });
+          break;
+        case 'skipMsg':
+          _opentSkipMsg = true;
+          break;
+      }
+    } catch(e) {}
+  }
+
+  function opentHotkeyActionFor(code) {
+    var hk = window.__opentHotkeys || {};
+    for (var k in hk) {
+      if (hk[k] === code && k !== 'speed') return k;
+    }
+    return null;
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', function(e) {
+      if (e.code === (window.__opentSpeedKey || 'ControlLeft')) {
+        _opentSpeedDown = true;
+        _opentSkipMsg = true; // control também acelera/pula diálogos
+      }
+      var act = opentHotkeyActionFor(e.code);
+      if (act) opentHotkeyAction(act);
+    }, true);
+    document.addEventListener('keyup', function(e) {
+      if (e.code === (window.__opentSpeedKey || 'ControlLeft')) {
+        _opentSpeedDown = false;
+        _opentSkipMsg = false;
+      }
+      var act = opentHotkeyActionFor(e.code);
+      if (act === 'skipMsg') {
+        _opentSkipMsg = false;
+      }
+    }, true);
+    window.addEventListener('blur', function() {
+      _opentSpeedDown = false;
+      _opentSkipMsg = false;
+    }, true);
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) { _opentSpeedDown = false; _opentSkipMsg = false; }
+    }, true);
+  }
+  setTimeout(opentSetupSpeedHack, 2500);
+  setTimeout(opentSetupSkipMessage, 2500);
+  setInterval(opentSetupSpeedHack, 5000);
   pollCheat();
 })();

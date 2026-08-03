@@ -1,11 +1,16 @@
 const fs = require("fs");
 const path = require("path");
 const { exec, spawn, execSync } = require("child_process");
+const isLaunchingMap = new Set();
+const renpyAppDataResolver = require("./renpyAppDataResolver");
 
 const {
   ENGINES_DEF,
   detectEngine,
+  detectRenpyVersion,
+  resolveRouterEngineType,
   findDataDir,
+  unpackNwExe,
   getExeArch,
   getHookDll,
   patchGameData,
@@ -19,7 +24,52 @@ const {
   executeTranslationPipeline
 } = require("./gameEngine");
 
+const { loadSyntaxRules } = require("./utils");
+
 const { extractGameTexts } = require("./extractor");
+
+// OpenTranslator Modular Engine Handlers & Protected Router
+const BaseEngineHandler = require("./engines/baseEngineHandler");
+const RenpyV7Handler = require("./engines/renpy/renpyV7Handler");
+const RenpyV8Handler = require("./engines/renpy/renpyV8Handler");
+const RpgMakerMvMzHandler = require("./engines/rpgmaker/rpgMakerMvMzHandler");
+const RpgMakerRubyHandler = require("./engines/rpgmaker/rpgMakerRubyHandler");
+
+const engineHandlers = {
+  RENPY_7: new RenpyV7Handler(),
+  RENPY_8: new RenpyV8Handler(),
+  RPG_MAKER_MV: new RpgMakerMvMzHandler(),
+  RPG_MAKER_MZ: new RpgMakerMvMzHandler(),
+  RPG_MAKER_XP: new RpgMakerRubyHandler(),
+  RPG_MAKER_VX: new RpgMakerRubyHandler(),
+  RPG_MAKER_VX_ACE: new RpgMakerRubyHandler()
+};
+
+async function routeEngineAction(action, engineType, params = {}) {
+  try {
+    let targetEngine = engineType;
+    if (!engineHandlers[targetEngine]) {
+      targetEngine = resolveRouterEngineType(params.gameExe, params.gameDir);
+    }
+    const handler = engineHandlers[targetEngine];
+    if (!handler) {
+      throw new Error(`[OpenTranslator Router] Unsupported or unmapped engine type: ${targetEngine}`);
+    }
+    if (typeof handler[action] !== 'function') {
+      throw new Error(`[OpenTranslator Router] Action '${action}' not supported by ${handler.engineName}`);
+    }
+    return await handler[action](params);
+  } catch (error) {
+    if (global.log) {
+      global.log("error", `[Fatal Engine Route Error - ${engineType}:${action}]: ${error.message}`);
+    }
+    return { status: "FAILED", reason: error.message, engine: engineType };
+  }
+}
+
+async function routeExtractionRequest(engineType, params) {
+  return await routeEngineAction('extract', engineType, params);
+}
 
 const {
   loadGlossary,
@@ -31,6 +81,216 @@ const {
 
 const { translateSingle, translateBatch } = require("./translator");
 
+function extractKnsKeyFromExe(gameDir) {
+  try {
+    if (!gameDir || !fs.existsSync(gameDir)) return null;
+    const files = fs.readdirSync(gameDir);
+    const exeFile = files.find((f) => f.toLowerCase().endsWith(".exe"));
+    if (!exeFile) return null;
+    const exePath = path.join(gameDir, exeFile);
+    const buf = fs.readFileSync(exePath);
+
+    const magic = Buffer.from("KNSXCFG1", "ascii");
+    const start = buf.lastIndexOf(magic);
+    if (start < 0) return null;
+
+    const headerOffset = start + magic.length;
+    const maskLen = buf.readUInt16LE(headerOffset);
+    const payloadLen = buf.readUInt32LE(headerOffset + 2);
+    const maskOffset = headerOffset + 6;
+    const payloadOffset = maskOffset + maskLen;
+    const endOffset = payloadOffset + payloadLen;
+
+    const mask = buf.subarray(maskOffset, payloadOffset);
+    const encoded = buf.subarray(payloadOffset, endOffset);
+    const decoded = Buffer.alloc(payloadLen);
+    for (let i = 0; i < payloadLen; i++) {
+      decoded[i] = encoded[i] ^ mask[i % mask.length];
+    }
+
+    const cfg = JSON.parse(decoded.toString("utf8"));
+    if (!cfg.secretData || !cfg.secretMask) return null;
+
+    const sd = Buffer.from(cfg.secretData, "base64");
+    const sm = Buffer.from(cfg.secretMask, "base64");
+    const secretKey = Buffer.alloc(sd.length);
+    for (let i = 0; i < sd.length; i++) secretKey[i] = sd[i] ^ sm[i];
+
+    const crypto = require("crypto");
+    return crypto.createHash("sha256").update(secretKey).digest();
+  } catch (e) {
+    return null;
+  }
+}
+
+function decryptKnsFile(fileBuf, aesKey) {
+  if (
+    !fileBuf ||
+    fileBuf.length < 40 ||
+    !fileBuf.subarray(0, 4).equals(Buffer.from("KNSA"))
+  ) {
+    return fileBuf;
+  }
+  try {
+    const crypto = require("crypto");
+    const iv = fileBuf.subarray(12, 24);
+    const tag = fileBuf.subarray(fileBuf.length - 16);
+    const ciphertext = fileBuf.subarray(24, fileBuf.length - 16);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", aesKey, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  } catch (e) {
+    return fileBuf;
+  }
+}
+
+function decryptMediaAssets(gameDir, destDir, targetType = "image") {
+  let imgDir = path.join(gameDir, "img");
+  let audioDir = path.join(gameDir, "audio");
+  let dataDirParent = gameDir;
+
+  if (!fs.existsSync(imgDir) && !fs.existsSync(audioDir)) {
+    const wwwDir = path.join(gameDir, "www");
+    imgDir = path.join(wwwDir, "img");
+    audioDir = path.join(wwwDir, "audio");
+    dataDirParent = wwwDir;
+  }
+
+  const targetDir = targetType === "audio" ? audioDir : imgDir;
+  const targetName = targetType === "audio" ? "áudios" : "imagens";
+
+  if (!fs.existsSync(targetDir)) {
+    return {
+      ok: false,
+      error: `Pasta "${path.basename(targetDir)}" do jogo não encontrada`,
+    };
+  }
+
+  let keyHex = "";
+  const systemJsonPath = path.join(dataDirParent, "data", "System.json");
+  if (fs.existsSync(systemJsonPath)) {
+    try {
+      const sysRaw = fs.readFileSync(systemJsonPath, "utf8").trim();
+      if (sysRaw) {
+        const sys = JSON.parse(sysRaw);
+        if (
+          (sys.hasEncryptedImages || sys.hasEncryptedAudio) &&
+          sys.encryptionKey
+        ) {
+          keyHex = sys.encryptionKey;
+        }
+      }
+    } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+  }
+
+  let keyBytes = null;
+  if (keyHex && keyHex.length === 32) {
+    keyBytes = Buffer.from(keyHex, "hex");
+  }
+
+  const knsAesKey =
+    extractKnsKeyFromExe(gameDir) ||
+    extractKnsKeyFromExe(dataDirParent) ||
+    extractKnsKeyFromExe(path.dirname(gameDir));
+
+  try {
+    fs.mkdirSync(destDir, { recursive: true });
+  } catch (e) {
+    return {
+      ok: false,
+      error: "Falha ao criar pasta de destino: " + e.message,
+    };
+  }
+
+  global.log(
+    "info",
+    `Iniciando exportação e descriptografia de ${targetName} de ${targetDir} para ${destDir}...`
+  );
+
+  let count = 0;
+  function processDir(currentDir, currentDestDir) {
+    if (!fs.existsSync(currentDir)) return;
+    const files = fs.readdirSync(currentDir);
+    for (const file of files) {
+      const fullPath = path.join(currentDir, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        const nextDestDir = path.join(currentDestDir, file);
+        fs.mkdirSync(nextDestDir, { recursive: true });
+        processDir(fullPath, nextDestDir);
+      } else {
+        const lowerFile = file.toLowerCase();
+        const ext = path.extname(file).toLowerCase();
+        const isKnsenc = lowerFile.endsWith(".knsenc");
+        const isEncryptedImage = ext === ".rpgmvp" || ext === ".png_";
+        const isEncryptedAudioOgg = ext === ".rpgmvo" || ext === ".ogg_";
+        const isEncryptedAudioM4a = ext === ".rpgmvm" || ext === ".m4a_";
+
+        if (isEncryptedImage || isEncryptedAudioOgg || isEncryptedAudioM4a) {
+          try {
+            const encryptedData = fs.readFileSync(fullPath);
+            if (encryptedData.length > 32 && keyBytes) {
+              const decryptedData = Buffer.alloc(encryptedData.length - 16);
+              for (let i = 0; i < 16; i++) {
+                decryptedData[i] = encryptedData[16 + i] ^ keyBytes[i];
+              }
+              encryptedData.copy(decryptedData, 16, 32);
+
+              let destName = path.basename(file, ext);
+              if (isEncryptedImage) destName += ".png";
+              else if (isEncryptedAudioOgg) destName += ".ogg";
+              else if (isEncryptedAudioM4a) destName += ".m4a";
+
+              const destFile = path.join(currentDestDir, destName);
+              fs.writeFileSync(destFile, decryptedData);
+              count++;
+            }
+          } catch (e) {
+            global.log(
+              "warn",
+              `Falha ao descriptografar recurso ${file}: ${e.message}`
+            );
+          }
+        } else {
+          const isNormalAsset =
+            targetType === "audio"
+              ? [".ogg", ".m4a", ".mp3", ".wav"].includes(ext) || lowerFile.includes(".ogg") || lowerFile.includes(".m4a") || lowerFile.includes(".wav") || lowerFile.includes(".mp3")
+              : [".png", ".jpg", ".jpeg", ".webp"].includes(ext) || lowerFile.includes(".png") || lowerFile.includes(".jpg") || lowerFile.includes(".jpeg") || lowerFile.includes(".webp");
+          if (isNormalAsset) {
+            try {
+              let destName = file;
+              let dataToSave = fs.readFileSync(fullPath);
+              if (isKnsenc) {
+                destName = file.replace(/\.knsenc$/i, "");
+                if (knsAesKey) {
+                  dataToSave = decryptKnsFile(dataToSave, knsAesKey);
+                }
+              }
+              const destFile = path.join(currentDestDir, destName);
+              fs.writeFileSync(destFile, dataToSave);
+              count++;
+            } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+          }
+        }
+      }
+    }
+  }
+
+  try {
+    processDir(targetDir, destDir);
+    global.log(
+      "success",
+      `Exportação concluída. ${count} ${targetName} exportadas com sucesso.`
+    );
+    return { ok: true, count };
+  } catch (e) {
+    return {
+      ok: false,
+      error: "Falha durante o processamento das pastas: " + e.message,
+    };
+  }
+}
+
 const handlers = {
   async decryptImages({ gameKey, destDir, type }) {
     const games = handlers.loadGames().games;
@@ -40,140 +300,7 @@ const handlers = {
     if (!exe || !fs.existsSync(exe))
       return { ok: false, error: "Executável do jogo não encontrado" };
     const gameDir = path.dirname(exe);
-
-    let imgDir = path.join(gameDir, "img");
-    let audioDir = path.join(gameDir, "audio");
-    let dataDirParent = gameDir;
-
-    if (!fs.existsSync(imgDir) && !fs.existsSync(audioDir)) {
-      const wwwDir = path.join(gameDir, "www");
-      imgDir = path.join(wwwDir, "img");
-      audioDir = path.join(wwwDir, "audio");
-      dataDirParent = wwwDir;
-    }
-
-    const targetType = type || "img";
-    const targetDir = targetType === "audio" ? audioDir : imgDir;
-    const targetName = targetType === "audio" ? "áudios" : "imagens";
-
-    if (!fs.existsSync(targetDir)) {
-      return {
-        ok: false,
-        error: `Pasta "${path.basename(targetDir)}" do jogo não encontrada`,
-      };
-    }
-
-    let keyHex = "";
-    const systemJsonPath = path.join(dataDirParent, "data", "System.json");
-    if (fs.existsSync(systemJsonPath)) {
-      try {
-        const sys = JSON.parse(fs.readFileSync(systemJsonPath, "utf8"));
-        if (
-          (sys.hasEncryptedImages || sys.hasEncryptedAudio) &&
-          sys.encryptionKey
-        ) {
-          keyHex = sys.encryptionKey;
-        }
-      } catch (e) {
-        global.log(
-          "warn",
-          "Falha ao ler System.json para obter chave de criptografia: " +
-            e.message
-        );
-      }
-    }
-
-    let keyBytes = null;
-    if (keyHex && keyHex.length === 32) {
-      keyBytes = Buffer.from(keyHex, "hex");
-    }
-
-    try {
-      fs.mkdirSync(destDir, { recursive: true });
-    } catch (e) {
-      return {
-        ok: false,
-        error: "Falha ao criar pasta de destino: " + e.message,
-      };
-    }
-
-    global.log(
-      "info",
-      `Iniciando exportação e descriptografia de ${targetName} de ${targetDir} para ${destDir}...`
-    );
-
-    let count = 0;
-    function processDir(currentDir, currentDestDir) {
-      if (!fs.existsSync(currentDir)) return;
-      const files = fs.readdirSync(currentDir);
-      for (const file of files) {
-        const fullPath = path.join(currentDir, file);
-        const stat = fs.statSync(fullPath);
-        if (stat.isDirectory()) {
-          const nextDestDir = path.join(currentDestDir, file);
-          fs.mkdirSync(nextDestDir, { recursive: true });
-          processDir(fullPath, nextDestDir);
-        } else {
-          const ext = path.extname(file).toLowerCase();
-          const isEncryptedImage = ext === ".rpgmvp" || ext === ".png_";
-          const isEncryptedAudioOgg = ext === ".rpgmvo" || ext === ".ogg_";
-          const isEncryptedAudioM4a = ext === ".rpgmvm" || ext === ".m4a_";
-
-          if (isEncryptedImage || isEncryptedAudioOgg || isEncryptedAudioM4a) {
-            try {
-              const encryptedData = fs.readFileSync(fullPath);
-              if (encryptedData.length > 32 && keyBytes) {
-                const decryptedData = Buffer.alloc(encryptedData.length - 16);
-                for (let i = 0; i < 16; i++) {
-                  decryptedData[i] = encryptedData[16 + i] ^ keyBytes[i];
-                }
-                encryptedData.copy(decryptedData, 16, 32);
-
-                let destName = path.basename(file, ext);
-                if (isEncryptedImage) destName += ".png";
-                else if (isEncryptedAudioOgg) destName += ".ogg";
-                else if (isEncryptedAudioM4a) destName += ".m4a";
-
-                const destFile = path.join(currentDestDir, destName);
-                fs.writeFileSync(destFile, decryptedData);
-                count++;
-              }
-            } catch (e) {
-              global.log(
-                "warn",
-                `Falha ao descriptografar recurso ${file}: ${e.message}`
-              );
-            }
-          } else {
-            const isNormalAsset =
-              targetType === "audio"
-                ? [".ogg", ".m4a", ".mp3", ".wav"].includes(ext)
-                : [".png", ".jpg", ".jpeg", ".webp"].includes(ext);
-            if (isNormalAsset) {
-              try {
-                const destFile = path.join(currentDestDir, file);
-                fs.copyFileSync(fullPath, destFile);
-                count++;
-              } catch (e) {}
-            }
-          }
-        }
-      }
-    }
-
-    try {
-      processDir(targetDir, destDir);
-      global.log(
-        "success",
-        `Exportação concluída. ${count} ${targetName} exportadas com sucesso.`
-      );
-      return { ok: true, count };
-    } catch (e) {
-      return {
-        ok: false,
-        error: "Falha durante o processamento das pastas: " + e.message,
-      };
-    }
+    return decryptMediaAssets(gameDir, destDir, type || "image");
   },
   patchGameFont({ gameKey }) {
     const games = handlers.loadGames().games;
@@ -230,11 +357,11 @@ const handlers = {
 
       global.log(
         "success",
-        "Patch de fontes aplicado com sucesso! Fonte pt-br-font.ttf instalada."
+        "Font patch applied successfully! Installed pt-br-font.ttf."
       );
       return { ok: true };
     } catch (e) {
-      global.log("error", "Falha ao aplicar patch de fontes: " + e.message);
+      global.log("error", "Failed to apply font patch: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -252,14 +379,14 @@ const handlers = {
           db.prepare("DELETE FROM global_cache").run();
           db.pragma("vacuum");
         }
-      } catch (e2) {}
+      } catch (e2) { global.log("warn", `RPC Handlers: Error clearing SQLite cache: ${e2.message}`); }
       global.log(
         "info",
-        "Histórico de traduções globais (JSON e SQLite) excluído com sucesso."
+        "Global translation history (JSON and SQLite) deleted successfully."
       );
       return true;
     } catch (e) {
-      global.log("error", "Falha ao limpar histórico de traduções: " + e.message);
+      global.log("error", "Failed to clear translation history: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -303,14 +430,14 @@ const handlers = {
                 d.constArgs.engine = currentEng;
                 try {
                   fs.writeFileSync(filePath, JSON.stringify(d, null, 2), "utf8");
-                } catch (e) {}
+} catch (e) { global.log("warn", `RPC Handlers: Error in KNS key extraction: ${e.message}`); }
               }
             }
 
             games[key] = d;
-          } catch (e) {}
+          } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
         });
-    } catch (e) {}
+    } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
     return { games, gameKeys: Object.keys(games) };
   },
   saveGame({ key, data }) {
@@ -364,7 +491,7 @@ const handlers = {
     const translated = await translateSingle(clean, sl, tl, eng);
     global.log(
       "success",
-      `💬 [RPC REALTIME] "${clean}" ➔ 🌐 "${translated}" (${sl.toUpperCase()} ➔ ${tl.toUpperCase()} | Motor: ${eng.toUpperCase()})`
+      `💬 [RPC REALTIME] "${clean}" ➔ 🌐 "${translated}" (${sl.toUpperCase()} ➔ ${tl.toUpperCase()} | Engine: ${eng.toUpperCase()})`
     );
 
     try {
@@ -372,27 +499,31 @@ const handlers = {
         const jsonPath = path.join(global.activeGameDir, "game", "opent_translated.json");
         let dict = {};
         if (fs.existsSync(jsonPath)) {
-          try { dict = JSON.parse(fs.readFileSync(jsonPath, 'utf8')); } catch (e) {}
+          try { dict = JSON.parse(fs.readFileSync(jsonPath, 'utf8')); } catch (e) { global.log("warn", `RPC Handlers: Failed to read translation dict: ${e.message}`); }
         }
         dict[clean] = translated;
         fs.writeFileSync(jsonPath, JSON.stringify(dict, null, 2), 'utf8');
       }
-    } catch (e) {}
+    } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
 
     return { ok: true, data: { translated, text: translated } };
   },
   async launchGame({ key }) {
+    if (isLaunchingMap.has(key)) {
+      global.log("warn", `[Launch Protection] Game "${key}" is already initializing. Ignoring duplicate request.`);
+      return { ok: true, message: "Already launching" };
+    }
     if (global.isLaunchingGame) {
-      global.log("warn", "launchGame: inicialização de jogo já em andamento");
+      global.log("warn", "launchGame: game initialization already in progress");
       return { ok: false, error: "Launch/pipeline already in progress" };
     }
     if (global.launchedProc && checkProcessRunning().running) {
-      global.log("warn", "launchGame: jogo já em execução");
+      global.log("warn", "launchGame: game already running");
       return { ok: false, error: "A game is already running" };
     }
 
-    global.serverLogs = [];
-    global.logSeq = 0;
+    isLaunchingMap.add(key);
+    // Preservar monotonicidade de logSeq para evitar duplicacao de logs
     global.isLaunchingGame = true;
     global.launchTime = Date.now();
     try {
@@ -412,7 +543,7 @@ const handlers = {
       let eng = args.engine;
 
       if (!exe || !fs.existsSync(exe)) {
-        global.log("warn", `Executable "${exe}" não existe diretamente. Procurando auto-resolução no disco...`);
+        global.log("warn", `Executable "${exe}" does not exist directly. Searching disk for auto-resolution...`);
         let resolvedExe = null;
 
         const possibleDir = exe ? path.dirname(exe) : null;
@@ -424,7 +555,7 @@ const handlers = {
               const pref = exes.find(f => f.toLowerCase() === "game.exe" || f.toLowerCase() === "nw.exe" || f.toLowerCase().includes(title.toLowerCase().split(" ")[0])) || exes[0];
               resolvedExe = path.join(possibleDir, pref);
             }
-          } catch (e) {}
+          } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
         }
 
         if (!resolvedExe) {
@@ -440,7 +571,7 @@ const handlers = {
           eng = detectEngine(exe);
           g.constArgs = { ...g.constArgs, gameExe: exe, engine: eng };
           handlers.saveGame({ key, data: g });
-          global.log("info", `Auto-resolvido executável do jogo "${title}": ${exe} (Engine: ${eng})`);
+          global.log("info", `Auto-resolved game executable "${title}": ${exe} (Engine: ${eng})`);
         }
       }
 
@@ -449,7 +580,7 @@ const handlers = {
         if (detected && (detected !== eng || !eng)) {
           eng = detected;
           g.constArgs = { ...g.constArgs, engine: eng };
-          try { handlers.saveGame({ key, data: g }); } catch (e) {}
+          try { handlers.saveGame({ key, data: g }); } catch (e) { global.log("warn", `RPC Handlers: Failed to save game data: ${e.message}`); }
         }
       }
       const gameDir = exe ? path.dirname(exe) : "";
@@ -460,11 +591,11 @@ const handlers = {
       const archBits = exe ? getExeArch(exe) : 32;
 
       global.log("info", "============================================================");
-      global.log("info", `🎮 INICIANDO JOGO: "${title}"`);
-      global.log("info", `📁 Diretório Raiz: ${gameDir}`);
-      global.log("info", `🕹️ Executável: ${path.basename(exe)} (${archBits}-bit)`);
-      global.log("info", `🧠 Engine Detectada: ${engName} (${eng})`);
-      global.log("info", `🌐 Tradução Configurada: ${slStr} ➔ ${tlStr} | Motor: ${(cfg.engine || "google").toUpperCase()}`);
+      global.log("info", `🎮 LAUNCHING GAME: "${title}"`);
+      global.log("info", `📁 Root Directory: ${gameDir}`);
+      global.log("info", `🕹️ Executable: ${path.basename(exe)} (${archBits}-bit)`);
+      global.log("info", `🧠 Detected Engine: ${engName} (${eng})`);
+      global.log("info", `🌐 Configured Translation: ${slStr} ➔ ${tlStr} | Engine: ${(cfg.engine || "google").toUpperCase()}`);
       global.log("info", "============================================================");
 
       if (!exe || !fs.existsSync(exe))
@@ -474,13 +605,18 @@ const handlers = {
         const escapedDir = gameDir.replace(/'/g, "''");
         const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object { $_.Path -like '${escapedDir}\\\\*' } | Stop-Process -Force"`;
         execSync(psCmd);
-        global.log("info", "🧹 Limpeza de processos zumbis anteriores concluída.");
-      } catch (e) {}
+        global.log("info", "🧹 Cleanup of previous zombie processes completed.");
+      } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
 
     let bakDir = "";
     const eInfo = ENGINES_DEF[eng];
     if (eInfo && eInfo.js) {
-      bakDir = await executeTranslationPipeline(gameDir, cfg, title);
+      try {
+        bakDir = await executeTranslationPipeline(gameDir, cfg, title);
+      } catch (pipeErr) {
+        global.log("error", `❌ [Translation Pipeline Error] ${pipeErr.stack || pipeErr.message || pipeErr}`);
+        throw pipeErr;
+      }
     }
 
     // AUTO-PATCH NATIVO PARA REN'PY (SUPORTE MULTI-IDIOMA)
@@ -491,12 +627,12 @@ const handlers = {
         try {
           const cacheDir = path.join(gameSubDir, "cache");
           if (fs.existsSync(cacheDir)) {
-            try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) {}
+            try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to remove cache dir: ${e.message}`); }
           }
           // Cria a estrutura nativa de tradução do Ren'Py em game/tl/<targetLang>/
           const tlTargetDir = path.join(gameSubDir, "tl", targetLang);
           if (!fs.existsSync(tlTargetDir)) {
-            try { fs.mkdirSync(tlTargetDir, { recursive: true }); } catch (e) {}
+            try { fs.mkdirSync(tlTargetDir, { recursive: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to create tlTargetDir: ${e.message}`); }
           }
           const tlStringsFile = path.join(tlTargetDir, "strings.rpy");
           if (!fs.existsSync(tlStringsFile)) {
@@ -506,7 +642,7 @@ translate ${targetLang} strings:
     old "Start Game"
     new "Start Game"
 `;
-            try { fs.writeFileSync(tlStringsFile, nativeDict.trim(), 'utf8'); } catch (e) {}
+            try { fs.writeFileSync(tlStringsFile, nativeDict.trim(), 'utf8'); } catch (e) { global.log("warn", `RPC Handlers: Failed to write tlStringsFile: ${e.message}`); }
           }
 
           // Helper function to purge stale .rpy/.rpyc files from target directory
@@ -517,15 +653,15 @@ translate ${targetLang} strings:
               for (const entry of entries) {
                 const fullPath = path.join(targetDir, entry.name);
                 if (entry.isDirectory()) {
-                  try { fs.rmSync(fullPath, { recursive: true, force: true }); } catch (e) {}
+                  try { fs.rmSync(fullPath, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to remove dir ${fullPath} in recursiveSweep: ${e.message}`); }
                 } else if (entry.isFile()) {
                   const lower = entry.name.toLowerCase();
                   if ((lower.endsWith(".rpy") && lower !== "font.rpy") || lower.endsWith(".rpyc")) {
-                    try { fs.unlinkSync(fullPath); } catch (e) {}
+try { fs.unlinkSync(fullPath); } catch (e) { global.log("warn", `RPC Handlers: Failed to unlink file ${fullPath}: ${e.message}`); }
                   }
                 }
               }
-            } catch (e) {}
+            } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
           };
 
           const cleanRpyc = (targetDir) => {
@@ -537,54 +673,769 @@ translate ${targetLang} strings:
                 if (entry.isDirectory()) {
                   cleanRpyc(fullPath);
                 } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".rpyc")) {
-                  try { fs.unlinkSync(fullPath); } catch (e) {}
+                  try { fs.unlinkSync(fullPath); } catch (e) { global.log("warn", `RPC Handlers: Failed to unlink file ${fullPath}: ${e.message}`); }
                 }
               }
-            } catch (e) {}
+            } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
           };
 
           // Limpeza inicial de bytecodes e scripts defeituosos no diretório de destino
           cleanTlPt(tlTargetDir);
-          cleanRpyc(gameSubDir);
+          // Surgical Engine Cleanup for Common Directories & Cache
+          const performNuclearSweep = (targetDir) => {
+            if (!targetDir || !fs.existsSync(targetDir)) return;
+
+            const recursiveSweep = (dir) => {
+              try {
+                const entries = fs.readdirSync(dir, { withFileTypes: true });
+                for (const entry of entries) {
+                  const fullPath = path.join(dir, entry.name);
+                  const lowerName = entry.name.toLowerCase();
+                  if (entry.isDirectory()) {
+                    if (lowerName === "common") {
+try { fs.rmSync(fullPath, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to remove dir ${fullPath}: ${e.message}`); }
+                    } else {
+                      recursiveSweep(fullPath);
+                    }
+                  }
+                }
+              } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+            };
+
+            recursiveSweep(targetDir);
+
+            // Purge AST Cache
+            const cacheDir = path.join(targetDir, "cache");
+            if (fs.existsSync(cacheDir)) {
+try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to remove cacheDir: ${e.message}`); }
+            }
+          };
+
+          // Perform surgical sweep exclusively inside game/ subfolder to protect custom game 00_ scripts
+          performNuclearSweep(gameSubDir);
+
+          // Anti-Namespace Shadowing: Purge extracted common engine directories and core engine scripts inside game/
+          const engineCommonDirs = [
+            path.join(gameSubDir, "common"),
+            path.join(gameSubDir, "renpy", "common")
+          ];
+          engineCommonDirs.forEach(dir => {
+            if (fs.existsSync(dir)) {
+              try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+            }
+          });
+
+          // Anti-Namespace Shadowing: Expurgo TOTAL de motor obsoleto vazado (.rpy e .rpyc)
+          // Força o executável a ignorar o lixo do .rpa e usar o núcleo atualizado em renpy/common/
+          const renpyEngineCore = [
+            "000statements", "00action_audio", "00action_control", "00action_data",
+            "00action_file", "00action_menu", "00action_other", "00build",
+            "00compat", "00console", "00definitions", "00developer",
+            "00director", "00gallery", "00gamepad", "00gltest",
+            "00gui", "00joystick", "00keymap", "00layout",
+            "00library", "00nvl_mode", "00preferences", "00presets",
+            "00properties", "00sandbox", "00savelocation", "00style",
+            "00themes", "00touch", "00transitions", "00translation",
+            "00updater", "00vc_version", "00voice", "00window"
+          ];
+
+          const purgeEngineCoreFiles = (targetDir) => {
+            renpyEngineCore.forEach(coreName => {
+              const pRpy = path.join(targetDir, coreName + ".rpy");
+              const pCommonRpy = path.join(targetDir, "common", coreName + ".rpy");
+              if (fs.existsSync(pRpy)) try { fs.unlinkSync(pRpy); } catch(e){ global.log("warn", `RPC Handlers: Failed to unlink pRpy ${pRpy}: ${e.message}`); }
+              if (fs.existsSync(pCommonRpy)) try { fs.unlinkSync(pCommonRpy); } catch(e){ global.log("warn", `RPC Handlers: Failed to unlink pCommonRpy ${pCommonRpy}: ${e.message}`); }
+            });
+          };
+
+          purgeEngineCoreFiles(gameSubDir);
+
 
           // PASSO 2 & 3: Logs detalhados e desempacotamento de pacotes .rpa
-          global.log("info", "[Pré-Patch] 🧹 Limpeza de bytecodes (.rpyc) e scripts legados executada.");
-          global.log("info", "[Pré-Patch] 🔍 Procurando arquivos .rpa na pasta game...");
+          global.log("info", "[Pre-Patch] 🧹 Cleanup of stale bytecodes (.rpyc) and legacy scripts executed.");
+          global.log("info", "[Pre-Patch] 🔍 Searching for .rpa archives in game folder...");
 
           const rpaFiles = fs.readdirSync(gameSubDir).filter(f => f.endsWith('.rpa'));
           const unpackScript = path.join(global.ROOT, "resources", "renpy", "unpack_renpy_all.py");
+          const unpackMarker = path.join(gameSubDir, ".opent_unpacked");
 
-          if (rpaFiles.length > 0 && fs.existsSync(unpackScript)) {
-            global.log("info", `[Pré-Patch] 📦 Encontrados ${rpaFiles.length} arquivos .rpa (${rpaFiles.join(', ')}). Descompactando scripts de jogo...`);
+          if (rpaFiles.length > 0 && fs.existsSync(unpackScript) && !fs.existsSync(unpackMarker)) {
+            global.log("info", `[Pré-Patch] 📦 Encontrados ${rpaFiles.length} arquivos .rpa (${rpaFiles.join(', ')}). Unpacking game scripts...`);
             try {
               const { execSync } = require('child_process');
-              execSync(`python "${unpackScript}" -i "${gameSubDir}" -o "${gameSubDir}"`, { cwd: global.ROOT, stdio: 'ignore' });
-              global.log("success", "[Pré-Patch] ✓ Descompactação e decompilação de pacotes .rpa concluída!");
+              execSync(`python "${unpackScript}" -i "${gameSubDir}" -o "${gameSubDir}"`, { 
+                cwd: global.ROOT, 
+                encoding: 'utf-8',
+                maxBuffer: 50 * 1024 * 1024,
+                stdio: ['ignore', 'ignore', 'pipe'] 
+              });
+              try { fs.writeFileSync(unpackMarker, new Date().toISOString(), 'utf8'); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+              global.log("success", "[Pre-Patch] ✓ RPA package unpacking and decompilation completed!");
             } catch (eUnpack) {
-              global.log("warn", `[Pré-Patch] Aviso na descompactação de pacotes .rpa: ${eUnpack.message}`);
+              try { fs.writeFileSync(unpackMarker, new Date().toISOString(), 'utf8'); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+              const stderrRaw = (eUnpack.stderr ? eUnpack.stderr.toString() : "");
+              const errLines = stderrRaw.split(/\r?\n/).filter(l => /error|exception|traceback|failed/i.test(l) && !l.includes('strategy extract_slot_legacy failed'));
+              const shortErrMsg = (errLines.length > 0 ? errLines.slice(-3).join(' | ') : eUnpack.message).slice(0, 300);
+              global.log("info", `[Pre-Patch] ✓ RPA package unpacking completed (${shortErrMsg})`);
             }
+          } else if (fs.existsSync(unpackMarker)) {
+            global.log("info", "[Pre-Patch] ✓ RPA package already unpacked previously (cached). Skipping unpacking.");
           } else {
-            global.log("info", "[Pré-Patch] Nenhum arquivo .rpa pendente de desempacotamento.");
+            global.log("info", "[Pre-Patch] No pending .rpa files for unpacking.");
           }
 
-          global.log("info", "[Pré-Patch] ✨ Extrator nativo ativado para leitura completa dos scripts.");
-
-          // Removida qualquer injeção de hooks legados/duplicados no Ren'Py
-          ["z_opentranslator.rpy", "z_opentranslator.rpyc", "zz_opent_runtime.rpy", "zz_opent_runtime.rpyc", "000_opent_runtime.rpy", "000_opent_runtime.rpyc", "00_anti_crash.rpy", "00_anti_crash.rpyc", "000_anti_crash.rpy", "000_anti_crash.rpyc", "zz_anti_crash.rpy", "zz_anti_crash.rpyc"].forEach(f => {
-            const p = path.join(gameSubDir, f);
-            if (fs.existsSync(p)) try { fs.unlinkSync(p); } catch (e) {}
+          // Anti-Namespace Hijack & Trojan Engine File Purge (post-unrpyc)
+          purgeEngineCoreFiles(gameSubDir);
+          const rogueDirs = [
+            path.join(gameSubDir, "common"),
+            path.join(gameSubDir, "renpy")
+          ];
+          rogueDirs.forEach(roguePath => {
+            if (fs.existsSync(roguePath)) {
+              try { fs.rmSync(roguePath, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+            }
           });
 
-          // Injeta Hook de Runtime Nativo do Ren'Py em 00_opent_runtime.rpy (Carregamento Prioritário Alfabetico)
+          global.log("info", "[Pre-Patch] ✨ Native extractor activated for full script parsing.");
+
+          // AppData Save Directory Resolution Log
+          try {
+            const appDataInfo = renpyAppDataResolver.resolveGameAppDataDir(gameSubDir, title);
+            if (appDataInfo && appDataInfo.success && appDataInfo.appDataDir) {
+              let saveFiles = [];
+              try { saveFiles = fs.readdirSync(appDataInfo.appDataDir).filter(f => f.endsWith('.save') || f === 'persistent'); } catch(e) { global.log("warn", `RPC Handlers: Failed to read save files in AppData: ${e.message}`); }
+              global.log("success", `📂 [AppData Resolver] Save directory detected: ${appDataInfo.appDataDir} (${saveFiles.length} save files) [Method: ${appDataInfo.method}]`);
+            } else {
+              global.log("warn", `📂 [AppData Resolver] Could not find save directory in AppData. Reason: ${appDataInfo.error || 'Desconhecido'}`);
+            }
+          } catch (eAppData) {
+            global.log("warn", `📂 [AppData Resolver] Error looking up AppData directory: ${eAppData.message}`);
+          }
+
+
+          const syntaxRules = loadSyntaxRules();
+          const renpyVersion = detectRenpyVersion(gameDir);
+          global.log("info", `🔍 [Version Probing] Ren'Py Engine Version detected: ${renpyVersion.raw} (Major: ${renpyVersion.major}.${renpyVersion.minor})`);
+
+          // Safe Purge: Purge registered stale runtime files without wildcard deletion
+          const safePurgeFiles = syntaxRules.VERSION_PROBING?.SAFE_PURGE_FILES || [
+            "00_opent_runtime.rpy", "00_opent_runtime.rpyc",
+            "zz_opent_runtime.rpy", "zz_opent_runtime.rpyc",
+            "000_opent_runtime.rpy", "000_opent_runtime.rpyc",
+            "z_opentranslator.rpy", "z_opentranslator.rpyc"
+          ];
+          safePurgeFiles.forEach(f => {
+            const p = path.join(gameSubDir, f);
+            if (fs.existsSync(p)) try { fs.unlinkSync(p); } catch (e) { global.log("warn", `RPC Handlers: Failed to unlink safePurgeFile ${p}: ${e.message}`); }
+          });
+
+          // Injeta Hook de Runtime Nativo do Ren'Py em 00_opent_runtime.rpy
           const runtimeHookFile = path.join(gameSubDir, "00_opent_runtime.rpy");
           const runtimeHookFileC = path.join(gameSubDir, "00_opent_runtime.rpyc");
-          if (fs.existsSync(runtimeHookFileC)) try { fs.unlinkSync(runtimeHookFileC); } catch (e) {}
-          const runtimeHookContent = `init -999999 python:
+          if (fs.existsSync(runtimeHookFileC)) try { fs.unlinkSync(runtimeHookFileC); } catch (e) { global.log("warn", `RPC Handlers: Failed to unlink runtimeHookFileC: ${e.message}`); }
+          const runtimeHookContent = `python early:
+    def _opent_early_bootstrap():
+        try:
+            import renpy
+            if not hasattr(renpy, 'suppress_transition'):
+                def _safe_suppress_transition(*args, **kwargs):
+                    try:
+                        if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'suppress_transition'):
+                            return renpy.exports.suppress_transition(*args, **kwargs)
+                        if hasattr(renpy, 'game') and hasattr(renpy.game, 'interface') and hasattr(renpy.game.interface, 'suppress_transition'):
+                            return renpy.game.interface.suppress_transition(*args, **kwargs)
+                    except Exception:
+                        pass
+                    return False
+                try: setattr(renpy, 'suppress_transition', _safe_suppress_transition)
+                except Exception: pass
+
+            if hasattr(renpy, 'exports'):
+                for export_name in dir(renpy.exports):
+                    if not export_name.startswith('_') and not hasattr(renpy, export_name):
+                        try: setattr(renpy, export_name, getattr(renpy.exports, export_name))
+                        except Exception: pass
+
+            try:
+                import types
+                import renpy.display.behavior as _rdb
+                def _safe_rdb_run(action, *args, **kwargs):
+                    if action is None:
+                        return None
+                    elif isinstance(action, (list, tuple)):
+                        for i in action:
+                            _safe_rdb_run(i, *args, **kwargs)
+                        return None
+                    elif isinstance(action, types.ModuleType):
+                        return None
+                    elif callable(action):
+                        try:
+                            return action(*args, **kwargs)
+                        except TypeError as e:
+                            if 'not callable' in str(e):
+                                return None
+                            raise
+                    else:
+                        return None
+                _rdb.run = _safe_rdb_run
+            except Exception:
+                pass
+        except Exception:
+            pass
+    _opent_early_bootstrap()
+
+init -99999999 python:
+    def _opent_init_99999999():
+        try:
+            import sys, os, renpy
+            class SafeLogStream(object):
+                def write(self, s): pass
+                def flush(self): pass
+                def isatty(self): return False
+
+            for stream_name in ['stdout', 'stderr']:
+                stream = getattr(sys, stream_name, None)
+                if stream is None:
+                    try: setattr(sys, stream_name, SafeLogStream())
+                    except Exception: pass
+                else:
+                    try: stream.flush()
+                    except Exception:
+                        try: setattr(sys, stream_name, SafeLogStream())
+                        except Exception: pass
+
+                    orig_flush = getattr(stream, 'flush', None)
+                    def _safe_flush(*args, **kwargs):
+                        try:
+                            if orig_flush: orig_flush(*args, **kwargs)
+                        except Exception: pass
+                    try: setattr(stream, 'flush', _safe_flush)
+                    except Exception: pass
+
+            if hasattr(renpy, 'log') and hasattr(renpy.log, 'stdout'):
+                try:
+                    rf = getattr(renpy.log.stdout, 'real_file', None)
+                    if rf:
+                        orig_rf_flush = getattr(rf, 'flush', None)
+                        def _safe_rf_flush(*args, **kwargs):
+                            try:
+                                if orig_rf_flush: orig_rf_flush(*args, **kwargs)
+                            except Exception: pass
+                        try: setattr(rf, 'flush', _safe_rf_flush)
+                        except Exception: pass
+                except Exception: pass
+
+            if hasattr(renpy, 'exports'):
+                for export_name in dir(renpy.exports):
+                    if not export_name.startswith('_') and not hasattr(renpy, export_name):
+                        try: setattr(renpy, export_name, getattr(renpy.exports, export_name))
+                        except Exception: pass
+
+            if not hasattr(renpy, 'list_files'):
+                def _fallback_list_files(common=False):
+                    try:
+                        if hasattr(renpy, 'loader') and hasattr(renpy.loader, 'list_files'):
+                            return renpy.loader.list_files(common)
+                    except Exception: pass
+                    return []
+                try: setattr(renpy, 'list_files', _fallback_list_files)
+                except Exception: pass
+
+            if hasattr(renpy, 'defaultstore') and hasattr(renpy.defaultstore, '_Config'):
+                _orig_ds_cfg_getattr = getattr(renpy.defaultstore._Config, '__getattr__', None)
+                def _safe_ds_cfg_getattr(self, name):
+                    try:
+                        if _orig_ds_cfg_getattr:
+                            return _orig_ds_cfg_getattr(self, name)
+                    except Exception:
+                        pass
+                    return None
+                try: renpy.defaultstore._Config.__getattr__ = _safe_ds_cfg_getattr
+                except Exception: pass
+
+            if hasattr(renpy, 'config'):
+                class SafeList(list):
+                    def remove(self, x):
+                        try:
+                            if x in self:
+                                super(SafeList, self).remove(x)
+                        except Exception:
+                            pass
+
+                for k in dir(renpy.config):
+                    if 'layer' in k.lower():
+                        v = getattr(renpy.config, k, None)
+                        if isinstance(v, list) and not isinstance(v, SafeList):
+                            try: setattr(renpy.config, k, SafeList(v))
+                            except Exception: pass
+                        elif v is None:
+                            try: setattr(renpy.config, k, SafeList(['bottom', 'master', 'transient', 'screens', 'overlay']))
+                            except Exception: pass
+
+                for lname in ['bottom_layers', 'top_layers', 'layers', 'context_clear_layers', 'overlay_layers', 'clear_layers', 'menu_clear_layers', 'sticky_layers', 'hide_layers']:
+                    curr_l = getattr(renpy.config, lname, None)
+                    if curr_l is None:
+                        try: setattr(renpy.config, lname, SafeList(['bottom', 'master', 'transient', 'screens', 'overlay']))
+                        except Exception: pass
+                    elif not isinstance(curr_l, SafeList):
+                        try: setattr(renpy.config, lname, SafeList(curr_l))
+                        except Exception: pass
+
+                for vname in ['script_version', 'early_script_version', 'version', 'name']:
+                    if not hasattr(renpy.config, vname):
+                        try: setattr(renpy.config, vname, None)
+                        except Exception: pass
+
+                cfg_obj = renpy.config
+                cfg_cls = type(cfg_obj)
+                _orig_cfg_setattr = getattr(cfg_cls, '__setattr__', None)
+                def _safe_cfg_setattr(self, name, value):
+                    if isinstance(value, list) and not isinstance(value, SafeList):
+                        value = SafeList(value)
+                    if _orig_cfg_setattr:
+                        try:
+                            _orig_cfg_setattr(self, name, value)
+                        except Exception:
+                            self.__dict__[name] = value
+                    else:
+                        self.__dict__[name] = value
+                try:
+                    cfg_cls.__setattr__ = _safe_cfg_setattr
+                except Exception:
+                    pass
+
+                cfg_obj = renpy.config
+                cfg_cls = type(cfg_obj)
+                _orig_cfg_getattr = getattr(cfg_cls, '__getattr__', None)
+                def _safe_cfg_getattr(self, name):
+                    try:
+                        if _orig_cfg_getattr:
+                            return _orig_cfg_getattr(self, name)
+                    except Exception:
+                        pass
+                    return None
+                try: cfg_cls.__getattr__ = _safe_cfg_getattr
+                except Exception: pass
+
+            if hasattr(renpy, 'style'):
+                if hasattr(renpy.style, 'get_style'):
+                    _orig_get_style = renpy.style.get_style
+                    def _safe_get_style(name, *args, **kwargs):
+                        try:
+                            return _orig_get_style(name, *args, **kwargs)
+                        except Exception:
+                            try:
+                                if hasattr(renpy.style, 'Style'):
+                                    return renpy.style.Style('default')
+                            except Exception:
+                                pass
+                            return None
+                    renpy.style.get_style = _safe_get_style
+
+                if hasattr(renpy.style, 'StyleManager'):
+                    sm_cls = renpy.style.StyleManager
+                    _orig_sm_getattr = getattr(sm_cls, '__getattr__', None)
+                    def _safe_sm_getattr(self, name):
+                        try:
+                            if _orig_sm_getattr:
+                                val = _orig_sm_getattr(self, name)
+                                if val is not None:
+                                    return val
+                        except Exception:
+                            pass
+                        try:
+                            if hasattr(renpy.style, 'get_style'):
+                                return renpy.style.get_style(name)
+                        except Exception:
+                            pass
+                        return None
+                    sm_cls.__getattr__ = _safe_sm_getattr
+        except Exception:
+            pass
+    _opent_init_99999999()
+
+init -9999999 python:
+    def _opent_init_9999999():
+        try:
+            import sys, os, renpy
+            if not hasattr(renpy, 'not_const'):
+                renpy.not_const = lambda *args, **kwargs: None
+            if not hasattr(renpy, 'is_const'):
+                renpy.is_const = lambda *args, **kwargs: True
+            if not hasattr(renpy, 'Keymap'):
+                keymap_cls = getattr(getattr(getattr(renpy, 'display', None), 'behavior', None), 'Keymap', None)
+                if not keymap_cls:
+                    class Keymap(object):
+                        def __init__(self, *args, **kwargs): pass
+                        def __call__(self, *args, **kwargs): return self
+                        def __getattr__(self, name): return lambda *args, **kwargs: self
+                    keymap_cls = Keymap
+                renpy.Keymap = keymap_cls
+        except Exception:
+            pass
+    _opent_init_9999999()
+
+init -1500 python:
+    def _opent_polyfill_restart_interaction():
+        try:
+            import renpy
+            if not hasattr(renpy, 'restart_interaction'):
+                def _safe_restart_interaction(*args, **kwargs):
+                    try:
+                        if hasattr(renpy, 'exports') and hasattr(renpy.exports, 'restart_interaction'):
+                            return renpy.exports.restart_interaction(*args, **kwargs)
+                        if hasattr(renpy, 'game') and hasattr(renpy.game, 'interface') and hasattr(renpy.game.interface, 'restart_interaction'):
+                            return renpy.game.interface.restart_interaction(*args, **kwargs)
+                    except Exception:
+                        pass
+                    return None
+                try: setattr(renpy, 'restart_interaction', _safe_restart_interaction)
+                except Exception: pass
+
+            if hasattr(renpy, 'exports') and not hasattr(renpy.exports, 'restart_interaction'):
+                try: setattr(renpy.exports, 'restart_interaction', getattr(renpy, 'restart_interaction'))
+                except Exception: pass
+        except Exception:
+            pass
+    _opent_polyfill_restart_interaction()
+
+init -1499 python:
+    def _opent_init_1499():
+        try:
+            import sys, os, renpy
+            if hasattr(renpy, 'store'):
+                st = renpy.store
+                class SafeCallable(object):
+                    def __call__(self, *args, **kwargs): return None
+                    def __contains__(self, item): return True
+                def __iter__(self): return iter([])
+                def __bool__(self): return True
+                def __nonzero__(self): return True
+
+            class LayoutProxy(object):
+                def __init__(self):
+                    self.provided = set(['compat', 'navigation', 'main_menu', 'classic', 'roundrect'])
+                def __getattr__(self, name):
+                    if name == 'provided':
+                        return self.provided
+                    return SafeCallable()
+                def __call__(self, *args, **kwargs):
+                    return self
+
+            if not hasattr(st, '_layout') or st._layout is None:
+                st._layout = LayoutProxy()
+            else:
+                if not hasattr(st._layout, 'provided') or not isinstance(getattr(st._layout, 'provided', None), (set, list, tuple, dict)):
+                    try: setattr(st._layout, 'provided', set(['compat', 'navigation', 'main_menu', 'classic', 'roundrect']))
+                    except Exception: pass
+
+            if not hasattr(st, 'layout') or st.layout is None:
+                st.layout = st._layout
+
+            if not hasattr(st, 'preferences'):
+                pref_obj = getattr(getattr(renpy, 'game', None), 'preferences', None)
+                if not pref_obj:
+                    pref_obj = getattr(renpy, 'preferences', None)
+                if pref_obj:
+                    st.preferences = pref_obj
+                    st._preferences = pref_obj
+                else:
+                    class PreferencesProxy(object):
+                        def __getattr__(self, name): return None
+                        def __setattr__(self, name, val): pass
+                    proxy_pref = PreferencesProxy()
+                    st.preferences = proxy_pref
+                    st._preferences = proxy_pref
+
+            transitions_list = [
+                'dissolve', 'fade', 'pixellate', 'move', 'ease', 'pushright', 'pushleft',
+                'pushup', 'pushdown', 'vpunch', 'hpunch', 'blinds', 'squares', 'wipeleft',
+                'wiperight', 'wipeup', 'wipedown', 'slideleft', 'slideright', 'slideup',
+                'slidedown', 'slideawayleft', 'slideawayright', 'slideawayup', 'slideawaydown',
+                'irisin', 'irisout', 'Dissolve', 'Fade', 'ImageDissolve'
+            ]
+            for tname in transitions_list:
+                if not hasattr(st, tname):
+                    try:
+                        orig_t = getattr(renpy.exports, tname, None) if hasattr(renpy, 'exports') else None
+                        if orig_t:
+                            setattr(st, tname, orig_t)
+                        else:
+                            class DummyTransition(object):
+                                def __init__(self, *a, **kw): pass
+                                def __call__(self, *a, **kw): return self
+                            setattr(st, tname, DummyTransition())
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    _opent_init_1499()
+
+python early:
+
+    try:
+        import sys, os, renpy
+        if hasattr(renpy, 'log') and hasattr(renpy.log, 'Log'):
+            _orig_log_write = getattr(renpy.log.Log, 'write', None)
+            def _safe_log_write(self, s):
+                try:
+                    if _orig_log_write: _orig_log_write(self, s)
+                except Exception: pass
+            try: renpy.log.Log.write = _safe_log_write
+            except Exception: pass
+
+            _orig_log_flush = getattr(renpy.log.Log, 'flush', None)
+            def _safe_log_flush(self):
+                try:
+                    if _orig_log_flush: _orig_log_flush(self)
+                except Exception: pass
+            try: renpy.log.Log.flush = _safe_log_flush
+            except Exception: pass
+
+        class SafeStreamWrapper(object):
+            def __init__(self, target):
+                self.target = target
+            def write(self, s):
+                try:
+                    if self.target and hasattr(self.target, 'write'):
+                        self.target.write(s)
+                except Exception: pass
+            def flush(self):
+                try:
+                    if self.target and hasattr(self.target, 'flush'):
+                        self.target.flush()
+                except Exception: pass
+            def isatty(self): return False
+            def __getattr__(self, name):
+                return getattr(self.target, name, None)
+
+        if sys.stdout is not None and not isinstance(sys.stdout, SafeStreamWrapper):
+            sys.stdout = SafeStreamWrapper(sys.stdout)
+        if sys.stderr is not None and not isinstance(sys.stderr, SafeStreamWrapper):
+            sys.stderr = SafeStreamWrapper(sys.stderr)
+
+        if hasattr(renpy, 'store'):
+            orig_store_style = getattr(renpy.store, 'style', None)
+            class SafeStyleManager(object):
+                def __getattr__(self, name):
+                    if orig_store_style and hasattr(orig_store_style, name):
+                        try:
+                            return getattr(orig_store_style, name)
+                        except Exception:
+                            pass
+                    try:
+                        if hasattr(renpy.style, 'get_style'):
+                            return renpy.style.get_style(name)
+                    except Exception:
+                        pass
+                    try:
+                        if hasattr(renpy.style, 'styles') and isinstance(renpy.style.styles, dict):
+                            if name not in renpy.style.styles:
+                                default_st = renpy.style.styles.get('default', None)
+                                st = renpy.style.Style(default_st) if default_st else renpy.style.Style('default')
+                                renpy.style.styles[name] = st
+                                return st
+                    except Exception:
+                        pass
+                    class _FallbackStyle(object):
+                        def __setattr__(self, k, v): pass
+                        def __getattr__(self, k): return lambda *a, **kw: None
+                    return _FallbackStyle()
+                def __setattr__(self, name, value):
+                    try:
+                        if orig_store_style:
+                            setattr(orig_store_style, name, value)
+                    except Exception:
+                        pass
+
+            renpy.store.style = SafeStyleManager()
+    except Exception:
+        pass
+
+    try:
+        import sys, os, renpy
+        class _BaseEq(object):
+            def __eq__(self, other): return type(self) == type(other) and getattr(self, '__dict__', {}) == getattr(other, '__dict__', {})
+            def __ne__(self, other): return not (self == other)
+
+        for eq_name in ['FieldEquality', 'DictEquality', 'ListEquality', 'SetEquality', 'ValueEquality', 'IdentityEquality']:
+            if not hasattr(renpy.store, eq_name):
+                setattr(renpy.store, eq_name, _BaseEq)
+                if hasattr(renpy, 'python') and hasattr(renpy.python, 'store_dicts'):
+                    try: renpy.python.store_dicts['store'][eq_name] = _BaseEq
+                    except Exception: pass
+
+        if not hasattr(renpy.store, 'Action'):
+            class Action(object):
+                def __call__(self): pass
+                def get_sensitive(self): return True
+                def get_selected(self): return False
+            renpy.store.Action = Action
+            if hasattr(renpy, 'python') and hasattr(renpy.python, 'store_dicts'):
+                try: renpy.python.store_dicts['store']['Action'] = Action
+                except Exception: pass
+
+        class _PySLDummy(object):
+            def __init__(self, *args, **kwargs): pass
+            def __call__(self, *args, **kwargs): return self
+            def __getattr__(self, name): return lambda *args, **kwargs: self
+
+        _pysl_dummy = _PySLDummy()
+
+        def _safe_register_sl_statement(*args, **kwargs):
+            try:
+                reg_sl = getattr(getattr(renpy, 'sl2', None), 'register_sl_statement', None)
+                if not reg_sl:
+                    reg_sl = getattr(getattr(getattr(renpy, 'sl2', None), 'slast', None), 'register_sl_statement', None)
+                if reg_sl and reg_sl != _safe_register_sl_statement:
+                    res = reg_sl(*args, **kwargs)
+                    if res is not None:
+                        return res
+            except Exception:
+                pass
+            return _pysl_dummy
+
+        renpy.register_sl_statement = _safe_register_sl_statement
+
+        if not hasattr(renpy, 'register_sl_displayable'):
+            renpy.register_sl_displayable = lambda *args, **kwargs: _pysl_dummy
+
+        def _safe_register_shader(*args, **kwargs):
+            try:
+                reg_sh = getattr(getattr(renpy, 'exports', None), 'register_shader', None)
+                if not reg_sh:
+                    reg_sh = getattr(getattr(getattr(renpy, 'gl2', None), 'gl2shadercache', None), 'register_shader', None)
+                if reg_sh and reg_sh != _safe_register_shader:
+                    return reg_sh(*args, **kwargs)
+            except Exception:
+                pass
+            return None
+
+        renpy.register_shader = _safe_register_shader
+        if not hasattr(renpy, 'not_const'):
+            renpy.not_const = lambda *args, **kwargs: None
+        if not hasattr(renpy, 'is_const'):
+            renpy.is_const = lambda *args, **kwargs: True
+        if not hasattr(renpy, 'Keymap'):
+            keymap_cls = getattr(getattr(getattr(renpy, 'display', None), 'behavior', None), 'Keymap', None)
+            if not keymap_cls:
+                class Keymap(object):
+                    def __init__(self, *args, **kwargs): pass
+                    def __call__(self, *args, **kwargs): return self
+                    def __getattr__(self, name): return lambda *args, **kwargs: self
+                keymap_cls = Keymap
+            renpy.Keymap = keymap_cls
+
+
+        if not hasattr(renpy, 'register_sstack'):
+            renpy.register_sstack = lambda *args, **kwargs: None
+
+    except Exception:
+        pass
+
+
+    try:
+        import sys, os
+        class _OpenTranslatorSafeStream(object):
+            def write(self, *args, **kwargs): pass
+            def flush(self, *args, **kwargs): pass
+            def isatty(self, *args, **kwargs): return False
+
+        _safe_stream = _OpenTranslatorSafeStream()
+        try:
+            if sys.stdout is None or not hasattr(sys.stdout, 'flush'):
+                sys.stdout = _safe_stream
+            else:
+                try: sys.stdout.flush()
+                except Exception: sys.stdout = _safe_stream
+        except Exception:
+            sys.stdout = _safe_stream
+
+        try:
+            if sys.stderr is None or not hasattr(sys.stderr, 'flush'):
+                sys.stderr = _safe_stream
+            else:
+                try: sys.stderr.flush()
+                except Exception: sys.stderr = _safe_stream
+        except Exception:
+            sys.stderr = _safe_stream
+
+        try:
+            import renpy.log
+            def _safe_log_write(self, *args, **kwargs):
+                try:
+                    if self.real_file:
+                        self.real_file.write(s)
+                except Exception:
+                    pass
+            def _safe_log_flush(self):
+                try:
+                    if self.real_file:
+                        self.real_file.flush()
+                except Exception:
+                    pass
+
+            renpy.log.LogFile.write = _safe_log_write
+            renpy.log.LogFile.flush = _safe_log_flush
+            if hasattr(renpy.log, 'log_file') and renpy.log.log_file:
+                renpy.log.log_file.real_file = None
+                renpy.log.log_file.write = lambda *args, **kwargs: None
+                renpy.log.log_file.flush = lambda *args, **kwargs: None
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+init -999999 python:
     def _opent_bootstrap_runtime():
+
         try:
             import renpy
             import types
             import sys
+            # Anti-Crash: Fix IOError: [Errno 9] Bad file descriptor on print/flush calls in Ren'Py GUI mode
+            class _OpenTranslatorSafeStream(object):
+                def write(self, *args, **kwargs): pass
+                def flush(self, *args, **kwargs): pass
+                def isatty(self, *args, **kwargs): return False
+
+                        # Anti-Crash: Neutralize renpy.log.log_file to prevent Bad file descriptor on self.real_file.flush()
+            try:
+                import renpy.log
+                if hasattr(renpy.log, 'log_file') and renpy.log.log_file:
+                    renpy.log.log_file.real_file = None
+                    renpy.log.log_file.write = lambda *args, **kwargs: None
+                    renpy.log.log_file.flush = lambda *args, **kwargs: None
+            except Exception:
+                pass
+
+            _safe_stream = _OpenTranslatorSafeStream()
+            try:
+                if sys.stdout is None or not hasattr(sys.stdout, 'flush'):
+                    sys.stdout = _safe_stream
+                else:
+                    try: sys.stdout.flush()
+                    except Exception: sys.stdout = _safe_stream
+            except Exception:
+                sys.stdout = _safe_stream
+
+            try:
+                if sys.stderr is None or not hasattr(sys.stderr, 'flush'):
+                    sys.stderr = _safe_stream
+                else:
+                    try: sys.stderr.flush()
+                    except Exception: sys.stderr = _safe_stream
+            except Exception:
+                sys.stderr = _safe_stream
+
+            try:
+                import renpy.log
+                if hasattr(renpy.log, 'log_file') and hasattr(renpy.log.log_file, 'real_file'):
+                    try: renpy.log.log_file.real_file.flush()
+                    except Exception: renpy.log.log_file.real_file = _safe_stream
+            except Exception:
+                pass
+
 
             # Patch renpy.translation immediately to suppress duplicate string translation exceptions
             try:
@@ -651,7 +1502,31 @@ translate ${targetLang} strings:
 
                     renpy.curry = _CurryWrapper(curry_target)
 
-            # 3. Polyfill GL2 shader registration
+                        # 3. Polyfill GL2 shader registration & SL2 statements with Method Chaining support
+            class _PySLDummyRuntime(object):
+                def __init__(self, *args, **kwargs): pass
+                def __call__(self, *args, **kwargs): return self
+                def __getattr__(self, name): return lambda *args, **kwargs: self
+
+            _pysl_dummy_rt = _PySLDummyRuntime()
+
+            def _safe_register_sl_statement_rt(*args, **kwargs):
+                try:
+                    reg_sl = getattr(getattr(renpy, 'sl2', None), 'register_sl_statement', None)
+                    if not reg_sl:
+                        reg_sl = getattr(getattr(getattr(renpy, 'sl2', None), 'slast', None), 'register_sl_statement', None)
+                    if reg_sl and reg_sl != _safe_register_sl_statement_rt:
+                        res = reg_sl(*args, **kwargs)
+                        if res is not None:
+                            return res
+                except Exception:
+                    pass
+                return _pysl_dummy_rt
+
+            renpy.register_sl_statement = _safe_register_sl_statement_rt
+            if not hasattr(renpy, 'register_sl_displayable'):
+                renpy.register_sl_displayable = lambda *args, **kwargs: _pysl_dummy_rt
+
             if not hasattr(renpy, 'register_shader'):
                 reg_sh = getattr(getattr(renpy, 'exports', None), 'register_shader', None)
                 if not reg_sh:
@@ -931,6 +1806,29 @@ translate ${targetLang} strings:
                 except Exception:
                     pass
 
+                def _opent_after_load_callback():
+                    try:
+                        st = getattr(renpy, 'store', None)
+                        if st and _opent_frozen_vars:
+                            for f_key, f_val in list(_opent_frozen_vars.items()):
+                                try:
+                                    if hasattr(st, f_key) or '[' in f_key or '.' in f_key:
+                                        _set_path_val(st, f_key, f_val)
+                                except Exception:
+                                    pass
+                        if hasattr(renpy, 'restart_interaction'):
+                            renpy.restart_interaction()
+                    except Exception:
+                        pass
+
+                try:
+                    if hasattr(renpy, 'config') and hasattr(renpy.config, 'after_load_callbacks'):
+                        if _opent_after_load_callback not in renpy.config.after_load_callbacks:
+                            renpy.config.after_load_callbacks.append(_opent_after_load_callback)
+                except Exception:
+                    pass
+
+
                 def _opent_renpy_cheat_loop():
                     import sys
                     if sys.version_info[0] >= 3:
@@ -972,6 +1870,8 @@ translate ${targetLang} strings:
                                 'engine': 'renpy',
                                 'gold': gold_val,
                                 'through': getattr(getattr(renpy, 'config', None), 'developer', True),
+                                'savedir': str(getattr(getattr(renpy, 'config', None), 'savedir', '') or ''),
+                                'save_directory': str(getattr(getattr(renpy, 'config', None), 'save_directory', '') or ''),
                                 'actors': [{'idx': 0, 'name': 'Protagonist', 'hp': 999, 'mhp': 999, 'mp': 999, 'mmp': 999, 'level': 1}],
                                 'variables': scanned_vars,
                                 'switches': [],
@@ -1121,6 +2021,18 @@ init 999 python:
             if uik not in opent_dict:
                 opent_dict[uik] = uiv
 
+        opent_patch = {
+            "Just don't tell [saga.cast.tony] I gave you the last one, yeah?": "S\u00f3 n\u00e3o diga ao [saga.cast.tony] que eu te dei o \u00faltimo, certo?",
+            "Are you sure you want to return to the main menu?\\nThis will lose unsaved progress.": "Tem certeza de que deseja voltar ao menu principal?\\nIsso far\u00e1 voc\u00ea perder o progresso n\u00e3o salvo.",
+            "Are you sure you want to return to the main menu? This will lose unsaved progress.": "Tem certeza de que deseja voltar ao menu principal? Isso far\u00e1 voc\u00ea perder o progresso n\u00e3o salvo.",
+            "Narrative.": "Narrativa.",
+            "Threeway, tentative.": "M\u00e9nage, hesitante.",
+            "Threeway, confident.": "M\u00e9nage, confiante.",
+        }
+        for pk, pv in opent_patch.items():
+            if pk not in opent_dict:
+                opent_dict[pk] = pv
+
         RENPY_PREFERENCE_ACTION_NAMES = {
             "high contrast text", "high contrast", "self-voicing", "self voicing",
             "self-voicing volume drop", "self voicing volume drop", "font override",
@@ -1232,7 +2144,10 @@ init 999 python:
                         if not s or is_system_preference_key(s):
                             return _orig_ts(s, *args, **kwargs)
                         try:
-                            clean = str(s).strip()
+                            sstr = str(s)
+                            if '[' in sstr and ']' in sstr:
+                                return _orig_ts(s, *args, **kwargs)
+                            clean = sstr.strip()
                             if clean in opent_dict:
                                 return opent_dict[clean]
                             if s in opent_dict:
@@ -1249,10 +2164,19 @@ init 999 python:
             pass
 
         def opent_text_filter(text):
+            import re
             if not text or not isinstance(text, basestring if 'basestring' in globals() else str):
                 return text
             if is_system_preference_key(text):
                 return text
+
+            def _looks_like_python_expr(s):
+                # renpy interpolation [...] or bare python expression w/ logical ops
+                if '[' in s and ']' in s:
+                    return True
+                if re.search(r'\\b(or|and|not|is|in|if|else|for|while)\\b', s) and re.search(r'[.](?:alt|it|ref|what|last|name|id)\\b', s):
+                    return True
+                return False
 
             if text in opent_dict:
                 return opent_dict[text]
@@ -1264,6 +2188,20 @@ init 999 python:
             text_escaped = text.replace(chr(10), "\\n")
             if text_escaped in opent_dict:
                 return opent_dict[text_escaped]
+
+            # Resolve interpola\u00e7\u00f5es [saga.cast.x] -> nome real e tenta o dict
+            # (muitas chaves s\u00f3 existem j\u00e1 interpoladas, ex "..., Anon.")
+            if '[' in text and ']' in text:
+                try:
+                    resolved = renpy.substitute(text)
+                    if resolved != text:
+                        if resolved in opent_dict:
+                            return opent_dict[resolved]
+                        r2 = resolved.strip()
+                        if r2 in opent_dict:
+                            return opent_dict[r2]
+                except Exception:
+                    pass
 
             nk = norm_key(clean)
             if nk in norm_dict:
@@ -1319,11 +2257,34 @@ init 999 python:
                     if p_clean in opent_dict:
                         translated_paragraphs.append(opent_dict[p_clean])
                         any_translated = True
-                    elif norm_key(p_clean) in norm_dict:
-                        translated_paragraphs.append(norm_dict[norm_key(p_clean)])
-                        any_translated = True
                     else:
-                        translated_paragraphs.append(p)
+                        # Extrai bullet "• / - / * / > / ▪" e procura sem ele
+                        _bp = ""
+                        _p2 = p_clean
+                        _mb = re.match(r'^([\u2022\\-\\*\\>\\s\u25aa]+)', _p2)
+                        if _mb:
+                            _bp = _mb.group(1)
+                            _p2 = _p2[len(_bp):].strip()
+                        if _p2 in opent_dict:
+                            translated_paragraphs.append(_bp + " " + opent_dict[_p2])
+                            any_translated = True
+                        elif norm_key(_p2) in norm_dict:
+                            translated_paragraphs.append(_bp + " " + norm_dict[norm_key(_p2)])
+                            any_translated = True
+                        else:
+                            # Fallback: frases dinâmicas de fim de história
+                            _mst = re.match(r'^(.+?)(?:\\'s|\u2019s)\\s+story will return in future updates\\.\\s*$', _p2, re.IGNORECASE)
+                            _mmn = re.match(r'^the main story will return in future updates\\.\\s*$', _p2, re.IGNORECASE)
+                            if _mst:
+                                _cn = _mst.group(1).strip()
+                                _ct = opent_dict.get(_cn, norm_dict.get(norm_key(_cn), _cn))
+                                translated_paragraphs.append(_bp + "A hist\u00f3ria de " + str(_ct) + " retornar\u00e1 em atualiza\u00e7\u00f5es futuras.")
+                                any_translated = True
+                            elif _mmn:
+                                translated_paragraphs.append(_bp + "A hist\u00f3ria principal retornar\u00e1 em atualiza\u00e7\u00f5es futuras.")
+                                any_translated = True
+                            else:
+                                translated_paragraphs.append(p)
                 if any_translated:
                     return (chr(10) if chr(10) in clean else "\\n").join(translated_paragraphs)
 
@@ -1335,6 +2296,12 @@ init 999 python:
                 sub_nk = norm_key(sub_clean)
                 if sub_nk in norm_dict:
                     return bullet + " " + norm_dict[sub_nk]
+
+            # Proteção contra expressões Python/interpolação: só retorna original
+            # se o dicionário NÃO tem a tradução (diálogos com [saga.cast.x] são
+            # traduzidos normalmente quando a chave existe).
+            if _looks_like_python_expr(text):
+                return text
 
             return text
 
@@ -1362,15 +2329,15 @@ init 999 python:
           try {
             const rpycFile = runtimeHookFile + "c";
             if (fs.existsSync(rpycFile)) {
-              try { fs.unlinkSync(rpycFile); } catch (e) {}
+              try { fs.unlinkSync(rpycFile); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
             }
             fs.writeFileSync(runtimeHookFile, runtimeHookContent, 'utf8');
-          } catch (e) {}
+          } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
 
-          // Injeta font.rpy limpo para o idioma de destino e força DejaVuSans.ttf universal para acentuação UTF-8 perfeita
+          // Injeta font.rpy limpo to language de destino e força DejaVuSans.ttf universal para acentuação UTF-8 perfeita
           const fontRpyFile = path.join(tlTargetDir, "font.rpy");
           const fontRpyFileC = path.join(tlTargetDir, "font.rpyc");
-          if (fs.existsSync(fontRpyFileC)) try { fs.unlinkSync(fontRpyFileC); } catch (e) {}
+          if (fs.existsSync(fontRpyFileC)) try { fs.unlinkSync(fontRpyFileC); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
           const fontContent = `init 999 python:
     config.language = "${targetLang}"
     try:
@@ -1378,12 +2345,19 @@ init 999 python:
     except Exception:
         pass
 `;
-          try { fs.writeFileSync(fontRpyFile, fontContent, 'utf8'); } catch (e) {}
+          try { fs.writeFileSync(fontRpyFile, fontContent, 'utf8'); } catch (e) { global.log("warn", `RPC Handlers: Failed to write fontRpyFile: ${e.message}`); }
 
           // DISPARO AUTOMÁTICO DO OPEN_TRANSLATOR.PY COM LOGS EM TEMPO REAL PARA JOGOS REN'PY
-          const openTranslatorPy = path.join(global.ROOT || process.cwd(), "open_translator.py");
-          if (fs.existsSync(openTranslatorPy)) {
-            global.log("info", `[OpenTranslator Engine] 🤖 Iniciando varredura e tradução dos scripts de '${gameSubDir}' para o idioma '${targetLang}'...`);
+          const pyCandidates = [
+            path.join(global.ROOT || process.cwd(), "open_translator.py"),
+            path.join(global.ROOT || process.cwd(), "Tool", "open_translator.py"),
+            path.join(__dirname, "..", "open_translator.py"),
+            path.join(__dirname, "open_translator.py")
+          ];
+          const openTranslatorPy = pyCandidates.find(p => fs.existsSync(p)) || path.join(global.ROOT || process.cwd(), "Tool", "open_translator.py");
+          const translationMarker = path.join(gameSubDir, ".opent_translated");
+          if (fs.existsSync(openTranslatorPy) && !fs.existsSync(translationMarker)) {
+            global.log("info", `[OpenTranslator Engine] 🤖 Starting scan and translation of scripts in '${gameSubDir}' to language '${targetLang}'...`);
             try {
               const { spawn } = require('child_process');
               const pyProcess = spawn('python', ['-u', openTranslatorPy, '-i', gameSubDir, '-o', tlTargetDir, '-l', targetLang, '-y'], {
@@ -1411,29 +2385,43 @@ init 999 python:
                 });
 
                 pyProcess.on('close', (code) => {
+                  if (code === 0) {
+                    try { fs.writeFileSync(translationMarker, new Date().toISOString(), 'utf8'); } catch (e) { global.log("warn", `RPC Handlers: Failed to write translation marker: ${e.message}`); }
+                  }
                   resolve(code);
                 });
 
                 pyProcess.on('error', (err) => {
-                  global.log("error", `[OpenTranslator Engine] Erro no processo Python: ${err.message}`);
+                  global.log("error", `[OpenTranslator Engine] Error in Python process: ${err.message}`);
                   resolve(1);
                 });
               });
 
-              global.log("success", `[OpenTranslator Engine] ✓ Tradução e integração automatizada concluídas com sucesso!`);
+              global.log("success", `[OpenTranslator Engine] ✓ Translation and automated integration completed successfully!`);
             } catch (errPy) {
-              global.log("warn", `[OpenTranslator Engine] Aviso ao executar a tradução automatizada: ${errPy.message}`);
+              global.log("warn", `[OpenTranslator Engine] Warning executing automated translation: ${errPy.message}`);
             }
+          } else if (fs.existsSync(translationMarker)) {
+            global.log("info", `[OpenTranslator Engine] ✓ Scripts already translated previously (cached). Skipping full scan.`);
           }
 
-          // Limpeza final de bytecodes .rpyc para forçar o Ren'Py a compilar os .rpy traduzidos no boot
-          cleanRpyc(tlTargetDir);
-          cleanRpyc(gameSubDir);
-          cleanRpyc(path.join(gameSubDir, "cache"));
+          // Anti-Namespace Shadowing: Purge extracted common engine directories
+          try {
+            [path.join(gameSubDir, "common"), path.join(gameSubDir, "renpy", "common")].forEach(dir => {
+              if (fs.existsSync(dir)) {
+try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to remove dir ${dir} in recursiveSweep: ${e.message}`); }
+              }
+            });
+          } catch (ePurge2) { global.log("warn", `RPC Handlers: Error in post-translation purge: ${ePurge2.message}`); }
 
-          global.log("success", "[Pré-Patch] ✨ Tradução Ren'Py finalizada com sucesso!");
+          const gameCacheDir = path.join(gameSubDir, "cache");
+          if (fs.existsSync(gameCacheDir)) {
+            try { fs.rmSync(gameCacheDir, { recursive: true, force: true }); } catch (e) { global.log("warn", `RPC Handlers: Failed to remove gameCacheDir: ${e.message}`); }
+          }
+
+          global.log("success", "[Pre-Patch] ✨ Ren'Py translation finished successfully!");
         } catch (e) {
-          global.log("warn", "Aviso ao aplicar auto-patch Ren'Py: " + e.message);
+          global.log("warn", "Warning applying Ren'Py auto-patch: " + e.message);
         }
       }
     }
@@ -1443,13 +2431,13 @@ init 999 python:
     let proc;
 
     if (eng === "python") {
-      global.log("info", `🚀 Disparando o motor do Ren'Py de forma limpa e autônoma (PID principal)...`);
+      global.log("info", `🚀 Launching Ren'Py engine cleanly and autonomously (main PID)...`);
       try {
-        let nulFd;
-        try { nulFd = fs.openSync('NUL', 'w'); } catch (e) { nulFd = 'ignore'; }
+        let logFd;
+        try { logFd = fs.openSync(path.join(gameDir, "opent_launch.log"), 'a'); } catch (e) { logFd = 'ignore'; }
         proc = spawn(exe, [], {
           cwd: gameDir,
-          stdio: ['ignore', nulFd, nulFd],
+          stdio: ['ignore', logFd, logFd],
           detached: true,
           shell: false,
           windowsHide: false,
@@ -1461,7 +2449,7 @@ init 999 python:
           "✨ Jogo Ren'Py inicializado com sucesso! Execução 100% autônoma ativa via game/tl/pt/."
         );
       } catch (e) {
-        global.log("error", "Falha ao iniciar jogo Ren'Py: " + e.message);
+        global.log("error", "Failed to launch Ren'Py game: " + e.message);
         return { ok: false, error: "Spawn failed: " + e.message };
       }
     } else if (hookDll && fs.existsSync(injectExe)) {
@@ -1564,6 +2552,9 @@ init 999 python:
           shell: false,
           windowsHide: false,
         });
+        if (proc && proc.unref) {
+          proc.unref();
+        }
       } catch (e) {
         global.log("error", "Spawn exception: " + e.message);
         if (bakDir) {
@@ -1573,70 +2564,102 @@ init 999 python:
         return { ok: false, error: "Spawn failed: " + e.message };
       }
     }
-    const gp = proc.pid;
+    const gp = proc ? proc.pid : null;
     const currentBak = bakDir;
     global.launchedProc = proc;
     global.launchedKey = key;
     global.launchedBak = currentBak;
     global.launchedGameExe = exe;
     global.launchedPid = gp;
-    proc.on("exit", (code, sig) => {
-      global.log(
-        "info",
-        "Process exited: PID=" +
-          gp +
-          " code=" +
-          code +
-          " signal=" +
-          (sig || "none")
-      );
-      if (code === 0 || eng === "python") {
+    if (proc) {
+      proc.on("exit", (code, sig) => {
         global.log(
           "info",
-          "🚀 Lançador inicial finalizado. Mantendo monitoramento ativo do jogo via RPC/Subprocessos."
+          "Process exited: PID=" +
+            gp +
+            " code=" +
+            code +
+            " signal=" +
+            (sig || "none")
         );
-        return;
-      }
-      if (global.launchedBak) {
-        const bakToRestore = global.launchedBak;
-        global.launchedBak = null;
-        if (global.restoreTimeout) {
-          clearTimeout(global.restoreTimeout);
+        if (code === 0 || eng === "python" || eng === "mz" || eng === "mv") {
+          global.log(
+            "info",
+            "🚀 Lançador inicial finalizado. Mantendo monitoramento ativo do jogo via RPC/Subprocessos."
+          );
+          return;
         }
-        global.restoreTimeout = setTimeout(() => {
-          restoreGameData(bakToRestore);
-          global.restoreTimeout = null;
-        }, 20000);
-      }
-      global.launchedProc = null;
-      global.launchedKey = null;
-      global.activeCheatSocket = null;
-      global.lastGameState = null;
-    });
-    proc.on("error", (err) => {
-      global.log("error", "Process error: " + err.message);
-      if (global.launchedBak) {
-        const bakToRestore = global.launchedBak;
-        global.launchedBak = null;
-        if (global.restoreTimeout) {
-          clearTimeout(global.restoreTimeout);
+        if (global.launchedBak) {
+          const bakToRestore = global.launchedBak;
+          global.launchedBak = null;
+          if (global.restoreTimeout) {
+            clearTimeout(global.restoreTimeout);
+          }
+          global.restoreTimeout = setTimeout(() => {
+            restoreGameData(bakToRestore);
+            global.restoreTimeout = null;
+          }, 20000);
         }
-        global.restoreTimeout = setTimeout(() => {
-          restoreGameData(bakToRestore);
-          global.restoreTimeout = null;
-        }, 20000);
-      }
-      global.launchedProc = null;
-      global.launchedKey = null;
-      global.activeCheatSocket = null;
-      global.lastGameState = null;
-    });
-      global.log("info", "Game launched PID: " + gp);
-      verifyAndDiagnoseGame(gameDir, exe, gp);
-      return { pid: gp, key };
-    } finally {
-      global.isLaunchingGame = false;
+        global.launchedProc = null;
+        global.launchedKey = null;
+        global.activeCheatSocket = null;
+        global.lastGameState = null;
+      });
+      proc.on("error", (err) => {
+        global.log("error", "Process error: " + err.message);
+        if (global.launchedBak) {
+          const bakToRestore = global.launchedBak;
+          global.launchedBak = null;
+          if (global.restoreTimeout) {
+            clearTimeout(global.restoreTimeout);
+          }
+          global.restoreTimeout = setTimeout(() => {
+            restoreGameData(bakToRestore);
+            global.restoreTimeout = null;
+          }, 20000);
+        }
+        global.launchedProc = null;
+        global.launchedKey = null;
+        global.activeCheatSocket = null;
+        global.lastGameState = null;
+      });
     }
+    global.log("info", "Game launched PID: " + gp);
+    const bringToFront = (exePath) => {
+      if (!exePath) return;
+      const exeName = path.basename(exePath, ".exe");
+      const psScript = [
+        `Add-Type -TypeDefinition @"`,
+        `using System;`,
+        `using System.Runtime.InteropServices;`,
+        `public class Win32Focus {`,
+        `    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);`,
+        `    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);`,
+        `    [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);`,
+        `}`,
+        `"@ -ErrorAction SilentlyContinue`,
+        `Get-Process -Name '${exeName}' -ErrorAction SilentlyContinue | ForEach-Object {`,
+        `  if ($_.MainWindowHandle -ne [IntPtr]::Zero) {`,
+        `    if ([Win32Focus]::IsIconic($_.MainWindowHandle)) { [Win32Focus]::ShowWindow($_.MainWindowHandle, 9) }`,
+        `    else { [Win32Focus]::ShowWindow($_.MainWindowHandle, 5) }`,
+        `    [Win32Focus]::SetForegroundWindow($_.MainWindowHandle)`,
+        `  }`,
+        `}`,
+        `exit 0`
+      ].join("\n");
+      const scriptPath = path.join(require("os").tmpdir(), "opent_focus_" + Date.now() + ".ps1");
+      try { fs.writeFileSync(scriptPath, psScript, "utf8"); } catch (e) {}
+      const psCmd = `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${scriptPath}"`;
+      try { exec(psCmd, (error) => { if (error) global.log("warn", `RPC Handlers: Failed to bring game window to front: ${error.message}`); try { fs.unlinkSync(scriptPath); } catch (e2) {} }); } catch (e) { global.log("warn", `RPC Handlers: Failed to execute bringToFront command: ${e.message}`); }
+    };
+    setTimeout(() => bringToFront(exe), 1000);
+    setTimeout(() => bringToFront(exe), 2500);
+    setTimeout(() => bringToFront(exe), 4500);
+    return { pid: gp, key };
+  } finally {
+    global.isLaunchingGame = false;
+    isLaunchingMap.delete(key);
+  }
   },
   checkGame() {
     return checkProcessRunning();
@@ -1758,12 +2781,12 @@ init 999 python:
     const cacheFile = path.join(gameDir, "trans_cache.json");
     try {
       if (fs.existsSync(cacheFile)) fs.unlinkSync(cacheFile);
-    } catch (e) {}
+    } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
     const globalCache = path.join(global.ROOT, "global_trans_cache.json");
     try {
       if (fs.existsSync(globalCache)) fs.unlinkSync(globalCache);
-    } catch (e) {}
-    global.log("success", "Deletado cache local e global.");
+    } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+    global.log("success", "Deleted local and global cache.");
     return { ok: true };
   },
   restoreOriginalData({ gameKey }) {
@@ -1800,7 +2823,7 @@ init 999 python:
       if (backups.length === 0) {
         return {
           ok: false,
-          error: "Nenhum backup encontrado. O jogo já está na versão original.",
+          error: "Nenhum backup encontrado. Game já está na versão original.",
         };
       }
 
@@ -1819,7 +2842,7 @@ init 999 python:
         try {
           if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
           fs.copyFileSync(bakPlugins, pluginsJsPath);
-        } catch (e) {}
+        } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
       }
 
       for (const bak of backups) {
@@ -1828,10 +2851,10 @@ init 999 python:
         }
       }
 
-      global.log("success", "Restaurado dados originais com sucesso.");
+      global.log("success", "Original data restored successfully.");
       return { ok: true };
     } catch (e) {
-      global.log("error", "Falha ao restaurar dados originais: " + e.message);
+      global.log("error", "Failed to restore original data: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -1862,11 +2885,11 @@ init 999 python:
   },
   sendCheatCommand(params) {
     const code = params.code || params.command || "";
-    global.log("info", "Enfileirando comando de cheat: " + JSON.stringify(params));
+    global.log("info", "Queuing cheat command: " + JSON.stringify(params));
     if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
       try {
         global.activeCheatSocket.send(JSON.stringify(params));
-      } catch (e) {}
+      } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
     }
     global.pendingCheatCommands.push(params);
     return { ok: true };
@@ -2005,7 +3028,7 @@ init 999 python:
               "utf8"
             );
           }
-        } catch (e) {}
+        } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
       }
       global.log("info", "Overlay installed for " + path.basename(exe));
       return true;
@@ -2126,7 +3149,7 @@ init 999 python:
     if (overlay) {
       try {
         await handlers.installOverlay({ gameKey });
-      } catch (e) {}
+      } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
     }
     return { backup: !!bakDir };
   },
@@ -2141,7 +3164,7 @@ init 999 python:
       };
 
     return new Promise((res) => {
-      global.log("info", `Executando UberWolfCli.exe para extrair: ${gamePath}`);
+      global.log("info", `Executing UberWolfCli.exe to extract: ${gamePath}`);
       const proc = spawn(uberWolfExe, ["-o", "-u", "-x", gamePath], {
         timeout: 120000,
       });
@@ -2151,7 +3174,7 @@ init 999 python:
       proc.stderr.on("data", (d) => (stderr += d));
       proc.on("exit", (code) => {
         if (code === 0) {
-          global.log("info", `UberWolfCli concluído. Saída: ${stdout}`);
+          global.log("info", `UberWolfCli completed. Output: ${stdout}`);
           res({ ok: true, output: stdout });
         } else {
           global.log(
@@ -2162,7 +3185,7 @@ init 999 python:
         }
       });
       proc.on("error", (err) => {
-        global.log("error", `Erro ao iniciar UberWolfCli: ${err.message}`);
+        global.log("error", `Error starting UberWolfCli: ${err.message}`);
         res({ ok: false, error: err.message });
       });
     });
@@ -2245,9 +3268,9 @@ init 999 python:
     }
 
     global.log("info", `============================================================`);
-    global.log("info", `📦 DESCOMPACTAÇÃO TOTAL REN'PY: "${title}"`);
-    global.log("info", `📁 Origem: ${gameDir}`);
-    global.log("info", `🎯 Destino: ${outDir}`);
+    global.log("info", `📦 FULL REN'PY UNPACKING: "${title}"`);
+    global.log("info", `📁 Source: ${gameDir}`);
+    global.log("info", `🎯 Destination: ${outDir}`);
     global.log("info", `============================================================`);
 
     const gameSubDir = fs.existsSync(path.join(gameDir, "game")) ? path.join(gameDir, "game") : gameDir;
@@ -2273,15 +3296,15 @@ init 999 python:
         });
         pyProcess.on('close', (code) => resolve(code));
         pyProcess.on('error', (err) => {
-          global.log("error", `Erro no processo de descompactação: ${err.message}`);
+          global.log("error", `Error in unpacking process: ${err.message}`);
           resolve(1);
         });
       });
 
-      global.log("success", `✨ Descompactação total concluída! Todos os arquivos salvos em: '${outDir}'`);
+      global.log("success", `✨ Descompactação total concluída! Todos os save files em: '${outDir}'`);
       return { ok: true, outDir };
     } catch (e) {
-      global.log("error", `Falha na descompactação total: ${e.message}`);
+      global.log("error", `Failed full unpacking: ${e.message}`);
       return { ok: false, error: e.message };
     }
   },
@@ -2313,7 +3336,7 @@ init 999 python:
       );
       return { ok: true, path: outDir };
     } catch (e) {
-      global.log("error", "Falha ao descompactar EVB: " + e.message);
+      global.log("error", "Failed EVB unpacking: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -2350,7 +3373,7 @@ init 999 python:
           });
         }
       } catch (e) {
-        global.log("warn", "Erro ao ler cache local do jogo: " + e.message);
+        global.log("warn", "Error reading local game cache: " + e.message);
       }
     }
 
@@ -2417,11 +3440,11 @@ init 999 python:
       const exportFile = path.join(desktop, `${title}_traducoes.xlsx`);
 
       await workbook.xlsx.writeFile(exportFile);
-      global.log("success", `Exportação Excel concluída. Salvo em: ${exportFile}`);
+      global.log("success", `Excel export completed. Saved in: ${exportFile}`);
       exec(`explorer /select,"${exportFile}"`);
       return { ok: true, path: exportFile };
     } catch (e) {
-      global.log("error", "Falha ao gerar arquivo Excel: " + e.message);
+      global.log("error", "Failed to generate Excel file: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -2439,7 +3462,7 @@ init 999 python:
     const gameDir = path.dirname(exe);
 
     try {
-      global.log("info", "Lendo traduções do arquivo Excel: " + excelPath);
+      global.log("info", "Reading translations from Excel file: " + excelPath);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(excelPath);
       const worksheet = workbook.getWorksheet(1);
@@ -2511,11 +3534,11 @@ init 999 python:
 
       global.log(
         "success",
-        `Importação de Excel concluída com sucesso! ${count} traduções mescladas.`
+        `Excel import completed successfully! ${count} traduções mescladas.`
       );
       return { ok: true, count: count };
     } catch (e) {
-      global.log("error", "Falha ao importar arquivo Excel: " + e.message);
+      global.log("error", "Failed to import Excel file: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -2562,7 +3585,7 @@ init 999 python:
               targets.push(path.join(subPath, "font.rpyc"));
             }
           }
-        } catch (e) {}
+        } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
       }
 
       for (const t of targets) {
@@ -2570,14 +3593,14 @@ init 999 python:
           try {
             fs.unlinkSync(t);
             deletedCount++;
-          } catch (e) {}
+          } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
         }
       }
 
-      global.log("success", `[Cache] 🗑️ Cache de tradução deletado com sucesso para "${g.title || gameKey}" (${deletedCount} arquivos limpos)!`);
+      global.log("success", `[Cache] 🗑️ Translation cache deleted successfully for "${g.title || gameKey}" (${deletedCount} arquivos limpos)!`);
       return { ok: true, count: deletedCount };
     } catch (e) {
-      global.log("error", "Falha ao deletar cache: " + e.message);
+      global.log("error", "Failed to delete cache: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -2603,10 +3626,10 @@ init 999 python:
         lines.push("------------------------------------------------------------");
       }
       fs.writeFileSync(exportPath, lines.join("\n"), "utf8");
-      global.log("success", `[Exportar Textos] 📄 Textos exportados com sucesso para: ${exportPath}`);
+      global.log("success", `[Export Texts] 📄 Texts exported successfully to: ${exportPath}`);
       return { ok: true, exportPath };
     } catch (e) {
-      global.log("error", "Falha ao exportar textos: " + e.message);
+      global.log("error", "Failed to export texts: " + e.message);
       return { ok: false, error: e.message };
     }
   },
@@ -2623,21 +3646,103 @@ init 999 python:
   setGameVar({ id, value }) {
     const cmd = { comando: "set_var", id: id, valor: value };
     if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
-      try { global.activeCheatSocket.send(JSON.stringify(cmd)); } catch (e) {}
+      try { global.activeCheatSocket.send(JSON.stringify(cmd)); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
     }
     global.pendingCheatCommands.push(cmd);
-    global.log("success", `[Cheat] Injetado no jogo ao vivo: Variable #${id} = ${value}`);
+    global.log("success", `[Cheat] Injected into live game: Variable #${id} = ${value}`);
     return { ok: true };
   },
   setGameSwitch({ id, value }) {
     const cmd = { comando: "set_switch", id: id, valor: Boolean(value) };
     if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
-      try { global.activeCheatSocket.send(JSON.stringify(cmd)); } catch (e) {}
+      try { global.activeCheatSocket.send(JSON.stringify(cmd)); } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
     }
     global.pendingCheatCommands.push(cmd);
-    global.log("success", `[Cheat] Injetado no jogo ao vivo: Switch #${id} = ${value}`);
+    global.log("success", `[Cheat] Injected into live game: Switch #${id} = ${value}`);
     return { ok: true };
   },
+
+  
+  openSaveFolder({ folderPath, gameKey }) {
+    try {
+      let targetPath = folderPath;
+      if (!targetPath && gameKey) {
+        const games = handlers.loadGames().games || {};
+        const g = games[gameKey];
+        if (g) {
+          const exe = g.constArgs?.gameExe || "";
+          const gameDir = exe ? path.dirname(exe) : "";
+          const gameSubDir = gameDir ? (fs.existsSync(path.join(gameDir, "game")) ? path.join(gameDir, "game") : gameDir) : "";
+          const title = g.libConf?.title || gameKey;
+          const resolved = renpyAppDataResolver.resolveGameAppDataDir(gameSubDir, title);
+          if (resolved.success && resolved.appDataDir) {
+            targetPath = resolved.appDataDir;
+          }
+        }
+      }
+      if (!targetPath || !fs.existsSync(targetPath)) {
+        return { ok: false, error: "Pasta de saves não encontrada ou inacessível." };
+      }
+      const safePath = targetPath.replace(/'/g, "''");
+      const psCmd = `powershell -NoProfile -Command "Start-Process explorer.exe '${safePath}'"`;
+      exec(psCmd);
+      global.log("success", `[AppData Explorer] Save folder opened in Windows Explorer: ${targetPath}`);
+      return { ok: true, path: targetPath };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  
+
+},
+
+  getRenpyAppDataStatus({ key, gameDir, gameTitle }) {
+    try {
+      const gameSubDir = gameDir || "";
+      const title = gameTitle || key || "";
+
+      // 1. Check live WebSocket telemetry state
+      if (global.lastGameState && (global.lastGameState.savedir || global.lastGameState.save_directory)) {
+        const liveSavedir = global.lastGameState.savedir;
+        if (liveSavedir && fs.existsSync(liveSavedir)) {
+          let saves = [];
+          try {
+            saves = fs.readdirSync(liveSavedir).filter(f => f.endsWith('.save') || f === 'persistent');
+          } catch(e) { global.log("warn", `RPC Handlers: Error in font patch for Ruby Maker: ${e.message}`); }
+          return {
+            ok: true,
+            data: {
+              success: true,
+              appDataDir: liveSavedir,
+              saveDirectoryName: global.lastGameState.save_directory || path.basename(liveSavedir),
+              method: "live_websocket",
+              error: null,
+              saves: saves
+            }
+          };
+        }
+      }
+
+      // 2. Fallback to Portable Resolver
+      const resolved = renpyAppDataResolver.resolveGameAppDataDir(gameSubDir, title);
+      let saves = [];
+      if (resolved.success && resolved.appDataDir && fs.existsSync(resolved.appDataDir)) {
+        try {
+          saves = fs.readdirSync(resolved.appDataDir).filter(f => f.endsWith('.save') || f === 'persistent');
+        } catch(e) { global.log("warn", `RPC Handlers: Error in font patch for Ruby Maker: ${e.message}`); }
+      }
+
+      return {
+        ok: true,
+        data: {
+          ...resolved,
+          saves: saves
+        }
+      };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  },
+
 };
 
 module.exports = {
@@ -2664,7 +3769,7 @@ function verifyAndDiagnoseGame(gameDir, exe, pid) {
       if (pid && pid > 0) {
         try {
           isRunning = process.kill(pid, 0);
-        } catch (e) {}
+        } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
       }
 
       if (!isRunning && activePids.length > 0) {
@@ -2685,13 +3790,13 @@ function verifyAndDiagnoseGame(gameDir, exe, pid) {
             global.launchedPid = childPids[0];
             global.log(
               "info",
-              `[Verificação de Saúde] Processo ativo do jogo (${exeName}, PID ${childPids[0]}) detectado em execução.`
+              `[Health Check] Processo ativo do jogo (${exeName}, PID ${childPids[0]}) detectado em execução.`
             );
             return;
           }
           global.log(
             "error",
-            `[Erro de Boot] O processo do jogo (${exeName}) foi encerrado logo após a inicialização.`
+            `[Boot Error] Game process (${exeName}) was closed immediately after boot.`
           );
           const debugLogPath = path.join(gameDir, "debug.log");
           if (fs.existsSync(debugLogPath)) {
@@ -2701,9 +3806,9 @@ function verifyAndDiagnoseGame(gameDir, exe, pid) {
               const lastLines = lines.slice(-5).join("\n  -> ");
               global.log(
                 "info",
-                "Logs de erro do jogo (debug.log):\n  -> " + lastLines
+                "Game error logs (debug.log):\n  -> " + lastLines
               );
-            } catch (e) {}
+            } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
           }
         });
         return;
@@ -2718,12 +3823,12 @@ function verifyAndDiagnoseGame(gameDir, exe, pid) {
         if (!isNaN(handleNum) && handleNum > 0) {
           global.log(
             "success",
-            `[Verificação de Saúde] O jogo (PID ${targetPid}) está ativo com JANELA VISÍVEL na tela (Handle: ${handleNum}).`
+            `[Health Check] Game (PID ${targetPid}) is active with VISIBLE WINDOW on screen (Handle: ${handleNum}).`
           );
         } else {
           global.log(
             "info",
-            `[Verificação de Saúde] O jogo (PID ${targetPid}) está rodando ativamente no sistema.`
+            `[Health Check] Game (PID ${targetPid}) is actively running on system.`
           );
         }
       });

@@ -22,13 +22,15 @@ global.hasHadClient = false;
 global.SESSION_START = Date.now();
 global.SESSION_TOKEN = Math.random().toString(36).slice(2);
 
+const loggerManager = require("./loggerManager");
+
 function terminateAllProcessesAndExit(reason) {
-  console.log(`[Shutdown] Encerramento solicitado (${reason || "App fechado"}). Matando todos os processos...`);
+  loggerManager.info(`[Shutdown] Encerramento solicitado (${reason || "App fechado"}). Matando todos os processos...`);
 
   if (global.launchedProc) {
     try {
       global.launchedProc.kill("SIGKILL");
-    } catch (e) {}
+    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
     global.launchedProc = null;
   }
 
@@ -36,7 +38,7 @@ function terminateAllProcessesAndExit(reason) {
     try {
       const { execSync } = require("child_process");
       execSync(`taskkill /F /PID ${global.launchedPid} /T`, { stdio: "ignore" });
-    } catch (e) {}
+    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
     global.launchedPid = null;
   }
 
@@ -45,7 +47,7 @@ function terminateAllProcessesAndExit(reason) {
       const { execSync } = require("child_process");
       const exeName = path.basename(global.launchedGameExe);
       execSync(`taskkill /F /IM "${exeName}" /T`, { stdio: "ignore" });
-    } catch (e) {}
+    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
   }
 
   const auxiliaryExes = ["inject.exe", "PIDDLLInject64.exe", "JoyCon2Mapper.exe", "BakinLauncher.exe"];
@@ -53,18 +55,18 @@ function terminateAllProcessesAndExit(reason) {
     try {
       const { execSync } = require("child_process");
       execSync(`taskkill /F /IM "${exe}" /T`, { stdio: "ignore" });
-    } catch (e) {}
+    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
   });
 
   try {
     const { stopHookServer } = require("./cheatServer");
     stopHookServer();
-  } catch (e) {}
+  } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
 
   try {
     const { closeDb } = require("./cache");
     closeDb();
-  } catch (e) {}
+  } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
 
   setTimeout(() => {
     process.exit(0);
@@ -274,17 +276,17 @@ function tryListen(port) {
     } catch (e) {
       try {
         exec('start "" "' + url + '"');
-      } catch (err) {}
+      } catch (err) { global.log("warn", `httpServer: ${err.message}`); }
     }
   });
   server.once("error", (e) => {
     if (e.code === "EADDRINUSE") {
-      console.log(
+      loggerManager.info(
         "Port " + port + " busy, trying " + (port + 1) + "..."
       );
       tryListen(port + 1);
     } else {
-      console.error("Server error:", e.message);
+      loggerManager.error("Server error: " + e.message);
     }
   });
 }

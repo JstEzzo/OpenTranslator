@@ -9,7 +9,7 @@
       const r = await fetch("/api/ping", { method: "GET" });
       const j = await r.json();
       if (j && j.token) SESSION_TOKEN = j.token;
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
   }
   setInterval(pingServer, 2500);
   pingServer();
@@ -28,6 +28,12 @@
   function basename(p, ext) {
     const s = String(p).replace(/[/\\]/g, "/").split("/").pop() || p;
     return ext && s.endsWith(ext) ? s.slice(0, -ext.length) : s;
+  }
+  function dirname(p) {
+    if (!p) return "";
+    const parts = String(p).replace(/[/\\]/g, "/").split("/");
+    parts.pop();
+    return parts.join("/");
   }
 
   const S = {
@@ -169,9 +175,19 @@
     css += `
       .cg, .gc, #sd, #bar, #modal-inner, .tb, #statusbar {
         background: ${glassBg} !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border-color: rgba(255, 255, 255, 0.06) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+      }
+      /* Prevent blur bleeding onto text elements */
+      h1, h2, h3, h4, h5, h6, label, span, button, input, select, textarea {
+        transform: translateZ(0);
+        -webkit-font-smoothing: antialiased !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      }
+      body, button, input, select, textarea {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
       }
     `;
 
@@ -380,6 +396,37 @@
   // ==================== I18N ====================
   const LANG = {
     en: {
+
+    launchPhaseInit: "🧹 Cleaning processes and checking engine...",
+    launchPhaseUnpack: "📦 Unpacking .rpa archives and media...",
+    launchPhaseTranslating: "🤖 Translating scripts and dialogues...",
+    launchPhaseAppData: "📂 Mapping AppData save directory...",
+    launchPhaseLaunching: "🚀 Launching game executable...",
+    launchPhaseConnected: "✨ Connected to CheatOverlay successfully!",
+    launchInProgress: "A game launch is already in progress or running",
+
+    google: "Google",
+    bing: "Bing",
+    multi: "Multi",
+
+
+    cheatSaveManager: "Save Manager & AppData (%APPDATA%\RenPy)",
+    cheatOpenSaveFolder: "📁 Open Save Folder",
+    cheatRefresh: "🔄 Refresh",
+    cheatResolvedPath: "Resolved Path:",
+    cheatResolutionMethod: "Resolution Method:",
+    cheatDetectedSaves: "Detected Save / Persistent Files:",
+    cheatNoSavesYet: "No save files detected yet.",
+    cheatFolderLocatedNoSaves: "Folder located, but no saves created yet.",
+    cheatAwaitingGame: "Awaiting game selection...",
+    cheatMemoryScannerTitle: "Live Memory Scanner (renpy.store / Universal)",
+    cheatScanVariablesBtn: "Scan Variables",
+    cheatFilterPlaceholder: "Filter variables (e.g., points, love, money)...",
+    cheatClickScanHint: "Click 'Scan Variables' to read renpy.store",
+    cheatLaunchTitle: "Launching Game...",
+    cheatLaunchSub: "Preparing environment, translations, and patches",
+    cheatAlreadyTranslated: "⚡ Game already translated! Loading executable...",
+
       tabGames: "Games",
       tabSaves: "Saves",
       tabConfig: "Config",
@@ -517,8 +564,37 @@
       level: "Level",
     },
     pt: {
+
+    launchPhaseInit: "🧹 Limpando processos e checando engine...",
+    launchPhaseUnpack: "📦 Descompactando pacotes .rpa e mídias...",
+    launchPhaseTranslating: "🤖 Traduzindo scripts e diálogos com AI Engine...",
+    launchPhaseAppData: "📂 Mapeando diretório de saves no AppData...",
+    launchPhaseLaunching: "🚀 Disparando o executável do jogo...",
+    launchPhaseConnected: "✨ Conectado ao CheatOverlay com sucesso!",
+    launchInProgress: "Uma inicialização de jogo já está em andamento",
+
+    btnExtractRpa: "Btnextractrpa",
+
+
+    cheatSaveManager: "Gerenciador de Saves & AppData (%APPDATA%\RenPy)",
+    cheatOpenSaveFolder: "📁 Abrir Pasta de Saves",
+    cheatRefresh: "🔄 Atualizar",
+    cheatResolvedPath: "Caminho Resolvido:",
+    cheatResolutionMethod: "Método de Resolução:",
+    cheatDetectedSaves: "Arquivos de Save / Persistência Detectados:",
+    cheatNoSavesYet: "Nenhum save detectado ainda.",
+    cheatFolderLocatedNoSaves: "Pasta localizada, mas sem saves criados ainda.",
+    cheatAwaitingGame: "Aguardando seleção do jogo...",
+    cheatMemoryScannerTitle: "Scanner de Memória ao Vivo (renpy.store / Universal)",
+    cheatScanVariablesBtn: "Escanear Variáveis",
+    cheatFilterPlaceholder: "Filtrar variáveis (ex: pontos, amor, ouro)...",
+    cheatClickScanHint: "Clique em 'Escanear Variáveis' para ler renpy.store",
+    cheatLaunchTitle: "Inicializando Jogo...",
+    cheatLaunchSub: "Preparando ambiente, traduções e patches",
+    cheatAlreadyTranslated: "⚡ Jogo já traduzido! Carregando executável...",
+
       tabGames: "Jogos",
-      tabSaves: "Saves",
+      tabSaves: "Salvamentos",
       tabConfig: "Config",
       tabLog: "Log",
       dropText:
@@ -560,7 +636,7 @@
       configSaved: "Config salva",
       uiTitle: "OpenTranslator v1.0",
       uiGames: "Jogos",
-      uiSaves: "Saves",
+      uiSaves: "Salvamentos",
       cfgEngine: "Engine",
       cfgEngineOff: "Google",
       cfgEngineGoogle: "Google 🌐",
@@ -678,55 +754,124 @@
   // ==================== PRE-TRANSLATION PIPELINE ====================
   // (handled server-side via RPC)
 
+  async function refreshAppDataCard(gameKey, gameDir, gameTitle) {
+    try {
+      const res = await rpc("getRenpyAppDataStatus", { gameDir, gameTitle });
+      const card = $("renpy-appdata-card");
+      if (!card) return;
+      if (res && res.appDataDir) {
+        card.style.display = "block";
+        const pathEl = $("renpy-appdata-path");
+        const countEl = $("renpy-appdata-count");
+        if (pathEl) pathEl.textContent = res.appDataDir;
+        if (countEl) countEl.textContent = `${(res.saves || []).length} saves`;
+      } else {
+        card.style.display = "none";
+      }
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
+  }
+
   let launchMutex = false;
   async function launchGame(key) {
     const g = S.games[key];
     if (!g) return;
     if (launchMutex || S.launchedKey || S.isLaunching) {
-      log("warn", "A game launch is already in progress or running");
+      showToast(t("launchInProgress") || "A game launch is already in progress or running", "warning");
       return;
     }
     launchMutex = true;
     S.isLaunching = true;
-    lastLogId = 0;
-    if ($("lb")) $("lb").innerHTML = "";
-    const ld = $("gl-loading"),
-      lm = $("gl-loading-msg");
-    if (ld) ld.style.display = "block";
-    let loadingVisible = true;
-    const engName = ENG_NAMES[S.cfg.engine || "google"] || "Google";
-    const steps = [
-      [0, "Backing up data..."],
-      [5000, "Reading game texts..."],
-      [12000, "Translating via " + engName + "..."],
-      [25000, "Still translating (" + engName + ")..."],
-      [45000, "Applying translations..."],
-      [60000, "Launching game..."],
-    ];
-    steps.forEach(([d, m]) =>
-      setTimeout(() => {
-        if (loadingVisible && lm) lm.textContent = m;
-      }, d),
-    );
+
+    const ld = $("gl-loading");
+    const lm = $("gl-loading-msg");
+    const lTitle = $("gl-loading-title");
+    const lSub = $("gl-loading-sub");
+    const lBar = $("gl-loading-bar");
+    const lPct = $("gl-loading-pct");
+    const lStream = $("gl-loading-stream");
+
     const title = g.libConf?.title || key;
+    if (lTitle) lTitle.textContent = `${t("cheatLaunchTitle") || "Initializing"} "${title}"...`;
+    if (lSub) lSub.textContent = t("cheatLaunchSub") || "Preparing environment, translations, and patches";
+    
+    if (ld) {
+      ld.style.display = "flex";
+      ld.style.opacity = "1";
+    }
+
+    const startTime = Date.now();
+    const logBuffer = [];
+
+    const updateLoadingState = (pct, msg, streamLine) => {
+      if (lBar) lBar.style.width = pct + "%";
+      if (lPct) lPct.textContent = pct + "%";
+      if (lm) lm.textContent = msg;
+      
+      if (lStream && streamLine) {
+        logBuffer.push(streamLine);
+        if (logBuffer.length > 5) logBuffer.shift();
+        lStream.innerHTML = logBuffer.map(line => `
+          <div style="color:${line.includes('✓') || line.includes('OK') ? 'var(--green)' : (line.includes('Erro') || line.includes('Falha') ? 'var(--red)' : 'var(--txt2)')}">
+            ${esc(line)}
+          </div>
+        `).join("");
+        lStream.scrollTop = lStream.scrollHeight;
+      }
+    };
+
+    updateLoadingState(15, t("launchPhaseInit"), "[OpenTranslator Engine Started]");
+
+    let logPollTimer = setInterval(async () => {
+      try {
+        const logs = await rpc("getLogs", { afterId: lastLogId });
+        if (logs && logs.length > 0) {
+          for (const lastLog of logs) {
+            if (lastLog.id > lastLogId) lastLogId = lastLog.id;
+            const txt = lastLog.message || "";
+            if (txt.includes("Descompactando")) {
+              updateLoadingState(35, t("launchPhaseUnpack"), txt);
+            } else if (txt.includes("Iniciando varredura") || txt.includes("Motor de Tradução") || txt.includes("Translating")) {
+              updateLoadingState(55, t("launchPhaseTranslating"), txt);
+            } else if (txt.includes("AppData Resolver") || txt.includes("Pasta de saves")) {
+              updateLoadingState(75, t("launchPhaseAppData"), txt);
+            } else if (txt.includes("Disparando o motor") || txt.includes("inicializado com sucesso") || txt.includes("launched")) {
+              updateLoadingState(90, t("launchPhaseLaunching"), txt);
+            } else if (txt.includes("CheatOverlay conectado")) {
+              updateLoadingState(100, t("launchPhaseConnected"), txt);
+            } else {
+              updateLoadingState(lBar ? parseInt(lBar.style.width) || 40 : 40, txt, txt);
+            }
+          }
+        }
+      } catch (e) { console.warn(`app.js: ${e.message}`); }
+    }, 300);
+
     try {
       const r = await rpc("launchGame", { key });
-      loadingVisible = false;
-      if (ld) ld.style.display = "none";
+      updateLoadingState(100, t("cheatAlreadyTranslated") || "⚡ Game already translated! Loading executable...", "PID " + (r.pid || "Active"));
+
+      const elapsed = Date.now() - startTime;
+      const minDisplayMs = 1500;
+      const remainingMs = Math.max(0, minDisplayMs - elapsed);
+
+      setTimeout(() => {
+        if (ld) ld.style.display = "none";
+      }, remainingMs);
+
       if (r && r.ok === false) {
-        log("error", "Launch failed: " + (r.error || "unknown"));
+        showToast("Launch failed: " + (r.error || "Unknown error"), "error");
         return;
       }
       S.launchedKey = key;
       renderGames();
-      log("info", "Game launched PID: " + r.pid);
+      refreshAppDataCard(key, g.constArgs?.gameExe ? dirname(g.constArgs.gameExe) : "", title);
     } catch (e) {
-      loadingVisible = false;
       if (ld) ld.style.display = "none";
-      log("error", "Launch failed: " + e.message);
+      showToast("Launch failed: " + e.message, "error");
     } finally {
+      clearInterval(logPollTimer);
       S.isLaunching = false;
-      setTimeout(() => { launchMutex = false; }, 3000);
+      setTimeout(() => { launchMutex = false; }, 2000);
     }
   }
 
@@ -745,14 +890,14 @@
       await rpc("saveGame", { key, data: d });
       S.games[key] = d;
       if (!S.gameKeys.includes(key)) S.gameKeys.push(key);
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
   }
   async function delGame(key) {
     try {
       await rpc("delGame", { key });
       delete S.games[key];
       S.gameKeys = S.gameKeys.filter((k) => k !== key);
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
   }
 
   // Engine definitions
@@ -793,7 +938,7 @@
       const c = await rpc("loadCfg");
       S.cfg = c;
       if (c && c.lang) _lang = c.lang;
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
     const st = document.createElement("style");
     st.textContent = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -1172,9 +1317,41 @@ select option {
           <button id="glRefresh" class="btn sm" title="${t("refresh")}">\u21bb</button>
         </div>
         <div id="gl-list"></div>
-        <div id="gl-loading" style="display:none;text-align:center;padding:20px;color:var(--txt2)">
-          <div style="font-size:24px;margin-bottom:8px;animation:spin 1s linear infinite">\u27f3</div>
-          <div id="gl-loading-msg" style="font-size:11px">Preparing game...</div>
+        <!-- Modern Glassmorphic Launch Progress Modal -->
+        <div id="gl-loading" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; width:100%; height:100%; background:rgba(8,8,16,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:999999; align-items:center; justify-content:center">
+          <div style="width:480px; max-width:90%; background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.6); display:flex; flex-direction:column; gap:16px; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--accent), var(--pri), var(--accent)); background-size:200% 100%; animation:gradientMove 2s linear infinite"></div>
+            
+            <div style="display:flex; align-items:center; gap:14px">
+              <div style="width:44px; height:44px; border-radius:50%; background:rgba(99,102,241,0.1); border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:20px; animation:pulse 1.5s infinite">
+                🎮
+              </div>
+              <div style="display:flex; flex-direction:column; flex:1">
+                <span id="gl-loading-title" style="font-size:14px; font-weight:700; color:var(--txt)">Inicializando Jogo...</span>
+                <span id="gl-loading-sub" style="font-size:11px; color:var(--txt2)">Preparando ambiente, traduções e patches</span>
+              </div>
+              <div style="font-size:18px; animation:spin 1s linear infinite; color:var(--accent)">⟳</div>
+            </div>
+
+            <!-- Animated Progress Bar -->
+            <div style="width:100%; background:rgba(255,255,255,0.05); height:8px; border-radius:4px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); position:relative">
+              <div id="gl-loading-bar" style="width:15%; height:100%; background:linear-gradient(90deg, var(--accent), var(--pri)); transition:width 0.4s ease; border-radius:4px"></div>
+            </div>
+
+            <!-- Current Real-Time Phase Message -->
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px">
+              <span id="gl-loading-msg" style="color:var(--txt); font-weight:600; display:flex; align-items:center; gap:6px">
+                <span style="width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; animation:ping 1s infinite"></span>
+                <span>Iniciando verificação do pipeline...</span>
+              </span>
+              <span id="gl-loading-pct" style="color:var(--txt2); font-family:monospace; font-size:10px">15%</span>
+            </div>
+
+            <!-- Real-Time Log Stream Banner -->
+            <div id="gl-loading-stream" style="font-size:10px; color:var(--txt3); font-family:monospace; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); max-height:60px; overflow-y:auto; word-break:break-all">
+              [OpenTranslator Boot Engine Ready]
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1376,7 +1553,52 @@ select option {
               </div>
             </div>
 
+            <div class="cg" style="margin-bottom:0">
+              <h4>⚡ Velocidade &amp; Atalhos</h4>
+              <div class="cg-body" style="display:flex;flex-direction:column;gap:8px;padding:8px 12px">
+                <div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+                  <label style="flex:1;min-width:140px">Acelerar jogo (segure a tecla)</label>
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <select id="cheatSpeedKey" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></select>
+                    <input id="cheatSpeedMult" type="number" min="1" max="10" value="3" title="Multiplicador de velocidade" style="width:52px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+                  </div>
+                </div>
+                <div id="cheatHotkeyRows" style="display:flex;flex-direction:column;gap:6px"></div>
+                <div style="display:flex;justify-content:flex-end">
+                  <button id="cheatApplyHotkeys" class="btn sm pri">Aplicar Atalhos</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Live Memory Scanner (renpy.store / Universal) -->
+            
+            <!-- AppData Save Manager Card (Ren'Py / Universal) -->
+            <div class="cg" id="renpy-appdata-card" style="margin-bottom:0; background:rgba(15,15,25,0.4); border:1px solid var(--bd)">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid var(--bd)">
+                <h4 style="margin:0; font-size:11px; display:flex; align-items:center; gap:6px">
+                  <span>📂</span> <span>${t("cheatSaveManager")}</span>
+                </h4>
+                <div style="display:flex; gap:6px">
+                  <button id="cheatOpenAppDataBtn" class="btn sm" style="background:var(--accent); color:#fff; font-size:10px">${t("cheatOpenSaveFolder")}</button>
+                  <button id="cheatRefreshAppDataBtn" class="btn sm" style="font-size:10px">${t("cheatRefresh")}</button>
+                </div>
+              </div>
+              <div class="cg-body" style="padding:10px 12px; display:flex; flex-direction:column; gap:8px">
+                <div style="font-size:10px; color:var(--txt2); word-break:break-all">
+                  <strong>${t("cheatResolvedPath")}</strong> <span id="renpy-appdata-full-path" style="color:var(--txt)">${t("cheatAwaitingGame")}</span>
+                </div>
+                <div style="font-size:10px; color:var(--txt2)">
+                  <strong>${t("cheatResolutionMethod")}</strong> <span id="renpy-appdata-method" style="color:var(--accent2)">-</span>
+                </div>
+                <div>
+                  <div style="font-size:10px; font-weight:600; color:var(--txt2); margin-bottom:4px">${t("cheatDetectedSaves")}</div>
+                  <div id="renpy-appdata-file-list" style="display:flex; flex-wrap:wrap; gap:4px; max-height:120px; overflow-y:auto; padding:4px; background:var(--bg2); border:1px solid var(--bd); border-radius:4px">
+                    <span style="font-size:10px; color:var(--txt3)">${t("cheatNoSavesYet")}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="cg" id="renpy-live-scanner" style="margin-bottom:0">
               <div style="display:flex; justify-content:space-between; align-items:center; padding:0 6px">
                 <h4>Live Memory Scanner (renpy.store)</h4>
@@ -1495,14 +1717,14 @@ select option {
             const m = uri.match(/^file:\/\/\/(.+)/m);
             if (m) exePath = decodeURIComponent(m[1]);
           }
-        } catch (er) {}
+        } catch (er) { console.warn(`app.js: ${er.message}`); }
       }
       if (!exePath.includes("\\") && !exePath.includes("/")) {
         try {
           const txt = e.dataTransfer.getData("text/plain");
           if (txt && validExts.some((ext) => txt.toLowerCase().includes(ext)))
             exePath = txt.trim();
-        } catch (er) {}
+        } catch (er) { console.warn(`app.js: ${er.message}`); }
       }
       const exeLower = exePath.toLowerCase();
       if (validExts.some((ext) => exeLower.endsWith(ext)))
@@ -1535,7 +1757,7 @@ select option {
           exePath = found.exePath;
           isFullPath = true;
         }
-      } catch (e) {}
+      } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
     if (isFullPath && exePath.toLowerCase().endsWith(".lnk")) {
       try {
@@ -1545,7 +1767,7 @@ select option {
         if (resolved && resolved !== exePath) {
           exePath = resolved;
         }
-      } catch (e) {}
+      } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
     const ext = "." + exePath.split(".").pop();
     let name = basename(exePath, ext);
@@ -1768,17 +1990,17 @@ select option {
   </div>
   <div class="fb" style="display:flex;flex-wrap:wrap;justify-content:space-between;width:100%;gap:10px">
     <div style="display:flex;flex-wrap:wrap;gap:4px">
-      <button id="mPreTranslate" class="btn sm pri">${t("mPreTranslate")}</button>
-      <button id="mRestoreBackup" class="btn sm">${t("mRestoreBackup")}</button>
-      <button id="mDecryptImages" class="btn sm">${t("extractImages")}</button>
-      <button id="mDecryptAudio" class="btn sm">${t("extractAudio")}</button>
-      <button id="mPatchFonts" class="btn sm">${t("patchFonts")}</button>
+      <button id="mPreTranslate" class="btn sm pri">${t("mPreTranslate") || "Translate Files 🌐"}</button>
+      <button id="mRestoreBackup" class="btn sm">${t("mRestoreBackup") || "Restore Original 🔄"}</button>
+      <button id="mDecryptImages" class="btn sm">${t("extractImages") || "Extract Images 📷"}</button>
+      <button id="mDecryptAudio" class="btn sm">${t("extractAudio") || "Extract Audio 🎵"}</button>
+      <button id="mPatchFonts" class="btn sm">${t("patchFonts") || "Patch Fonts PT-BR 🔤"}</button>
       <button id="mUnpackAll" class="btn sm" style="background:var(--accent);color:#fff" title="Descompactar 100% dos arquivos (.rpa, mídias e scripts) para uma pasta">Descompactar Tudo 📦</button>
-      <button id="mDelCache" class="btn sm dgr">${t("deleteCache")}</button>
-      <button id="mExportCache" class="btn sm">${t("exportTexts")}</button>
+      <button id="mDelCache" class="btn sm dgr">${t("deleteCache") || "Delete Cache"}</button>
+      <button id="mExportCache" class="btn sm">${t("exportTexts") || "Export Texts"}</button>
     </div>
     <div style="display:flex;gap:4px">
-      <button id="mCancel" class="btn">${t("btnCancel")}</button><button id="mSave" class="btn pri">${t("btnSave")}</button>
+      <button id="mCancel" class="btn">${t("btnCancel") || "Cancel"}</button><button id="mSave" class="btn pri">${t("btnSave") || "Save"}</button>
     </div>
   </div>
 </div>`;
@@ -1851,7 +2073,7 @@ select option {
                 }
               });
             }
-          } catch (e) {}
+          } catch (e) { console.warn(`app.js: ${e.message}`); }
         }, 500);
 
         const r = await rPromise;
@@ -1921,7 +2143,7 @@ select option {
         if (folderRes && folderRes.ok && folderRes.folderPath) {
           folderPath = folderRes.folderPath;
         }
-      } catch (err) {}
+      } catch (err) { console.warn(`app.js: ${err.message}`); }
 
       if (!folderPath) {
         const userChoice = prompt("Digite o caminho da pasta onde deseja descompactar 100% dos arquivos:", "C:\\Users\\Public\\Documents\\Descompactado");
@@ -2188,7 +2410,7 @@ select option {
       try {
         const saves = await rpc("listSaves", { gameKey: k });
         if (saves.length > 0) gameSaves[k] = saves;
-      } catch (e) {}
+      } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
     const keys = Object.keys(gameSaves);
     if (!keys.length) {
@@ -2273,7 +2495,7 @@ select option {
             file: this.dataset.file,
           });
           renderSaves();
-        } catch (e) {}
+        } catch (e) { console.warn(`app.js: ${e.message}`); }
       }),
     );
   }
@@ -2283,7 +2505,7 @@ select option {
       try {
         await rpc("openSaveFolder", { gameKey: k });
         break;
-      } catch (e) {}
+      } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
   });
   $("svRef")?.addEventListener("click", renderSaves);
@@ -2755,7 +2977,7 @@ select option {
     try {
       document.execCommand("copy");
       log("info", t("logCopied") + " (" + txt.length + " chars)");
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
     document.body.removeChild(ta);
   });
 
@@ -2807,19 +3029,26 @@ select option {
       if (b && logs && logs.length > 0) {
         for (const l of logs) {
           if (l.id > lastLogId) lastLogId = l.id;
+          const lvlText = (l.level || "info").toUpperCase();
+          const originText = l.origin ? ` [${l.origin}]` : "";
+          const singleLineMsg = (l.message || "").replace(/\r?\n/g, " ");
           const e = document.createElement("div");
-          e.className = "le l" + l.level[0];
+          e.className = "le l" + (l.level ? l.level[0] : "i");
           e.innerHTML =
             '<span class="lt">[' +
             l.ts +
-            ']</span><span class="lm">' +
-            esc(l.message) +
+            ']</span> <span class="ll">[' +
+            lvlText +
+            ']</span><span class="lo">' +
+            originText +
+            '</span> <span class="lm">' +
+            esc(singleLineMsg) +
             "</span>";
           b.appendChild(e);
         }
         b.scrollTop = b.scrollHeight;
       }
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
   }
   setInterval(pollLogs, 500);
 
@@ -2844,6 +3073,70 @@ select option {
   let currentSubTab = "geral";
   let lastThroughInteraction = 0;
   let lastNoEncounterInteraction = 0;
+
+  const HOTKEY_ACTIONS = [
+    { id: "victory", label: "Vitória Instantânea" },
+    { id: "defeat", label: "Derrota Forçada" },
+    { id: "escape", label: "Fuga" },
+    { id: "groupHp1", label: "Grupo HP = 1" },
+    { id: "groupHpMax", label: "Grupo HP = Max" },
+    { id: "groupRecover", label: "Recuperar Grupo" },
+    { id: "enemyHp1", label: "Inimigo HP = 1" },
+    { id: "enemyHp0", label: "Inimigo HP = 0" },
+    { id: "enemyHpMax", label: "Inimigo HP = Max" },
+    { id: "skipMsg", label: "Acelerar Diálogo (segurar)" },
+  ];
+  const KEY_OPTIONS = [
+    "", "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight", "AltLeft", "AltRight",
+    "Numpad0","Numpad1","Numpad2","Numpad3","Numpad4","Numpad5","Numpad6","Numpad7","Numpad8","Numpad9",
+    "KeyQ","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP",
+    "F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12",
+  ];
+  function keyLabel(code) { return code || "(Desativado)"; }
+  function renderKeySelect(id, val) {
+    return KEY_OPTIONS.map(k => `<option value="${k}" ${k===val?"selected":""}>${keyLabel(k)}</option>`).join("");
+  }
+
+  function initHotkeyUI() {
+    const cfg = S.cfg || {};
+    const hk = cfg.cheatHotkeys || {};
+    const speedKey = cfg.cheatSpeedKey || "ControlLeft";
+    const speedMult = cfg.cheatSpeedMult || 3;
+    const sel = $("cheatSpeedKey");
+    if (sel) sel.innerHTML = renderKeySelect("cheatSpeedKey", speedKey);
+    const mult = $("cheatSpeedMult");
+    if (mult) mult.value = speedMult;
+    const rows = $("cheatHotkeyRows");
+    if (rows) {
+      rows.innerHTML = HOTKEY_ACTIONS.map(a =>
+        `<div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">${a.label}</label>
+          <select id="hk_${a.id}" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            ${renderKeySelect("hk_"+a.id, hk[a.id] || "")}
+          </select>
+        </div>`
+      ).join("");
+    }
+  }
+
+  async function applyHotkeys() {
+    const cfg = S.cfg || {};
+    const sel = $("cheatSpeedKey");
+    const mult = $("cheatSpeedMult");
+    cfg.cheatSpeedKey = sel ? sel.value : "ControlLeft";
+    cfg.cheatSpeedMult = mult ? parseInt(mult.value, 10) || 3 : 3;
+    cfg.cheatHotkeys = {};
+    HOTKEY_ACTIONS.forEach(a => {
+      const el = $("hk_" + a.id);
+      if (el && el.value) cfg.cheatHotkeys[a.id] = el.value;
+    });
+    S.cfg = cfg;
+    await saveCfg();
+    await rpc("sendCheatCommand", { code: `window.__opentSpeedKey = '${cfg.cheatSpeedKey}'; window.__opentSpeedMult = ${cfg.cheatSpeedMult}; window.__opentHotkeys = ${JSON.stringify(cfg.cheatHotkeys)};` });
+    log("success", "Atalhos aplicados: Speed=" + cfg.cheatSpeedKey + " x" + cfg.cheatSpeedMult);
+  }
+
+  setTimeout(initHotkeyUI, 500);
 
   function updateSubTabs() {
     const tabGeral = $("cheatSubTabGeral");
@@ -3016,7 +3309,7 @@ select option {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { console.warn(`app.js: ${e.message}`); }
   }, 500);
 
   const pendingUserFrozenVars = {};
@@ -3305,13 +3598,16 @@ select option {
       await rpc("sendCheatCommand", { code });
       log("info", "Encontro com inimigos definido: " + !target.checked);
     }
+    if (target.id === "cheatApplyHotkeys") {
+      await applyHotkeys();
+    }
   });
 
   window.addEventListener("beforeunload", function () {
     if (!window.isReloading) {
       try {
         navigator.sendBeacon("/api/close_app", JSON.stringify({ close: true }));
-      } catch (e) {}
+      } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
   });
 })();

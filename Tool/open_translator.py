@@ -32,6 +32,29 @@ if hasattr(sys.stderr, "reconfigure"):
 DEFAULT_CACHE_FILE = "translation_cache.json"
 
 
+def load_syntax_rules():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    rules_path = os.path.join(base_dir, "config", "syntax_rules.json")
+    if not os.path.exists(rules_path):
+        rules_path = os.path.join(os.path.dirname(base_dir), "config", "syntax_rules.json")
+    try:
+        if os.path.exists(rules_path):
+            with open(rules_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {
+        "DANGER_PREFIXES": ["gui/", "audio/", "images/", "fonts/", "tl/", "renpy/"],
+        "COMMON_RENPY_UI_KEYS": ["Start", "Load", "Save", "Options", "Preferences", "Main Menu", "Return", "Back", "History", "Skip", "Auto", "Help", "Quit", "About"],
+        "PROTECTED_ENGINE_DIRS": ["renpy/common", "common"]
+    }
+
+
+SYNTAX_RULES = load_syntax_rules()
+DANGER_PREFIXES = set(SYNTAX_RULES.get("DANGER_PREFIXES", []))
+COMMON_RENPY_UI_KEYS = set(SYNTAX_RULES.get("COMMON_RENPY_UI_KEYS", []))
+
+
 KNOWN_FILE_EXTENSIONS = {
     ".txt", ".exe", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tga",
     ".ogg", ".wav", ".mp3", ".flac", ".aac", ".m4a", ".opus",
@@ -98,13 +121,14 @@ def check_output(output_dir, auto_confirm=False):
 
 
 class OpenTranslatorGoogleEngine:
-    """Motor de tradução gratuito do Google Translate (OpenTranslator GTX Engine)"""
+    """Motor de tradução do Google Translate com Concorrência Paralela Ultra-Rápida e POST Payload"""
 
-    def __init__(self, source_lang="auto", target_lang="pt", timeout=10, max_retries=3):
+    def __init__(self, source_lang="auto", target_lang="pt", timeout=10, max_retries=5, max_workers=30):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.timeout = timeout
         self.max_retries = max_retries
+        self.max_workers = max_workers
         self.base_url = "https://translate.googleapis.com/translate_a/single"
         self.headers = {
             "User-Agent": (
@@ -112,6 +136,7 @@ class OpenTranslatorGoogleEngine:
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/122.0.0.0 Safari/537.36"
             ),
+            "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json, text/plain, */*",
         }
 
@@ -121,20 +146,15 @@ class OpenTranslatorGoogleEngine:
 
         sl = source_lang or self.source_lang
         tl = target_lang or self.target_lang
+        url = f"{self.base_url}?client=gtx&sl={sl}&tl={tl}&dt=t"
+        post_data = {"q": text}
 
-        params = {
-            "client": "gtx",
-            "sl": sl,
-            "tl": tl,
-            "dt": "t",
-            "q": text,
-        }
-
+        # Exponential Backoff com Jitter (Pausa apenas a thread do worker afetado por HTTP 429)
         for attempt in range(self.max_retries + 1):
             try:
-                response = requests.get(
-                    self.base_url,
-                    params=params,
+                response = requests.post(
+                    url,
+                    data=post_data,
                     headers=self.headers,
                     timeout=self.timeout,
                 )
@@ -147,10 +167,45 @@ class OpenTranslatorGoogleEngine:
                         ]
                         return "".join(parts)
                 elif response.status_code == 429:
-                    # Delay em caso de Rate Limit
-                    time.sleep((attempt + 1) * 1.5 + random.uniform(0.2, 0.8))
-            except Exception as e:
-                time.sleep((attempt + 1) * 0.5)
+                    backoff_delay = (2 ** attempt) * 0.2 + random.uniform(0.05, 0.15)
+                    time.sleep(backoff_delay)
+                else:
+                    time.sleep((attempt + 1) * 0.15 + random.uniform(0.05, 0.1))
+            except Exception:
+                backoff_delay = (2 ** attempt) * 0.2 + random.uniform(0.05, 0.15)
+                time.sleep(backoff_delay)
+
+        # Failover Engine 1: Google Mobile HTML Scraper (Resistente a 429)
+        try:
+            m_url = "https://translate.google.com/m"
+            m_params = {"sl": sl, "tl": tl, "q": text}
+            m_headers = {"User-Agent": "Mozilla/5.0 (Android; Mobile; rv:120.0) Gecko/120.0 Firefox/120.0"}
+            r_m = requests.get(m_url, params=m_params, headers=m_headers, timeout=6)
+            if r_m.status_code == 200:
+                import html as html_module
+                m_match = re.search(r'class="result-container">(.*?)</div>', r_m.text, re.DOTALL)
+                if m_match:
+                    clean_res = html_module.unescape(m_match.group(1).strip())
+                    if clean_res and clean_res != text:
+                        return clean_res
+        except Exception:
+            pass
+
+        # Failover Engine 2: MyMemory API
+        try:
+            mm_url = "https://api.mymemory.translated.net/get"
+            mm_params = {"q": text, "langpair": f"{sl}|{tl}"}
+            r_mm = requests.get(mm_url, params=mm_params, timeout=6)
+            if r_mm.status_code == 200:
+                import html as html_module
+                mm_data = r_mm.json()
+                t_mm = mm_data.get("responseData", {}).get("translatedText")
+                if t_mm:
+                    clean_mm = html_module.unescape(t_mm.strip())
+                    if clean_mm and clean_mm != text:
+                        return clean_mm
+        except Exception:
+            pass
 
         return text
 
@@ -172,7 +227,7 @@ class OpenTranslatorGoogleEngine:
                 continue
 
             t_len = len(text)
-            if current_len + t_len > 3500 and current_batch:
+            if (current_len + t_len > 12000 or len(current_batch) >= 100) and current_batch:
                 batches.append(current_batch)
                 current_batch = []
                 current_len = 0
@@ -186,6 +241,8 @@ class OpenTranslatorGoogleEngine:
         total_b = len(batches)
         completed_b = 0
         import threading
+        from concurrent.futures import ThreadPoolExecutor
+
         lock = threading.Lock()
 
         def _process_batch(batch):
@@ -213,13 +270,126 @@ class OpenTranslatorGoogleEngine:
 
             with lock:
                 completed_b += 1
-                if total_b > 20 and (completed_b % 20 == 0 or completed_b == total_b):
+                if total_b > 10 and (completed_b % 10 == 0 or completed_b == total_b):
                     pct = int((completed_b / total_b) * 100)
-                    print(f"   ↳ [Lote Progresso] {completed_b}/{total_b} blocos traduzidos ({pct}%)...", flush=True)
+                    print(f"   ↳ [Google Parallel Batch] {completed_b}/{total_b} blocos traduzidos ({pct}%)...", flush=True)
 
-        from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=32) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             list(executor.map(_process_batch, batches))
+
+        return [r if r is not None else orig for r, orig in zip(results, text_list)]
+
+
+class OpenTranslatorLocalLLMEngine:
+    """Motor de Tradução Local via LLM (OpenAI-compatible API local: LM Studio, Ollama, KoboldCPP)"""
+
+    def __init__(self, api_url="http://127.0.0.1:1234/v1/chat/completions", model="local-model",
+                 source_lang="auto", target_lang="pt", timeout=60, max_workers=6):
+        self.api_url = api_url
+        self.model = model
+        self.source_lang = source_lang
+        self.target_lang = target_lang
+        self.timeout = timeout
+        self.max_workers = max_workers
+        self.headers = {"Content-Type": "application/json"}
+
+    def translate_single(self, text, target_lang=None, source_lang=None):
+        if not text or not text.strip():
+            return text
+        tl = target_lang or self.target_lang
+
+        system_prompt = (
+            f"You are a professional game localizer translating text into {tl}. "
+            "Translate the provided text accurately, preserving game control tags, variables, formatting, and line breaks. "
+            "Output ONLY the translated text without extra explanation or quotes."
+        )
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
+            ],
+            "temperature": 0.2,
+            "stream": False
+        }
+
+        try:
+            res = requests.post(self.api_url, json=payload, headers=self.headers, timeout=self.timeout)
+            if res.status_code == 200:
+                data = res.json()
+                if "choices" in data and len(data["choices"]) > 0:
+                    msg = data["choices"][0].get("message", {}).get("content", "").strip()
+                    if msg:
+                        return msg
+        except Exception:
+            pass
+        return text
+
+    def translate_batch(self, text_list, target_lang=None, source_lang=None):
+        if not text_list:
+            return []
+
+        sl = source_lang or self.source_lang
+        tl = target_lang or self.target_lang
+        results = [None] * len(text_list)
+
+        batches = []
+        current_batch = []
+        current_len = 0
+
+        for idx, text in enumerate(text_list):
+            if not text or not text.strip():
+                results[idx] = text
+                continue
+            t_len = len(text)
+            if current_len + t_len > 2500 and current_batch:
+                batches.append(current_batch)
+                current_batch = []
+                current_len = 0
+            current_batch.append((idx, text))
+            current_len += t_len
+
+        if current_batch:
+            batches.append(current_batch)
+
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        completed_b = 0
+        total_b = len(batches)
+        lock = threading.Lock()
+
+        def _process_llm_batch(batch):
+            nonlocal completed_b
+            indices, raw_texts = zip(*batch)
+            protected_texts = []
+            escapes_list = []
+            for t in raw_texts:
+                prot, esc_tokens = extract_renpy_escapes(t)
+                protected_texts.append(prot)
+                escapes_list.append(esc_tokens)
+
+            combined_text = "\n---LINE---\n".join(protected_texts)
+            translated_combined = self.translate_single(combined_text, target_lang=tl, source_lang=sl)
+            translated_lines = translated_combined.split("\n---LINE---\n")
+
+            if len(translated_lines) == len(raw_texts):
+                for i, t_line, esc_tokens in zip(indices, translated_lines, escapes_list):
+                    results[i] = restore_renpy_escapes(t_line.strip(), esc_tokens)
+            else:
+                for i, prot, esc_tokens in zip(indices, protected_texts, escapes_list):
+                    t_single = self.translate_single(prot, target_lang=tl, source_lang=sl)
+                    results[i] = restore_renpy_escapes(t_single, esc_tokens)
+
+            with lock:
+                completed_b += 1
+                if total_b > 5:
+                    pct = int((completed_b / total_b) * 100)
+                    print(f"   ↳ [LLM Local Lote] {completed_b}/{total_b} blocos traduzidos ({pct}%)...", flush=True)
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            list(executor.map(_process_llm_batch, batches))
 
         return [r if r is not None else orig for r, orig in zip(results, text_list)]
 
@@ -451,7 +621,7 @@ class TranslationFile:
 
         block = TranslationBlock(source_file=self.filename, block_line=0)
 
-        # Trata arquivos JSON, RPY do Ren'Py ou Texto genérico
+        # Trata arquivos JSON, RPY do Ren'Py, Python (.py) ou Texto genérico
         if self.filename.endswith(".json"):
             try:
                 content_str = "".join(self.raw_lines)
@@ -459,7 +629,9 @@ class TranslationFile:
                 self._extract_json_strings(parsed_json, block)
             except Exception:
                 self._parse_plain_text(block)
-        elif self.filename.endswith(".rpy") or self.filename.endswith(".rpym") or self.filename.endswith(".py"):
+        elif self.filename.endswith(".py"):
+            self._parse_py_file(block)
+        elif self.filename.endswith(".rpy") or self.filename.endswith(".rpym"):
             self._parse_rpy_file(block)
         elif self.filename.endswith(".rpyc") or self.filename.endswith(".rpymc"):
             self._parse_rpyc_file(block)
@@ -469,6 +641,25 @@ class TranslationFile:
         if block.translation_items:
             self.translation_blocks.append(block)
 
+    def save(self, out_file_path):
+        try:
+            os.makedirs(os.path.dirname(out_file_path), exist_ok=True)
+            translated_lines = []
+            for idx, line in enumerate(self.raw_lines):
+                line_content = line
+                for block in self.translation_blocks:
+                    for item in block.translation_items:
+                        if item.source_line == idx:
+                            orig = item.original_content
+                            trans = item.get_translated_content()
+                            if orig and trans and orig != trans:
+                                line_content = line_content.replace(orig, trans)
+                translated_lines.append(line_content)
+            with open(out_file_path, "w", encoding="utf-8") as f:
+                f.writelines(translated_lines)
+        except Exception:
+            pass
+
     def _parse_plain_text(self, block):
         for idx, line in enumerate(self.raw_lines):
             stripped = line.rstrip("\r\n")
@@ -477,6 +668,60 @@ class TranslationFile:
                     source_line=idx,
                     target_line=idx,
                     original_content=stripped,
+                    cache=self.cache,
+                    engine=self.engine,
+                )
+                block.add_translation_item(item)
+
+    def _parse_py_file(self, block):
+        """
+        Omni-Parser dedicado para scripts e módulos Python (.py).
+        Captura 100% de diálogos, escolhas, notificações, quests e strings de UI em jogos como Summertime Saga.
+        """
+        extracted_seen = set()
+        PYTHON_CODE_KEYWORDS = {
+            "def", "class", "import", "from", "return", "pass", "raise", "except", "finally",
+            "try", "with", "as", "global", "nonlocal", "lambda", "if", "elif", "else", "for",
+            "while", "break", "continue", "in", "is", "not", "and", "or", "true", "false", "none",
+            "self", "args", "kwargs", "sys", "os", "renpy", "config", "store", "persistent",
+            "style", "display", "action", "behavior", "screen", "label", "init", "python"
+        }
+
+        for idx, line in enumerate(self.raw_lines):
+            line_str = line.strip()
+            if line_str.startswith('#'):
+                continue
+            
+            matches = re.findall(r'("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')', line)
+            for quoted in matches:
+                if quoted.startswith('"""') or quoted.startswith("'''"):
+                    content = quoted[3:-3].strip()
+                else:
+                    content = quoted[1:-1].strip()
+
+                if not content or content in extracted_seen:
+                    continue
+
+                if is_filename_or_path(content):
+                    continue
+
+                if ' ' not in content:
+                    if '_' in content or '/' in content or '\\' in content:
+                        continue
+                    if content.lower() in PYTHON_CODE_KEYWORDS:
+                        continue
+
+                if not any(c.isalpha() for c in content):
+                    continue
+
+                if re.match(r'^(#|0x|c)?[0-9a-fA-F]{3,8}$', content.strip()) and not any(w in content.lower() for w in ['the', 'and', 'for', 'you', 'are', 'is']):
+                    continue
+
+                extracted_seen.add(content)
+                item = TranslationItem(
+                    source_line=idx,
+                    target_line=idx,
+                    original_content=content,
                     cache=self.cache,
                     engine=self.engine,
                 )
@@ -609,6 +854,14 @@ class TranslationFile:
                     }
                     if content in CODE_KEYWORDS:
                         continue
+
+            # Ignora expressões Python inline Ren'Py (interpolação [...] com operadores lógicos)
+            if '[' in content and ']' in content:
+                py_op = {'and', 'or', 'not', 'in', 'is', 'if', 'else', 'for', 'while',
+                         'True', 'False', 'None', '+', '-', '*', '/', '%', '==', '!=', '>=', '<=', '<', '>'}
+                tokens = set(re.findall(r"[\w.]+|[+\-*/%=<>!&|^]+", content))
+                if tokens & py_op:
+                    continue
 
             # Ignora nomes de arquivos ou identificadores internos de código sem letras legíveis
             if not any(c.isalpha() for c in content):
@@ -1249,6 +1502,21 @@ def main():
     to_delete = [k for k in list(dict_map.keys()) if is_renpy_system_preference(k)]
     for k in to_delete:
         dict_map.pop(k, None)
+
+    # Purgar expressões Python inline Ren'Py ([...] com operadores lógicos) que nunca
+    # podem ser traduzidas — evita crash `esc.alt or esc!it` -> `esc.alt ou esc!it`.
+    import re as _re
+    _PY_OP = {'and', 'or', 'not', 'in', 'is', 'if', 'else', 'for', 'while'}
+    _py_expr_delete = []
+    for k in list(dict_map.keys()):
+        ks = str(k)
+        if '[' in ks and ']' in ks:
+            _tokens = set(_re.findall(r'[\w.]+|[+\-*/%=<>!&|^]+', ks))
+            if _tokens & _PY_OP:
+                _py_expr_delete.append(k)
+    for k in _py_expr_delete:
+        dict_map.pop(k, None)
+        print(f"  [Purge] Removida expressão Python não traduzível do dicionário: {k[:60]}")
 
     # Exportar Dicionário Consolidado e Desduplicado opent_translated.json e opent_translated.pkl
     import pickle

@@ -67,29 +67,91 @@ function migrateJsonCacheToSqlite() {
   }
 }
 
-function loadGlobalCacheForLang(sl, tl) {
+function normalizeCacheKey(k) {
+  if (typeof k !== "string") return k;
+  let s = k.trim();
+  if (s.length >= 2) {
+    const first = s[0];
+    const last = s[s.length - 1];
+    if (
+      (first === '"' && last === '"') ||
+      (first === "'" && last === "'")
+    ) {
+      s = s.slice(1, -1);
+    }
+  }
+  return s;
+}
+
+// Rejeita entradas de cache corrompidas: originais com códigos de escape (\dac,
+// \c[n], \i[n]) ou fragmentos de literal JS extraídos por apóstrofos.
+function isCleanCacheEntry(orig, tr) {
+  if (!orig || typeof orig !== "string" || !tr || typeof tr !== "string") return false;
+  if (orig.includes("\\")) return false;
+  if (!isTranslatableText(orig) || !isTranslatableText(tr)) return false;
+  // Fragmentos tipo "ll be able to see what" (sem letra maiúscula inicial e sem
+  // pontuação final) são pedaços de frases quebradas — descarta.
+  if (
+    orig.length >= 3 &&
+    /^[a-zà-ÿ]/.test(orig) &&
+    !/[.!?。！？]$/.test(orig) &&
+    orig.split(" ").length < 4
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function loadGlobalCacheForLang(sl, tl, engine) {
+  const engineKey = engine ? (sl + "|" + tl + "|" + engine) : null;
   const langKey = sl + "|" + tl;
   const dict = {};
-  if (!db) {
-    const jsonPath = path.join(global.DATA_DIR, "global_trans_cache.json");
-    const bakPath = path.join(global.DATA_DIR, "global_trans_cache.json.bak");
-    const targetJson = fs.existsSync(jsonPath) ? jsonPath : (fs.existsSync(bakPath) ? bakPath : null);
-    if (targetJson) {
+
+  const possiblePaths = [
+    path.join(global.DATA_DIR, "translation_cache.json"),
+    path.join(process.cwd(), "translation_cache.json"),
+    path.join(global.DATA_DIR, "global_trans_cache.json"),
+    path.join(global.DATA_DIR, "global_trans_cache.json.bak")
+  ];
+  for (const p of possiblePaths) {
+    if (p && fs.existsSync(p)) {
       try {
-        const data = JSON.parse(fs.readFileSync(targetJson, "utf8"));
-        if (data[langKey]) return data[langKey];
-      } catch (e) {}
+        const raw = JSON.parse(fs.readFileSync(p, "utf8"));
+        if (engineKey && raw[engineKey] && typeof raw[engineKey] === "object") {
+          for (const [k, v] of Object.entries(raw[engineKey])) {
+            dict[normalizeCacheKey(k)] = normalizeCacheKey(v);
+          }
+        } else if (raw[langKey] && typeof raw[langKey] === "object") {
+          for (const [k, v] of Object.entries(raw[langKey])) {
+            dict[normalizeCacheKey(k)] = normalizeCacheKey(v);
+          }
+        } else {
+          for (const [k, v] of Object.entries(raw)) {
+            if (v && typeof v === "object" && (v[tl] || v["pt"])) {
+              dict[normalizeCacheKey(k)] = normalizeCacheKey(v[tl] || v["pt"]);
+            } else if (typeof v === "string" && normalizeCacheKey(k) !== v) {
+              dict[normalizeCacheKey(k)] = normalizeCacheKey(v);
+            }
+          }
+        }
+      } catch (e) { global.log("warn", `cache: ${e.message}`); }
     }
+  }
+
+  if (!db) {
     return dict;
   }
   try {
+    const keyToQuery = engineKey || langKey;
     const stmt = db.prepare(
       "SELECT original, translated FROM global_cache WHERE lang_key = ?"
     );
-    const rows = stmt.all(langKey);
+    const rows = stmt.all(keyToQuery);
     for (const row of rows) {
-      if (isTranslatableText(row.original) && isTranslatableText(row.translated)) {
-        dict[row.original] = row.translated;
+      const ok = normalizeCacheKey(row.original);
+      const tk = normalizeCacheKey(row.translated);
+      if (isCleanCacheEntry(ok, tk)) {
+        dict[ok] = tk;
       }
     }
   } catch (e) {
@@ -98,9 +160,9 @@ function loadGlobalCacheForLang(sl, tl) {
   return dict;
 }
 
-function saveNewGlobalTranslations(sl, tl, translationsArray) {
+function saveNewGlobalTranslations(sl, tl, translationsArray, engine) {
   if (translationsArray.length === 0) return;
-  const langKey = sl + "|" + tl;
+  const langKey = engine ? (sl + "|" + tl + "|" + engine) : (sl + "|" + tl);
   if (!db) {
     const jsonPath = path.join(global.DATA_DIR, "global_trans_cache.json");
     try {
@@ -110,12 +172,14 @@ function saveNewGlobalTranslations(sl, tl, translationsArray) {
       }
       if (!data[langKey]) data[langKey] = {};
       for (const [orig, tr] of translationsArray) {
-        if (isTranslatableText(orig) && isTranslatableText(tr)) {
-          data[langKey][orig] = tr;
+        const ok = normalizeCacheKey(orig);
+        const tk = normalizeCacheKey(tr);
+        if (isCleanCacheEntry(ok, tk)) {
+          data[langKey][ok] = tk;
         }
       }
       fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2));
-    } catch (e) {}
+    } catch (e) { global.log("warn", `cache: ${e.message}`); }
     return;
   }
   try {
@@ -124,8 +188,10 @@ function saveNewGlobalTranslations(sl, tl, translationsArray) {
     );
     const transaction = db.transaction((items) => {
       for (const [orig, tr] of items) {
-        if (isTranslatableText(orig) && isTranslatableText(tr)) {
-          stmt.run(langKey, orig, tr);
+        const ok = normalizeCacheKey(orig);
+        const tk = normalizeCacheKey(tr);
+        if (isCleanCacheEntry(ok, tk)) {
+          stmt.run(langKey, ok, tk);
         }
       }
     });
@@ -137,7 +203,7 @@ function saveNewGlobalTranslations(sl, tl, translationsArray) {
 
 migrateJsonCacheToSqlite();
 
-const COMMON_TRANS_PATH = path.join(global.DATA_DIR, "common_translations.json");
+const COMMON_TRANS_PATH = path.join(global.DATA_DIR || path.join(__dirname, "../data"), "common_translations.json");
 function loadCommonTranslations() {
   try {
     if (fs.existsSync(COMMON_TRANS_PATH)) {
@@ -167,12 +233,13 @@ function getCommonTranslation(text, sl, tl, commonTrans) {
   return null;
 }
 
-const GLOSSARY_PATH = path.join(global.DATA_DIR, "glossary.json");
+const dataDir = global.DATA_DIR || path.join(__dirname, "..", "data");
+const GLOSSARY_PATH = path.join(dataDir, "glossary.json");
 function loadGlossary() {
   try {
     if (fs.existsSync(GLOSSARY_PATH))
       return JSON.parse(fs.readFileSync(GLOSSARY_PATH, "utf8"));
-  } catch (e) {}
+  } catch (e) { global.log("warn", `cache: ${e.message}`); }
   return [];
 }
 

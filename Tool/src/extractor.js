@@ -116,6 +116,9 @@ function isJsCode(s) {
   const t = s.trim();
   if (t.length < 3) return false;
 
+  // Códigos de escape de mensagem RPG Maker (\dac, \c[n], \i[n], {, }) = diálogo, não JS
+  if (/\\[A-Za-z]/.test(t) && !/^["']/.test(t)) return false;
+
   // Comentários JS
   if (/^\/\//.test(t) || /^\/\*/.test(t)) return true;
 
@@ -125,14 +128,15 @@ function isJsCode(s) {
   if (/\btypeof\s+[a-zA-Z_$]/i.test(t) || /\binstanceof\s+[a-zA-Z_$]/i.test(t)) return true;
 
   // Retorno de instrução JS estrita (ReDoS-free)
-  if (/\breturn\s+(true|false|null|undefined|this|\$[a-zA-Z0-9_$]+|\d+)\s*;?/i.test(t)) return true;
+  if (/\breturn\s+(true|false|null|undefined|this|\$[a-zA-Z0-9_$]+|\d+)\s*(?:;|$)/i.test(t)) return true;
   if (/^return\b.*[;=]$/m.test(t)) return true;
 
   // Referências a propriedades e objetos nativos de motores RPG Maker
   if (/\$(game|data)[A-Z][a-zA-Z0-9_]*/.test(t)) return true;
   if (/\bthis\._[a-zA-Z0-9_]+/.test(t) || /\bthis\.[a-zA-Z0-9_]+\s*\(/.test(t)) return true;
-  if (/\bMath\.(floor|ceil|round|abs|random|max|min)\b/.test(t)) return true;
-  if (/\b(window|document|console|Graphics|AudioManager|ImageManager|SceneManager)\./.test(t)) return true;
+  if (/\bMath\.(floor|ceil|round|abs|random|max|min)\s*\(/.test(t)) return true;
+  if (/\b(?:window|document|console|Graphics|AudioManager|ImageManager|SceneManager|Input|DataManager|Scene_)\.[a-zA-Z_$][\w$]*\s*[=(]/.test(t)) return true;
+  if (/\bconsole\.log\s*\(/.test(t)) return true;
 
   return false;
 }
@@ -151,27 +155,42 @@ function extractEscapeCodes(text) {
     lastIdx = match.index + match[0].length;
   }
   if (lastIdx < text.length) clean += text.slice(lastIdx);
+  parts.srcLen = clean.length;
   return { clean, parts };
 }
 
 function restoreEscapeCodes(translated, parts) {
   let fixed = translated.replace(/%\s+(\d+)/g, "%$1");
   if (parts.length === 0) return fixed;
-  if (parts.every((p) => p.idx === 0)) {
-    return parts.map((p) => p.code).join("") + fixed;
-  }
-  let result = fixed;
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const p = parts[i];
-    if (p.idx === 0) {
-      result = p.code + result;
-    } else if (p.idx <= result.length) {
-      result = result.slice(0, p.idx) + p.code + result.slice(p.idx);
+  const srcLen = parts.srcLen || 0;
+  const dstLen = fixed.length;
+  const scale = srcLen > 0 ? dstLen / srcLen : 1;
+  const sorted = [...parts].sort((a, b) => a.idx - b.idx);
+
+  // Códigos de abertura agrupados no INÍCIO (contíguos, com gap <= 3 chars)
+  // ficam como PREFIXO na ordem original — evita que \px[25]\py[10]\fi\c[106]
+  // ou \dac/\c[n]/\} sejam espalhados no meio do texto traduzido.
+  const prefix = [];
+  const rest = [];
+  let prefixEnd = -1;
+  for (const p of sorted) {
+    if (p.idx === 0 || (prefix.length > 0 && p.idx - prefixEnd <= 3)) {
+      prefix.push(p);
+      prefixEnd = p.idx + p.code.length;
     } else {
-      result += p.code;
+      rest.push(p);
     }
   }
-  return result;
+
+  let result = fixed;
+  for (let i = rest.length - 1; i >= 0; i--) {
+    const p = rest[i];
+    const pos = Math.round(p.idx * scale);
+    if (pos >= result.length) result += p.code;
+    else if (pos > 0) result = result.slice(0, pos) + p.code + result.slice(pos);
+    else result = p.code + result;
+  }
+  return prefix.map((p) => p.code).join("") + result;
 }
 
 // ==================== CLASSE PRINCIPAL DE EXTRAÇÃO ====================
@@ -215,7 +234,7 @@ class TextExtractor {
             this.gameMediaFiles.add(baseName.toLowerCase());
           }
         }
-      } catch (e) {}
+      } catch (e) { global.log("warn", `extractor: ${e.message}`); }
     };
 
     searchDirs.forEach((d) => scanDir(d));
@@ -299,6 +318,40 @@ class TextExtractor {
     const key = keys[keys.length - 1];
     if (typeof key === "string" && SKIP_KEYS.has(key)) return;
 
+    // Nomes internos de switches/variables em System.json: são labels do editor,
+    // não texto de jogo. Traduzi-los não quebra (usa ID), mas polui o glossário.
+    if (keys[0] === "switches" || keys[0] === "variables") return;
+
+    // Código de script/comment/plugin (355/356/357/655). Distingue:
+    //  - COMANDO DE SISTEMA (play_bgs2, particle, >plugin, const/let/var,
+    //    $game, if/for/while...): NÃO traduzir (quebraria o jogo).
+    //  - COMANDO DE DIÁLOGO (ex: PushGab 100 \}\c[101]Texto...): o texto
+    //    depois do comando é visível ao jogador -> traduzir.
+    const sIdx = keys.lastIndexOf("parameters");
+    if (sIdx >= 1) {
+      const cmdPath = keys.slice(0, sIdx);
+      const parentCmd = getValueAtPath(this.currentData, cmdPath);
+      if (
+        parentCmd &&
+        typeof parentCmd === "object" &&
+        typeof parentCmd.code === "number" &&
+        (parentCmd.code === 355 || parentCmd.code === 356 || parentCmd.code === 357 || parentCmd.code === 655)
+      ) {
+        if (
+          (parentCmd.code === 355 || parentCmd.code === 655) &&
+          val.startsWith("テキスト-")
+        ) {
+          return this.addTextEntry(this.currentFile, keys, val.substring(5));
+        }
+        if (
+          /^\s*(play|stop|fade|particle|weather|move|set|enable|disable|change|control|show|hide|open|close|wait|script|comment|>|const|let|var|\$game|window|document|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|return\s)/i.test(val)
+        ) {
+          return;
+        }
+        return this.addTextEntry(this.currentFile, keys, val);
+      }
+    }
+
     if (key === "name" && keys.length >= 2) {
       const parentKeys = keys.slice(0, -1);
       const parent = getValueAtPath(this.currentData, parentKeys);
@@ -322,7 +375,7 @@ class TextExtractor {
         const cmdPath = keys.slice(0, paramsIdx);
         const cmd = getValueAtPath(this.currentData, cmdPath);
         if (cmd && typeof cmd === "object" && typeof cmd.code === "number") {
-          const nonDialogueCodes = new Set([231, 232, 281, 241, 245, 249, 250, 132, 133, 139, 322, 323]);
+          const nonDialogueCodes = new Set([231, 232, 281, 241, 245, 249, 250, 132, 133, 139, 322, 323, 122, 123, 355, 356, 357, 655]);
           if (nonDialogueCodes.has(cmd.code)) return;
         }
       }
@@ -379,16 +432,30 @@ class TextExtractor {
         ) {
           return this.addTextEntry(this.currentFile, keys, val.substring(5));
         }
+        // code 122/123 (control vars): o value pode ser uma STRING.
+        // Se parece FRASE (narrativa/diálogo com espaços) -> traduzir.
+        // Se parece EXPRESSÃO (LUST)+, 1+2, $game... ) -> não traduzir.
+        if (cmd.code === 122 || cmd.code === 123) {
+          const { clean } = extractEscapeCodes(val);
+          const c = clean.trim();
+          const looksPhrase =
+            c.length > 15 &&
+            /\s[a-zA-ZÀ-ú]{3,}/.test(c) &&
+            /[a-zA-ZÀ-ú]{3,}\s/.test(c) &&
+            !/[+\-*/%=!<>]{2,}/.test(c) &&
+            !/\$(game|data|switches|variables)[A-Z]/i.test(c);
+          if (looksPhrase) {
+            return this.addTextEntry(this.currentFile, keys, val);
+          }
+        }
       }
     }
 
     if (keys.includes("terms")) {
-      if (
-        keys.includes("basic") ||
-        keys.includes("params") ||
-        keys.includes("messages")
-      ) {
-        return;
+      // termos de UI que o jogador vê (basic, params, messages) são traduzíveis:
+      // Always Dash, BGM Volume, Attack, MaxHP, etc.
+      if (typeof key === "string" && (key === "commands" || key === "types")) {
+        // arrays já são cobertos pelos checks acima; evita duplicação
       }
       return this.addTextEntry(this.currentFile, keys, val);
     }
@@ -463,7 +530,7 @@ class TextExtractor {
               extractParamObject(parsed, [...keys, "__json__"]);
               return;
             }
-          } catch (e) {}
+          } catch (e) { global.log("warn", `extractor: ${e.message}`); }
         }
 
         if (isJsCode(val)) {

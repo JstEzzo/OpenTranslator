@@ -227,7 +227,6 @@ function startHookServer() {
     const hookWss = new WebSocket.Server({ server: hookHttpServer });
     hookWss.on("error", (e) => {
       global.log("error", "WS Hook Server error: " + e.message);
-      console.error("WS Hook Server error:", e.message);
     });
     hookWss.on("connection", (ws) => {
       activeWsClients.add(ws);
@@ -326,20 +325,20 @@ function stopHookServer() {
   for (const ws of activeWsClients) {
     try {
       ws.close();
-    } catch (e) {}
+    } catch (e) { global.log("warn", `cheatServer: ${e.message}`); }
   }
   activeWsClients.clear();
 
   if (global.activeCheatSocket) {
     try {
       global.activeCheatSocket.close();
-    } catch (e) {}
+    } catch (e) { global.log("warn", `cheatServer: ${e.message}`); }
     global.activeCheatSocket = null;
   }
   if (hookHttpServer) {
     try {
       hookHttpServer.close();
-    } catch (e) {}
+    } catch (e) { global.log("warn", `cheatServer: ${e.message}`); }
     hookHttpServer = null;
   }
 }
