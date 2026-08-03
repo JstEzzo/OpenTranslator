@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { exec, spawn, execSync } = require("child_process");
+const { exec, spawn, spawnSync, execSync } = require("child_process");
 const isLaunchingMap = new Set();
 const renpyAppDataResolver = require("./renpyAppDataResolver");
 
@@ -602,11 +602,17 @@ const handlers = {
         return { ok: false, error: "EXE não encontrado no disco: " + exe };
 
       try {
-        const escapedDir = gameDir.replace(/'/g, "''");
-        const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object { $_.Path -like '${escapedDir}\\\\*' } | Stop-Process -Force"`;
-        execSync(psCmd);
+        // Seguro contra injeção: spawnSync passa o diretório como argumento
+        // posicional ($args[0]) — o shell não interpreta o conteúdo do path.
+        const args = [
+          "-NoProfile", "-NonInteractive", "-Command",
+          "Get-Process | Where-Object { $_.Path -like $args[0] } | Stop-Process -Force",
+          gameDir + "\\*"
+        ];
+        const psRes = spawnSync("powershell", args, { stdio: "ignore" });
+        if (psRes.error) throw psRes.error;
         global.log("info", "🧹 Cleanup of previous zombie processes completed.");
-      } catch (e) { global.log("warn", `RPC Handlers: Error processing asset file: ${e.message}`); }
+      } catch (e) { global.log("warn", `RPC Handlers: Error cleaning process: ${e.message}`); }
 
     let bakDir = "";
     const eInfo = ENGINES_DEF[eng];
