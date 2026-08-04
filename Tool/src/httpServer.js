@@ -1,7 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { exec } = require("child_process");
+const { exec, spawnSync } = require("child_process");
 const { handlers } = require("./rpcHandlers");
 
 const MIME = {
@@ -36,25 +36,22 @@ function terminateAllProcessesAndExit(reason) {
 
   if (global.launchedPid) {
     try {
-      const { execSync } = require("child_process");
-      execSync(`taskkill /F /PID ${global.launchedPid} /T`, { stdio: "ignore" });
+      spawnSync("taskkill", ["/F", "/PID", String(global.launchedPid), "/T"], { stdio: "ignore" });
     } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
     global.launchedPid = null;
   }
 
   if (global.launchedGameExe && fs.existsSync(global.launchedGameExe)) {
     try {
-      const { execSync } = require("child_process");
       const exeName = path.basename(global.launchedGameExe);
-      execSync(`taskkill /F /IM "${exeName}" /T`, { stdio: "ignore" });
+      spawnSync("taskkill", ["/F", "/IM", exeName, "/T"], { stdio: "ignore" });
     } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
   }
 
   const auxiliaryExes = ["inject.exe", "PIDDLLInject64.exe", "JoyCon2Mapper.exe", "BakinLauncher.exe"];
   auxiliaryExes.forEach((exe) => {
     try {
-      const { execSync } = require("child_process");
-      execSync(`taskkill /F /IM "${exe}" /T`, { stdio: "ignore" });
+      spawnSync("taskkill", ["/F", "/IM", exe, "/T"], { stdio: "ignore" });
     } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
   });
 

@@ -16,7 +16,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, spawnSync } = require("child_process");
 
 // ==================== CONSTANTES GLOBAIS ====================
 global.ROOT     = __dirname;
@@ -57,19 +57,20 @@ process.on("unhandledRejection", (reason) => {
 const PID_FILE = path.join(global.DATA_DIR, "server.pid");
 try {
   if (process.platform === "win32") {
-    execSync(
-      `powershell -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort ${global.PORT} -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`,
-      { stdio: "ignore" }
-    );
+    const args = [
+      "-NoProfile", "-NonInteractive", "-Command",
+      `Get-NetTCPConnection -LocalPort ${global.PORT} -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }`
+    ];
+    spawnSync("powershell", args, { stdio: "ignore" });
   }
   if (fs.existsSync(PID_FILE)) {
     const oldPid = parseInt(fs.readFileSync(PID_FILE, "utf8").trim(), 10);
     if (oldPid > 0 && oldPid !== process.pid) {
-      const cmd =
-        process.platform === "win32"
-          ? `taskkill /PID ${oldPid} /F 2>nul`
-          : `kill -9 ${oldPid} 2>/dev/null`;
-      execSync(cmd, { stdio: "ignore" });
+      if (process.platform === "win32") {
+        spawnSync("taskkill", ["/PID", String(oldPid), "/F"], { stdio: "ignore" });
+      } else {
+        spawnSync("kill", ["-9", String(oldPid)], { stdio: "ignore" });
+      }
       fs.unlinkSync(PID_FILE);
     }
   }
@@ -91,7 +92,7 @@ function shutdownAll(reason = "App Shutdown") {
       if (pid && pid > 0) {
         global.log("info", `Encerrando processo de jogo ativo (PID ${pid})...`);
         if (process.platform === "win32") {
-          execSync(`taskkill /F /T /PID ${pid} 2>nul`, { stdio: "ignore" });
+          spawnSync("taskkill", ["/F", "/T", "/PID", String(pid)], { stdio: "ignore" });
         } else {
           process.kill(pid, "SIGKILL");
         }
