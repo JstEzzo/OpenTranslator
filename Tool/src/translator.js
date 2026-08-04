@@ -891,26 +891,43 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
       }
     }
 
-    // Attempt 4: Individual Mobile Translation
-    if (toSaveBatch.length === 0) {
+    // Attempt 4: tradução individual dos itens que ficaram sem tradução
+    // (o lote pode ter tido sucesso parcial: itens ecoados não são retentados)
+    const pendingItems = batch.filter(
+      ([, related]) => !related.every((t) => {
+        const tr = results.get(t.id);
+        return tr && tr !== t.clean;
+      })
+    );
+    if (pendingItems.length > 0) {
       if (mobileBatchRateLimited) {
-        for (const [, related] of batch) {
+        for (const [, related] of pendingItems) {
           for (const t of related) results.set(t.id, t.clean);
         }
         reportFailure(
           `lote ${completedBatchesCount + 1} sem tradução (Google Mobile rate-limited; fallback individual desligado para não piorar o bloqueio).`
         );
       } else {
-        await limitConcurrency(15, batch, async ([clean, related]) => {
+        await limitConcurrency(15, pendingItems, async ([clean, related]) => {
+          let tr = null;
           try {
-            const tr = finalize(clean, await translateGoogleMobileSingle(clean, sl, tl));
-            for (const t of related) results.set(t.id, tr || clean);
-            if (tr && tr !== clean && tr.length > 0) {
-              toSaveBatch.push([clean, tr]);
-              totalTranslatedCount++;
-            }
-          } catch (e2) {
+            tr = await translateGoogleMobileSingle(clean, sl, tl);
+          } catch (e2) { /* rede: tenta GTX abaixo */ }
+          if (!tr || tr === clean) {
+            try {
+              const gtx = await translateSingle(clean, sl, tl, "google");
+              if (gtx && gtx !== clean && gtx.length > 0) tr = gtx;
+            } catch (e3) { /* motores bloqueados */ }
+          }
+          if (!tr || tr === clean) {
             for (const t of related) results.set(t.id, clean);
+            return;
+          }
+          const final = finalize(clean, tr);
+          for (const t of related) results.set(t.id, final);
+          if (final && final !== clean && final.length > 0) {
+            toSaveBatch.push([clean, final]);
+            totalTranslatedCount++;
           }
         });
         if (toSaveBatch.length === 0) {
