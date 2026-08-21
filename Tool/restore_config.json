@@ -1,0 +1,835 @@
+{
+  "description": "Externalized rules for restore_rpgmaker.py - game-specific plugin params & protected keys. Engine-standard command codes are hardcoded in the Python script. Updated with game-specific PT-BR to Japanese mappings for games where backup files are NOT true original Japanese (e.g., umi no ie RJ01694710).",
+  "plugin_param_protection": {
+    "_default": {
+      "description": "Apply to any plugin not explicitly listed below",
+      "protected_params": [
+        "param",
+        "parameters",
+        "commandName",
+        "commandNames",
+        "pluginName"
+      ]
+    },
+    "OnevASSISTANT": {
+      "description": "Params protected for OnevASSISTANT plugin (used in umi no ie RJ01694710)",
+      "protected_params": [
+        "画像",
+        "選択肯め",
+        "Scale",
+        "ExtraImageSetting",
+        "X座標",
+        "Y座標",
+        "Y座佐",
+        "X座佐",
+        "ExtraImageSet ting",
+        "ExtraImageSet",
+        "ChoiceImages",
+        "ChoiceSettings",
+        "TitleSettings"
+      ]
+    },
+    "H2A_SkipTitle": {
+      "description": "Params protected for H2A_SkipTitle plugin (used in umi no ie RJ01694710)",
+      "protected_params": [
+        "titleMapId",
+        "titleImage",
+        "titleChrName"
+      ]
+    },
+    "OnspineCALL": {
+      "description": "Params protected for OnspineCALL plugin (used in umi no ie RJ01694710). CRITICAL: skeletonName, partName, animation names must NOT be translated - they reference actual spine JSON files.",
+      "protected_params": [
+        "波",
+        "ヤシの木",
+        "厨房",
+        "広間",
+        "更衣室",
+        "animation",
+        "skeleton",
+        "spineName",
+        "spineAnimation",
+        "skeletonPartAlphaDefaults",
+        "skinPresets",
+        "presets",
+        "trackSettings",
+        "layerSkinSettings"
+      ]
+    },
+    "YEP_CoreEngine": {
+      "description": "Params protected for YEP_CoreEngine (used in A Tale of Salvation, MBFK)",
+      "protected_params": [
+        "MissingName",
+        "MissingFileName"
+      ]
+    },
+    "YEP_MessageCore": {
+      "description": "Params protected for YEP_MessageCore",
+      "protected_params": [
+        "DefaultRows",
+        "TextCodeSize"
+      ]
+    },
+    "VisuMZ_1_Message_Core": {
+      "description": "Params protected for VisuMZ_1_Message_Core (used in Broken Eden, MBFK)",
+      "protected_params": [
+        "WindowWidth",
+        "WindowHeight",
+        "FontSize",
+        "NameBoxMode"
+      ]
+    },
+    "VisuMZ_0_CoreEngine": {
+      "description": "Params protected for VisuMZ_0_CoreEngine (used in Broken Eden, MBFK, A Tale of Salvation)",
+      "protected_params": [
+        "MissingName",
+        "MissingFileName",
+        "GameFontFace",
+        "NumberFontFace"
+      ]
+    },
+    "DKTools": {
+      "description": "Params protected for DKTools (used in MBFK)",
+      "protected_params": [
+        "MissingName",
+        "MissingFileName",
+        "GameFontFace",
+        "NumberFontFace"
+      ]
+    },
+    "PictureSpine": {
+      "description": "Params protected for PictureSpine plugin (used in umi no ie RJ01694710)",
+      "protected_params": [
+        "pictureId",
+        "spineName",
+        "spineAnimation",
+        "filePath"
+      ]
+    },
+    "FilterControllerMZ": {
+      "description": "Params protected for FilterControllerMZ plugin (used in umi no ie, QOS MILF, A Tale of Salvation)",
+      "protected_params": [
+        "filterId",
+        "filterParameters"
+      ]
+    },
+    "ButtonPicture": {
+      "description": "Params protected for ButtonPicture plugin (used in umi no ie, QOS MILF)",
+      "protected_params": [
+        "pictureNo",
+        "image1",
+        "image2",
+        "filename"
+      ]
+    },
+    "TextPicture": {
+      "description": "Params protected for TextPicture plugin (used in umi no ie, QOS MILF)",
+      "protected_params": [
+        "pictureNo",
+        "image",
+        "filename"
+      ]
+    },
+    "TextPictureEX": {
+      "description": "Params protected for TextPictureEX plugin (used in umi no ie RJ01694710). Presets contain Portuguese names that need to be preserved/restored.",
+      "protected_params": [
+        "presets",
+        "pictureNo"
+      ]
+    },
+    "DTextPicture": {
+      "description": "Params protected for DTextPicture plugin (used in umi no ie RJ01694710)",
+      "protected_params": [
+        "pictureNo",
+        "text"
+      ]
+    },
+    "EasingPicture": {
+      "description": "Params protected for EasingPicture plugin (used in umi no ie RJ01694710)",
+      "protected_params": [
+        "pictureNo",
+        "sx",
+        "sy"
+      ]
+    },
+    "_examples_note": "To add a new plugin, add it as a key at this level (direct child of plugin_param_protection) with a {description, protected_params} object. The protected_params array lists param names from the original Japanese plugin struct that should never be translated."
+  },
+  "system_json_protection": {
+    "description": "Top-level keys and nested keys in System.json that should be reverted to original if they differ (non-dialogue/system strings)",
+    "protected_sections": [
+      "battlebackNames",
+      "enemySpriteFilenames",
+      "characterSprites",
+      "faces",
+      "pictures",
+      {
+        "system": [
+          "battleActions",
+          "weaponAnimations",
+          "elements",
+          "armorTypes",
+          "equiperNames",
+          "currencyUnit",
+          "title1Name",
+          "title2Name",
+          "optionsString",
+          "commandRemember",
+          "partyMembers",
+          "hasVH",
+          "messagePosition",
+          "messageSpeed",
+          "messageWidth",
+          "messageHeight",
+          "numberFontFace",
+          "listFontFace",
+          "combatLogFontFace",
+          "gameFontFace",
+          "systemFontFace",
+          "gameTitle",
+          "versionId",
+          "diskAccessPlace"
+        ]
+      },
+      "terms"
+    ]
+  },
+  "nested_plugin_param_protection": {
+    "OnspineCALL": {
+      "description": "Keys within JSON strings in OnspineCALL params that should be reverted (used in umi no ie RJ01694710)",
+      "skeletonPartAlphaDefaults": [
+        "skeletonName",
+        "partName"
+      ],
+      "skinPresets": [
+        "name",
+        "layerName",
+        "skinName"
+      ],
+      "presets": [
+        "presetName",
+        "skeletonName",
+        "skinPresetName",
+        "animationsA",
+        "animationsB"
+      ],
+      "trackSettings": [
+        "animations"
+      ],
+      "layerSkinSettings": [
+        "layerName",
+        "skinName"
+      ]
+    },
+    "OnevASSISTANT": {
+      "description": "Keys within JSON strings/objects in OnevASSISTANT params that should be reverted (used in umi no ie RJ01694710)",
+      "TitleSettings": [
+        "UseCustomTitle",
+        "ShowGameTitle",
+        "BackgroundImage",
+        "Choices",
+        "ChoiceXBase",
+        "ChoiceYBase",
+        "CursorConfig",
+        "CursorSelectSE",
+        "CursorOkSE",
+        "TitleBGM"
+      ],
+      "Choices": [
+        "画像",
+        "選択肯め",
+        "X座標",
+        "Y座標",
+        "Scale",
+        "Escala",
+        "OffsetX",
+        "OffsetY",
+        "FrameImage",
+        "ExtraImageSetting",
+        "ExtraImageSet ting",
+        "Image",
+        "Choice"
+      ],
+      "ExtraImageSetting": [
+        "画像",
+        "X",
+        "Y",
+        "SwitchId",
+        "VariableId",
+        "CompareValue",
+        "Operator"
+      ]
+    }
+  },
+  "forced_string_replacements": {
+    "description": "PT-BR to Japanese string mappings applied INDEPENDENT of backup comparison. CRITICAL for games where backup files already contain Portuguese text (not true original Japanese). Uses RPG Maker MZ default terms as ground truth.",
+    "enabled": true,
+    "games": {
+      "umi_no_ie_rj01694710": {
+        "description": "ウミノイエ～NTR物語～ - The backup files (data_bak_1787042365052) already contain Portuguese translation, so diff-based restore cannot recover Japanese. These mappings force PT-BR->JP directly.",
+        "engine": "MZ",
+        "backup_not_original": true,
+        "reference_dirs": {
+          "plugin_sources": "data/js_plugins_bak/",
+          "image_filenames": "img/",
+          "spine_json": "img/pictures/"
+        },
+        "system_json": {
+          "terms.commands": {
+            "lutar": "たたかう",
+            "fugir": "にげる",
+            "ataque": "こうげき",
+            "defesa": "ぼうぎょ",
+            "artigo": "じゅもん",
+            "habilidade": "わざ",
+            "equipamento": "そうび",
+            "estado": "とうげき",
+            "Classificar": "アイテム",
+            "salvar": "セーブ",
+            "fim do jogo": "ゲーム終了",
+            "óperas": "オート",
+            "arma": "武器",
+            "armadura": "防具",
+            "coisas importantes": "アイテム",
+            "Equipamento mais forte": "最強の装備",
+            "removendo tudo": "全て外す",
+            "novo jogo": "ニューゲーム",
+            "Continuar": "続きから",
+            "Ir para o título": "タイトルへ",
+            "comprar": "購入",
+            "fornecedor": "販売"
+          },
+          "terms.messages": {
+            "traço constante": "ダッシュ",
+            "memória de comando": "コマンドを記憶",
+            "interface de toque": "タッチUI",
+            "Volume da música musical": "音楽",
+            "Volume BGS": "BGS",
+            "Volume EM": "ME",
+            "Volume SE": "SE",
+            "o número que você tem": "所持数",
+            "actual %1": "累計経験値",
+            "Até o próximo %1": "次のレベルまで",
+            "Em qual arquivo você deseja salvá-lo?": "セーブするファイルを選択してください。",
+            "Qual arquivo você deseja carregar?": "ロードするファイルを選択してください。",
+            "salvamento automático": "オートセーブ",
+            "%1 pessoas": "%1のパーティ"
+          }
+        },
+        "plugins.js": {
+          "OnspineCALL": {
+            "skeletonPartAlphaDefaults": {
+              "mapa de casa de praia": "海の家マップ",
+              "Mapa de casa de praia 2": "海の家2マップ",
+              "QV_com parede": "QV_カベ付き",
+              "QV_Vaqueira": "QV_騎乗位",
+              "QV_Skinship_Foreplay": "QV_スキンシップ_前戯",
+              "QV_Service_Urination_Blowjob_Handjob_Titty foda": "QV_奉仕_放尿_フェラ_手コキ_パイズリ",
+              "QV_Service_Pissing_Blowjob_Handjob_Titty foda": "QV_奉仕_放尿_フェラ_手コキ_パイズリ",
+              "QV_Standing_Walking_Trabalho diário_Posição missionária": "QV_直立_歩行_日常作業_正常位",
+              "QV_Upright_Walking_Daily work_Missionary position": "QV_直立_歩行_日常作業_正常位",
+              "QV_Upright_Walking_Trabalho diário_Posição missionária": "QV_直立_歩行_日常作業_正常位",
+              "QV_Crawling de quatro": "QV_四つん這い",
+              "QV_Rastejando de quatro": "QV_四つん這い",
+              "QV_masturbação": "QV_自慰",
+              "QV2_Service_Pissing_Blowjob_Handjob_Titty foda": "QV2_奉仕_放尿_フェラ_手コキ_パイズリ",
+              "QV2_Service_Urination_Blowjob_Handjob_Titty foda": "QV2_奉仕_放尿_フェラ_手コキ_パイズリ",
+              "QV2_Upright_Walking_Daily work_Missionary position": "QV2_直立_歩行_日常作業_正常位",
+              "QV2_Upright_Walking_Trabalho diário_Posição missionária": "QV2_直立_歩行_日常作業_正常位",
+              "QV2_Crawling de quatro": "QV2_四つん這い",
+              "QV2_Rastejando de quatro": "QV2_四つん這い",
+              "QV2_masturbação": "QV2_自慰",
+              "QV2_com parede": "QV2_カベ付き",
+              "QV2_Vaqueira": "QV2_騎乗位",
+              "QV2_Skinship_Foreplay": "QV2_スキンシップ_前戯"
+            }
+          },
+          "OnevASSISTANT": {
+            "Choices": {
+              "[Título]Desde o início": "【タイトル】初めから",
+              "[Título]Continuar": "【タイトル】続きから",
+              "[Título]Reminiscência": "【タイトル】回想",
+              "[Título] Configuração de volume": "【タイトル】音量設定",
+              "[Título] Fim do jogo": "【タイトル】ゲーム終了",
+              "Mapa de casa de praia 2": "海の家2マップ",
+              "Mapa da Casa de Praia 2": "海の家2マップ"
+            }
+          }
+        },
+        "map_files": {
+          "Map004.json": {
+            "menu_choices": {
+              "Começar": "初めから",
+              "Continuar": "続きから",
+              "Recordações": "回想",
+              "Reminiscência": "回想",
+              "Volume": "音量",
+              "Sair": "ゲーム終了"
+            },
+            "image_filenames": {
+              "[Título]Desde o início": "【タイトル】初めから",
+              "[Título]Continuar": "【タイトル】続きから",
+              "[Título]Reminiscência": "【タイトル】回想",
+              "[Título] Configuração de volume": "【タイトル】音量設定",
+              "[Título] Fim do jogo": "【タイトル】ゲーム終了",
+              "Cursor 10": "カーソル10"
+            }
+          }
+        },
+        "animation_names": {
+          "Kitchen": "厨房",
+          "Hall": "広間",
+          "vestiário": "更衣室",
+          "[Síntese]": "【合成】",
+          "[Para extensão]": "【増築用】",
+          "[Título]": "【タイトル】"
+        },
+        "common_events": {
+          "skeleton_name_replacements": {
+            "mapa de casa de praia": "海の家マップ",
+            "Mapa de casa de praia 2": "海の家2マップ",
+            "QV_com parede": "QV_カベ付き",
+            "QV_Vaqueira": "QV_騎乗位",
+            "QV_Skinship_Foreplay": "QV_スキンシップ_前戯",
+            "QV_Service_Urination_Blowjob_Handjob_Titty foda": "QV_奉仕_放尿_フェラ_手コキ_パイズリ",
+            "QV_Service_Pissing_Blowjob_Handjob_Titty foda": "QV_奉仕_放尿_フェラ_手コキ_パイズリ",
+            "QV_Standing_Walking_Trabalho diário_Posição missionária": "QV_直立_歩行_日常作業_正常位",
+            "QV_Upright_Walking_Trabalho diário_Posição missionária": "QV_直立_歩行_日常作業_正常位",
+            "QV_Crawling de quatro": "QV_四つん這い",
+            "QV_Rastejando de quatro": "QV_四つん這い",
+            "QV_masturbação": "QV_自慰",
+            "QV2_Service_Pissing_Blowjob_Handjob_Titty foda": "QV2_奉仕_放尿_フェラ_手コキ_パイズリ",
+            "QV2_Service_Urination_Blowjob_Handjob_Titty foda": "QV2_奉仕_放尿_フェラ_手コキ_パイズリ",
+            "QV2_Upright_Walking_Daily work_Missionary position": "QV2_直立_歩行_日常作業_正常位",
+            "QV2_Upright_Walking_Trabalho diário_Posição missionária": "QV2_直立_歩行_日常作業_正常位",
+            "QV2_Crawling de quatro": "QV2_四つん這い",
+            "QV2_Rastejando de quatro": "QV2_四つん這い",
+            "QV2_masturbação": "QV2_自慰",
+            "QV2_com parede": "QV2_カベ付き",
+            "QV2_Vaqueira": "QV2_騎乗位",
+            "QV2_Skinship_Foreplay": "QV2_スキンシップ_前戯",
+            "Mapa da Casa de Praia 2": "海の家2マップ",
+            "Mapa da casa": "海の家",
+            "Mapa da Casa de Praia": "海の家"
+          },
+          "plugin_command_prefixes": [
+            "QV_",
+            "QV2_"
+          ],
+          "map_name_replacements": {
+            "Mapa da Casa de Praia 2": "海の家2マップ",
+            "Casa de Praia": "海の家",
+            "Casa da praia": "海の家"
+          }
+        }
+      },
+      "_examples_note": "Add new games as keys. Set backup_not_original=true if the backup directory was created AFTER Portuguese translation was applied (backup already contains PT-BR text). forced_string_replacements bypass the diff-based restore and directly map PT-BR->Japanese."
+    },
+    "generic_patterns": {
+      "description": "Universal multi-language mappings for ANY game. Auto-detected and applied when matching strings found in System.json. Supports PT, ES, FR, DE, IT.",
+      "languages": {
+        "PT": {
+          "terms.commands": {
+            "ataque": "攻撃",
+            "atacar": "攻撃",
+            "defesa": "防御",
+            "defender": "防御",
+            "habilidade": "技",
+            "habilidades": "技",
+            "item": "アイテム",
+            "itens": "アイテム",
+            "Classificar": "アイテム",
+            "coisas importantes": "アイテム",
+            "itens-chave": "アイテム",
+            "equipamento": "装備",
+            "equipar": "装備",
+            "Equipamento mais forte": "最強の装備",
+            "removendo tudo": "全て外す",
+            "arma": "武器",
+            "armas": "武器",
+            "armadura": "防具",
+            "armaduras": "防具",
+            "lutar": "たたかう",
+            "luta": "たたかう",
+            "combate": "たたかう",
+            "fugir": "にげる",
+            "fuga": "にげる",
+            "salvar": "セーブ",
+            "carregar": "ロード",
+            "continuar": "続きから",
+            "novo jigo": "ニューゲーム",
+            "novo jogo": "ニューゲーム",
+            "comprar": "購入",
+            "vender": "販売",
+            "fornecedor": "販売",
+            "sair do jogo": "ゲーム終了",
+            "fim do jogo": "ゲーム終了",
+            "ir para o título": "タイトルへ",
+            "voltar ao título": "タイトルへ",
+            "opções": "オプション",
+            "autosalvar": "オートセーブ",
+            "salvamento automático": "オートセーブ",
+            "estado": "ステータス",
+            "formação": "フォーメーション",
+            "trocar de roupa": "装備変更",
+            "coloque roupas": "装備変更",
+            "equipar mais forte": "最強の装備",
+            "remova tudo": "全て外す",
+            "pare": "あきらめる"
+          },
+          "terms.messages": {
+            "traço constante": "ダッシュ",
+            "correr": "ダッシュ",
+            "memória de comando": "コマンドを記憶",
+            "interface de toque": "タッチUI",
+            "Volume da música musical": "音楣",
+            "Volume BGS": "BGS",
+            "Volume EM": "ME",
+            "Volume SE": "SE",
+            "número que você tem": "所持数",
+            "Até o próximo %1": "次のレベルまで",
+            "salvamento automático": "オートセーブ"
+          }
+        },
+        "ES": {
+          "terms.commands": {
+            "ataque": "攻撃",
+            "atacar": "攻撃",
+            "defensa": "防御",
+            "defender": "防御",
+            "habilidad": "技",
+            "habilidades": "技",
+            "objeto": "アイテム",
+            "obj": "アイテム",
+            "equipar": "装備",
+            "equipamiento": "装備",
+            "arma": "武器",
+            "armas": "武器",
+            "armadura": "防具",
+            "armaduras": "防具",
+            "luchar": "たたかう",
+            "lucha": "たたかう",
+            "combate": "たたかう",
+            "huir": "にげる",
+            "fuga": "にげる",
+            "guardar": "セーブ",
+            "cargar": "ロード",
+            "continuar": "続きから",
+            "nuevo juego": "ニューゲーム",
+            "nueva partida": "ニューゲーム",
+            "comprar": "購入",
+            "vender": "販売",
+            "salir del juego": "ゲーム終了",
+            "fin del juego": "ゲーム終了",
+            "ir al título": "タイトルへ",
+            "volver al título": "タイトルへ",
+            "opciones": "オプション",
+            "guardado automático": "オートセーブ",
+            "estado": "ステータス",
+            "formación": "フォーメーション",
+            "cambiar ropa": "装備変更"
+          },
+          "terms.messages": {
+            "carrera constante": "ダッシュ",
+            "correr": "ダッシュ",
+            "memoria de comando": "コマンドを記憶",
+            "interfaz táctil": "タッチUI",
+            "Volumen de música": "音楣",
+            "Volumen BGS": "BGS",
+            "Volumen ME": "ME",
+            "Volumen SE": "SE",
+            "número que tienes": "所持数",
+            "Hasta el siguiente nivel": "次のレベルまで",
+            "guardado automático": "オートセーブ"
+          }
+        },
+        "FR": {
+          "terms.commands": {
+            "attaque": "攻撃",
+            "attaquer": "攻撃",
+            "défense": "防御",
+            "défendre": "防御",
+            "compétence": "技",
+            "compétences": "技",
+            "objet": "アイテム",
+            "objets": "アイテム",
+            "équipement": "装備",
+            "équiper": "装備",
+            "arme": "武器",
+            "armes": "武器",
+            "armure": "防具",
+            "armures": "防具",
+            "combattre": "たたかう",
+            "combat": "たたかう",
+            "fuir": "にげる",
+            "fuite": "にげる",
+            "sauvegarder": "セーブ",
+            "charger": "ロード",
+            "continuer": "続きから",
+            "nouvelle partie": "ニューゲーム",
+            "nouveau jeu": "ニューゲーム",
+            "acheter": "購入",
+            "vendre": "販売",
+            "quitter le jeu": "ゲーム終了",
+            "fin du jeu": "ゲーム終了",
+            "aller au titre": "タイトルへ",
+            "retour au titre": "タイトルへ",
+            "options": "オプション",
+            "sauvegarde automatique": "オートセーブ",
+            "statut": "ステータス",
+            "formation": "フォーメーション",
+            "changer vêtements": "装備変更"
+          },
+          "terms.messages": {
+            "course constante": "ダッシュ",
+            "mémoire de commande": "コマンドを記憶",
+            "interface tactile": "タッチUI",
+            "Volume musical": "音楣",
+            "Volume BGS": "BGS",
+            "Volume ME": "ME",
+            "Volume SE": "SE",
+            "nombre que vous avez": "所持数",
+            "Jusqu'au prochain niveau": "次のレベルまで",
+            "sauvegarde automatique": "オートセーブ"
+          }
+        },
+        "DE": {
+          "terms.commands": {
+            "angriff": "攻撃",
+            "angriffen": "攻撃",
+            "verteidigung": "防御",
+            "verteidigen": "防御",
+            "fähigkeit": "技",
+            "fähigkeiten": "技",
+            "gegenstand": "アイテム",
+            "gegenstände": "アイテム",
+            "ausrüsten": "装備",
+            "ausrüstung": "装備",
+            "waffe": "武器",
+            "waffen": "武器",
+            "rüstung": "防具",
+            "rüstungen": "防具",
+            "kämpfen": "たたかう",
+            "kampf": "たたかう",
+            "flüchten": "にげる",
+            "flucht": "にげる",
+            "speichern": "セーブ",
+            "laden": "ロード",
+            "fortsetzen": "続きから",
+            "neues spiel": "ニューゲーム",
+            "neue spiel": "ニューゲーム",
+            "kaufen": "購入",
+            "verkaufen": "販売",
+            "spiel beenden": "ゲーム終了",
+            "spiel verlassen": "ゲーム終了",
+            "zum titel": "タイトルへ",
+            "zurück zum titel": "タイトルへ",
+            "optionen": "オプション",
+            "automatisch speichern": "オートセーブ",
+            "status": "ステータス",
+            "formation": "フォーメーション",
+            "kleidung wechseln": "装備変更"
+          },
+          "terms.messages": {
+            "dauerlauf": "ダッシュ",
+            "befehlsspeicher": "コマンドを記憶",
+            "touch-benutzeroberfläche": "タッチUI",
+            "Musiklautstärke": "音楣",
+            "BGS-Lautstärke": "BGS",
+            "ME-Lautstärke": "ME",
+            "SE-Lautstärke": "SE",
+            "anzahl die du hast": "所持数",
+            "bis nächstes level": "次のレベルまで",
+            "automatisch speichern": "オートセーブ"
+          }
+        },
+        "IT": {
+          "terms.commands": {
+            "attacco": "攻撃",
+            "attaccare": "攻撃",
+            "difesa": "防御",
+            "difendere": "防御",
+            "abilità": "技",
+            "oggetto": "アイテム",
+            "oggetti": "アイテム",
+            "equipaggiamento": "装備",
+            "equipaggiare": "装備",
+            "arma": "武器",
+            "armi": "武器",
+            "armatura": "防具",
+            " armature": "防具",
+            "combatti": "たたかう",
+            "combattere": "たたかう",
+            "fuggi": "にげる",
+            "fuggire": "にげる",
+            "salva": "セーブ",
+            "salvare": "セーブ",
+            "carica": "ロード",
+            "caricare": "ロード",
+            "continua": "続きから",
+            "continuare": "続きから",
+            "nuova partita": "ニューゲーム",
+            "iniziare": "ニューゲーム",
+            "acquista": "購入",
+            "comprare": "購入",
+            "vendi": "販売",
+            "vendere": "販売",
+            "esci dal gioco": "ゲーム終了",
+            "fine del gioco": "ゲーム終了",
+            " vai al titolo": "タイトルへ",
+            "torna al titolo": "タイトルへ",
+            "opzioni": "オプション",
+            "salvataggio automatico": "オートセーブ",
+            "stato": "ステータス",
+            "formazione": "フォーメーション",
+            "cambiare abiti": "装備変更"
+          },
+          "terms.messages": {
+            "corsa costante": "ダッシュ",
+            "memoria comando": "コマンドを記憶",
+            "interfaccia tattile": "タッチUI",
+            "Volume musica": "音楣",
+            "Volume BGS": "BGS",
+            "Volume ME": "ME",
+            "Volume SE": "SE",
+            "numero che hai": "所持数",
+            "al prossimo livello": "次のレベルまで",
+            "salvataggio automatico": "オートセーブ"
+          }
+        }
+      },
+      "menu_choices": {
+        "PT": {
+          "Começar": "初めから",
+          "Iniciar": "初めから",
+          "Jogar": "初めから",
+          "Continuar": "続きから",
+          "Retomar": "続きから",
+          "Carregar": "ロード",
+          "Recordações": "回想",
+          "Reminiscência": "回想",
+          "Memórias": "回想",
+          "Memória": "回想",
+          "Volume": "音量",
+          "Configuração": "設定",
+          "Configurações": "設定",
+          "Ajustes": "設定",
+          "Opções": "オプション",
+          "Opc": "オプション",
+          "Sair": "ゲーム終了",
+          "Fechar": "ゲーム終了",
+          "Fim": "ゲーム終了",
+          "Sim": "はい",
+          "Não": "いいえ",
+          "OK": "はい",
+          "Cancelar": "いいえ"
+        },
+        "ES": {
+          "Comenzar": "初めから",
+          "Iniciar": "初めから",
+          "Jugar": "初めから",
+          "Continuar": "続きから",
+          "Continuar Partida": "続きから",
+          "Cargar": "ロード",
+          "Memorias": "回想",
+          "Volumen": "音量",
+          "Configuración": "設定",
+          "Opciones": "オプション",
+          "Salir": "ゲーム終了",
+          "Si": "はい",
+          "No": "いいえ",
+          "Aceptar": "はい",
+          "Cancelar": "いいえ"
+        },
+        "FR": {
+          "Commencer": "初めから",
+          "Démarrer": "初めから",
+          "Jouer": "初めから",
+          "Continuer": "続きから",
+          "Charger": "ロード",
+          "Mémoires": "回想",
+          "Volume": "音量",
+          "Configuration": "設定",
+          "Options": "オプション",
+          "Quitter": "ゲーム終了",
+          "Oui": "はい",
+          "Non": "いいえ",
+          "Accepter": "はい",
+          "Annuler": "いいえ"
+        },
+        "DE": {
+          "Beginnen": "初めから",
+          "Starten": "初めから",
+          "Spielen": "初めから",
+          "Fortsetzen": "続きから",
+          "Laden": "ロード",
+          "Erinnerungen": "回想",
+          "Lautstärke": "音量",
+          "Einstellungen": "設定",
+          "Optionen": "オプション",
+          "Beenden": "ゲーム終了",
+          "Ja": "はい",
+          "Nein": "いいえ",
+          "OK": "はい",
+          "Abbrechen": "いいえ"
+        },
+        "IT": {
+          "Iniziare": "初めから",
+          "Inizia": "初めから",
+          "Giocare": "初めから",
+          "Continuare": "続きから",
+          "Caricare": "ロード",
+          "Ricordi": "回想",
+          "Volume": "音量",
+          "Configurazione": "設定",
+          "Opzioni": "オプション",
+          "Uscire": "ゲーム終了",
+          "Sì": "はい",
+          "No": "いいえ",
+          "Accetta": "はい",
+          "Annulla": "いいえ"
+        }
+      },
+      "generic_title_patterns": {
+        "[Título]": "【タイトル】",
+        "[Titre]": "【タイトル】",
+        "[Titel]": "【タイトル】",
+        "[Titolo]": "【タイトル】",
+        "[Title]": "【タイトル】",
+        "(Título)": "【タイトル】"
+      },
+      "generic_cursor_patterns": {
+        "Cursor ": "カーソル",
+        "Curso ": "カーソル",
+        "Cursor1": "カーソル1",
+        "Cursor2": "カーソル2",
+        "Cursor3": "カーソル3",
+        "Cursor4": "カーソル4",
+        "Cursor5": "カーソル5",
+        "Cursor6": "カーソル6",
+        "Cursor7": "カーソル7",
+        "Cursor8": "カーソル8",
+        "Cursor9": "カーソル9",
+        "Cursor10": "カーソル10"
+      }
+    }
+  },
+  "files_to_process": [
+    "plugins.js",
+    "plugins.js_bak",
+    "Map*.json",
+    "CommonEvents.json",
+    "System.json",
+    "actors.json",
+    "classes.json",
+    "enemies.json",
+    "skills.json",
+    "items.json",
+    "weapons.json",
+    "armors.json",
+    "troops.json",
+    "states.json",
+    "battlebacks.json",
+    "tilesets.json",
+    "sides.csv"
+  ]
+}

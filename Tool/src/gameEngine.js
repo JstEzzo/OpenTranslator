@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { spawn, execSync } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 
 const {
   isJsCode,
@@ -20,7 +20,8 @@ const {
   loadCfg
 } = require("./cache");
 
-const { translateBatch } = require("./translator");
+const { translateBatch, clearEngineBans } = require("./translator");
+const { isTranslatableText, findDataDir } = require("./utils");
 
 const ENGINES_DEF = {
   mv: { label: "RPG Maker MV", js: true, icon: "\ud83c\udfae" },
@@ -29,8 +30,8 @@ const ENGINES_DEF = {
   krkrz: { label: "Kirikiri Z", js: false, icon: "\u2728" },
   wolf: { label: "Wolf RPG", js: false, icon: "\ud83d\udc3a" },
   rgss: { label: "RGSS (XP/VX/Ace)", js: false, icon: "\u2699" },
-  unity: { label: "Unity", js: false, icon: "🌐" },
-  python: { label: "Ren'Py", js: false, icon: "🐍" },
+  unity: { label: "Unity", js: false, icon: "\ud83c\udf10" },
+  python: { label: "Ren'Py", js: false, icon: "\ud83d\udc0d" },
   srpg: { label: "SRPG Studio", js: false, icon: "\u2694" },
   agtk: { label: "Action Game Toolkit", js: false, icon: "\ud83c\udff0" },
   kmy: { label: "KMY", js: false, icon: "\ud83d\udd2e" },
@@ -38,147 +39,123 @@ const ENGINES_DEF = {
   tyrano: { label: "TyranoScript", js: true, icon: "\ud83d\udcdd" },
 };
 
-function findDataDir(gameDir) {
+function findGameRoot(gameDir) {
   if (fs.existsSync(path.join(gameDir, "www", "data")))
-    return path.join(gameDir, "www", "data");
-  if (fs.existsSync(path.join(gameDir, "data")))
-    return path.join(gameDir, "data");
-  return null;
-}
-
-function unpackNwExe(exePath, gameDir) {
-  if (!exePath || !fs.existsSync(exePath)) return false;
-  try {
-    const pyCode = `import zipfile, sys; z = zipfile.ZipFile(sys.argv[1]); z.extractall(sys.argv[2]); print("OK")`;
-    const res = execSync(`python -c "${pyCode}" "${exePath}" "${gameDir}"`, { encoding: "utf-8", stdio: "pipe" });
-    return res && res.includes("OK");
-  } catch (e) {
-    return false;
-  }
+    return path.join(gameDir, "www");
+  return gameDir;
 }
 
 function detectEngine(exePath, exeDir) {
-  if (exePath && typeof exePath === "object") {
-    exeDir = exePath.exeDir || exePath.dir || exeDir;
-    exePath = exePath.exePath || exePath.targetFile || exePath.path;
+  const name = path.basename(exePath).toLowerCase();
+  const dir = exeDir || path.dirname(exePath);
+  if (!fs.existsSync(exePath)) {
+    return "mz";
   }
-  if (!exePath || typeof exePath !== "string") return "mz";
-  
-  let targetFile = exePath;
-  let dir = exeDir;
-
-  // Se o caminho passado for um diretório (ex: a pasta do jogo)
-  if (fs.existsSync(targetFile)) {
-    try {
-      const st = fs.statSync(targetFile);
-      if (st.isDirectory()) {
-        dir = targetFile;
-        const subFiles = fs.readdirSync(dir);
-        const exeMatch = subFiles.find((f) => f.toLowerCase().endsWith(".exe"));
-        if (exeMatch) {
-          targetFile = path.join(dir, exeMatch);
-        }
-      } else {
-        dir = exeDir || path.dirname(targetFile);
-      }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  } else if (dir && fs.existsSync(dir)) {
-    const candidate = path.join(dir, path.basename(targetFile));
-    if (fs.existsSync(candidate)) {
-      targetFile = candidate;
+  try {
+    const buf = fs
+      .readFileSync(exePath, { encoding: "utf8", flag: "r" })
+      .substring(0, 100000);
+    if (
+      buf.includes("RPGVXAce") ||
+      buf.includes("RGSS3") ||
+      buf.includes("RGSS2")
+    )
+      return "rgss";
+    if (buf.includes("WolfRPG") || buf.includes("Wolf RPG Editor"))
+      return "wolf";
+    if (buf.includes("TyranoBuilder") || buf.includes("tyranoscript"))
+      return "tyrano";
+    if (buf.includes("UnityPlayer") || buf.includes("UnityEngine"))
+      return "unity";
+    if (
+      buf.includes("renpy") ||
+      buf.includes("Ren'Py") ||
+      buf.includes("renpython")
+    )
+      return "python";
+    if (buf.includes("BootKirikiriZ")) return "krkrz";
+    if (buf.includes("Kirikiri") || buf.includes("TVP")) return "krkr";
+    if (buf.includes("SRPG Studio") || buf.includes("SRPG")) return "srpg";
+    if (buf.includes("SmileBoom") || buf.includes("ActionGameToolkit"))
+      return "agtk";
+    if (buf.includes("Bakin")) return "bakin";
+    if (buf.includes("kmy")) return "kmy";
+    if (
+      buf.includes("www/") ||
+      buf.includes("System.png") ||
+      buf.includes("rpg_core")
+    )
+      return "mz";
+  } catch (e) {}
+  try {
+    const files = fs.readdirSync(dir);
+    const fl = files.map((f) => f.toLowerCase());
+    if (
+      fl.some(
+        (f) => f === "www" && fs.statSync(path.join(dir, "www")).isDirectory()
+      )
+    )
+      return "mz";
+    if (
+      fl.some((f) => f === "index.html") &&
+      fl.some((f) => f === "package.json") &&
+      fl.some((f) => f.startsWith("nw."))
+    )
+      return "mz";
+    if (fl.some((f) => f === "rmmz_core.js" || f === "rpg_core.js"))
+      return "mz";
+    if (fl.includes("js")) {
+      try {
+        const jsFiles = fs
+          .readdirSync(path.join(dir, "js"))
+          .map((f) => f.toLowerCase());
+        if (jsFiles.some((f) => f === "rmmz_core.js" || f === "rpg_core.js"))
+          return "mz";
+      } catch (e) {}
     }
-  }
-
-  const baseName = path.basename(targetFile, path.extname(targetFile)).toLowerCase();
-  const fullExeName = path.basename(targetFile).toLowerCase();
-
-  // 1. CHECAGEM POR ESTRUTURA DE DIRETÓRIOS E ARQUIVOS CARACTERÍSTICOS
-  if (dir && fs.existsSync(dir)) {
-    try {
-      const files = fs.readdirSync(dir);
-      const fl = files.map((f) => f.toLowerCase());
-
-      // DETECÇÃO AUTOMÁTICA DE JOGOS REN'PY
-      const hasRenpyFolder = fl.includes("renpy");
-      const hasGameFolder = fl.includes("game");
-      const hasPyScript = fl.some((f) => f.endsWith(".py") && f !== "setup.py");
-      const hasRpyFile = fl.some((f) => f.endsWith(".rpy") || f.endsWith(".rpyc") || f.endsWith(".rpa"));
-
-      if (hasRenpyFolder || (hasGameFolder && (hasPyScript || hasRpyFile))) {
-        return "python";
-      }
-
-      if (hasGameFolder) {
-        try {
-          const gameSubFiles = fs.readdirSync(path.join(dir, "game")).map((f) => f.toLowerCase());
-          if (gameSubFiles.some((f) => f.endsWith(".rpy") || f.endsWith(".rpyc") || f.endsWith(".rpa") || f === "script.rpy")) {
-            return "python";
-          }
-        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-      }
-
-
-
-      // RPG Maker MZ / MV
-      if (fl.some((f) => f === "www" && fs.statSync(path.join(dir, "www")).isDirectory())) return "mz";
-      if (fl.some((f) => f === "index.html") && fl.some((f) => f === "package.json") && fl.some((f) => f.startsWith("nw."))) return "mz";
-      if (fl.some((f) => f === "rmmz_core.js" || f === "rpg_core.js")) return "mz";
-      if (fl.includes("js")) {
-        try {
-          const jsFiles = fs.readdirSync(path.join(dir, "js")).map((f) => f.toLowerCase());
-          if (jsFiles.some((f) => f === "rmmz_core.js" || f === "rpg_core.js")) return "mz";
-        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-      }
-
-      // Kirikiri
-      if (fl.some((f) => f.endsWith(".xp3"))) return "krkr";
-
-      // RGSS (XP / VX / VXAce)
-      if (fl.some((f) => f === "game.rvproj2" || f === "game.rxproj" || f === "game.rvproj" || f.endsWith(".rvdata2") || f.endsWith(".rvdata") || f.endsWith(".rxdata"))) {
-        return "rgss";
-      }
-
-      // Wolf RPG
-      if (fl.some((f) => f === "data.wolf" || f === "game.ini" || f === "editor.ini")) return "wolf";
-      if (fl.includes("data")) {
-        try {
-          const sub = fs.readdirSync(path.join(dir, "Data")).map((f) => f.toLowerCase());
-          if (sub.includes("basicdata") || sub.includes("mapdata") || sub.some((f) => f.endsWith(".wolf") || f === "basicdata.zip")) {
-            return "wolf";
-          }
-        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-      }
-
-      // TyranoScript
-      if (fl.some((f) => f === "tyranoscript" || f === "tyranobuilder.html")) return "tyrano";
-
-      // Unity (Presença de pasta <GameName>_Data)
-      if (fl.some((f) => f === baseName + "_data" || (f.endsWith("_data") && fs.statSync(path.join(dir, f)).isDirectory()))) {
-        return "unity";
-      }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  }
-
-  // 2. CHECAGEM VIA CONTEÚDO BINÁRIO DO EXECUTÁVEL (.EXE)
-  if (fs.existsSync(targetFile)) {
-    try {
-      if (buf.includes("RPGVXAce") || buf.includes("RGSS3") || buf.includes("RGSS2")) return "rgss";
-      if (buf.includes("WolfRPG") || buf.includes("Wolf RPG Editor")) return "wolf";
-      if (buf.includes("TyranoBuilder") || buf.includes("tyranoscript")) return "tyrano";
-      if (buf.includes("UnityPlayer") || buf.includes("UnityEngine")) return "unity";
-      if (buf.includes("BootKirikiriZ")) return "krkrz";
-      if (buf.includes("Kirikiri") || buf.includes("TVP")) return "krkr";
-      if (buf.includes("SRPG Studio") || buf.includes("SRPG")) return "srpg";
-      if (buf.includes("SmileBoom") || buf.includes("ActionGameToolkit")) return "agtk";
-      if (buf.includes("Bakin")) return "bakin";
-      if (buf.includes("kmy")) return "kmy";
-      if (buf.includes("www/") || buf.includes("System.png") || buf.includes("rpg_core")) return "mz";
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  }
-
-  if (baseName.includes("rpg") || baseName.includes("game")) return "mz";
-  if (baseName.includes("unity") || baseName.includes("win")) return "unity";
-
+    if (fl.includes("renpy") || fl.some((f) => f.endsWith(".rpy")))
+      return "python";
+    if (fl.some((f) => f.endsWith(".xp3"))) return "krkr";
+    if (
+      fl.some(
+        (f) =>
+          f === "game.rvproj2" || f === "game.rxproj" || f === "game.rvproj"
+      )
+    )
+      return "rgss";
+    if (
+      fl.some(
+        (f) =>
+          f.endsWith(".rvdata2") ||
+          f.endsWith(".rvdata") ||
+          f.endsWith(".rxdata")
+      )
+    )
+      return "rgss";
+    if (
+      fl.some(
+        (f) => f === "data.wolf" || f === "game.ini" || f === "editor.ini"
+      )
+    )
+      return "wolf";
+    if (fl.includes("data")) {
+      try {
+        const sub = fs
+          .readdirSync(path.join(dir, "Data"))
+          .map((f) => f.toLowerCase());
+        if (
+          sub.includes("basicdata") ||
+          sub.includes("mapdata") ||
+          sub.some((f) => f.endsWith(".wolf") || f === "basicdata.zip")
+        )
+          return "wolf";
+      } catch (e) {}
+    }
+    if (fl.some((f) => f === "tyranoscript" || f === "tyranobuilder.html"))
+      return "tyrano";
+  } catch (e) {}
+  if (name.includes("rpg") || name.includes("game")) return "mz";
+  if (name.includes("unity") || name.includes("win")) return "unity";
   return "mz";
 }
 
@@ -194,7 +171,7 @@ function getExeArch(exePath) {
     const machine = machineBuf.readUInt16LE(0);
     if (machine === 0x8664) return 64;
     if (machine === 0x014c) return 32;
-  } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+  } catch (e) {}
   return 32;
 }
 
@@ -211,7 +188,7 @@ function getHookDll(eng, exePath) {
       if (stats.size > 4000000) {
         return "wolfHook.dll";
       }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+    } catch (e) {}
     return "wolfHook3.dll";
   }
   if (eng === "krkrz") {
@@ -245,8 +222,7 @@ function autoWrapText(text, maxChars) {
   }
   if (text.length <= maxChars) return text;
 
-  // Tokenize words and escape codes (supporting single \\ or multiple \\\\ backslashes like \\V[1] or \\C[2])
-  const tokenRegex = /(\\+[A-Za-z0-9_]+(\[[^\]]*\])?|\\+[{}!.\|^$><\\%]|[^\s\\]+|\\)/gi;
+  const tokenRegex = /(\\[A-Za-z]+\[\d+\]|\\[A-Za-z]+|[^\s\\]+|\\)/g;
   const tokens = text.match(tokenRegex) || [];
 
   let lines = [];
@@ -254,14 +230,13 @@ function autoWrapText(text, maxChars) {
   let currentLength = 0;
 
   for (const token of tokens) {
-    const isEscapeToken = /^\\+[A-Za-z0-9_]+(\[[^\]]*\])?/i.test(token) || /^\\+[{}!.\|^$><\\%]/.test(token);
-    const visibleLen = isEscapeToken ? 0 : token.length;
+    const tokenLen = token.length;
 
-    if (currentLength + visibleLen + (currentLength > 0 ? 1 : 0) > maxChars) {
+    if (currentLength + tokenLen + (currentLength > 0 ? 1 : 0) > maxChars) {
       if (currentLine) {
         lines.push(currentLine);
         currentLine = token;
-        currentLength = visibleLen;
+        currentLength = tokenLen;
       } else {
         lines.push(token);
         currentLine = "";
@@ -270,10 +245,10 @@ function autoWrapText(text, maxChars) {
     } else {
       if (currentLine) {
         currentLine += " " + token;
-        currentLength += 1 + visibleLen;
+        currentLength += 1 + tokenLen;
       } else {
         currentLine = token;
-        currentLength = visibleLen;
+        currentLength = tokenLen;
       }
     }
   }
@@ -287,10 +262,10 @@ function patchGameData(gameDir, texts, translations) {
   const dataDir = findDataDir(gameDir);
   if (!dataDir) return 0;
 
-  const transByFile = new Map();
-  for (const t of texts) {
-    const tr = translations.get(t.id);
-    if (!tr || tr === t.clean || tr.trim().length === 0) continue;
+   const transByFile = new Map();
+   for (const t of texts) {
+     const tr = translations.get(t.id);
+     if (typeof tr !== "string" || !tr || tr === t.clean || tr.trim().length === 0) continue;
     if (!transByFile.has(t.file)) transByFile.set(t.file, new Map());
     transByFile.get(t.file).set(JSON.stringify(t.keys), {
       tr,
@@ -327,7 +302,7 @@ function patchGameData(gameDir, texts, translations) {
                       patchParamObject(parsed, [...keys, "__json__"]);
                       return JSON.stringify(parsed);
                     }
-                  } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+                  } catch (e) {}
                 }
 
                 if (isJsCode(val)) {
@@ -402,6 +377,7 @@ function patchGameData(gameDir, texts, translations) {
               if (p.parameters) {
                 for (const k in p.parameters) {
                   p.parameters[k] = patchParam(p.parameters[k], [
+                    "__plugins__",
                     pIdx,
                     "parameters",
                     k,
@@ -426,9 +402,11 @@ function patchGameData(gameDir, texts, translations) {
       continue;
     }
 
-    try {
-      const raw = fs.readFileSync(path.join(dataDir, file), "utf8");
-      const data = JSON.parse(raw);
+    // Only process JSON files in the main JSON handler
+    if (file.endsWith(".json")) {
+      try {
+        const raw = fs.readFileSync(path.join(dataDir, file), "utf8");
+        const data = JSON.parse(raw);
       let fileModified = false;
       for (const [keyStr, entry] of fileTrans) {
         const keys = JSON.parse(keyStr);
@@ -456,18 +434,6 @@ function patchGameData(gameDir, texts, translations) {
         if (!success) continue;
         const lastKey = realKeys[realKeys.length - 1];
         if (obj && typeof obj === "object" && lastKey in obj) {
-          const SKIP_KEYS = new Set([
-            "characterName", "battlerName", "faceName", "parallaxName",
-            "battleback1Name", "battleback2Name", "pictureName", "title1Name",
-            "title2Name", "bgName", "seName", "bgmName", "fontFace",
-            "fontFileName", "file", "fileName", "graphic", "src", "path",
-            "url", "icon", "audio", "bgm", "bgs", "me", "se", "note",
-            "code", "meta"
-          ]);
-          if (typeof lastKey === "string" && SKIP_KEYS.has(lastKey)) {
-            continue;
-          }
-
           const origVal = String(obj[lastKey]).trim();
           if (
             /\.(png|jpg|jpeg|gif|bmp|webp|ogg|wav|mp3|m4a|json|efkefc|atlas|skel)$/i.test(origVal) ||
@@ -503,6 +469,12 @@ function patchGameData(gameDir, texts, translations) {
             }
           } else {
             const parentCmd = getValueAtPath(data, realKeys.slice(0, -2));
+            if (
+              parentCmd &&
+              (parentCmd.code === 355 || parentCmd.code === 655)
+            ) {
+              restored = "テキスト-" + restored;
+            }
             if (parentCmd && parentCmd.code === 401) {
               const cfg = loadCfg();
               const wrapLimit = parseInt(cfg.wordWrapLimit, 10) || 0;
@@ -529,9 +501,166 @@ function patchGameData(gameDir, texts, translations) {
     } catch (e) {
       global.log("error", `Falha ao patchear arquivo ${file}: ${e.message}`);
     }
-  }
-  global.log("success", "Patched " + count + " texts");
-  return count;
+    }
+
+    const normFile = file.replace(/\\/g, "/");
+
+    // === Handler para arquivos .js de plugins individuais ===
+    // DISABLED: Bug com escape de aspas — re-ativa com fix robusto
+    /*
+    if (normFile.startsWith("js/plugins/") && normFile.endsWith(".js")) {
+      try {
+        const pluginPath = path.join(findGameRoot(gameDir), normFile);
+        if (fs.existsSync(pluginPath)) {
+          let content = fs.readFileSync(pluginPath, "utf8");
+          let fileModifiedJs = false;
+          const STR_RE = /(["'])((?:[^"'\x5C]|\\.)*?)\1/g;
+          let match;
+          const replacements = [];
+          while ((match = STR_RE.exec(content)) !== null) {
+            const literal = match[0];
+            const inner = match[2];
+            if (!isTranslatableText(inner)) continue;
+
+            // keys do extractor são [0, "raw", matchIndex]
+            const lookupKey = JSON.stringify([0, "raw", match.index]);
+            if (fileTrans.has(lookupKey)) {
+              const entry = fileTrans.get(lookupKey);
+              const restored = restoreEscapeCodes(entry.tr, entry.escapeParts);
+              const escapedForJs = restored.replace(/\\/g, "\\\\").replace(/(["'])/g, "\\$1");
+              const newLiteral = match[1] + escapedForJs + match[1];
+              if (content.includes(literal)) {
+                replacements.push({ old: literal, new: newLiteral });
+              }
+            }
+          }
+          for (const r of replacements) {
+            content = content.replace(r.old, r.new);
+            fileModifiedJs = true;
+            count++;
+          }
+          if (fileModifiedJs) {
+            fs.writeFileSync(pluginPath, content, "utf8");
+            global.log("info", `Arquivo de plugin patcheado: js/plugins/${path.basename(file)}`);
+          }
+        }
+      } catch (e) {
+        global.log("error", `Falha ao patchear plugin ${file}: ${e.message}`);
+      }
+    }
+    */
+
+    // === Handler para arquivos .txt de tilesets ===
+    if (normFile.startsWith("img/tilesets/") && normFile.endsWith(".txt")) {
+      try {
+        const txtPath = path.join(findGameRoot(gameDir), normFile);
+        if (fs.existsSync(txtPath)) {
+          const content = fs.readFileSync(txtPath, "utf8");
+          const lines = content.split(/\r?\n/);
+          const lookupByLineIdx = new Map();
+          for (const [keyStr, entry] of fileTrans) {
+            const keys = JSON.parse(keyStr);
+            const lineIdx = keys[0];
+            lookupByLineIdx.set(lineIdx, entry);
+          }
+          let modified = false;
+          for (const [keyStr, entry] of fileTrans) {
+            const keys = JSON.parse(keyStr);
+            const lineIdx = keys[0];
+            if (lookupByLineIdx.has(lineIdx)) {
+              const e = lookupByLineIdx.get(lineIdx);
+              const line = lines[lineIdx];
+              if (!line) continue;
+              const restored = restoreEscapeCodes(e.tr, e.escapeParts);
+              const pipeIdx = line.indexOf('|');
+              if (pipeIdx !== -1) {
+                const newLine = line.substring(0, pipeIdx + 1) + restored;
+                lines[lineIdx] = newLine;
+                modified = true;
+                count++;
+              } else {
+                lines[lineIdx] = restored;
+                modified = true;
+                count++;
+              }
+            }
+          }
+          if (modified) {
+            fs.writeFileSync(txtPath, lines.join('\n'), 'utf8');
+            global.log("info", `Arquivo de tileset patcheado: ${path.basename(file)}`);
+          }
+        }
+      } catch (e) {
+        global.log("error", `Falha ao patchear tileset ${file}: ${e.message}`);
+      }
+    }
+
+    // === Handler para arquivos .csv ===
+    if (normFile.endsWith(".csv")) {
+      try {
+        const csvPath = path.join(dataDir, file);
+        if (fs.existsSync(csvPath)) {
+          const content = fs.readFileSync(csvPath, "utf8");
+          const lines = content.split(/\r?\n/);
+          const header = lines[0] ? lines[0].split(",") : [];
+          const textColIdx = header.findIndex(h => h.trim() === "text" || h.trim() === "memo");
+          if (textColIdx === -1) continue;
+
+          let modified = false;
+          for (const [keyStr, entry] of fileTrans) {
+            const keys = JSON.parse(keyStr);
+            const lineIdx = keys[0];
+            const colIdx = keys[1];
+            if (colIdx !== textColIdx) continue;
+            if (lineIdx < lines.length) {
+              const cols = lines[lineIdx].split(",");
+              if (cols.length > colIdx) {
+                const restored = restoreEscapeCodes(entry.tr, entry.escapeParts);
+                cols[colIdx] = restored;
+                lines[lineIdx] = cols.join(",");
+                modified = true;
+                count++;
+              }
+            }
+          }
+          if (modified) {
+            fs.writeFileSync(csvPath, lines.join("\n"), "utf8");
+            global.log("info", `Arquivo CSV patcheado: ${file}`);
+          }
+        }
+      } catch (e) {
+        global.log("error", `Falha ao patchear CSV ${file}: ${e.message}`);
+      }
+    }
+
+    // === Handler para index.html ===
+    if (normFile.endsWith("index.html")) {
+      try {
+        const htmlPath = path.join(findGameRoot(gameDir), normFile);
+        if (fs.existsSync(htmlPath)) {
+          let content = fs.readFileSync(htmlPath, "utf8");
+          let modified = false;
+          for (const [keyStr, entry] of fileTrans) {
+            const keys = JSON.parse(keyStr);
+            if (keys[0] === "title") {
+              const restored = restoreEscapeCodes(entry.tr, entry.escapeParts);
+              content = content.replace(/<title>[\s\S]*?<\/title>/i, `<title>${restored}</title>`);
+              modified = true;
+              count++;
+            }
+          }
+          if (modified) {
+            fs.writeFileSync(htmlPath, content, "utf8");
+            global.log("info", `Título do HTML patcheado: ${file}`);
+          }
+        }
+      } catch (e) {
+        global.log("error", `Falha ao patchear HTML ${file}: ${e.message}`);
+      }
+    }
+   }
+   global.log("success", "Patched " + count + " texts");
+   return count;
 }
 
 function backupGameData(gameDir) {
@@ -545,13 +674,24 @@ function backupGameData(gameDir) {
     if (fs.existsSync(htmlPath)) {
       try {
         fs.copyFileSync(htmlPath, path.join(bakDir, "index.html"));
-      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+      } catch (e) {}
     }
     const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
     if (fs.existsSync(pluginsJsPath)) {
       try {
         fs.copyFileSync(pluginsJsPath, path.join(bakDir, "plugins.js_bak"));
-      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+      } catch (e) {}
+    }
+    const pluginsDir = path.join(wwwDir, "js", "plugins");
+    if (fs.existsSync(pluginsDir)) {
+      try {
+        const pluginsBakDir = path.join(bakDir, "js_plugins_bak");
+        fs.mkdirSync(pluginsBakDir, { recursive: true });
+        const pluginFiles = fs.readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
+        for (const f of pluginFiles) {
+          fs.copyFileSync(path.join(pluginsDir, f), path.join(pluginsBakDir, f));
+        }
+      } catch (e) {}
     }
     global.log("info", "Backup: " + path.basename(bakDir));
     return bakDir;
@@ -577,7 +717,7 @@ function restoreGameData(bakDir) {
         const htmlPath = path.join(wwwDir, "index.html");
         if (fs.existsSync(htmlPath)) fs.unlinkSync(htmlPath);
         fs.copyFileSync(bakHtml, htmlPath);
-      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+      } catch (e) {}
     }
     const bakPlugins = path.join(bakDir, "plugins.js_bak");
     const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
@@ -585,13 +725,13 @@ function restoreGameData(bakDir) {
       try {
         if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
         fs.copyFileSync(bakPlugins, pluginsJsPath);
-      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+      } catch (e) {}
     }
     const cheatScript = path.join(wwwDir, "CheatOverlay.js");
     if (fs.existsSync(cheatScript)) {
       try {
         fs.unlinkSync(cheatScript);
-      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+      } catch (e) {}
     }
     fs.rmSync(bakDir, { recursive: true, force: true });
     global.log("info", "Restored original data from backup");
@@ -646,7 +786,20 @@ function restoreOldestBackup(gameDir) {
         try {
           if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
           fs.copyFileSync(bakPlugins, pluginsJsPath);
-        } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+        } catch (e) {}
+      }
+
+      const pluginsBakDir = path.join(oldestBak, "js_plugins_bak");
+      const pluginsDir = path.join(wwwDir, "js", "plugins");
+      if (fs.existsSync(pluginsBakDir) && fs.existsSync(pluginsDir)) {
+        try {
+          const bakPlugins = fs.readdirSync(pluginsBakDir).filter(f => f.endsWith(".js"));
+          for (const f of bakPlugins) {
+            const dest = path.join(pluginsDir, f);
+            if (fs.existsSync(dest)) fs.unlinkSync(dest);
+            fs.copyFileSync(path.join(pluginsBakDir, f), dest);
+          }
+        } catch (e) {}
       }
 
       for (const bak of backups) {
@@ -665,51 +818,23 @@ function restoreOldestBackup(gameDir) {
 }
 
 function checkProcessRunning() {
-  if (!global.launchedKey) return { key: null, running: false, exitCode: null };
-
-  if (global.lastRpcTimestamp && (Date.now() - global.lastRpcTimestamp < 60000)) {
-    return { key: global.launchedKey, running: true, exitCode: null };
+  if (!global.launchedProc) return { key: null, running: false, exitCode: null };
+  try {
+    const ec = global.launchedProc.exitCode;
+    return ec === null
+      ? { key: global.launchedKey, running: true, exitCode: null }
+      : { key: null, running: false, exitCode: ec };
+  } catch (e) {
+    return { key: null, running: false, exitCode: null };
   }
-
-  if (global.launchedPid && global.launchedPid > 0) {
-    try {
-      process.kill(global.launchedPid, 0);
-      return { key: global.launchedKey, running: true, exitCode: null };
-    } catch (e) {
-      if (e.code === 'ESRCH') {
-        global.launchedPid = null;
-      } else {
-        global.log("warn", `gameEngine: ${e.message}`);
-      }
-    }
-  }
-
-  if (global.launchTime && (Date.now() - global.launchTime < 15000)) {
-    return { key: global.launchedKey, running: true, exitCode: null };
-  }
-
-  if (global.launchedProc) {
-    try {
-      const ec = global.launchedProc.exitCode;
-      if (ec === null) {
-        return { key: global.launchedKey, running: true, exitCode: null };
-      }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  }
-
-  return { key: null, running: false, exitCode: global.launchedProc?.exitCode ?? 0 };
 }
 
 async function findGameOnDisk(fileName) {
   const fsp = fs.promises;
-  const desktopPath = path.join(os.homedir(), "Desktop");
   const roots = [
-    desktopPath,
-    path.join(desktopPath, "Nova pasta"),
-    path.join(os.homedir(), "Downloads"),
-    path.join(os.homedir(), "Documents"),
     path.resolve(global.ROOT, ".."),
     path.resolve(global.ROOT, "..", ".."),
+    path.join(os.homedir(), "Desktop"),
   ];
   const results = [];
 
@@ -718,7 +843,7 @@ async function findGameOnDisk(fileName) {
       if (!(await fsp.stat(root).catch(() => null))) continue;
 
       async function scan(dir, depth) {
-        if (depth > 4) return;
+        if (depth > 3) return;
         try {
           const entries = await fsp.readdir(dir, { withFileTypes: true });
           for (const e of entries) {
@@ -727,12 +852,11 @@ async function findGameOnDisk(fileName) {
             try {
               const target = path.join(sub, fileName);
               const st = await fsp.stat(target).catch(() => null);
-              if (st && st.isFile()) {
-                const detectedEng = detectEngine(target, sub);
+              if (st) {
                 results.push({
                   name: e.name,
                   exePath: target,
-                  engine: detectedEng,
+                  engine: "mz",
                   size: st.size,
                   mtime: st.mtimeMs,
                 });
@@ -764,7 +888,7 @@ async function runPythonScript(scriptPath, args) {
   const localPython = path.join(
     global.ROOT,
     "resources",
-    "unity",
+    "renpy",
     "python",
     "python.exe"
   );
@@ -880,7 +1004,177 @@ function healGameData(gameDir) {
     global.log("warn", "Autocorreção de Áudio falhou: " + e.message);
   }
 
-  healFonts(gameDir);
+   healFonts(gameDir);
+}
+
+function restoreEngineData(gameDir) {
+  const dataDir = findDataDir(gameDir);
+  if (!dataDir) return;
+  const sysPath = path.join(dataDir, "System.json");
+  if (!fs.existsSync(sysPath)) return;
+
+  const restoreScript = path.join(global.ROOT, "restore_rpgmaker.py");
+  const configPath = path.join(global.ROOT, "restore_config.json");
+  if (!fs.existsSync(restoreScript)) {
+    global.log("warn", "restore_rpgmaker.py não encontrado, pulando engine restore");
+    return;
+  }
+
+  const baseName = path.basename(dataDir);
+  const parentDir = path.dirname(dataDir);
+
+  // Find existing backup directories (data_bak_*) - created by a prior
+  // OpenTranslator run or by the game itself.
+  const backups = [];
+  try {
+    const items = fs.readdirSync(parentDir);
+    for (const item of items) {
+      const itemPath = path.join(parentDir, item);
+      if (
+        fs.statSync(itemPath).isDirectory() &&
+        new RegExp("^" + baseName + "_bak_(\\d+)$").test(item)
+      ) {
+        backups.push({ path: itemPath, name: item });
+      }
+    }
+  } catch (e) {
+    global.log("warn", "Falha ao buscar backups de engine: " + e.message);
+  }
+
+  // Phase 1: Diff-based restore against the NEWEST backup (if any exists).
+  // Reverts translation-corrupted event commands, plugin params, filenames,
+  // and protected System.json sections by diffing against the backup.
+  if (backups.length > 0) {
+    backups.sort((a, b) => b.name.localeCompare(a.name));
+    const newestBackup = backups[0].path;
+    const out = spawnSync(
+      "python",
+      [restoreScript, "--dry-run", newestBackup, dataDir, configPath],
+      {
+        cwd: path.dirname(restoreScript),
+        encoding: "utf-8",
+        timeout: 60000,
+        maxBuffer: 50 * 1024 * 1024,
+      }
+    );
+    const stdout = (out.stdout || "") + (out.stderr || "") || "";
+    let m = stdout.match(/Forced replacements:\s+(\d+)/);
+    if (m) global.log("info", "Engine restore (dry-run) forced replacements: " + m[1]);
+    if (out.status === 0) {
+      spawnSync(
+        "python",
+        [restoreScript, newestBackup, dataDir, configPath],
+        {
+          cwd: path.dirname(restoreScript),
+          encoding: "utf-8",
+          timeout: 120000,
+          maxBuffer: 50 * 1024 * 1024,
+        }
+      );
+      global.log("info", "Engine restore aplicado com sucesso via restore_rpgmaker.py (diff-based)");
+    } else {
+      global.log("warn", "restore_rpgmaker.py diff-based falhou: " + stdout.slice(0, 300));
+    }
+  }
+
+  // Phase 2: Standalone generic patterns. Applies PT/ES/FR/DE/IT → JA
+  // mappings to any game regardless of backup state. Needed when:
+  //   - Backup files are NOT true original Japanese (e.g. umi no ie where
+  //     backup already contains Portuguese, so diff-based restore cannot
+  //     recover Japanese).
+  //   - No backup dir exists at all (e.g. MBFK).
+  // Idempotent: if commands are already Japanese, no-op.
+  const out2 = spawnSync(
+    "python",
+    [restoreScript, "--standalone", "--dry-run", dataDir, configPath],
+    {
+      cwd: path.dirname(restoreScript),
+      encoding: "utf-8",
+      timeout: 60000,
+      maxBuffer: 50 * 1024 * 1024,
+    }
+  );
+  const stdout2 = (out2.stdout || "") + (out2.stderr || "") || "";
+  let m2 = stdout2.match(/Forced replacements:\s+(\d+)/);
+  if (m2) global.log("info", "Standalone generic forced replacements: " + m2[1]);
+  if (out2.status === 0) {
+    spawnSync(
+      "python",
+      [restoreScript, "--standalone", dataDir, configPath],
+      {
+        cwd: path.dirname(restoreScript),
+        encoding: "utf-8",
+        timeout: 120000,
+        maxBuffer: 50 * 1024 * 1024,
+      }
+    );
+  }
+}
+
+function injectLatinNameInput(gameDir) {
+  const dataDir = findDataDir(gameDir);
+  if (!dataDir) return false;
+  const wwwDir = path.dirname(dataDir);
+  const pluginsDir = path.join(wwwDir, "js", "plugins");
+  const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
+
+  try {
+    const sys = JSON.parse(fs.readFileSync(path.join(dataDir, "System.json"), "utf8"));
+    const locale = (sys.locale || "").toLowerCase();
+    if (!/^ja/.test(locale)) return false;
+  } catch (e) {
+    return false;
+  }
+
+  const srcPlugin = path.join(global.ROOT, "resources", "rpgmaker", "LatinNameInput.js");
+  if (!fs.existsSync(srcPlugin)) {
+    global.log("warn", "LatinNameInput.js template não encontrado");
+    return false;
+  }
+
+  if (!fs.existsSync(pluginsDir)) {
+    fs.mkdirSync(pluginsDir, { recursive: true });
+  }
+  const destPlugin = path.join(pluginsDir, "LatinNameInput.js");
+  const shouldCopy = !fs.existsSync(destPlugin) ||
+    fs.readFileSync(srcPlugin, "utf8") !== fs.readFileSync(destPlugin, "utf8");
+  if (shouldCopy) {
+    fs.copyFileSync(srcPlugin, destPlugin);
+    global.log("info", "LatinNameInput.js injetado/atualizado em js/plugins/");
+  }
+
+  if (fs.existsSync(pluginsJsPath)) {
+    try {
+      const content = fs.readFileSync(pluginsJsPath, "utf8");
+      const startIdx = content.indexOf("[");
+      const endIdx = content.lastIndexOf("]");
+      if (startIdx >= 0 && endIdx >= 0 && endIdx > startIdx) {
+        const jsonStr = content.slice(startIdx, endIdx + 1);
+        const plugins = JSON.parse(jsonStr);
+        // Remove any existing LatinNameInput entry (may be stale/out-of-order),
+        // then re-append at the END so it loads AFTER all dev plugins —
+        // guaranteeing our table() override wins priority.
+        const filtered = plugins.filter(
+          (p) => !(p && p.name === "LatinNameInput")
+        );
+        filtered.push({
+          name: "LatinNameInput",
+          status: true,
+          description: "latin-name-input",
+          parameters: {},
+        });
+        const newJson = JSON.stringify(filtered, null, 2);
+        const newContent =
+          content.slice(0, startIdx) + newJson + content.slice(endIdx + 1);
+        fs.writeFileSync(pluginsJsPath, newContent, "utf8");
+        global.log("info", "LatinNameInput posicionado como último em plugins.js (" + filtered.length + " plugins)");
+        return true;
+      }
+    } catch (e) {
+      global.log("warn", "Falha ao registrar LatinNameInput em plugins.js: " + e.message);
+    }
+  }
+  return false;
 }
 
 function healFonts(gameDir) {
@@ -928,7 +1222,7 @@ function healFonts(gameDir) {
                 "info",
                 `Self-Healing Fontes: Criado alias de fonte automático "${alias}" a partir de "${f}".`
               );
-            } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
+            } catch (e) {}
           }
         }
       }
@@ -938,11 +1232,16 @@ function healFonts(gameDir) {
   }
 }
 
-async function executeTranslationPipeline(gameDir, cfg, title) {
+async function executeTranslationPipeline(gameDir, cfg, title, engineType = "generic") {
   global.log("info", "Iniciando pipeline de tradução para: " + (title || gameDir));
 
-  restoreOldestBackup(gameDir);
-  healGameData(gameDir);
+  clearEngineBans();
+  global.CURRENT_ENGINE = engineType;
+
+   restoreOldestBackup(gameDir);
+   healGameData(gameDir);
+   restoreEngineData(gameDir);
+   injectLatinNameInput(gameDir);
 
   global.log("info", "Criando backup dos arquivos de dados...");
   const bakDir = backupGameData(gameDir);
@@ -966,7 +1265,7 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
   const sl = cfg.sl || "auto";
   const tl = cfg.tl || "pt";
   const engine = cfg.engine || "google";
-  const cfgKey = sl + "|" + tl + "|" + engine;
+  const cfgKey = sl + "|" + tl + "|" + engineType;
 
   if (fs.existsSync(cacheFile)) {
     try {
@@ -984,7 +1283,7 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
   let globalCacheMatches = 0;
   let commonMatches = 0;
 
-  const globalLangCache = loadGlobalCacheForLang(sl, tl, engine);
+  const globalLangCache = loadGlobalCacheForLang(sl, tl, engineType);
   const commonTrans = loadCommonTranslations();
 
   if (cacheTranslations) {
@@ -1000,29 +1299,13 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
   for (const t of texts) {
     if (translations.has(t.id)) continue;
 
-    const orig = t.original ? t.original.trim() : "";
-    const clean = t.clean ? t.clean.trim() : "";
-    const cleanNoTags = clean ? clean.replace(/\\[VvNnCcGgPpIi](\[\d+\])?/g, "").replace(/\\[A-Za-z]+(\[\d+\])?/g, "").trim() : "";
-
-    const norm = (s) => {
-      if (typeof s !== "string") return s;
-      let r = s.trim();
-      if (r.length >= 2 && ((r[0] === '"' && r[r.length - 1] === '"') || (r[0] === "'" && r[r.length - 1] === "'"))) {
-        r = r.slice(1, -1);
-      }
-      return r;
-    };
-
-    const cachedTr = globalLangCache[orig] || globalLangCache[clean] || (cleanNoTags ? globalLangCache[cleanNoTags] : null)
-      || globalLangCache[norm(orig)] || globalLangCache[norm(clean)] || (cleanNoTags ? globalLangCache[norm(cleanNoTags)] : null);
-
-    if (cachedTr) {
-      translations.set(t.id, cachedTr);
+    if (globalLangCache[t.clean]) {
+      translations.set(t.id, globalLangCache[t.clean]);
       globalCacheMatches++;
       continue;
     }
 
-    const commonTr = getCommonTranslation(clean || orig, sl, tl, commonTrans);
+    const commonTr = getCommonTranslation(t.clean, sl, tl, commonTrans);
     if (commonTr) {
       translations.set(t.id, commonTr);
       commonMatches++;
@@ -1050,7 +1333,7 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
       glossary,
       (toSaveChunk) => {
         if (toSaveChunk && toSaveChunk.length > 0) {
-          saveNewGlobalTranslations(sl, tl, toSaveChunk, engine);
+          saveNewGlobalTranslations(sl, tl, toSaveChunk, engineType);
           savedCount += toSaveChunk.length;
         }
       }
@@ -1065,41 +1348,12 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
       }
     }
     if (toSave.length > savedCount) {
-      saveNewGlobalTranslations(sl, tl, toSave);
+      saveNewGlobalTranslations(sl, tl, toSave, engineType);
     }
     global.log(
       "info",
       `Cache global SQLite atualizado incrementalmente com ${toSave.length} novas traduções.`
     );
-  }
-
-  // ===== VERIFICAÇÃO DE INTEGRIDADE =====
-  // Ao iniciar, confere se TODOS os textos extraídos têm tradução aplicada.
-  // Textos novos (jogo atualizado) ou falhas do motor ficam sem tradução e
-  // são reportados por arquivo — a re-extração já acontece a cada boot, então
-  // quando o motor responder, os faltantes são traduzidos automaticamente.
-  const untranslatedByFile = new Map();
-  for (const t of texts) {
-    const tr = translations.get(t.id);
-    if (!tr || tr === t.clean || tr.trim().length === 0) {
-      untranslatedByFile.set(t.file, (untranslatedByFile.get(t.file) || 0) + 1);
-    }
-  }
-  const untranslatedCount = [...untranslatedByFile.values()].reduce((a, b) => a + b, 0);
-  const pct = texts.length > 0 ? Math.round(((texts.length - untranslatedCount) / texts.length) * 100) : 100;
-  global.log(
-    "info",
-    `[Integridade] ${texts.length - untranslatedCount}/${texts.length} textos traduzidos (${pct}%).`
-  );
-  if (untranslatedCount > 0) {
-    global.log(
-      "warn",
-      `[Integridade] ${untranslatedCount} textos SEM tradução — provável motor bloqueado/rate-limited ou arquivos novos do jogo. Top arquivos:`
-    );
-    const top = [...untranslatedByFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-    for (const [f, c] of top) {
-      global.log("warn", `  ${f}: ${c} textos faltando`);
-    }
   }
 
   try {
@@ -1123,6 +1377,13 @@ async function executeTranslationPipeline(gameDir, cfg, title) {
     "success",
     `Pipeline concluído. Substituídos ${patched} textos nos arquivos do jogo.`
   );
+
+  // RE-RESTORE engine data AFTER patching — patchGameData may have
+  // re-translated System.json terms.commands from JP -> PT (translating UI
+  // command names like lutar→たたかう which should be reverted back to JP).
+  // restoreEngineData standalone mode converts PT menu commands back to JP.
+  global.log("info", "Re-restaurando dados de engine pós-tradução...");
+  restoreEngineData(gameDir);
 
   const dataDir = findDataDir(gameDir);
   if (dataDir) {
@@ -1161,108 +1422,23 @@ function getValueAtPath(obj, pathArr) {
   return cur;
 }
 
-function detectRenpyVersion(gameDir) {
-  if (!gameDir || !fs.existsSync(gameDir)) {
-    return { major: 7, minor: 4, patch: 0, raw: "7.4.0" };
-  }
-
-  // 1. Check log.txt
-  const logPath = path.join(gameDir, "log.txt");
-  if (fs.existsSync(logPath)) {
-    try {
-      const content = fs.readFileSync(logPath, "utf8");
-      const match = content.match(/Ren'Py\s+([0-9]+\.[0-9]+\.[0-9]+)/i);
-      if (match) {
-        const parts = match[1].split(".").map(n => parseInt(n, 10));
-        return { major: parts[0] || 7, minor: parts[1] || 0, patch: parts[2] || 0, raw: match[1] };
-      }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  }
-
-  // 2. Check lib/ folder structure for Python 3 vs Python 2
-  const libDir = path.join(gameDir, "lib");
-  if (fs.existsSync(libDir)) {
-    try {
-      const entries = fs.readdirSync(libDir);
-      if (entries.some(e => e.includes("py3") || e.includes("python3"))) {
-        if (entries.some(e => e.includes("8.5") || e.includes("py3.11"))) {
-          return { major: 8, minor: 5, patch: 0, raw: "8.5.0" };
-        }
-        return { major: 8, minor: 2, patch: 0, raw: "8.2.0" };
-      }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  }
-
-  // 3. Check renpy/vc_version.py if present
-  const vcPath = path.join(gameDir, "renpy", "vc_version.py");
-  if (fs.existsSync(vcPath)) {
-    try {
-      const content = fs.readFileSync(vcPath, "utf8");
-      const match = content.match(/official_version\s*=\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]/);
-      if (match) {
-        const parts = match[1].split(".").map(n => parseInt(n, 10));
-        return { major: parts[0] || 7, minor: parts[1] || 0, patch: parts[2] || 0, raw: match[1] };
-      }
-    } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-  }
-
-  return { major: 7, minor: 4, patch: 0, raw: "7.4.0" };
-}
-
-function resolveRouterEngineType(exePath, gameDir) {
-  const dir = gameDir || (exePath ? path.dirname(exePath) : "");
-  const baseEng = detectEngine(exePath, dir);
-
-  if (baseEng === "python") {
-    const v = detectRenpyVersion(dir);
-    return v.major >= 8 ? "RENPY_8" : "RENPY_7";
-  }
-
-  if (baseEng === "rgss") {
-    if (dir && fs.existsSync(path.join(dir, "Data"))) {
-      try {
-        const files = fs.readdirSync(path.join(dir, "Data")).map(f => f.toLowerCase());
-        if (files.some(f => f.endsWith(".rvdata2") || f === "game.rvproj2")) return "RPG_MAKER_VX_ACE";
-        if (files.some(f => f.endsWith(".rvdata") || f === "game.rvproj")) return "RPG_MAKER_VX";
-        if (files.some(f => f.endsWith(".rxdata") || f === "game.rxproj")) return "RPG_MAKER_XP";
-      } catch (e) { global.log("warn", `gameEngine: ${e.message}`); }
-    }
-    return "RPG_MAKER_VX_ACE";
-  }
-
-  if (baseEng === "mz") {
-    if (dir) {
-      const isMz = !fs.existsSync(path.join(dir, "www"));
-      return isMz ? "RPG_MAKER_MZ" : "RPG_MAKER_MV";
-    }
-    return "RPG_MAKER_MZ";
-  }
-
-  if (baseEng === "RENPY_7" || baseEng === "RENPY_8" || (typeof baseEng === 'string' && baseEng.startsWith("RPG_MAKER"))) {
-    return baseEng;
-  }
-
-  return "RPG_MAKER_MZ";
-}
-
 module.exports = {
   ENGINES_DEF,
   findDataDir,
-  unpackNwExe,
+  findGameRoot,
   detectEngine,
-  detectRenpyVersion,
-  resolveRouterEngineType,
   getExeArch,
   getHookDll,
   autoWrapText,
   patchGameData,
-  backupGameData,
-  restoreGameData,
-  restoreOldestBackup,
+   backupGameData,
+   restoreGameData,
+   restoreOldestBackup,
+   restoreEngineData,
+   injectLatinNameInput,
   checkProcessRunning,
   findGameOnDisk,
   runPythonScript,
   healGameData,
   executeTranslationPipeline
 };
-
