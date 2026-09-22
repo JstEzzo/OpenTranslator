@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-09-16T18:01:06.613Z",
+  "identity": {
+    "gameId": "0b41aae59c671142b0e580ab29fa21b9",
+    "gameName": "BLACK SOULS",
+    "exeHash": "e5435c0e86a8181a",
+    "exeSize": 140800,
+    "fileCount": 18
+  },
+  "engine": {
+    "primary": "RPG Maker XP/VX/VX Ace",
+    "candidates": [
+      {
+        "engine": "RPG Maker XP/VX/VX Ace",
+        "engineId": "rpgmaker_rgss",
+        "confidence": 0.27,
+        "positiveEvidence": [
+          "Game.ini",
+          "RGSS301.dll"
+        ],
+        "contradictions": [],
+        "missingEvidence": [
+          "RGSS104E.dll",
+          "RGSS202E.dll",
+          "Data/System.rxdata",
+          "Data/System.rvdata",
+          "Data/System.rvdata2"
+        ]
+      }
+    ],
+    "isUnknown": true
+  },
+  "runtime": [
+    "Ruby VM (RGSS)"
+  ],
+  "renderer": [],
+  "packaging": [
+    "RGSS Encrypted Archive"
+  ],
+  "textSystems": [],
+  "strategies": [
+    {
+      "id": "primary",
+      "name": "RPG Maker XP/VX/VX Ace",
+      "status": "READY",
+      "confidence": 0.95,
+      "risk": "LOW"
+    }
+  ],
+  "readiness": "EXPERIMENTAL",
+  "lastTested": "2026-09-16T18:01:06.613Z"
+}

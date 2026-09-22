@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-09-16T18:01:06.334Z",
+  "identity": {
+    "gameId": "a48a4a623699f93b564cdd91d0a08be6",
+    "gameName": "ArmoredSuitSolganteRenpy0.2-pc",
+    "exeHash": "eccc994dcea470fe",
+    "exeSize": 104448,
+    "fileCount": 11
+  },
+  "engine": {
+    "primary": "Ren'Py",
+    "candidates": [
+      {
+        "engine": "Ren'Py",
+        "engineId": "renpy",
+        "confidence": 0.16,
+        "positiveEvidence": [
+          "renpy"
+        ],
+        "contradictions": [],
+        "missingEvidence": [
+          "game/options.rpy",
+          "game/screens.rpy",
+          "game/script.rpy",
+          "lib/py3-windows-x86_64",
+          "lib/windows-i686"
+        ]
+      }
+    ],
+    "isUnknown": true
+  },
+  "runtime": [
+    "V8 / Chromium"
+  ],
+  "renderer": [
+    "WebGL (Chromium Canvas)"
+  ],
+  "packaging": [
+    "Ren'Py Archive",
+    "Loose JSON / Web Files"
+  ],
+  "textSystems": [
+    "Ren'Py Text Displayable"
+  ],
+  "strategies": [
+    {
+      "id": "primary",
+      "name": "Ren'Py",
+      "status": "READY",
+      "confidence": 0.95,
+      "risk": "LOW"
+    }
+  ],
+  "readiness": "EXPERIMENTAL",
+  "lastTested": "2026-09-16T18:01:06.334Z"
+}

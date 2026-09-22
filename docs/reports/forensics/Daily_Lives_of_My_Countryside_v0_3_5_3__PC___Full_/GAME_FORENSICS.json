@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-09-16T17:36:26.739Z",
+  "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Daily Lives of My Countryside v0.3.5.3 (PC) (Full)",
+  "targetDir": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Daily Lives of My Countryside v0.3.5.3 (PC) (Full)",
+  "engine": {
+    "type": "mv",
+    "version": "MV 1.x",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": []
+  },
+  "executable": {
+    "path": "Game.exe",
+    "arch": "x64",
+    "subsystem": "Windows GUI",
+    "isDotNet": false,
+    "sectionCount": 10
+  },
+  "strategies": {
+    "native_tl": {
+      "name": "Tradução Nativa (.rpy / tl)",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta pastas de tradução Ren'Py."
+    },
+    "static_patch": {
+      "name": "Modificação Segura de Arquivos Estáticos",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Estrutura JSON em data/ íntegra para injeção transacional."
+    },
+    "runtime_hook": {
+      "name": "Runtime Hook",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta hook Unity."
+    },
+    "dom_bridge": {
+      "name": "Live DOM Observer Bridge",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Aplicação não utiliza renderizador Web/DOM."
+    },
+    "ocr": {
+      "name": "OCR de Tela Adaptativo",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Fallback universal via captura de janela e OCR de texto visível."
+    }
+  },
+  "recommendedStrategy": "Modificação Segura de Arquivos Estáticos",
+  "fallbacks": [
+    "OCR de Tela Adaptativo"
+  ],
+  "blockedStrategies": [],
+  "logsDetected": []
+}

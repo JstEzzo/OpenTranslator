@@ -1,7 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { exec, spawnSync } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { handlers } = require("./rpcHandlers");
 
 const MIME = {
@@ -22,48 +22,21 @@ global.hasHadClient = false;
 global.SESSION_START = Date.now();
 global.SESSION_TOKEN = Math.random().toString(36).slice(2);
 
-const loggerManager = require("./loggerManager");
-
 function terminateAllProcessesAndExit(reason) {
-  loggerManager.info(`[Shutdown] Encerramento solicitado (${reason || "App fechado"}). Matando todos os processos...`);
+  console.log("[Shutdown] Encerramento solicitado (" + (reason || "App fechado") + "). Encerrando processos pertencentes ao OpenTranslator...");
+
+  const ownedProcessManager = require("./core/ownedProcess");
+  ownedProcessManager.terminateAll();
 
   if (global.launchedProc) {
-    try {
-      global.launchedProc.kill("SIGKILL");
-    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
+    try { global.launchedProc.kill("SIGKILL"); } catch (e) {}
     global.launchedProc = null;
   }
-
-  if (global.launchedPid) {
-    try {
-      spawnSync("taskkill", ["/F", "/PID", String(global.launchedPid), "/T"], { stdio: "ignore" });
-    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
-    global.launchedPid = null;
-  }
-
-  if (global.launchedGameExe && fs.existsSync(global.launchedGameExe)) {
-    try {
-      const exeName = path.basename(global.launchedGameExe);
-      spawnSync("taskkill", ["/F", "/IM", exeName, "/T"], { stdio: "ignore" });
-    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
-  }
-
-  const auxiliaryExes = ["inject.exe", "PIDDLLInject64.exe", "JoyCon2Mapper.exe", "BakinLauncher.exe"];
-  auxiliaryExes.forEach((exe) => {
-    try {
-      spawnSync("taskkill", ["/F", "/IM", exe, "/T"], { stdio: "ignore" });
-    } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
-  });
-
-  try {
-    const { stopHookServer } = require("./cheatServer");
-    stopHookServer();
-  } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
 
   try {
     const { closeDb } = require("./cache");
     closeDb();
-  } catch (e) { global.log("warn", `httpServer: ${e.message}`); }
+  } catch (e) {}
 
   setTimeout(() => {
     process.exit(0);
@@ -191,14 +164,8 @@ const server = http.createServer((req, res) => {
           }
         });
       } else {
-        const indexFallback = path.join(global.WWW_DIR, "index.html");
-        if (fs.existsSync(indexFallback)) {
-          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-          res.end(fs.readFileSync(indexFallback));
-        } else {
-          res.writeHead(404);
-          res.end("Not found");
-        }
+        res.writeHead(404);
+        res.end("Not found");
       }
     } else {
       res.writeHead(200, {
@@ -258,32 +225,46 @@ function tryListen(port) {
 
     try {
       if (browserPath) {
-        exec(
-          '"' +
-            browserPath +
-            '" --app="' +
-            url +
-            '" --user-data-dir="' +
-            userDataDir +
-            '" --window-size=1100,700 --name="OpenTranslator"'
-        );
-      } else {
-        exec('start "" "' + url + '"');
-      }
-    } catch (e) {
-      try {
-        exec('start "" "' + url + '"');
-      } catch (err) { global.log("warn", `httpServer: ${err.message}`); }
-    }
+          spawn(
+            browserPath,
+            [
+              '--app=' + url,
+              '--user-data-dir=' + userDataDir,
+              '--window-size=1100,700',
+              '--name=OpenTranslator'
+            ],
+            {
+              detached: true,
+              stdio: "ignore",
+              shell: false,
+              windowsHide: false
+            }
+         );
+       } else {
+         spawn("cmd.exe", ["/c", "start", "", '"' + url + '"'], {
+           detached: true,
+           stdio: "ignore",
+           shell: false
+         });
+       }
+     } catch (e) {
+       try {
+         spawn("cmd.exe", ["/c", "start", "", '"' + url + '"'], {
+           detached: true,
+           stdio: "ignore",
+           shell: false
+         });
+       } catch (err) {}
+     }
   });
   server.once("error", (e) => {
     if (e.code === "EADDRINUSE") {
-      loggerManager.info(
+      console.log(
         "Port " + port + " busy, trying " + (port + 1) + "..."
       );
       tryListen(port + 1);
     } else {
-      loggerManager.error("Server error: " + e.message);
+      console.error("Server error:", e.message);
     }
   });
 }

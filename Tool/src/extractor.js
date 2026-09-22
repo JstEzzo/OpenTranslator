@@ -27,6 +27,7 @@ const ARRAY_LABELS = new Set([
   "skillTypes",
   "weaponTypes",
   "armorTypes",
+  "commands",
 ]);
 
 const SKIP_KEYS = new Set([
@@ -106,6 +107,23 @@ const {
   isTranslatableText,
 } = require("./utils");
 
+const HTML_TAG_RE = /<\/?(div|span|body|head|html|video|script|style|iframe|canvas|img|a|font|br|hr|p|title|meta|link|table|tr|td|th|ul|ol|li|h[1-6])\b/i;
+
+// ==================== FILTRO DE NOMES DE PARÂMETROS JAPONES ====================
+const PLUGIN_PARAM_NAME_RE = /^(X|Y|Z)?[座標選択画像名スケール入力項目値番号ID|引数]$/;
+const KNOWN_JP_PARAM_NAMES = new Set([
+  "X座標", "Y座標", "Z座標", "座標", "選択肢名", "画像", "名前", "説明", "スケール",
+  "拡大率", "入力", "項目", "値", "番号", "ID", "引数", "テキスト", "パラメータ",
+]);
+function isShortParamName(val) {
+  if (typeof val !== "string") return false;
+  const t = val.trim();
+  if (t.length > 12) return false;
+  if (KNOWN_JP_PARAM_NAMES.has(t)) return true;
+  if (/^[X]?座標$/.test(t)) return true;
+  return false;
+}
+
 // ==================== ANALISADOR DE CÓDIGO JAVASCRIPT ====================
 /**
  * Detecta se uma string contém código ou instrução JavaScript real.
@@ -116,9 +134,6 @@ function isJsCode(s) {
   const t = s.trim();
   if (t.length < 3) return false;
 
-  // Códigos de escape de mensagem RPG Maker (\dac, \c[n], \i[n], {, }) = diálogo, não JS
-  if (/\\[A-Za-z]/.test(t) && !/^["']/.test(t)) return false;
-
   // Comentários JS
   if (/^\/\//.test(t) || /^\/\*/.test(t)) return true;
 
@@ -128,15 +143,14 @@ function isJsCode(s) {
   if (/\btypeof\s+[a-zA-Z_$]/i.test(t) || /\binstanceof\s+[a-zA-Z_$]/i.test(t)) return true;
 
   // Retorno de instrução JS estrita (ReDoS-free)
-  if (/\breturn\s+(true|false|null|undefined|this|\$[a-zA-Z0-9_$]+|\d+)\s*(?:;|$)/i.test(t)) return true;
+  if (/\breturn\s+(true|false|null|undefined|this|\$[a-zA-Z0-9_$]+|\d+)\s*;?/i.test(t)) return true;
   if (/^return\b.*[;=]$/m.test(t)) return true;
 
   // Referências a propriedades e objetos nativos de motores RPG Maker
   if (/\$(game|data)[A-Z][a-zA-Z0-9_]*/.test(t)) return true;
   if (/\bthis\._[a-zA-Z0-9_]+/.test(t) || /\bthis\.[a-zA-Z0-9_]+\s*\(/.test(t)) return true;
-  if (/\bMath\.(floor|ceil|round|abs|random|max|min)\s*\(/.test(t)) return true;
-  if (/\b(?:window|document|console|Graphics|AudioManager|ImageManager|SceneManager|Input|DataManager|Scene_)\.[a-zA-Z_$][\w$]*\s*[=(]/.test(t)) return true;
-  if (/\bconsole\.log\s*\(/.test(t)) return true;
+  if (/\bMath\.(floor|ceil|round|abs|random|max|min)\b/.test(t)) return true;
+  if (/\b(window|document|console|Graphics|AudioManager|ImageManager|SceneManager)\./.test(t)) return true;
 
   return false;
 }
@@ -155,42 +169,27 @@ function extractEscapeCodes(text) {
     lastIdx = match.index + match[0].length;
   }
   if (lastIdx < text.length) clean += text.slice(lastIdx);
-  parts.srcLen = clean.length;
   return { clean, parts };
 }
 
 function restoreEscapeCodes(translated, parts) {
   let fixed = translated.replace(/%\s+(\d+)/g, "%$1");
   if (parts.length === 0) return fixed;
-  const srcLen = parts.srcLen || 0;
-  const dstLen = fixed.length;
-  const scale = srcLen > 0 ? dstLen / srcLen : 1;
-  const sorted = [...parts].sort((a, b) => a.idx - b.idx);
-
-  // Códigos de abertura agrupados no INÍCIO (contíguos, com gap <= 3 chars)
-  // ficam como PREFIXO na ordem original — evita que \px[25]\py[10]\fi\c[106]
-  // ou \dac/\c[n]/\} sejam espalhados no meio do texto traduzido.
-  const prefix = [];
-  const rest = [];
-  let prefixEnd = -1;
-  for (const p of sorted) {
-    if (p.idx === 0 || (prefix.length > 0 && p.idx - prefixEnd <= 3)) {
-      prefix.push(p);
-      prefixEnd = p.idx + p.code.length;
+  if (parts.every((p) => p.idx === 0)) {
+    return parts.map((p) => p.code).join("") + fixed;
+  }
+  let result = fixed;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (p.idx === 0) {
+      result = p.code + result;
+    } else if (p.idx <= result.length) {
+      result = result.slice(0, p.idx) + p.code + result.slice(p.idx);
     } else {
-      rest.push(p);
+      result += p.code;
     }
   }
-
-  let result = fixed;
-  for (let i = rest.length - 1; i >= 0; i--) {
-    const p = rest[i];
-    const pos = Math.round(p.idx * scale);
-    if (pos >= result.length) result += p.code;
-    else if (pos > 0) result = result.slice(0, pos) + p.code + result.slice(pos);
-    else result = p.code + result;
-  }
-  return prefix.map((p) => p.code).join("") + result;
+  return result;
 }
 
 // ==================== CLASSE PRINCIPAL DE EXTRAÇÃO ====================
@@ -234,7 +233,7 @@ class TextExtractor {
             this.gameMediaFiles.add(baseName.toLowerCase());
           }
         }
-      } catch (e) { global.log("warn", `extractor: ${e.message}`); }
+      } catch (e) {}
     };
 
     searchDirs.forEach((d) => scanDir(d));
@@ -257,7 +256,8 @@ class TextExtractor {
     for (const file of files) {
       this.currentFile = file;
       try {
-        const raw = fs.readFileSync(path.join(dataDir, file), "utf8");
+        let raw = fs.readFileSync(path.join(dataDir, file), "utf8");
+        if (raw.charCodeAt(0) === 0xfeff) raw = raw.slice(1);
         this.currentData = JSON.parse(raw);
         this.walk(this.currentData, []);
       } catch (e) {
@@ -266,6 +266,10 @@ class TextExtractor {
     }
 
     this.extractFromPlugins(dataDir);
+    this.extractFromPluginScripts(this.gameDir);
+    this.extractFromTilesetTxt(this.gameDir);
+    this.extractFromCsv(this.gameDir);
+    this.extractFromHtml(this.gameDir);
     return this.texts;
   }
 
@@ -306,6 +310,35 @@ class TextExtractor {
     const cleanVal = val.trim();
     if (!cleanVal) return;
 
+    // Skip values that are JSON config strings (embedded plugin configs)
+    if (
+      (cleanVal.startsWith("{") && cleanVal.endsWith("}")) &&
+      cleanVal.length > 10
+    ) {
+      try {
+        JSON.parse(cleanVal);
+        return;
+      } catch (e) {
+        if (cleanVal.includes('":') || cleanVal.includes('\\":')) return;
+      }
+    }
+
+    // Also skip JSON arrays that contain config objects with key-value pairs
+    if (
+      (cleanVal.startsWith("[") && cleanVal.endsWith("]")) &&
+      cleanVal.length > 10
+    ) {
+      try {
+        const parsed = JSON.parse(cleanVal);
+        if (Array.isArray(parsed) && parsed.some((item) => typeof item === "object")) {
+          return;
+        }
+        if (cleanVal.includes('":') || cleanVal.includes('\\":')) return;
+      } catch (e) {
+        if (cleanVal.includes('":') || cleanVal.includes('\\":')) return;
+      }
+    }
+
     // Filtro estrito para caminhos, extensoes e nomes de midias/recursos em disco
     if (
       MEDIA_EXT_RE.test(cleanVal) ||
@@ -315,42 +348,11 @@ class TextExtractor {
       return;
     }
 
+    // Skip strings containing HTML tags (web overlays, error pages, video embeds)
+    if (HTML_TAG_RE.test(cleanVal)) return;
+
     const key = keys[keys.length - 1];
     if (typeof key === "string" && SKIP_KEYS.has(key)) return;
-
-    // Nomes internos de switches/variables em System.json: são labels do editor,
-    // não texto de jogo. Traduzi-los não quebra (usa ID), mas polui o glossário.
-    if (keys[0] === "switches" || keys[0] === "variables") return;
-
-    // Código de script/comment/plugin (355/356/357/655). Distingue:
-    //  - COMANDO DE SISTEMA (play_bgs2, particle, >plugin, const/let/var,
-    //    $game, if/for/while...): NÃO traduzir (quebraria o jogo).
-    //  - COMANDO DE DIÁLOGO (ex: PushGab 100 \}\c[101]Texto...): o texto
-    //    depois do comando é visível ao jogador -> traduzir.
-    const sIdx = keys.lastIndexOf("parameters");
-    if (sIdx >= 1) {
-      const cmdPath = keys.slice(0, sIdx);
-      const parentCmd = getValueAtPath(this.currentData, cmdPath);
-      if (
-        parentCmd &&
-        typeof parentCmd === "object" &&
-        typeof parentCmd.code === "number" &&
-        (parentCmd.code === 355 || parentCmd.code === 356 || parentCmd.code === 357 || parentCmd.code === 655)
-      ) {
-        if (
-          (parentCmd.code === 355 || parentCmd.code === 655) &&
-          val.startsWith("テキスト-")
-        ) {
-          return this.addTextEntry(this.currentFile, keys, val.substring(5));
-        }
-        if (
-          /^\s*(play|stop|fade|particle|weather|move|set|enable|disable|change|control|show|hide|open|close|wait|script|comment|>|const|let|var|\$game|window|document|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|return\s)/i.test(val)
-        ) {
-          return;
-        }
-        return this.addTextEntry(this.currentFile, keys, val);
-      }
-    }
 
     if (key === "name" && keys.length >= 2) {
       const parentKeys = keys.slice(0, -1);
@@ -375,8 +377,10 @@ class TextExtractor {
         const cmdPath = keys.slice(0, paramsIdx);
         const cmd = getValueAtPath(this.currentData, cmdPath);
         if (cmd && typeof cmd === "object" && typeof cmd.code === "number") {
-          const nonDialogueCodes = new Set([231, 232, 281, 241, 245, 249, 250, 132, 133, 139, 322, 323, 122, 123, 355, 356, 357, 655]);
+          const nonDialogueCodes = new Set([231, 232, 281, 241, 245, 249, 250, 132, 133, 139, 322, 323]);
           if (nonDialogueCodes.has(cmd.code)) return;
+          // In event command 357 (Plugin Command), parameters[1] is the command name — skip it
+          if (cmd.code === 357 && key === 1) return;
         }
       }
       return this.addTextEntry(this.currentFile, keys, val);
@@ -432,30 +436,16 @@ class TextExtractor {
         ) {
           return this.addTextEntry(this.currentFile, keys, val.substring(5));
         }
-        // code 122/123 (control vars): o value pode ser uma STRING.
-        // Se parece FRASE (narrativa/diálogo com espaços) -> traduzir.
-        // Se parece EXPRESSÃO (LUST)+, 1+2, $game... ) -> não traduzir.
-        if (cmd.code === 122 || cmd.code === 123) {
-          const { clean } = extractEscapeCodes(val);
-          const c = clean.trim();
-          const looksPhrase =
-            c.length > 15 &&
-            /\s[a-zA-ZÀ-ú]{3,}/.test(c) &&
-            /[a-zA-ZÀ-ú]{3,}\s/.test(c) &&
-            !/[+\-*/%=!<>]{2,}/.test(c) &&
-            !/\$(game|data|switches|variables)[A-Z]/i.test(c);
-          if (looksPhrase) {
-            return this.addTextEntry(this.currentFile, keys, val);
-          }
-        }
       }
     }
 
     if (keys.includes("terms")) {
-      // termos de UI que o jogador vê (basic, params, messages) são traduzíveis:
-      // Always Dash, BGM Volume, Attack, MaxHP, etc.
-      if (typeof key === "string" && (key === "commands" || key === "types")) {
-        // arrays já são cobertos pelos checks acima; evita duplicação
+      if (
+        keys.includes("basic") ||
+        keys.includes("params") ||
+        keys.includes("messages")
+      ) {
+        return;
       }
       return this.addTextEntry(this.currentFile, keys, val);
     }
@@ -486,19 +476,31 @@ class TextExtractor {
       const cleanContent = content.replace(escapedQuoteRegex, quoteChar);
 
       const { clean, parts } = extractEscapeCodes(cleanContent);
-      if (isTranslatableText(clean)) {
-        this.texts.push({
-          id: this.idx++,
-          file,
-          keys: [...keys, `__js__${match.index}`],
-          original: val,
-          clean: clean.trim(),
-          escapeParts: parts,
-          isJsString: true,
-          jsLiteral: literal,
-          jsIndex: match.index,
-        });
+      if (!isTranslatableText(clean)) continue;
+      const trimmed = clean.trim();
+      if (
+        (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+        (trimmed.startsWith("[") && trimmed.endsWith("]"))
+      ) {
+        try {
+          JSON.parse(trimmed);
+          continue;
+        } catch (e) {
+          if (trimmed.includes('":') || trimmed.includes('\\":')) continue;
+        }
       }
+      if (HTML_TAG_RE.test(trimmed)) continue;
+        this.texts.push({
+        id: this.idx++,
+        file,
+        keys: [...keys, `__js__${match.index}`],
+        original: val,
+        clean: clean.trim(),
+        escapeParts: parts,
+        isJsString: true,
+        jsLiteral: literal,
+        jsIndex: match.index,
+      });
     }
   }
 
@@ -530,7 +532,7 @@ class TextExtractor {
               extractParamObject(parsed, [...keys, "__json__"]);
               return;
             }
-          } catch (e) { global.log("warn", `extractor: ${e.message}`); }
+          } catch (e) {}
         }
 
         if (isJsCode(val)) {
@@ -592,8 +594,210 @@ class TextExtractor {
           }
         });
       }
-    } catch (e) {
+     } catch (e) {
       logWarn(`[Extractor] Falha ao analisar plugins.js: ${e.message}`);
+    }
+  }
+
+  /**
+   * Extrai textos traduzíveis de arquivos .js de plugins individuais.
+   * Foca em strings literais que podem ser diálogos ou mensagens.
+   */
+  extractFromPluginScripts(gameDir) {
+    const wwwDir = fs.existsSync(path.join(gameDir, "www"))
+      ? path.join(gameDir, "www")
+      : gameDir;
+    const pluginsDir = path.join(wwwDir, "js", "plugins");
+    if (!fs.existsSync(pluginsDir)) return;
+
+    const pluginFiles = fs.readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
+    for (const pf of pluginFiles) {
+      const full = path.join(pluginsDir, pf);
+      let content;
+      try {
+        content = fs.readFileSync(full, "utf8");
+      } catch (e) {
+        logWarn(`[Extractor] Falha ao ler plugin ${pf}: ${e.message}`);
+        continue;
+      }
+
+      // Match string literals: "..." and '...'
+      const STR_RE = /(["'])((?:[^"'\x5C]|\\.)*?)\1/g;
+      let match;
+      while ((match = STR_RE.exec(content)) !== null) {
+        const val = match[2];
+        if (isJsCode(val)) continue;
+        if (!isTranslatableText(val)) continue;
+        const trimmed = val.trim();
+        // Skip Japanese parameter names in JSDoc comments (structural keys like 座標, 選択肢名)
+        if (
+          isShortParamName(val)
+        ) continue;
+        if (
+          (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+          (trimmed.startsWith("[") && trimmed.endsWith("]"))
+        ) {
+          try {
+            JSON.parse(trimmed);
+            continue;
+          } catch (e) {
+            if (trimmed.includes('":') || trimmed.includes('\\":')) continue;
+          }
+        }
+        if (HTML_TAG_RE.test(trimmed)) continue;
+        this.texts.push({
+          id: this.idx++,
+          file: path.join("js", "plugins", pf).replace(/\\/g, "/"),
+          keys: [0, "raw", match.index],
+          original: val,
+          clean: val.trim(),
+          escapeParts: [],
+        });
+      }
+    }
+  }
+
+  /**
+   * Extrai textos japoneses de arquivos .txt de tilesets.
+   * Formatos suportados:
+   * - "English|Japanese" (pipe-separated)
+   * - Japanese text em linhas soltas
+   */
+  extractFromTilesetTxt(gameDir) {
+    const imgDir = fs.existsSync(path.join(gameDir, "www", "img"))
+      ? path.join(gameDir, "www", "img")
+      : path.join(gameDir, "img");
+    const tilesetsPath = path.join(imgDir, "tilesets");
+    if (!fs.existsSync(tilesetsPath)) return;
+
+    const txtFiles = fs.readdirSync(tilesetsPath).filter(f => f.endsWith(".txt"));
+    for (const tf of txtFiles) {
+      const full = path.join(tilesetsPath, tf);
+      let content;
+      try {
+        content = fs.readFileSync(full, "utf8");
+      } catch (e) {
+        logWarn(`[Extractor] Falha ao ler tileset ${tf}: ${e.message}`);
+        continue;
+      }
+
+      const lines = content.split(/\r?\n/);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+
+        // Formato "English|Japanese"
+        const pipeMatch = line.match(/^(.+?)\|(.+)$/);
+        if (pipeMatch) {
+          const engPart = pipeMatch[1].trim();
+          const jpPart = pipeMatch[2].trim();
+          // Só extrai o JP se ele for texto traduzível
+          if (jpPart && /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(jpPart) && isTranslatableText(jpPart)) {
+            this.texts.push({
+              id: this.idx++,
+              file: path.join("img", "tilesets", tf).replace(/\\/g, "/"),
+              keys: [i],
+              original: jpPart,
+              clean: jpPart,
+              escapeParts: [],
+              tilesetJpPart: jpPart,
+              tilesetLineIndex: i,
+              tilesetRawLine: line,
+            });
+          }
+          continue;
+        }
+
+        // Texto japonês em linha solta (não pipe-separated)
+        if (isTranslatableText(line) && /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(line)) {
+          this.texts.push({
+            id: this.idx++,
+            file: path.join("img", "tilesets", tf),
+            keys: [i, "raw"],
+            original: line,
+            clean: line.trim(),
+            escapeParts: [],
+            tilesetJpPart: line.trim(),
+            tilesetLineIndex: i,
+            tilesetRawLine: line,
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Extrai textos de arquivos CSV (coluna "text" tipicamente).
+   */
+  extractFromCsv(gameDir) {
+    const dataDir = findDataDir(gameDir);
+    if (!dataDir) return;
+    const csvFiles = fs.readdirSync(dataDir).filter(f => f.endsWith(".csv"));
+    for (const cf of csvFiles) {
+      let content;
+      try {
+        content = fs.readFileSync(path.join(dataDir, cf), "utf8");
+      } catch (e) {
+        logWarn("[Extractor] Falha ao ler CSV " + cf + ": " + e.message);
+        continue;
+      }
+      const lines = content.split(/\r?\n/);
+      if (lines.length === 0) continue;
+      // Detect header to find "text" column
+      const header = lines[0].split(",");
+      const textColIdx = header.findIndex(h => h.trim() === "text" || h.trim() === "memo");
+      if (textColIdx === -1) continue;
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        // Simple CSV split (não lida com aspas aninhadas complexas)
+        const cols = line.split(",");
+        if (cols.length <= textColIdx) continue;
+        const val = cols[textColIdx].trim();
+        if (!val || !isTranslatableText(val)) continue;
+        this.texts.push({
+          id: this.idx++,
+          file: cf,
+          keys: [i, textColIdx],
+          original: val,
+          clean: val,
+          escapeParts: [],
+          colIndex: textColIdx,
+          csvLine: i,
+        });
+      }
+    }
+  }
+
+  /**
+   * Extrai o título do jogo de index.html
+   */
+  extractFromHtml(gameDir) {
+    const wwwDir = fs.existsSync(path.join(gameDir, "www"))
+      ? path.join(gameDir, "www")
+      : gameDir;
+    const paths = [path.join(gameDir, "index.html"), path.join(wwwDir, "index.html")];
+    for (const p of paths) {
+      if (fs.existsSync(p)) {
+        try {
+          const content = fs.readFileSync(p, "utf8");
+          const match = content.match(/<title>([\s\S]*?)<\/title>/i);
+          if (match && match[1] && isTranslatableText(match[1])) {
+            const relFile = path.relative(gameDir, p).replace(/\\/g, "/");
+            this.texts.push({
+              id: this.idx++,
+              file: relFile,
+              keys: ["title"],
+              original: match[1],
+              clean: match[1].trim(),
+              escapeParts: [],
+            });
+          }
+        } catch (e) {
+          logWarn("[Extractor] Falha ao ler index.html: " + e.message);
+        }
+      }
     }
   }
 }
@@ -638,3 +842,4 @@ module.exports = {
   getLastRealKey,
   TextExtractor,
 };
+

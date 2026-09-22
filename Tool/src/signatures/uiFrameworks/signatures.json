@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "frameworks": [
+    {
+      "id": "react",
+      "name": "React",
+      "clues": [
+        "_reactRootContainer",
+        "react-dom"
+      ]
+    },
+    {
+      "id": "vue",
+      "name": "Vue.js",
+      "clues": [
+        "__vue__",
+        "vue.runtime"
+      ]
+    },
+    {
+      "id": "pixi",
+      "name": "Pixi.js",
+      "clues": [
+        "PIXI.Application",
+        "pixi.js"
+      ]
+    },
+    {
+      "id": "three",
+      "name": "Three.js",
+      "clues": [
+        "THREE.WebGLRenderer"
+      ]
+    },
+    {
+      "id": "unity_ui_toolkit",
+      "name": "Unity UI Toolkit",
+      "clues": [
+        "UIDocument",
+        "VisualElement"
+      ]
+    }
+  ]
+}

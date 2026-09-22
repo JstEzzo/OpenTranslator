@@ -1,0 +1,658 @@
+[
+  {
+    "folder": "ArmoredSuitSolganteRenpy0.2-pc",
+    "engine": "renpy",
+    "engineVersion": "8.x",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Pasta 'game/' encontrada com scripts .rpy/.rpyc/.rpa",
+      "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": true,
+      "archives": true,
+      "compiledScripts": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 2844,
+    "tokensProtected": 2,
+    "note": ""
+  },
+  {
+    "folder": "Aunt don't be sad - English version",
+    "engine": "mv",
+    "engineVersion": "MV 1.x",
+    "architecture": "x32",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 4575,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "BLACK SOULS",
+    "engine": "rgss",
+    "engineVersion": "VX Ace",
+    "architecture": "x32",
+    "confidence": "95%",
+    "evidence": [
+      "Arquivos e DLLs do RGSS3 (RPG Maker VX Ace) identificados"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 2705,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Daily Lives of My Countryside v0.3.5.3 (PC) (Full)",
+    "engine": "mv",
+    "engineVersion": "MV 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 64566,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Marge Mania v0.1",
+    "engine": "mz",
+    "engineVersion": "MZ 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 6759,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Marie's Adventure",
+    "engine": "mv",
+    "engineVersion": "MV 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 37591,
+    "tokensProtected": 5,
+    "note": ""
+  },
+  {
+    "folder": "MiniGamePackVol1_v1.0_demo",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Jogo localizado na subpasta: MiniGamePackVol1_v1.0_forWin_demo",
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "MTool",
+    "engine": "mv",
+    "engineVersion": "MV 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Jogo localizado na subpasta: Tool",
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 1,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Nova pasta",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Nova pasta (2)",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x32",
+    "confidence": "96%",
+    "evidence": [
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Jogo localizado na subpasta: NL",
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": true,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "BepInEx Runtime Hook"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 271,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "NTR伝説 FInal_Ver.1.0.2_64bit",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Rabbit Hood English 2026-06-30",
+    "engine": "wolf",
+    "engineVersion": "Wolf RPG",
+    "architecture": "x32",
+    "confidence": "95%",
+    "evidence": [
+      "Arquivos e estrutura do Wolf RPG Editor identificados"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 172,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "RJ01618221",
+    "engine": "mz",
+    "engineVersion": "MZ 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 40142,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "RWLHPMK_D1.00",
+    "engine": "mz",
+    "engineVersion": "MZ 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Jogo localizado na subpasta: 令和DEロリホイMZ",
+      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 164994,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "save",
+    "engine": "generic",
+    "engineVersion": "Desconhecida",
+    "architecture": "x64",
+    "confidence": "20%",
+    "evidence": [
+      "Nenhuma assinatura de engine prioritária encontrada."
+    ],
+    "warnings": [
+      "Engine não catalogada. O OpenTranslator ativará o scanner de localização e o fallback OCR."
+    ],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Starmaker 1.8E",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "Succubus＆Judgement-COMPLETE EDITION-",
+    "engine": "mz",
+    "engineVersion": "MZ 1.x",
+    "architecture": "x64",
+    "confidence": "98%",
+    "evidence": [
+      "Jogo localizado na subpasta: EnglishData",
+      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 24213,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+    "engine": "renpy",
+    "engineVersion": "8.x",
+    "architecture": "x64",
+    "confidence": "96%",
+    "evidence": [
+      "Pasta 'game/' encontrada com scripts .rpy/.rpyc/.rpa",
+      "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": true,
+      "archives": false,
+      "compiledScripts": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 443,
+    "tokensProtected": 1,
+    "note": ""
+  },
+  {
+    "folder": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+    "engine": "generic",
+    "engineVersion": "Desconhecida",
+    "architecture": "x32",
+    "confidence": "20%",
+    "evidence": [
+      "Nenhuma assinatura de engine prioritária encontrada."
+    ],
+    "warnings": [
+      "Engine não catalogada. O OpenTranslator ativará o scanner de localização e o fallback OCR."
+    ],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 87,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "engine": "generic",
+    "engineVersion": "Desconhecida",
+    "architecture": "x32",
+    "confidence": "20%",
+    "evidence": [
+      "Nenhuma assinatura de engine prioritária encontrada."
+    ],
+    "warnings": [
+      "Engine não catalogada. O OpenTranslator ativará o scanner de localização e o fallback OCR."
+    ],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 211,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "ロリっ子健康診断2_1.0",
+    "engine": "unity",
+    "engineVersion": "Unity Mono",
+    "architecture": "x32",
+    "confidence": "96%",
+    "evidence": [
+      "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+      "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extractionTested": true,
+    "stringsExtracted": 124,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "女体狂乱プリンセス inプリズン(DL版)",
+    "engine": "generic",
+    "engineVersion": "Desconhecida",
+    "architecture": "x64",
+    "confidence": "20%",
+    "evidence": [
+      "Nenhuma assinatura de engine prioritária encontrada."
+    ],
+    "warnings": [
+      "Engine não catalogada. O OpenTranslator ativará o scanner de localização e o fallback OCR."
+    ],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 0,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "白銀の聖騎士ルナ・グランツ 製品版",
+    "engine": "mv",
+    "engineVersion": "MV 1.x",
+    "architecture": "x32",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 16327,
+    "tokensProtected": 0,
+    "note": ""
+  },
+  {
+    "folder": "空気に漂う秘密",
+    "engine": "mv",
+    "engineVersion": "MV 1.x",
+    "architecture": "x32",
+    "confidence": "98%",
+    "evidence": [
+      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+    ],
+    "warnings": [],
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extractionTested": true,
+    "stringsExtracted": 4320,
+    "tokensProtected": 0,
+    "note": ""
+  }
+]

@@ -1,0 +1,70 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-09-16T18:01:06.348Z",
+  "identity": {
+    "gameId": "d5b04379489969d98d9ebba0afd19d5f",
+    "gameName": "RWLHPMK_D1.00",
+    "exeHash": "no_exe",
+    "exeSize": 0,
+    "fileCount": 2
+  },
+  "engine": {
+    "primary": "Electron / Chromium Web App",
+    "candidates": [
+      {
+        "engine": "Electron / Chromium Web App",
+        "engineId": "electron",
+        "confidence": 0.36,
+        "positiveEvidence": [
+          "ffmpeg.dll",
+          "v8_context_snapshot.bin"
+        ],
+        "contradictions": [],
+        "missingEvidence": [
+          "resources/app.asar",
+          "resources/app",
+          "electron.exe"
+        ]
+      },
+      {
+        "engine": "Unreal Engine",
+        "engineId": "unreal",
+        "confidence": 0.28,
+        "positiveEvidence": [
+          ".pak"
+        ],
+        "contradictions": [],
+        "missingEvidence": [
+          "Engine/Binaries",
+          "Engine/Content"
+        ]
+      }
+    ],
+    "isUnknown": true
+  },
+  "runtime": [
+    "V8 / Chromium",
+    "NW.js / Chromium"
+  ],
+  "renderer": [
+    "Vulkan",
+    "WebGL (Chromium Canvas)"
+  ],
+  "packaging": [
+    "Wolf RPG Archive",
+    "Unreal PAK",
+    "Loose JSON / Web Files"
+  ],
+  "textSystems": [],
+  "strategies": [
+    {
+      "id": "primary",
+      "name": "Electron / Chromium Web App",
+      "status": "READY",
+      "confidence": 0.95,
+      "risk": "LOW"
+    }
+  ],
+  "readiness": "EXPERIMENTAL",
+  "lastTested": "2026-09-16T18:01:06.348Z"
+}

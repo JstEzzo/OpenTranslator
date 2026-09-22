@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-09-16T18:01:06.626Z",
+  "identity": {
+    "gameId": "0ee3e2be36854d3429d8bb144099b9a6",
+    "gameName": "Rabbit Hood English 2026-06-30",
+    "exeHash": "283f1e94ab5397e3",
+    "exeSize": 299008,
+    "fileCount": 11
+  },
+  "engine": {
+    "primary": "Wolf RPG Editor",
+    "candidates": [
+      {
+        "engine": "Wolf RPG Editor",
+        "engineId": "wolf",
+        "confidence": 0.23,
+        "positiveEvidence": [
+          "Game.dat"
+        ],
+        "contradictions": [],
+        "missingEvidence": [
+          "Data/BasicData/SysDatabase.project",
+          "data.wolf",
+          "wolfHook.dll"
+        ]
+      },
+      {
+        "engine": "RPG Maker XP/VX/VX Ace",
+        "engineId": "rpgmaker_rgss",
+        "confidence": 0.14,
+        "positiveEvidence": [
+          "Game.ini"
+        ],
+        "contradictions": [],
+        "missingEvidence": [
+          "RGSS104E.dll",
+          "RGSS202E.dll",
+          "RGSS301.dll",
+          "Data/System.rxdata",
+          "Data/System.rvdata",
+          "Data/System.rvdata2"
+        ]
+      }
+    ],
+    "isUnknown": true
+  },
+  "runtime": [],
+  "renderer": [],
+  "packaging": [
+    "Wolf RPG Archive"
+  ],
+  "textSystems": [],
+  "strategies": [
+    {
+      "id": "primary",
+      "name": "Wolf RPG Editor",
+      "status": "READY",
+      "confidence": 0.95,
+      "risk": "LOW"
+    }
+  ],
+  "readiness": "EXPERIMENTAL",
+  "lastTested": "2026-09-16T18:01:06.626Z"
+}

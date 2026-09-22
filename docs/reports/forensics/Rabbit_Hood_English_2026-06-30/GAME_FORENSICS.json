@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-16T17:36:26.776Z",
+  "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+  "targetDir": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+  "engine": {
+    "type": "wolf",
+    "version": "Wolf RPG",
+    "confidence": "95%",
+    "evidence": [
+      "Arquivos e estrutura do Wolf RPG Editor identificados"
+    ],
+    "warnings": []
+  },
+  "executable": {
+    "path": "Config.exe",
+    "arch": "x86",
+    "subsystem": "Windows GUI",
+    "isDotNet": false,
+    "sectionCount": 4
+  },
+  "strategies": {
+    "native_tl": {
+      "name": "Tradução Nativa (.rpy / tl)",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta pastas de tradução Ren'Py."
+    },
+    "static_patch": {
+      "name": "Modificação Segura de Arquivos Estáticos",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Modificação direta de arquivos não recomendada para esta engine."
+    },
+    "runtime_hook": {
+      "name": "Runtime Hook",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta hook Unity."
+    },
+    "dom_bridge": {
+      "name": "Live DOM Observer Bridge",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Aplicação não utiliza renderizador Web/DOM."
+    },
+    "ocr": {
+      "name": "OCR de Tela Adaptativo",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Fallback universal via captura de janela e OCR de texto visível."
+    }
+  },
+  "recommendedStrategy": "OCR de Tela Adaptativo",
+  "fallbacks": [],
+  "blockedStrategies": [],
+  "logsDetected": []
+}

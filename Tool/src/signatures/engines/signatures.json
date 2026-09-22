@@ -1,0 +1,285 @@
+{
+  "version": "1.0.0",
+  "signatures": [
+    {
+      "id": "unity",
+      "name": "Unity",
+      "positivePatterns": [
+        "globalgamemanagers",
+        "data.unity3d",
+        "UnityPlayer.dll",
+        "UnityEngine.dll",
+        "unity default resources"
+      ],
+      "contradictions": [
+        "package.json",
+        "renpy",
+        "rgss",
+        "Game.rpgproject",
+        "options.rpy",
+        ".rpy"
+      ],
+      "runtimes": [
+        "mono",
+        "il2cpp"
+      ],
+      "renderers": [
+        "directx11",
+        "directx12",
+        "vulkan",
+        "opengl"
+      ],
+      "packaging": [
+        "assetbundles",
+        "addressables"
+      ],
+      "textSystems": [
+        "textmeshpro",
+        "ugui",
+        "imgui"
+      ],
+      "defaultConfidence": 0.85
+    },
+    {
+      "id": "renpy",
+      "name": "Ren'Py",
+      "positivePatterns": [
+        "game/options.rpy",
+        "game/screens.rpy",
+        "game/script.rpy",
+        "renpy",
+        "lib/py3-windows-x86_64",
+        "lib/windows-i686"
+      ],
+      "contradictions": [
+        "UnityPlayer.dll",
+        "package.json",
+        "data.unity3d"
+      ],
+      "runtimes": [
+        "python"
+      ],
+      "renderers": [
+        "opengl",
+        "directx9",
+        "software"
+      ],
+      "packaging": [
+        "rpa",
+        "rpyc"
+      ],
+      "textSystems": [
+        "renpy_text"
+      ],
+      "defaultConfidence": 0.95
+    },
+    {
+      "id": "rpgmaker_mv",
+      "name": "RPG Maker MV",
+      "positivePatterns": [
+        "www/data/System.json",
+        "www/data/Actors.json",
+        "www/js/rpg_core.js",
+        "package.json:nw.js"
+      ],
+      "contradictions": [
+        "UnityPlayer.dll",
+        "renpy",
+        "lib/py3-windows-x86_64"
+      ],
+      "runtimes": [
+        "v8_nwjs"
+      ],
+      "renderers": [
+        "webgl",
+        "canvas"
+      ],
+      "packaging": [
+        "asar",
+        "loose_json"
+      ],
+      "textSystems": [
+        "rpgmaker_window_message"
+      ],
+      "defaultConfidence": 0.95
+    },
+    {
+      "id": "rpgmaker_mz",
+      "name": "RPG Maker MZ",
+      "positivePatterns": [
+        "data/System.json",
+        "js/rmmz_core.js",
+        "package.json:nw.js"
+      ],
+      "contradictions": [
+        "www/js/rpg_core.js",
+        "UnityPlayer.dll",
+        "renpy"
+      ],
+      "runtimes": [
+        "v8_nwjs"
+      ],
+      "renderers": [
+        "webgl",
+        "canvas"
+      ],
+      "packaging": [
+        "asar",
+        "loose_json"
+      ],
+      "textSystems": [
+        "rpgmaker_window_message"
+      ],
+      "defaultConfidence": 0.95
+    },
+    {
+      "id": "rpgmaker_rgss",
+      "name": "RPG Maker XP/VX/VX Ace",
+      "positivePatterns": [
+        "Game.ini",
+        "RGSS104E.dll",
+        "RGSS202E.dll",
+        "RGSS301.dll",
+        "Data/System.rxdata",
+        "Data/System.rvdata",
+        "Data/System.rvdata2"
+      ],
+      "contradictions": [
+        "package.json",
+        "UnityPlayer.dll"
+      ],
+      "runtimes": [
+        "ruby"
+      ],
+      "renderers": [
+        "directx9",
+        "gdi"
+      ],
+      "packaging": [
+        "rgssad",
+        "rgss2a",
+        "rgss3a"
+      ],
+      "textSystems": [
+        "rgss_window_message"
+      ],
+      "defaultConfidence": 0.95
+    },
+    {
+      "id": "electron",
+      "name": "Electron / Chromium Web App",
+      "positivePatterns": [
+        "resources/app.asar",
+        "resources/app",
+        "electron.exe",
+        "ffmpeg.dll",
+        "v8_context_snapshot.bin"
+      ],
+      "contradictions": [
+        "UnityPlayer.dll",
+        "renpy",
+        "RGSS301.dll"
+      ],
+      "runtimes": [
+        "v8_electron"
+      ],
+      "renderers": [
+        "webgl",
+        "canvas",
+        "directx11"
+      ],
+      "packaging": [
+        "asar"
+      ],
+      "textSystems": [
+        "dom_text",
+        "html_text"
+      ],
+      "defaultConfidence": 0.9
+    },
+    {
+      "id": "wolf",
+      "name": "Wolf RPG Editor",
+      "positivePatterns": [
+        "Data/BasicData/SysDatabase.project",
+        "Game.dat",
+        "data.wolf",
+        "wolfHook.dll"
+      ],
+      "contradictions": [
+        "package.json",
+        "UnityPlayer.dll"
+      ],
+      "runtimes": [
+        "native_c"
+      ],
+      "renderers": [
+        "directx9",
+        "gdi"
+      ],
+      "packaging": [
+        "wolf_dat"
+      ],
+      "textSystems": [
+        "wolf_window_message"
+      ],
+      "defaultConfidence": 0.9
+    },
+    {
+      "id": "godot",
+      "name": "Godot Engine",
+      "positivePatterns": [
+        "project.godot",
+        "project.binary",
+        ".pck"
+      ],
+      "contradictions": [
+        "UnityPlayer.dll",
+        "renpy"
+      ],
+      "runtimes": [
+        "godot_runtime"
+      ],
+      "renderers": [
+        "vulkan",
+        "opengl"
+      ],
+      "packaging": [
+        "pck"
+      ],
+      "textSystems": [
+        "godot_control_text"
+      ],
+      "defaultConfidence": 0.85
+    },
+    {
+      "id": "unreal",
+      "name": "Unreal Engine",
+      "positivePatterns": [
+        "Engine/Binaries",
+        "Engine/Content",
+        ".pak"
+      ],
+      "contradictions": [
+        "renpy",
+        "www/js/rpg_core.js"
+      ],
+      "runtimes": [
+        "unreal_native"
+      ],
+      "renderers": [
+        "directx11",
+        "directx12",
+        "vulkan"
+      ],
+      "packaging": [
+        "unreal_pak"
+      ],
+      "textSystems": [
+        "unreal_slate_text",
+        "umg_text"
+      ],
+      "defaultConfidence": 0.85
+    }
+  ]
+}

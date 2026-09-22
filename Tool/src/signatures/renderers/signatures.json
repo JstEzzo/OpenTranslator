@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "renderers": [
+    {
+      "id": "directx11",
+      "name": "DirectX 11",
+      "modules": [
+        "d3d11.dll",
+        "dxgi.dll"
+      ]
+    },
+    {
+      "id": "directx12",
+      "name": "DirectX 12",
+      "modules": [
+        "d3d12.dll"
+      ]
+    },
+    {
+      "id": "directx9",
+      "name": "DirectX 9",
+      "modules": [
+        "d3d9.dll"
+      ]
+    },
+    {
+      "id": "vulkan",
+      "name": "Vulkan",
+      "modules": [
+        "vulkan-1.dll"
+      ]
+    },
+    {
+      "id": "opengl",
+      "name": "OpenGL",
+      "modules": [
+        "opengl32.dll"
+      ]
+    },
+    {
+      "id": "webgl",
+      "name": "WebGL (Chromium Canvas)",
+      "modules": [
+        "libGLESv2.dll",
+        "libEGL.dll"
+      ]
+    }
+  ]
+}

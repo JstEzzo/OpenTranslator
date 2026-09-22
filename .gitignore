@@ -32,3 +32,8 @@ Tool/global_cache.db*
 Tool/loaders/inject.exe
 Tool/resources/godot/gdre_tools.exe
 Tool/resources/godot/GodotMonoDecompNativeAOT.dll
+
+Tool/scratch/
+**/__pycache__/
+Tool/data/staging/
+Tool/data/transactions/

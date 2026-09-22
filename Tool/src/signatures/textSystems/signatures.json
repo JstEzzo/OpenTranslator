@@ -1,0 +1,58 @@
+{
+  "version": "1.0.0",
+  "systems": [
+    {
+      "id": "textmeshpro",
+      "name": "TextMeshPro (Unity)",
+      "clues": [
+        "TextMeshPro",
+        "TMP_Text",
+        "TextMeshProUGUI"
+      ]
+    },
+    {
+      "id": "ugui",
+      "name": "Unity UI Text",
+      "clues": [
+        "UnityEngine.UI.Text",
+        "CanvasRenderer"
+      ]
+    },
+    {
+      "id": "dom_text",
+      "name": "HTML / DOM Elements",
+      "clues": [
+        "HTMLHeadingElement",
+        "HTMLParagraphElement",
+        "HTMLElement.innerText"
+      ]
+    },
+    {
+      "id": "renpy_text",
+      "name": "Ren'Py Text Displayable",
+      "clues": [
+        "renpy.display.text.Text",
+        "dialogue",
+        "game/tl"
+      ]
+    },
+    {
+      "id": "rpgmaker_window_message",
+      "name": "RPG Maker Window_Message",
+      "clues": [
+        "Window_Message",
+        "Window_Base",
+        "drawTextEx"
+      ]
+    },
+    {
+      "id": "rgss_window_message",
+      "name": "RGSS Window_Message",
+      "clues": [
+        "Window_Message",
+        "draw_text",
+        "contents.draw_text"
+      ]
+    }
+  ]
+}

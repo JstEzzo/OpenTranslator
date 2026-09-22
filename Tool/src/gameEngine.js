@@ -11,6 +11,19 @@ const {
   getLastRealKey
 } = require("./extractor");
 
+let unrealEngineHandler = null;
+function getUnrealEngineHandler() {
+  if (!unrealEngineHandler) {
+    try {
+      const Handler = require("./engines/unreal/unrealHandler");
+      unrealEngineHandler = new Handler();
+    } catch (e) {
+      unrealEngineHandler = null;
+    }
+  }
+  return unrealEngineHandler;
+}
+
 const {
   loadGlobalCacheForLang,
   saveNewGlobalTranslations,
@@ -23,6 +36,18 @@ const {
 const { translateBatch, clearEngineBans } = require("./translator");
 const { isTranslatableText, findDataDir } = require("./utils");
 
+let renpyCommon = null;
+function getRenpyCommon() {
+  if (!renpyCommon) {
+    try {
+      renpyCommon = require("./engines/renpy/renpyCommon");
+    } catch (e) {
+      renpyCommon = null;
+    }
+  }
+  return renpyCommon;
+}
+
 const ENGINES_DEF = {
   mv: { label: "RPG Maker MV", js: true, icon: "\ud83c\udfae" },
   mz: { label: "RPG Maker MZ", js: true, icon: "\ud83c\udfae" },
@@ -32,6 +57,7 @@ const ENGINES_DEF = {
   rgss: { label: "RGSS (XP/VX/Ace)", js: false, icon: "\u2699" },
   unity: { label: "Unity", js: false, icon: "\ud83c\udf10" },
   python: { label: "Ren'Py", js: false, icon: "\ud83d\udc0d" },
+  unreal: { label: "Unreal Engine", js: false, icon: "\ud83c\dfae" },
   srpg: { label: "SRPG Studio", js: false, icon: "\u2694" },
   agtk: { label: "Action Game Toolkit", js: false, icon: "\ud83c\udff0" },
   kmy: { label: "KMY", js: false, icon: "\ud83d\udd2e" },
@@ -153,6 +179,13 @@ function detectEngine(exePath, exeDir) {
     }
     if (fl.some((f) => f === "tyranoscript" || f === "tyranobuilder.html"))
       return "tyrano";
+    if (
+      fl.some((f) => f === "content" && fs.statSync(path.join(dir, "Content")).isDirectory()) &&
+      (fs.existsSync(path.join(dir, "Content", "Paks")) ||
+       fs.existsSync(path.join(dir, "Content", "Localization")) ||
+       fs.existsSync(path.join(dir, "Engine", "Binaries")))
+    )
+      return "unreal";
   } catch (e) {}
   if (name.includes("rpg") || name.includes("game")) return "mz";
   if (name.includes("unity") || name.includes("win")) return "unity";
@@ -260,21 +293,32 @@ function autoWrapText(text, maxChars) {
 
 function patchGameData(gameDir, texts, translations) {
   const dataDir = findDataDir(gameDir);
-  if (!dataDir) return 0;
+  if (!dataDir) {
+    const rc = getRenpyCommon();
+    if (rc) {
+      const rpyCount = rc.patchRpyFiles(gameDir, texts, translations);
+      if (rpyCount > 0) {
+        global.log("success", "Patched " + rpyCount + " textos em arquivos .rpy");
+      }
+      return rpyCount;
+    }
+    return 0;
+  }
 
    const transByFile = new Map();
    for (const t of texts) {
      const tr = translations.get(t.id);
      if (typeof tr !== "string" || !tr || tr === t.clean || tr.trim().length === 0) continue;
-    if (!transByFile.has(t.file)) transByFile.set(t.file, new Map());
-    transByFile.get(t.file).set(JSON.stringify(t.keys), {
-      tr,
-      escapeParts: t.escapeParts,
-      isJsString: t.isJsString,
-      jsLiteral: t.jsLiteral,
-      jsIndex: t.jsIndex,
-    });
-  }
+     if (!t.keys) continue;
+     if (!transByFile.has(t.file)) transByFile.set(t.file, new Map());
+     transByFile.get(t.file).set(JSON.stringify(t.keys), {
+       tr,
+       escapeParts: t.escapeParts,
+       isJsString: t.isJsString,
+       jsLiteral: t.jsLiteral,
+       jsIndex: t.jsIndex,
+     });
+   }
 
   let count = 0;
   for (const [file, fileTrans] of transByFile) {
@@ -654,11 +698,57 @@ function patchGameData(gameDir, texts, translations) {
             global.log("info", `Título do HTML patcheado: ${file}`);
           }
         }
-      } catch (e) {
-        global.log("error", `Falha ao patchear HTML ${file}: ${e.message}`);
-      }
+       } catch (e) {
+         global.log("error", `Falha ao patchear HTML ${file}: ${e.message}`);
+       }
+     }
+
+     // === Handler para arquivos .rpy (Ren'Py) ===
+     if (normFile.endsWith(".rpy")) {
+       const rc = getRenpyCommon();
+       if (rc) {
+         const rpyTexts = texts.filter(
+           (t) =>
+             t.file === file &&
+             typeof t.raw === "string" &&
+             t.raw.trim().length > 0
+         );
+         if (rpyTexts.length > 0) {
+           try {
+             let content = fs.readFileSync(file, "utf8");
+             let modified = false;
+             for (const t of rpyTexts) {
+               const tr = translations.get(t.id);
+               if (!tr || typeof tr !== "string" || tr === t.clean) continue;
+               const searchDq = '"' + t.raw + '"';
+               const searchSq = "'" + t.raw + "'";
+               if (content.includes(searchDq)) {
+                 const formatted = rc.formatRenpyStringLiteral
+                   ? rc.formatRenpyStringLiteral(tr)
+                   : '"' + tr.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+                 content = content.split(searchDq).join(formatted);
+                 count++;
+                 modified = true;
+               } else if (content.includes(searchSq)) {
+                 const formattedSq =
+                   "'" +
+                   tr.replace(/\\/g, "\\\\").replace(/'/g, "\\'") +
+                   "'";
+                 content = content.split(searchSq).join(formattedSq);
+                 count++;
+                 modified = true;
+               }
+             }
+             if (modified) {
+               fs.writeFileSync(file, content, "utf8");
+             }
+           } catch (e) {
+             global.log("error", `Falha ao patchear ${file}: ${e.message}`);
+           }
+         }
+       }
+     }
     }
-   }
    global.log("success", "Patched " + count + " texts");
    return count;
 }
@@ -1086,7 +1176,7 @@ function restoreEngineData(gameDir) {
   // Idempotent: if commands are already Japanese, no-op.
   const out2 = spawnSync(
     "python",
-    [restoreScript, "--standalone", "--dry-run", dataDir, configPath],
+     [restoreScript, "--standalone", "--dry-run", dataDir],
     {
       cwd: path.dirname(restoreScript),
       encoding: "utf-8",
@@ -1100,7 +1190,7 @@ function restoreEngineData(gameDir) {
   if (out2.status === 0) {
     spawnSync(
       "python",
-      [restoreScript, "--standalone", dataDir, configPath],
+               [restoreScript, "--standalone", "--dry-run", dataDir],
       {
         cwd: path.dirname(restoreScript),
         encoding: "utf-8",
@@ -1232,6 +1322,62 @@ function healFonts(gameDir) {
   }
 }
 
+/**
+ * Walks the game directory tree and extracts text from all .rpy files
+ * using extractRenpyRpyTexts. Skips engine directories (renpy/common, etc.).
+ * @param {string} gameDir
+ * @returns {Array} Extracted text entries
+ */
+function extractAllRenpyRpyTexts(gameDir) {
+  const rc = getRenpyCommon();
+  if (!rc) return [];
+
+  const gameSubDir = fs.existsSync(path.join(gameDir, "game"))
+    ? path.join(gameDir, "game")
+    : gameDir;
+
+  const results = [];
+  let nextId = 0;
+
+  function scan(dir) {
+    if (!fs.existsSync(dir)) return;
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (e) {
+      return;
+    }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      const rel = path.relative(gameSubDir, full).replace(/\\/g, "/");
+
+      if (entry.isDirectory()) {
+        if (rel.startsWith("renpy/")) continue;
+        scan(full);
+      } else if (
+        entry.isFile() &&
+        entry.name.endsWith(".rpy") &&
+        !entry.name.startsWith("00_opent_") &&
+        !entry.name.startsWith("000_anti_")
+      ) {
+        try {
+          const content = fs.readFileSync(full, "utf-8");
+          const rpyTexts = rc.extractRenpyRpyTexts(content, full);
+          for (const t of rpyTexts) {
+            t.id = nextId++;
+            results.push(t);
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+    }
+  }
+
+  scan(gameSubDir);
+  return results;
+}
+
 async function executeTranslationPipeline(gameDir, cfg, title, engineType = "generic") {
   global.log("info", "Iniciando pipeline de tradução para: " + (title || gameDir));
 
@@ -1253,9 +1399,20 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
 
   global.log("info", "Escaneando arquivos de dados e extraindo textos...");
   const texts = extractGameTexts(gameDir);
-  global.log("info", `Total de textos extraídos: ${texts.length}`);
 
-  if (texts.length === 0) {
+  const renpyCommon = getRenpyCommon();
+  let renpyTexts = [];
+  if (renpyCommon) {
+    renpyTexts = extractAllRenpyRpyTexts(gameDir);
+    if (renpyTexts.length > 0) {
+      global.log("info", `Extraídos ${renpyTexts.length} textos de arquivos .rpy`);
+    }
+  }
+
+  const allTexts = texts.concat(renpyTexts);
+  global.log("info", `Total de textos extraídos: ${allTexts.length}`);
+
+  if (allTexts.length === 0) {
     global.log("info", "Nenhum texto traduzível encontrado.");
     return bakDir;
   }
@@ -1286,17 +1443,22 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
   const globalLangCache = loadGlobalCacheForLang(sl, tl, engineType);
   const commonTrans = loadCommonTranslations();
 
-  if (cacheTranslations) {
-    for (const t of texts) {
-      const k = t.file + ":" + t.keys.join(".") + ":" + t.original;
-      if (cacheTranslations[k]) {
-        translations.set(t.id, cacheTranslations[k]);
-        localCacheMatches++;
+    if (cacheTranslations) {
+      for (const t of allTexts) {
+        let k;
+        if (t.keys) {
+          k = t.file + ":" + t.keys.join(".") + ":" + t.original;
+        } else if (t.raw) {
+          k = t.file + ":" + t.raw + ":" + t.original;
+        } else continue;
+        if (cacheTranslations[k]) {
+          translations.set(t.id, cacheTranslations[k]);
+          localCacheMatches++;
+        }
       }
     }
-  }
 
-  for (const t of texts) {
+   for (const t of allTexts) {
     if (translations.has(t.id)) continue;
 
     if (globalLangCache[t.clean]) {
@@ -1317,7 +1479,7 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
     `Resultado do cache: matched ${localCacheMatches} do cache local do jogo, ${globalCacheMatches} do cache global, ${commonMatches} de termos comuns.`
   );
 
-  const unmatched = texts.filter((t) => !translations.has(t.id));
+   const unmatched = allTexts.filter((t) => !translations.has(t.id));
   if (unmatched.length > 0) {
     global.log(
       "info",
@@ -1357,22 +1519,27 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
   }
 
   try {
-    const cd = { cfgKey, translations: {} };
-    for (const t of texts) {
-      const tr = translations.get(t.id);
-      if (tr && tr !== t.clean && tr.length > 0) {
-        cd.translations[t.file + ":" + t.keys.join(".") + ":" + t.original] =
-          tr;
-      }
-    }
+     const cd = { cfgKey, translations: {} };
+     for (const t of allTexts) {
+       const tr = translations.get(t.id);
+       if (tr && tr !== t.clean && tr.length > 0) {
+         if (t.keys) {
+           cd.translations[t.file + ":" + t.keys.join(".") + ":" + t.original] =
+             tr;
+         } else if (t.raw) {
+           cd.translations[t.file + ":" + t.raw + ":" + t.original] =
+             tr;
+         }
+       }
+     }
     fs.writeFileSync(cacheFile, JSON.stringify(cd, null, 2));
     global.log("info", "Cache local salvo em: " + cacheFile);
   } catch (e) {
     global.log("error", "Falha ao salvar cache local: " + e.message);
   }
 
-  global.log("info", "Aplicando patches nos arquivos de dados do jogo...");
-  const patched = patchGameData(gameDir, texts, translations);
+   global.log("info", "Aplicando patches nos arquivos de dados do jogo...");
+   const patched = patchGameData(gameDir, allTexts, translations);
   global.log(
     "success",
     `Pipeline concluído. Substituídos ${patched} textos nos arquivos do jogo.`
@@ -1436,9 +1603,11 @@ module.exports = {
    restoreOldestBackup,
    restoreEngineData,
    injectLatinNameInput,
-  checkProcessRunning,
-  findGameOnDisk,
-  runPythonScript,
-  healGameData,
-  executeTranslationPipeline
+   extractAllRenpyRpyTexts,
+   checkProcessRunning,
+   findGameOnDisk,
+   runPythonScript,
+   healGameData,
+   executeTranslationPipeline,
+   getUnrealEngineHandler
 };

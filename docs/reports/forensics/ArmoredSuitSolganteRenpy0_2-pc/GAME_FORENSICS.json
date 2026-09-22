@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-09-16T17:36:26.717Z",
+  "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc",
+  "targetDir": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc",
+  "engine": {
+    "type": "renpy",
+    "version": "8.x",
+    "confidence": "96%",
+    "evidence": [
+      "Pasta 'game/' encontrada com scripts .rpy/.rpyc/.rpa",
+      "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+    ],
+    "warnings": []
+  },
+  "executable": {
+    "path": "ArmoredSuitSolganteRenpy.exe",
+    "arch": "x64",
+    "subsystem": "Windows GUI",
+    "isDotNet": false,
+    "sectionCount": 7
+  },
+  "strategies": {
+    "native_tl": {
+      "name": "Tradução Nativa (.rpy / tl)",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Pasta game/ detectada; geração canônica em game/tl/ recomendada."
+    },
+    "static_patch": {
+      "name": "Modificação Segura de Arquivos Estáticos",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Modificação direta de arquivos não recomendada para esta engine."
+    },
+    "runtime_hook": {
+      "name": "Runtime Hook",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta hook Unity."
+    },
+    "dom_bridge": {
+      "name": "Live DOM Observer Bridge",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Aplicação não utiliza renderizador Web/DOM."
+    },
+    "ocr": {
+      "name": "OCR de Tela Adaptativo",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Fallback universal via captura de janela e OCR de texto visível."
+    }
+  },
+  "recommendedStrategy": "Tradução Nativa (.rpy / tl)",
+  "fallbacks": [
+    "OCR de Tela Adaptativo"
+  ],
+  "blockedStrategies": [],
+  "logsDetected": [
+    {
+      "type": "Ren'Py log.txt",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc\\log.txt"
+    }
+  ]
+}

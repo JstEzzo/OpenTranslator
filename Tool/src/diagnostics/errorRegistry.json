@@ -1,0 +1,64 @@
+{
+  "signatures": [
+    {
+      "id": "OT-TOOLCHAIN-001",
+      "category": "TOOLCHAIN",
+      "severity": "HIGH",
+      "pattern": "ModuleNotFoundError",
+      "rootCause": "Biblioteca unrpyc ausente no PYTHONPATH do Python embutido.",
+      "recommendedActions": [
+        "Verificar se python312._pth contém ..\\unrpyc_v2 e ..\\unrpyc_legacy",
+        "Reexecutar auto-recuperação do Python"
+      ],
+      "fallbackStrategies": [
+        "Tradução Nativa .rpy (se source existir)",
+        "OCR de Tela"
+      ]
+    },
+    {
+      "id": "OT-HOOK-002",
+      "category": "HOOK",
+      "severity": "MEDIUM",
+      "pattern": "winhttp\\.dll missing|BepInEx.*not found",
+      "rootCause": "Arquivos binários do BepInEx não estão instalados na pasta do jogo Unity.",
+      "recommendedActions": [
+        "Instalar o pacote BepInEx para Unity Mono",
+        "Utilizar modo de tradução visual"
+      ],
+      "fallbackStrategies": [
+        "OCR de Tela",
+        "Inspeção de Assets Estáticos"
+      ]
+    },
+    {
+      "id": "OT-SYNTAX-003",
+      "category": "SYNTAX",
+      "severity": "CRITICAL",
+      "pattern": "SyntaxError|Unexpected token",
+      "rootCause": "Arquivo de código ou script de tradução contém erro de formatação sintática.",
+      "recommendedActions": [
+        "Executar RenpyParser.validateRpy() ou QAEngine.validate()",
+        "Reverter para o backup limpo via rollback"
+      ],
+      "fallbackStrategies": [
+        "Rollback imediato",
+        "Revisão manual da string"
+      ]
+    },
+    {
+      "id": "OT-LOCK-004",
+      "category": "LOCK",
+      "severity": "HIGH",
+      "pattern": "EBUSY|sharing violation|file in use",
+      "rootCause": "O jogo ou outro processo do Windows mantém o arquivo travado para escrita exclusiva.",
+      "recommendedActions": [
+        "Aguardar o fechamento do jogo antes do patch estático",
+        "Utilizar modo de injeção em runtime em vez de patch em disco"
+      ],
+      "fallbackStrategies": [
+        "Runtime Bridge",
+        "Aguardar liberação do lock"
+      ]
+    }
+  ]
+}

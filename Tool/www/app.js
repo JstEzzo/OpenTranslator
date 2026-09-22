@@ -41,7 +41,54 @@
     gameKeys: [],
     launchedKey: null,
     cfg: {},
+    ws: null,
+    wsReady: false,
+    gameState: null,
+    telemetryHandlers: new Map(),
   };
+
+  function connectDualHook() {
+    if (S.ws && S.ws.readyState === WebSocket.OPEN) return;
+    let wsUrl = window.DUAL_HOOK_URL || "ws://127.0.0.1:16005/";
+    try { wsUrl = new URL(wsUrl, location.href).href; } catch (e) {}
+    S.ws = new WebSocket(wsUrl);
+    S.ws.onopen = () => {
+      S.wsReady = true;
+      global.log("info", "WebSocket Dual Hook conectado (16005).");
+      if (S.launchedKey && S.ws) S.ws.send(JSON.stringify({ cmd: "subscribe", game: S.launchedKey }));
+    };
+    S.ws.onclose = () => {
+      S.wsReady = false;
+      global.log("warn", "WebSocket Dual Hook desconectado. Tentando reconectar...");
+      setTimeout(connectDualHook, 3000);
+    };
+    S.ws.onerror = (e) => {
+      global.log("warn", `WebSocket Dual Hook erro: ${e.message}`);
+      S.wsReady = false;
+    };
+    S.ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg && typeof msg === "object") {
+          if (msg.type === "telemetry" || msg.cmd === "telemetry") {
+            S.gameState = msg.data || msg.state || null;
+            for (const [k, h] of S.telemetryHandlers) h(S.gameState);
+          }
+        }
+      } catch (e) { console.warn(`app.js WS: ${e.message}`); }
+    };
+  }
+
+  function subscribeTelemetry(key, handler) {
+    S.telemetryHandlers.set(key, handler);
+    if (S.ws && S.ws.readyState === WebSocket.OPEN && S.launchedKey) {
+      S.ws.send(JSON.stringify({ cmd: "subscribe", game: S.launchedKey }));
+    }
+  }
+  function unsubscribeTelemetry(key) {
+    S.telemetryHandlers.delete(key);
+  }
+  connectDualHook();
 
   function esc(s) {
     const d = document.createElement("div");
@@ -535,6 +582,11 @@
       cheatGrupo: "Party Members / HP",
       cheatInv: "Inventory",
       cheatGeneralMods: "General Modifications",
+      cheatTelemetryTitle: "Live Telemetry",
+      cheatTelemetryWaiting: "Waiting for connection…",
+      engineFullSupport: "Full Support",
+      enginePlanned: "Planned (Phase 2)",
+      engineUnknown: "Unknown Status",
       cheatGold: "Gold",
       cheatSetBtn: "Set",
       cheatNoClip: "Walk Through Walls (NoClip)",
@@ -703,6 +755,11 @@
       cheatGrupo: "Membros / HP",
       cheatInv: "Inventário",
       cheatGeneralMods: "Modificações Gerais",
+      cheatTelemetryTitle: "Telemetria ao Vivo",
+      cheatTelemetryWaiting: "Aguardando conexão…",
+      engineFullSupport: "Suporte Total",
+      enginePlanned: "Planejado (Fase 2)",
+      engineUnknown: "Status Desconhecido",
       cheatGold: "Ouro",
       cheatSetBtn: "Definir",
       cheatNoClip: "Atravessar Paredes (NoClip)",
@@ -772,6 +829,38 @@
   }
 
   let launchMutex = false;
+  let telemetryPollTimer = null;
+  function startTelemetryLoop() {
+    if (telemetryPollTimer) clearInterval(telemetryPollTimer);
+    const tsHandler = (state) => {
+      const hs = state;
+      if (!hs) return;
+      const hpCur = hs.hp_cur ?? hs.hp ?? hs.currentHp ?? hs["hp_cur"];
+      const hpMax = hs.hp_max ?? hs.maxHp ?? hs["max_hp"];
+      const mpCur = hs.mp_cur ?? hs.mp ?? hs.currentMp ?? hs["mp_cur"];
+      const mpMax = hs.mp_max ?? hs.maxMp ?? hs["max_mp"];
+      const gold = hs.gold ?? hs.money ?? hs.gil;
+      const mapName = hs.map ?? hs.mapName ?? hs.location;
+      const stEl = $("cheat-telemetry-status");
+      if (stEl) stEl.textContent = (S.wsReady ? "✓ Online" : "Conectando…");
+      if (stEl) stEl.style.color = S.wsReady ? "var(--green)" : "var(--orange)";
+      if ($("tele-hp-cur")) $("tele-hp-cur").textContent = hpCur != null ? hpCur : "—";
+      if ($("tele-hp-max")) $("tele-hp-max").textContent = hpMax != null ? hpMax : "—";
+      if ($("tele-mp-cur")) $("tele-mp-cur").textContent = mpCur != null ? mpCur : "—";
+      if ($("tele-mp-max")) $("tele-mp-max").textContent = mpMax != null ? mpMax : "—";
+      if ($("tele-gold")) $("tele-gold").textContent = gold != null ? gold : "—";
+      if ($("tele-map")) $("tele-map").textContent = mapName != null ? mapName : "—";
+    };
+    subscribeTelemetry("app_telemetry", tsHandler);
+    if (S.gameState) tsHandler(S.gameState);
+    telemetryPollTimer = setInterval(() => {
+      if (!S.wsReady) {
+        const stEl = $("cheat-telemetry-status");
+        if (stEl) stEl.textContent = "Reconectando…";
+      }
+    }, 1000);
+  }
+
   async function launchGame(key) {
     const g = S.games[key];
     if (!g) return;
@@ -865,6 +954,10 @@
       S.launchedKey = key;
       renderGames();
       refreshAppDataCard(key, g.constArgs?.gameExe ? dirname(g.constArgs.gameExe) : "", title);
+      if (S.ws && S.ws.readyState === WebSocket.OPEN) {
+        S.ws.send(JSON.stringify({ cmd: "subscribe", game: key }));
+      }
+      startTelemetryLoop();
     } catch (e) {
       if (ld) ld.style.display = "none";
       showToast("Launch failed: " + e.message, "error");
@@ -916,6 +1009,8 @@
     kmy: { label: "KMY", js: false, icon: "\ud83d\udd2e" },
     bakin: { label: "Bakin", js: false, icon: "\ud83c\udfad" },
     tyrano: { label: "TyranoScript", js: true, icon: "\ud83d\udcdd" },
+    godot: { label: "Godot Engine", js: false, icon: "🤖" },
+    unreal: { label: "Unreal Engine", js: false, icon: "⚡" },
   };
 
   async function detectEngine(exePath, exeDir) {
@@ -927,6 +1022,21 @@
   }
   function engineInfo(eng) {
     return ENGINES_DEF[eng] || ENGINES_DEF.mz;
+  }
+  const SUPPORTED_ENGINES = new Set(["mv", "mz", "rgss", "python", "renpy", "tyrano", "wolf", "unity", "godot", "unreal"]);
+  const PARTIAL_ENGINES = new Set(["wolf", "krkr", "krkrz", "srpg", "agtk", "kmy", "bakin"]);
+  function engineSupportStatus(eng) {
+    if (eng === "unity") return "fantasma";
+    if (SUPPORTED_ENGINES.has(eng)) return "full";
+    if (PARTIAL_ENGINES.has(eng)) return "planned";
+    return "unknown";
+  }
+  function engineSupportLabel(eng) {
+    const s = engineSupportStatus(eng);
+    if (s === "full") return { s, text: t("engineFullSupport") || "Suporte Total", cls: "eng-ok" };
+    if (s === "planned") return { s, text: t("enginePlanned") || "Planejado (Fase 2)", cls: "eng-plan" };
+    if (s === "fantasma") return { s, text: t("engineGhost") || "Engine Fantasma — Sem Handler", cls: "eng-ghost" };
+    return { s, text: t("engineUnknown") || "Status Desconhecido", cls: "eng-warn" };
   }
   function engineIsJS(eng) {
     return engineInfo(eng).js;
@@ -1115,6 +1225,9 @@ body{
 .gc .gs{font-size:9px;color:var(--txt3);margin-top:4px;display:flex;gap:8px;align-items:center}
 .gc .ga{display:flex;gap:6px;flex-shrink:0}
 .gc .ga .btn{padding:3px 8px;font-size:10px;min-width:24px;justify-content:center}
+.eng-ok{color:var(--green);background:rgba(0,184,148,0.15);border:1px solid rgba(0,184,148,0.3)}
+.eng-plan{color:var(--orange);background:rgba(253,204,91,0.15);border:1px solid rgba(253,204,91,0.3)}
+.eng-warn{color:var(--orange);background:rgba(253,204,91,0.1);border:1px dashed rgba(253,204,91,0.5)}
 
 #tb-sv{padding:8px 14px}
 #tb-sv .sg{margin-bottom:10px;border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden}
@@ -1513,10 +1626,36 @@ select option {
             <button id="cheatSubTabInv" class="btn sm" style="flex:1">${t("cheatInv")}</button>
           </div>
           
-          <!-- Tab 1: Geral / Batalha -->
-          <div id="cheat-sec-geral" style="display:flex;flex-direction:column;gap:12px">
-            <div class="cg" style="margin-bottom:0">
-              <h4>${t("cheatGeneralMods")}</h4>
+           <!-- Tab 1: Geral / Batalha -->
+           <div id="cheat-sec-geral" style="display:flex;flex-direction:column;gap:12px">
+             <!-- Live Telemetry Panel -->
+             <div class="cg" style="margin-bottom:0">
+               <h4 style="display:flex;justify-content:space-between;align-items:center">
+                 <span>${t("cheatTelemetryTitle") || "Telemetria ao Vivo"}</span>
+                 <span id="cheat-telemetry-status" style="font-size:9px;color:var(--txt3)">${t("cheatTelemetryWaiting") || "Aguardando conexão…"}</span>
+               </h4>
+               <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 12px">
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">HP</label>
+                   <div style="font-size:13px;font-weight:700;color:var(--red);font-family:var(--fontGame)"><span id="tele-hp-cur">—</span> / <span id="tele-hp-max">—</span></div>
+                 </div>
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">MP</label>
+                   <div style="font-size:13px;font-weight:700;color:var(--accent2);font-family:var(--fontGame)"><span id="tele-mp-cur">—</span> / <span id="tele-mp-max">—</span></div>
+                 </div>
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">Ouro</label>
+                   <div style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--fontGame)"><span id="tele-gold">—</span></div>
+                 </div>
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">Loc.</label>
+                   <div style="font-size:11px;color:var(--txt);font-family:var(--fontGame);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span id="tele-map">—</span></div>
+                 </div>
+               </div>
+             </div>
+
+             <div class="cg" style="margin-bottom:0">
+               <h4>${t("cheatGeneralMods")}</h4>
               <div class="cg-body" style="display:flex;flex-direction:column;gap:8px">
                 <div class="ci" style="display:flex;justify-content:space-between;align-items:center">
                   <label>${t("cheatGold")}</label>
@@ -1883,6 +2022,7 @@ select option {
       const ei = engineInfo(eng);
       const engLabel = ei.label || eng;
       const engIcon = ei.icon || "";
+      const engStatus = engineSupportLabel(eng);
       const launched = S.launchedKey === k;
       const playBtn = launched
         ? '<span style="color:var(--green);font-size:10px;padding:0 6px">\u25b6 Running</span>'
@@ -1899,6 +2039,7 @@ select option {
         engIcon +
         " " +
         engLabel +
+        ` <span class="${engStatus.cls}" title="${engStatus.text}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "full" ? "✓" : engStatus.s === "planned" ? "⚙" : engStatus.s === "fantasma" ? "❌" : "?"}</span>` +
         '</div></div><div class="ga">' +
         playBtn +
         '<button class="btn xs glEdit">\u270e</button><button class="btn xs dgr glDel">\u2715</button></div></div>';
@@ -3611,3 +3752,4 @@ select option {
     }
   });
 })();
+

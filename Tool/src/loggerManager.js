@@ -68,7 +68,7 @@ class LoggerManager {
       let depth = 2;
       while (frame && depth < stack.length) {
         const fileName = frame.getFileName() || "";
-        if (fileName && !fileName.includes("loggerManager.js") && !fileName.includes("node:internal")) {
+        if (fileName && !fileName.includes("loggerManager.js") && !fileName.includes("logger.js") && !fileName.includes("node:internal")) {
           break;
         }
         depth++;

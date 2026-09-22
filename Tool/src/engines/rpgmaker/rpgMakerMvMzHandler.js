@@ -34,6 +34,22 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
     }
   }
 
+  _getAllDataFiles(dir, extensions = ['.json', '.txt']) {
+    let results = [];
+    try {
+      const list = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of list) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          results = results.concat(this._getAllDataFiles(fullPath, extensions));
+        } else if (extensions.some((ext) => entry.name.toLowerCase().endsWith(ext))) {
+          results.push(fullPath);
+        }
+      }
+    } catch (e) {}
+    return results;
+  }
+
   /**
    * Extract translatable dialogue and text from RPG Maker MV/MZ JSON files.
    */
@@ -59,9 +75,8 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
         global.log('info', `🔑 [RPG Maker MV/MZ] Encryption config: key=${encConfig.encryptionKey}, images=${encConfig.hasEncryptedImages}, audio=${encConfig.hasEncryptedAudio}`);
       }
 
-      // Step 2: Read JSON files
-      const jsonFiles = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
-      const extractedFiles = jsonFiles.map(f => path.join(dataDir, f));
+      // Step 2: Read JSON and TXT files recursively (including subfolders like data/scenarios/)
+      const extractedFiles = this._getAllDataFiles(dataDir, ['.json', '.txt']);
 
       return {
         success: true,
@@ -91,8 +106,11 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
       "battleback1Name", "battleback2Name", "pictureName", "title1Name",
       "title2Name", "bgName", "seName", "bgmName", "fontFace",
       "fontFileName", "file", "fileName", "graphic", "src", "path",
-      "url", "icon", "audio", "bgm", "bgs", "me", "se", "note",
-      "code", "meta"
+      "url", "icon", "audio", "bgm", "bgs", "me", "se",
+      // "note", // REMOVED
+      "code", "hasEncryptedImages", "hasEncryptedAudio", "encryptionKey",
+      "gameId", "tileSize", "faceSize", "iconSize",
+      // "meta", // REMOVED
     ]);
 
     if (keyName && SKIP_KEYS.has(keyName)) {
@@ -118,6 +136,19 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
     }
 
     if (typeof obj === 'object' && obj !== null) {
+      // Se for um Event Command técnico (355/655 Script, 356/357 Plugin, 108/408 Comment, etc.), não alterar parâmetros
+      if (typeof obj.code === 'number') {
+        const NON_DIALOGUE_CODES = new Set([355, 655, 356, 357, 108, 408, 111, 122, 123, 231, 232, 281, 241, 245, 249, 250, 132, 133, 139, 322, 323]);
+        if (NON_DIALOGUE_CODES.has(obj.code)) {
+          // Exceção: diálogos prefixados com テキスト-
+          if ((obj.code === 355 || obj.code === 655) && Array.isArray(obj.parameters) && typeof obj.parameters[0] === 'string' && obj.parameters[0].startsWith('テキスト-')) {
+            // Permite processar a mensagem
+          } else {
+            return obj;
+          }
+        }
+      }
+
       const newObj = {};
       for (const key of Object.keys(obj)) {
         if (SKIP_KEYS.has(key)) {
@@ -133,7 +164,7 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
   }
 
   /**
-   * Inject translations into MV/MZ JSON files safely via Deep Walk JSON parsing.
+   * Inject translations into MV/MZ JSON and TXT files safely.
    */
   async injectTranslation({ gameDir, translationMap, options = {} }) {
     try {
@@ -149,21 +180,46 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
       let injectedFiles = [];
       const sortedKeys = Object.keys(translationMap || {}).sort((a, b) => b.length - a.length);
 
-      // Process target JSON files (Actors, Items, Skills, Maps, System)
-      const targetFiles = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+      // Process target JSON and TXT files recursively (including subfolders like data/scenarios/)
+      const targetFiles = this._getAllDataFiles(dataDir, ['.json', '.txt']);
 
-      for (const file of targetFiles) {
-        const filePath = path.join(dataDir, file);
+      for (const filePath of targetFiles) {
         try {
+          const isJson = filePath.toLowerCase().endsWith('.json');
           const rawContent = fs.readFileSync(filePath, 'utf-8');
-          const jsonParsed = JSON.parse(rawContent);
-          const initialCount = stats.count;
-          
-          const translatedJson = this._deepTranslateJson(jsonParsed, translationMap || {}, sortedKeys, stats);
 
-          if (stats.count > initialCount) {
-            fs.writeFileSync(filePath, JSON.stringify(translatedJson, null, 2), 'utf-8');
-            injectedFiles.push(filePath);
+          if (isJson) {
+            const jsonParsed = JSON.parse(rawContent);
+            const initialCount = stats.count;
+            const translatedJson = this._deepTranslateJson(jsonParsed, translationMap || {}, sortedKeys, stats);
+
+            if (stats.count > initialCount) {
+              fs.writeFileSync(filePath, JSON.stringify(translatedJson, null, 2), 'utf-8');
+              injectedFiles.push(filePath);
+            }
+          } else {
+            // Process TXT files line by line
+            let lines = rawContent.split(/\r?\n/);
+            let fileModified = false;
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const clean = line.trim();
+              if (translationMap[line]) {
+                lines[i] = translationMap[line];
+                stats.count++;
+                fileModified = true;
+              } else if (clean && translationMap[clean]) {
+                lines[i] = line.replace(clean, translationMap[clean]);
+                stats.count++;
+                fileModified = true;
+              }
+            }
+
+            if (fileModified) {
+              fs.writeFileSync(filePath, lines.join('\n'), 'utf-8');
+              injectedFiles.push(filePath);
+            }
           }
         } catch (fileErr) {
           // Continue processing remaining files cleanly

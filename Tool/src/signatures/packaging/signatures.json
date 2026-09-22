@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "formats": [
+    {
+      "id": "asar",
+      "name": "Electron ASAR Archive",
+      "extensions": [
+        ".asar"
+      ],
+      "virtualFS": true
+    },
+    {
+      "id": "assetbundles",
+      "name": "Unity AssetBundles",
+      "extensions": [
+        ".bundle",
+        ".unity3d",
+        ".assets"
+      ]
+    },
+    {
+      "id": "rpa",
+      "name": "Ren'Py Archive",
+      "extensions": [
+        ".rpa"
+      ]
+    },
+    {
+      "id": "rgssad",
+      "name": "RGSS Encrypted Archive",
+      "extensions": [
+        ".rgssad",
+        ".rgss2a",
+        ".rgss3a"
+      ]
+    },
+    {
+      "id": "wolf_dat",
+      "name": "Wolf RPG Archive",
+      "extensions": [
+        ".wolf",
+        ".dat"
+      ]
+    },
+    {
+      "id": "unreal_pak",
+      "name": "Unreal PAK",
+      "extensions": [
+        ".pak"
+      ]
+    },
+    {
+      "id": "loose_json",
+      "name": "Loose JSON / Web Files",
+      "extensions": [
+        ".json",
+        ".js",
+        ".html"
+      ]
+    }
+  ]
+}

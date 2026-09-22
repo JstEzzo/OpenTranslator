@@ -122,7 +122,7 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
   }
 
   /**
-   * Apply PT-BR font patch for RGSS by creating an RGSS font override script.
+   * Apply PT-BR font patch and RGSS Runtime Look-Ahead Word-Wrap for XP/VX/VXAce.
    */
   async applyFontPatch({ gameDir, fontFile, options = {} }) {
     try {
@@ -138,17 +138,60 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
         patchedFiles.push(destFont);
       }
 
-      // Generate RGSS font override script block
       const fontName = fontFile ? path.basename(fontFile, path.extname(fontFile)) : 'Arial';
-      const rgssFontScript = `# OpenTranslator RGSS Font Override
+      const rgssRuntimeScript = `# OpenTranslator RGSS Runtime & Safe Look-Ahead Word-Wrap
 if defined?(Font)
-  Font.default_name = ["${fontName}", "Arial"]
-  Font.default_size = 22
+  begin
+    Font.default_name = ["${fontName}", "Arial"]
+    Font.default_size = 22
+  rescue => e
+  end
+end
+
+if defined?(Window_Message)
+  class Window_Message < Window_Base
+    if method_defined?(:process_normal_character) && !method_defined?(:opent_orig_process_normal_character)
+      alias opent_orig_process_normal_character process_normal_character
+      def process_normal_character(a, b = nil)
+        c, text_state = nil, nil
+        if a.is_a?(String)
+          c = a
+          text_state = b
+        else
+          text_state = a
+          c = (text_state && text_state[:text]) ? text_state[:text][text_state[:index] || 0] : ''
+        end
+
+        if c == ' ' && text_state && text_state[:text]
+          idx = text_state[:index] || 0
+          text_rem = text_state[:text][idx..-1] || ""
+          if text_rem =~ /^([^\\s\\x1b\\n\\f]+)/
+            next_word = $1
+            clean_word = next_word.gsub(/\\\\+[A-Za-z0-9_]+(\\[[^\\]]*\\])?|\\\\+[{{}}!.\\|^$><\\\\%]/, '')
+            if respond_to?(:contents) && contents && respond_to?(:process_new_line)
+              word_w = (contents.text_size(clean_word).width rescue (clean_word.length * 14))
+              max_w = (respond_to?(:contentsWidth) ? contentsWidth : (width ? width - 36 : 600))
+              limit_x = max_w - 12
+              if (text_state[:x] || 0) + word_w + 8 > limit_x
+                process_new_line(text_state)
+                if !a.is_a?(String) && text_state[:text][text_state[:index]] == ' '
+                  text_state[:index] += 1
+                end
+                return
+              end
+            end
+          end
+        end
+
+        opent_orig_process_normal_character(a, b)
+      end
+    end
+  end
 end
 `;
-      const scriptPath = path.join(gameDir, 'opentranslator_font_override.rb');
-      fs.writeFileSync(scriptPath, rgssFontScript, 'utf-8');
-      patchedFiles.push(scriptPath);
+      const runtimePath = path.join(gameDir, 'opentranslator_rgss_runtime.rb');
+      fs.writeFileSync(runtimePath, rgssRuntimeScript, 'utf-8');
+      patchedFiles.push(runtimePath);
 
       return {
         success: true,

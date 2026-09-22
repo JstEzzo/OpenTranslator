@@ -1,0 +1,74 @@
+{
+  "version": "1.0.0",
+  "runtimes": [
+    {
+      "id": "mono",
+      "name": "Mono CLR",
+      "modules": [
+        "mono-2.0-bdwgc.dll",
+        "mono.dll"
+      ],
+      "arch": [
+        "x86",
+        "x64"
+      ]
+    },
+    {
+      "id": "il2cpp",
+      "name": "IL2CPP Native",
+      "modules": [
+        "GameAssembly.dll"
+      ],
+      "arch": [
+        "x86",
+        "x64",
+        "arm64"
+      ]
+    },
+    {
+      "id": "python",
+      "name": "Python Virtual Machine",
+      "modules": [
+        "python3.dll",
+        "python310.dll",
+        "python312.dll",
+        "python27.dll"
+      ]
+    },
+    {
+      "id": "v8_electron",
+      "name": "V8 / Chromium",
+      "modules": [
+        "electron.exe",
+        "d3dcompiler_47.dll",
+        "chrome_elf.dll"
+      ]
+    },
+    {
+      "id": "v8_nwjs",
+      "name": "NW.js / Chromium",
+      "modules": [
+        "nw.dll",
+        "node.dll"
+      ]
+    },
+    {
+      "id": "ruby",
+      "name": "Ruby VM (RGSS)",
+      "modules": [
+        "RGSS104E.dll",
+        "RGSS202E.dll",
+        "RGSS301.dll"
+      ]
+    },
+    {
+      "id": "native_c",
+      "name": "Native C/C++",
+      "modules": [
+        "msvcp140.dll",
+        "vcruntime140.dll",
+        "ntdll.dll"
+      ]
+    }
+  ]
+}

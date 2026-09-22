@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-09-16T17:36:26.754Z",
+  "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\DokiDoki-Massage-v2.1.5",
+  "targetDir": "C:\\Users\\Teste\\Desktop\\Nova pasta\\DokiDoki-Massage-v2.1.5",
+  "engine": {
+    "type": "electron",
+    "version": "Chromium / Electron",
+    "confidence": "95%",
+    "evidence": [
+      "Jogo localizado na subpasta: DokiDoki Massage",
+      "Pacote Electron 'resources/app.asar' encontrado",
+      "Assinaturas do runtime Electron/Chromium encontradas (v8_context_snapshot, resources.pak)"
+    ],
+    "warnings": []
+  },
+  "executable": {
+    "path": "DokiDoki-Massage-Portable.exe",
+    "arch": "x86",
+    "subsystem": "Windows GUI",
+    "isDotNet": false,
+    "sectionCount": 5
+  },
+  "strategies": {
+    "native_tl": {
+      "name": "Tradução Nativa (.rpy / tl)",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta pastas de tradução Ren'Py."
+    },
+    "static_patch": {
+      "name": "Patch Estático via ASAR",
+      "status": "AVAILABLE",
+      "risk": "MEDIUM",
+      "reason": "Arquivo app.asar presente para repack."
+    },
+    "runtime_hook": {
+      "name": "Runtime Hook",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta hook Unity."
+    },
+    "dom_bridge": {
+      "name": "Live DOM Observer Bridge",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Renderer Chromium detectado; injeção via MutationObserver suportada."
+    },
+    "ocr": {
+      "name": "OCR de Tela Adaptativo",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Fallback universal via captura de janela e OCR de texto visível."
+    }
+  },
+  "recommendedStrategy": "Live DOM Observer Bridge",
+  "fallbacks": [
+    "Patch Estático via ASAR",
+    "OCR de Tela Adaptativo"
+  ],
+  "blockedStrategies": [],
+  "logsDetected": []
+}

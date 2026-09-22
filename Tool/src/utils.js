@@ -7,6 +7,8 @@
 
 const fs = require("fs");
 const path = require("path");
+if (!global.ROOT) global.ROOT = path.resolve(__dirname, '..');
+if (!global.DATA_DIR) global.DATA_DIR = path.join(global.ROOT, "data");
 
 // ==================== FILTERING CONSTANTS ====================
 const MEDIA_EXT_RE = /\.(png|jpg|jpeg|gif|bmp|webp|ogg|wav|mp3|m4a|json|efkefc|atlas|skel|bin|db|ttf|otf|woff|woff2)$/i;
@@ -26,12 +28,25 @@ function logWarn(msg) {
   }
 }
 
-function findDataDir(gameDir) {
+function findDataDir(gameDir, engineType = null) {
   if (!gameDir || typeof gameDir !== "string") return "";
-  if (fs.existsSync(path.join(gameDir, "www", "data")))
-    return path.join(gameDir, "www", "data");
-  if (fs.existsSync(path.join(gameDir, "data")))
-    return path.join(gameDir, "data");
+
+  const mzData = path.join(gameDir, "data");
+  const mvData = path.join(gameDir, "www", "data");
+
+  if (engineType === "mz") {
+    if (fs.existsSync(mzData)) return mzData;
+    if (fs.existsSync(mvData)) return mvData;
+  } else if (engineType === "mv") {
+    if (fs.existsSync(mvData)) return mvData;
+    if (fs.existsSync(mzData)) return mzData;
+  } else {
+    if (fs.existsSync(path.join(gameDir, "js", "rmmz_core.js")) || fs.existsSync(path.join(gameDir, "js", "rmtp_core.js"))) {
+      if (fs.existsSync(mzData)) return mzData;
+    }
+    if (fs.existsSync(mvData)) return mvData;
+    if (fs.existsSync(mzData)) return mzData;
+  }
   return "";
 }
 
@@ -99,7 +114,7 @@ function loadSyntaxRules() {
     DANGER_PREFIXES: ["gui/", "audio/", "images/", "fonts/", "tl/", "renpy/"],
     COMMON_RENPY_UI_KEYS: ["Start", "Load", "Save", "Options", "Preferences", "Main Menu", "Return", "Back", "History", "Skip", "Auto", "Help", "Quit", "About"],
     PROTECTED_ENGINE_DIRS: ["renpy/common", "common"],
-    VERSION_PROBING: { RENPY_PREFERENCE_HOOK_MAX_VERSION: "8.4.99", SAFE_PURGE_FILES: ["00_opent_runtime.rpy", "00_opent_runtime.rpyc"] }
+    VERSION_PROBING: { RENPY_PREFERENCE_HOOK_MAX_VERSION: "9.9.99", SAFE_PURGE_FILES: ["00_opent_runtime.rpy", "00_opent_runtime.rpyc"] }
   };
 }
 

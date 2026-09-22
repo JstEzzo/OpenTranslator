@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-09-16T17:36:26.729Z",
+  "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RWLHPMK_D1.00",
+  "targetDir": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RWLHPMK_D1.00",
+  "engine": {
+    "type": "mz",
+    "version": "MZ 1.x",
+    "confidence": "98%",
+    "evidence": [
+      "Jogo localizado na subpasta: 令和DEロリホイMZ",
+      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+    ],
+    "warnings": []
+  },
+  "executable": {
+    "status": "Executável direto não selecionado"
+  },
+  "strategies": {
+    "native_tl": {
+      "name": "Tradução Nativa (.rpy / tl)",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta pastas de tradução Ren'Py."
+    },
+    "static_patch": {
+      "name": "Modificação Segura de Arquivos Estáticos",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Estrutura JSON em data/ íntegra para injeção transacional."
+    },
+    "runtime_hook": {
+      "name": "Runtime Hook",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Engine não suporta hook Unity."
+    },
+    "dom_bridge": {
+      "name": "Live DOM Observer Bridge",
+      "status": "UNSUPPORTED",
+      "risk": "HIGH",
+      "reason": "Aplicação não utiliza renderizador Web/DOM."
+    },
+    "ocr": {
+      "name": "OCR de Tela Adaptativo",
+      "status": "READY",
+      "risk": "LOW",
+      "reason": "Fallback universal via captura de janela e OCR de texto visível."
+    }
+  },
+  "recommendedStrategy": "Modificação Segura de Arquivos Estáticos",
+  "fallbacks": [
+    "OCR de Tela Adaptativo"
+  ],
+  "blockedStrategies": [],
+  "logsDetected": []
+}
