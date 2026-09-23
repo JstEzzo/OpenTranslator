@@ -1,12 +1,12 @@
 /**
- * OpenTranslator — EvidenceModel
+ * OpenTranslator - EvidenceModel 2.0
  * 
  * Modelo rigoroso de classificação de evidência empírica:
  * - codeEvidence: Validação unitária de código/parsers/classes
  * - integrationEvidence: Comunicação entre múltiplos subsistemas do OpenTranslator
- * - gameEvidence: Executado sobre cópias reais de arquivos de jogos
- * - runtimeEvidence: Comprovado com processo/executável em execução
- * - visualEvidence: Resultado visualmente observado na tela do usuário
+ * - gameEvidence: Executado sobre arquivos de jogos (FILE_VERIFIED)
+ * - runtimeEvidence: Interceptação em memória com processo em execução (RUNTIME_VERIFIED / DOM_VERIFIED)
+ * - visualEvidence: Observação na tela/pixels/HUD (SCREEN_VERIFIED exclusivamente)
  * - rollbackEvidence: Restauração do estado original matematicamente comprovada por SHA-256
  */
 
@@ -21,12 +21,61 @@ class EvidenceModel {
     this.runtimeEvidence = Boolean(params.runtimeEvidence);
     this.visualEvidence = Boolean(params.visualEvidence);
     this.rollbackEvidence = Boolean(params.rollbackEvidence);
+    this.evidenceRecords = [];
     this.notes = params.notes || [];
+
+    if (Array.isArray(params.evidenceRecords)) {
+      this.evidenceRecords = [...params.evidenceRecords];
+    }
+  }
+
+  /**
+   * Registra uma evidência formal evitando marcações manuais forjadas
+   * @param {'CODE'|'INTEGRATION'|'FILE_VERIFIED'|'RUNTIME_VERIFIED'|'DOM_VERIFIED'|'SCREEN_VERIFIED'|'ROLLBACK_VERIFIED'} type
+   * @param {object} details - { verificationMethod, artifactPath, timestamp, subject, expected, observed }
+   */
+  recordEvidence(type, details = {}) {
+    const record = {
+      type,
+      verificationMethod: details.verificationMethod || type,
+      artifactPath: details.artifactPath || null,
+      timestamp: details.timestamp || Date.now(),
+      subject: details.subject || this.target,
+      expected: details.expected !== undefined ? details.expected : null,
+      observed: details.observed !== undefined ? details.observed : null,
+      verified: details.verified !== false
+    };
+
+    this.evidenceRecords.push(record);
+
+    switch (type) {
+      case 'CODE':
+        this.codeEvidence = true;
+        break;
+      case 'INTEGRATION':
+        this.integrationEvidence = true;
+        break;
+      case 'FILE_VERIFIED':
+        this.gameEvidence = true;
+        break;
+      case 'RUNTIME_VERIFIED':
+      case 'DOM_VERIFIED':
+        this.runtimeEvidence = true;
+        break;
+      case 'SCREEN_VERIFIED':
+        // Apenas SCREEN_VERIFIED habilita visualEvidence!
+        this.visualEvidence = true;
+        break;
+      case 'ROLLBACK_VERIFIED':
+        this.rollbackEvidence = true;
+        break;
+    }
+
+    return record;
   }
 
   /**
    * Calcula o grau oficial máximo de evidência comprovada
-   * @returns {'NOT_TESTED'|'UNIT_TESTED'|'INTEGRATION_TESTED'|'LAB_TESTED'|'RUNTIME_VERIFIED'|'VISUALLY_VERIFIED'}
    */
   getGrade() {
     if (this.visualEvidence) return 'VISUALLY_VERIFIED';
@@ -38,15 +87,13 @@ class EvidenceModel {
   }
 
   /**
-   * Valida se uma afirmação de "VERIFIED" é matematicamente e empiricamente legítima
-   * @param {'RUNTIME_VERIFIED'|'VISUALLY_VERIFIED'|'ROLLBACK_VERIFIED'} claim
-   * @returns {{ legitimate: boolean, missingEvidence: Array<string> }}
+   * Valida se uma afirmação de status é legítima
    */
   validateClaim(claim) {
     const missing = [];
     if (claim === 'VISUALLY_VERIFIED') {
-      if (!this.visualEvidence) missing.push('visualEvidence (nenhuma captura visual de tela confirmada)');
-      if (!this.runtimeEvidence) missing.push('runtimeEvidence (processo do jogo não comprovado em execução)');
+      if (!this.visualEvidence) missing.push('visualEvidence (nenhuma verificação SCREEN_VERIFIED registrada)');
+      if (!this.runtimeEvidence && !this.gameEvidence) missing.push('runtimeEvidence ou gameEvidence ausente');
     } else if (claim === 'RUNTIME_VERIFIED') {
       if (!this.runtimeEvidence) missing.push('runtimeEvidence (processo não executado ou hook não verificado)');
     } else if (claim === 'ROLLBACK_VERIFIED') {
@@ -71,6 +118,7 @@ class EvidenceModel {
       runtimeEvidence: this.runtimeEvidence,
       visualEvidence: this.visualEvidence,
       rollbackEvidence: this.rollbackEvidence,
+      evidenceRecords: this.evidenceRecords,
       notes: this.notes
     };
   }

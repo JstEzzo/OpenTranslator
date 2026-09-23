@@ -1,13 +1,13 @@
 /**
  * OpenTranslator - LocalDictionaryProvider
  * 
- * Provedor de tradução determinístico, 100% offline e local para laboratório e testes E2E reais.
+ * Provedor de tradução determinístico, 100% offline e local para laboratório e testes E2E.
  * Classificação oficial: LAB_TRANSLATION_PROVIDER
  * 
  * - Sem IA pesada, sem LLM, sem embeddings, sem dependência de internet.
- * - Suporta dicionário determinístico de termos de jogos (UI, menus, diálogos comuns).
- * - Suporta fuzzy matching leve (Levenshtein / token overlap) quando exact match falha.
- * - Preserva rigorosamente formatação, pontuação e casing original.
+ * - Suporta dicionário determinístico de termos de jogos.
+ * - Fuzzy matching com cálculo estrito de confiança (confidence >= threshold).
+ * - Preserva pontuação, quebras de linha e casing.
  */
 
 class LocalDictionaryProvider {
@@ -16,9 +16,9 @@ class LocalDictionaryProvider {
     this.name = 'Local Deterministic Dictionary Provider';
     this.type = 'LAB_TRANSLATION_PROVIDER';
     this.targetLanguage = options.targetLanguage || 'pt-BR';
+    this.fuzzyConfidenceThreshold = options.fuzzyConfidenceThreshold !== undefined ? options.fuzzyConfidenceThreshold : 0.80; // 80% mín
     this.terminologyLocks = new Map(options.terminologyLocks || []);
 
-    // Dicionário base determinístico comum em jogos
     this.dictionary = new Map([
       ['start', 'iniciar'],
       ['start game', 'iniciar jogo'],
@@ -44,8 +44,11 @@ class LocalDictionaryProvider {
       ['equipment', 'equipamento'],
       ['status', 'estado'],
       ['potion', 'poção'],
+      ['potions', 'poções'],
       ['sword', 'espada'],
+      ['swords', 'espadas'],
       ['shield', 'escudo'],
+      ['shields', 'escudos'],
       ['armor', 'armadura'],
       ['gold', 'ouro'],
       ['level', 'nível'],
@@ -79,22 +82,31 @@ class LocalDictionaryProvider {
     const trimmed = text.trim();
     if (trimmed.length === 0) return text;
 
-    // 1. Terminology Lock (Regra mais forte)
+    // Preserva pontuação no início e fim
+    const punctMatch = trimmed.match(/^([^a-zA-Z0-9\s]*)(.*?)([^a-zA-Z0-9\s]*)$/);
+    const prefixPunct = punctMatch ? punctMatch[1] : '';
+    const coreText = punctMatch ? punctMatch[2] : trimmed;
+    const suffixPunct = punctMatch ? punctMatch[3] : '';
+
+    if (!coreText) return text;
+
+    // 1. Terminology Lock (Máxima Prioridade)
     for (const [term, lock] of this.terminologyLocks.entries()) {
-      if (text.includes(term)) {
-        text = text.split(term).join(lock);
+      if (coreText.includes(term)) {
+        return prefixPunct + coreText.split(term).join(lock) + suffixPunct;
       }
     }
 
-    const lower = trimmed.toLowerCase();
+    const lower = coreText.toLowerCase();
 
     // 2. Exact Match no dicionário
     if (this.dictionary.has(lower)) {
-      return this._matchCase(trimmed, this.dictionary.get(lower));
+      const trans = this._matchCase(coreText, this.dictionary.get(lower));
+      return prefixPunct + trans + suffixPunct;
     }
 
-    // 3. Substituição por partes / palavras-chave conhecidas
-    let replaced = text;
+    // 3. Substituição por palavras com limites de palavra (\b)
+    let replaced = coreText;
     let anySub = false;
 
     for (const [src, trans] of this.dictionary.entries()) {
@@ -106,28 +118,33 @@ class LocalDictionaryProvider {
     }
 
     if (anySub) {
-      return replaced;
+      return prefixPunct + replaced + suffixPunct;
     }
 
-    // 4. Fuzzy match leve para termos simples (distância de Levenshtein <= 2)
+    // 4. Fuzzy Matching leve com limiar de confiança estrito
     if (lower.length >= 4 && !lower.includes(' ')) {
       let bestMatch = null;
-      let bestDist = Infinity;
+      let bestConfidence = 0;
+
       for (const [k, v] of this.dictionary.entries()) {
         if (!k.includes(' ') && Math.abs(k.length - lower.length) <= 2) {
           const dist = this._levenshtein(lower, k);
-          if (dist <= 2 && dist < bestDist) {
-            bestDist = dist;
+          const maxLen = Math.max(lower.length, k.length);
+          const confidence = 1 - (dist / maxLen);
+
+          if (confidence >= this.fuzzyConfidenceThreshold && confidence > bestConfidence) {
+            bestConfidence = confidence;
             bestMatch = v;
           }
         }
       }
-      if (bestMatch && bestDist <= 2) {
-        return this._matchCase(trimmed, bestMatch);
+
+      if (bestMatch) {
+        const trans = this._matchCase(coreText, bestMatch);
+        return prefixPunct + trans + suffixPunct;
       }
     }
 
-    // Se nenhuma tradução foi encontrada no dicionário offline
     return text;
   }
 

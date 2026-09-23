@@ -1,29 +1,32 @@
 /**
  * OpenTranslator - VisibleTextVerifier
  * 
- * Verificador factual de texto visível ou em arquivo de saída:
- * Métodos suportados:
- * - FILE_CONTENT_VERIFICATION: Comprova a presença física da string traduzida no arquivo de dados do jogo.
- * - RUNTIME_TEXT_OBSERVATION: Observação direta em memória de processo interceptada por hook.
- * - DOM_QUERY: Inspeção de nós de texto em jogos Electron / Web.
- * - KNOWN_UI_STATE: Verificação de catálogo oficial de tradução nativo (ex: game/tl/<lang>/).
+ * Verificador factual e conceitualmente rigoroso de texto:
+ * Categorias suportadas:
+ * - FILE_VERIFIED: Comprova a presença física da string traduzida no arquivo de dados do jogo.
+ * - RUNTIME_VERIFIED: Interceptação em memória do processo via hook.
+ * - DOM_VERIFIED: Inspeção direta de nós de texto em jogos Electron / Web.
+ * - SCREEN_VERIFIED: Observação visual comprovada na tela / pixels / HUD Overlay.
+ * 
+ * Regra obrigatória: FILE_VERIFIED NUNCA é classificado como visual. Apenas SCREEN_VERIFIED.
  */
 
 const fs = require('fs');
 
 class VisibleTextVerifier {
   /**
-   * Verifica se o texto traduzido esperado está comprovadamente presente no arquivo de saída
+   * Verifica presença física do texto no arquivo de dados (FILE_VERIFIED)
    */
   static verifyFileContent(filePath, expectedTranslation) {
     const timestamp = Date.now();
     if (!fs.existsSync(filePath)) {
       return {
+        type: 'FILE_VERIFIED',
         verified: false,
         method: 'FILE_CONTENT_VERIFICATION',
         expected: expectedTranslation,
         observed: null,
-        error: `Arquivo de destino não encontrado: ${filePath}`,
+        error: `Arquivo não encontrado: ${filePath}`,
         timestamp
       };
     }
@@ -33,15 +36,17 @@ class VisibleTextVerifier {
       const found = content.includes(expectedTranslation);
 
       return {
+        type: 'FILE_VERIFIED',
         verified: found,
         method: 'FILE_CONTENT_VERIFICATION',
         filePath,
         expected: expectedTranslation,
-        observed: found ? expectedTranslation : '[NOT_FOUND_IN_DESTINATION]',
+        observed: found ? expectedTranslation : '[NOT_FOUND_IN_FILE]',
         timestamp
       };
     } catch (e) {
       return {
+        type: 'FILE_VERIFIED',
         verified: false,
         method: 'FILE_CONTENT_VERIFICATION',
         expected: expectedTranslation,
@@ -53,15 +58,16 @@ class VisibleTextVerifier {
   }
 
   /**
-   * Registra observação de runtime
+   * Registra observação interceptada em memória (RUNTIME_VERIFIED)
    */
   static recordRuntimeObservation(observedText, expectedText, componentId = 'unknown') {
     const timestamp = Date.now();
     const verified = (observedText === expectedText || observedText.includes(expectedText));
 
     return {
+      type: 'RUNTIME_VERIFIED',
       verified,
-      method: 'RUNTIME_TEXT_OBSERVATION',
+      method: 'RUNTIME_TEXT_HOOK',
       componentId,
       expected: expectedText,
       observed: observedText,
@@ -70,9 +76,31 @@ class VisibleTextVerifier {
   }
 
   /**
+   * Registra observação visual na tela (SCREEN_VERIFIED)
+   */
+  static recordScreenObservation(observedScreenText, expectedText, context = {}) {
+    const timestamp = Date.now();
+    const verified = (observedScreenText === expectedText || observedScreenText.includes(expectedText));
+
+    return {
+      type: 'SCREEN_VERIFIED',
+      verified,
+      method: context.method || 'SCREEN_SAMPLING',
+      expected: expectedText,
+      observed: observedScreenText,
+      timestamp
+    };
+  }
+
+  /**
    * Gera o artefato formal de evidência e2e-result.json
    */
   static buildEvidenceArtifact(params = {}) {
+    const fileVer = params.fileVerified !== undefined ? params.fileVerified : (params.file?.verified || false);
+    const runtimeVer = params.runtimeVerified !== undefined ? params.runtimeVerified : (params.runtime?.verified || false);
+    const screenVer = params.screenVerified || params.visual?.verified || false;
+    const rollVer = params.rollbackVerified !== undefined ? Boolean(params.rollbackVerified) : Boolean(params.rollback?.verified);
+
     return {
       game: params.game || 'unknown_game',
       gameHash: params.gameHash || '',
@@ -80,11 +108,15 @@ class VisibleTextVerifier {
       method: params.method || 'METHOD_A_STATIC',
       sourceText: params.sourceText || '',
       translation: params.translation || '',
-      capture: params.capture || { success: false },
-      output: params.output || { success: false },
-      runtime: params.runtime || { verified: false },
-      visual: params.visual || { verified: false },
-      rollback: params.rollback || { verified: false, sha256Matched: false },
+      fileEvidence: { verified: fileVer, samples: params.fileSamples || [] },
+      runtimeEvidence: { verified: runtimeVer, samples: params.runtimeSamples || [] },
+      visualEvidence: { verified: screenVer, samples: params.screenSamples || [] },
+      rollbackEvidence: { verified: rollVer, sha256Matched: rollVer },
+      // Aliases de compatibilidade
+      file: { verified: fileVer },
+      runtime: { verified: runtimeVer },
+      visual: { verified: screenVer },
+      rollback: { verified: rollVer, sha256Matched: rollVer },
       timestamp: Date.now()
     };
   }

@@ -7,11 +7,12 @@
  * - Busca instantânea e ordenação
  * - Validação rigorosa de regras de qualidade (Quality Gate)
  * - Operações em lote (Bulk Operations) com pré-visualização obrigatória
- * - Exportação nativa para pacote de distribuição .otpatch
+ * - Exportação nativa para o schema canônico unificado .otpatch (v3.1)
  */
 
 const crypto = require('crypto');
 const PlaceholderValidator = require('./placeholderIntegrityValidator');
+const TranslationPatchSchema = require('./translationPatchSchema');
 
 class TranslationEditorCore {
   constructor(entries = []) {
@@ -162,32 +163,37 @@ class TranslationEditorCore {
   }
 
   /**
-   * Exporta as traduções do editor diretamente para o formato de distribuição .otpatch
+   * Exporta as traduções do editor diretamente para o schema canônico unificado .otpatch (v3.1)
    */
   exportToOtPatch(metadata = {}) {
     const validEntries = this.entries
       .filter(e => e.translation && e.translation.trim().length > 0)
-      .map(e => ({
-        id: e.id,
+      .map((e, idx) => ({
+        id: e.id || crypto.createHash('sha256').update(e.original || `${idx}`).digest('hex').slice(0, 16),
         location: e.location || e.file || 'data/System.json',
         original: e.original,
         translation: e.translation,
-        sourceHash: crypto.createHash('sha256').update(e.original || '').digest('hex').slice(0, 16),
-        context: e.context || e.scene || ''
+        sourceHash: e.sourceHash || crypto.createHash('sha256').update(e.original || '').digest('hex').slice(0, 16),
+        fileHash: e.fileHash || '',
+        context: e.context || e.scene || '',
+        status: e.status || 'VERIFIED'
       }));
 
-    return {
-      otPatchVersion: '3.0',
+    return TranslationPatchSchema.normalize({
+      otPatchVersion: '3.1',
       metadata: {
         patchId: metadata.patchId || `patch_${Date.now()}`,
         gameId: metadata.gameId || 'game',
+        gameHash: metadata.gameHash || '',
         gameVersion: metadata.gameVersion || '1.0.0',
+        engine: metadata.engine || 'generic',
+        runtime: metadata.runtime || 'unknown',
         targetLanguage: metadata.targetLanguage || 'pt-BR',
-        createdAt: Date.now(),
-        author: metadata.author || 'OpenTranslator User'
+        provider: metadata.provider || 'OpenTranslator Editor',
+        createdAt: Date.now()
       },
       entries: validEntries
-    };
+    });
   }
 }
 

@@ -1,18 +1,18 @@
 /**
  * OpenTranslator - RealTranslationWorkflow
  * 
- * Orquestrador do fluxo REAL de tradução ponta-a-ponta:
- * DISCOVER -> EXTRACT -> PROTECT -> TRANSLATE -> VALIDATE -> ATOMIC_APPLY -> VERIFY -> ROLLBACK -> SHA256_VERIFY
+ * Orquestrador formal de tradução:
+ * - LAB_PIPELINE: Execução em laboratório com LocalDictionaryProvider determinístico.
+ * - REAL_GAME_TRANSLATION: Execução com provedor configurado pelo usuário.
  * 
- * Regra inquebrável: NUNCA usa substituições sintéticas como "[PT] original".
- * Utiliza um TranslationProvider real (como LocalDictionaryProvider) e validação factual.
+ * Cadeia canônica:
+ * DISCOVER -> EXTRACT -> PROTECT -> TRANSLATE -> VALIDATE -> ATOMIC_APPLY -> VERIFY -> ROLLBACK -> SHA256_VERIFY
  */
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const BackupManager = require('./backupManager');
-const EngineDetector = require('./engineDetector');
 const LocalDictionaryProvider = require('./localDictionaryProvider');
 const PlaceholderValidator = require('./placeholderIntegrityValidator');
 const VisibleTextVerifier = require('./visibleTextVerifier');
@@ -21,18 +21,21 @@ class RealTranslationWorkflow {
   constructor(options = {}) {
     this.stagingBase = options.stagingBase || path.resolve(__dirname, '../../data/staging');
     this.backupManager = new BackupManager({ backupDirName: '.ot_real_wf_bk' });
-    this.provider = options.provider || new LocalDictionaryProvider();
+    this.labProvider = new LocalDictionaryProvider();
+    this.customProvider = options.provider || null;
+
     if (!fs.existsSync(this.stagingBase)) {
       fs.mkdirSync(this.stagingBase, { recursive: true });
     }
   }
 
   /**
-   * 1. Descobre arquivos-fonte no jogo
+   * 1. Descobre arquivos-fonte ignorando arquivos de metadados internos
    */
   async discoverSource(gameDir) {
     const targetFiles = [];
     const originalHashes = new Map();
+    const ignoredFiles = new Set(['e2e-result.json', 'applied_patch.json', 'package.json', 'package-lock.json', 'manifest.json']);
 
     const scan = (dir, depth = 0) => {
       if (depth > 3) return;
@@ -43,6 +46,7 @@ class RealTranslationWorkflow {
           if (ent.isDirectory() && !ent.name.startsWith('.')) {
             scan(full, depth + 1);
           } else if (ent.isFile()) {
+            if (ignoredFiles.has(ent.name.toLowerCase())) continue;
             const ext = path.extname(ent.name).toLowerCase();
             if (['.json', '.rpy', '.csv', '.po', '.txt'].includes(ext)) {
               targetFiles.push(full);
@@ -81,7 +85,6 @@ class RealTranslationWorkflow {
           };
           walk(parsed);
         } else {
-          // Linhas em arquivos de texto / RPY / CSV
           const lines = content.split(/\r?\n/);
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -97,39 +100,41 @@ class RealTranslationWorkflow {
   }
 
   /**
-   * 3. Protege tokens de formatação e códigos de controle
+   * 3. Protege tokens
    */
   protectStrings(stringEntries) {
     return stringEntries.map(entry => {
       const orig = entry.original;
       const tokens = [];
-      // Captura placeholders e escape codes: {0}, \C[2], %s, etc.
       const protectedText = orig.replace(/(\{\d+\}|\\(?:[CVNPGIRC]\[\d+\]|[.|\^!<>])|%[sdf])/g, (match) => {
         tokens.push(match);
-        return match; // Mantém no texto para verificação posterior
+        return match;
       });
       return { ...entry, protectedText, tokens };
     });
   }
 
   /**
-   * 4. Traduz as strings utilizando um provedor de tradução real
+   * 4. Traduz com provedor específico
    */
-  async translate(protectedEntries) {
+  async translate(protectedEntries, providerInstance = null) {
+    const provider = providerInstance || this.customProvider || this.labProvider;
     const translated = [];
+
     for (const entry of protectedEntries) {
-      const translation = await this.provider.translate(entry.original, { file: entry.file });
+      const translation = await provider.translate(entry.original, { file: entry.file });
       translated.push({
         ...entry,
         translation: translation || entry.original,
         isTranslated: Boolean(translation && translation !== entry.original)
       });
     }
-    return translated;
+
+    return { translated, providerName: provider.name || provider.id || 'UnknownProvider' };
   }
 
   /**
-   * 5. Valida a tradução contra o Quality Gate
+   * 5. Valida tradução contra Quality Gate
    */
   validateTranslation(translatedEntries) {
     const validated = [];
@@ -145,7 +150,7 @@ class RealTranslationWorkflow {
   }
 
   /**
-   * 6. Aplica a tradução aos arquivos com gravação atômica
+   * 6. Aplica gravação atômica
    */
   apply(validatedEntries, gameDir) {
     const entriesByFile = new Map();
@@ -205,9 +210,30 @@ class RealTranslationWorkflow {
   }
 
   /**
-   * 7. Executa o ciclo completo de Real Translation E2E
+   * Executa o LAB_PIPELINE (Usa LocalDictionaryProvider)
    */
-  async runRealCycle(gameDir) {
+  async executeLabPipeline(gameDir) {
+    return this._runInternalCycle(gameDir, this.labProvider, 'LAB_PIPELINE');
+  }
+
+  /**
+   * Executa REAL_GAME_TRANSLATION (Usa provedor configurado pelo usuário)
+   */
+  async executeRealGameTranslation(gameDir, customProvider) {
+    return this._runInternalCycle(gameDir, customProvider || this.customProvider || this.labProvider, 'REAL_GAME_TRANSLATION');
+  }
+
+  /**
+   * Wrapper canônico
+   */
+  async runRealCycle(gameDir, options = {}) {
+    if (options.pipelineType === 'REAL_GAME_TRANSLATION' || options.provider) {
+      return this.executeRealGameTranslation(gameDir, options.provider);
+    }
+    return this.executeLabPipeline(gameDir);
+  }
+
+  async _runInternalCycle(gameDir, provider, modeName) {
     const t0 = Date.now();
     const steps = [];
 
@@ -219,8 +245,8 @@ class RealTranslationWorkflow {
     }
 
     // Step 2: Backup
-    const bkRes = this.backupManager.createBackup(gameDir, targetFiles, { reason: 'RealTranslationCycle' });
-    steps.push({ step: 'BACKUP', success: bkRes.success, backupId: bkRes.backupId });
+    const bkRes = this.backupManager.createBackup(gameDir, targetFiles, { reason: modeName });
+    steps.push({ step: 'BACKUP', success: bkRes.success, backupDir: bkRes.backupDir });
 
     // Step 3: Extract
     const extracted = this.extractStrings(targetFiles.slice(0, 5));
@@ -230,10 +256,10 @@ class RealTranslationWorkflow {
     const protectedStrings = this.protectStrings(extracted);
     steps.push({ step: 'PROTECT', count: protectedStrings.length, success: true });
 
-    // Step 5: Translate (via real LocalDictionaryProvider)
-    const translated = await this.translate(protectedStrings);
+    // Step 5: Translate
+    const { translated, providerName } = await this.translate(protectedStrings, provider);
     const translatedCount = translated.filter(t => t.isTranslated).length;
-    steps.push({ step: 'TRANSLATE', translatedCount, provider: this.provider.name, success: translatedCount > 0 });
+    steps.push({ step: 'TRANSLATE', translatedCount, provider: providerName, success: translatedCount > 0 });
 
     // Step 6: Validate
     const validated = this.validateTranslation(translated);
@@ -244,17 +270,17 @@ class RealTranslationWorkflow {
     const applyRes = this.apply(validated, gameDir);
     steps.push({ step: 'APPLY', success: applyRes.success, modifiedCount: applyRes.modifiedFiles.length });
 
-    // Step 8: Verify Visible Result
+    // Step 8: Verify File Content (FILE_VERIFIED)
     const verifiedSamples = [];
     for (const item of validated.filter(v => v.valid && v.isTranslated).slice(0, 3)) {
       const ver = VisibleTextVerifier.verifyFileContent(item.file, item.translation);
       verifiedSamples.push(ver);
     }
-    const allVerified = verifiedSamples.length > 0 && verifiedSamples.every(v => v.verified);
-    steps.push({ step: 'VERIFY_RESULT', verifiedCount: verifiedSamples.length, success: allVerified });
+    const allFileVerified = verifiedSamples.length > 0 && verifiedSamples.every(v => v.verified);
+    steps.push({ step: 'VERIFY_FILE', verifiedCount: verifiedSamples.length, success: allFileVerified });
 
     // Step 9: Rollback
-    const restoreRes = this.backupManager.restore(gameDir, bkRes.backupId);
+    const restoreRes = this.backupManager.restore(gameDir);
     steps.push({ step: 'ROLLBACK', success: restoreRes.success, restoredCount: restoreRes.restoredCount });
 
     // Step 10: Verify Byte-for-Byte Original SHA-256 Match
@@ -268,20 +294,19 @@ class RealTranslationWorkflow {
     const rollbackVerified = (restoredMatchCount === originalHashes.size);
     steps.push({ step: 'VERIFY_ORIGINAL_SHA256', restoredMatchCount, total: originalHashes.size, success: rollbackVerified });
 
-    const totalSuccess = allVerified && rollbackVerified;
+    const totalSuccess = allFileVerified && rollbackVerified;
 
-    // Constrói o artefato formal e2e-result.json
     const evidenceArtifact = VisibleTextVerifier.buildEvidenceArtifact({
       game: path.basename(gameDir),
       engine: 'detected',
-      method: 'REAL_TRANSLATION_WORKFLOW',
+      method: modeName,
       sourceText: validated.find(v => v.isTranslated)?.original || '',
       translation: validated.find(v => v.isTranslated)?.translation || '',
-      capture: { success: extracted.length > 0, count: extracted.length },
-      output: { success: applyRes.success, modifiedFiles: applyRes.modifiedFiles },
-      runtime: { verified: false, note: 'Static / Staged Verification' },
-      visual: { verified: allVerified, samples: verifiedSamples },
-      rollback: { verified: rollbackVerified, sha256Matched: rollbackVerified }
+      fileVerified: allFileVerified,
+      fileSamples: verifiedSamples,
+      runtimeVerified: false,
+      screenVerified: false,
+      rollbackVerified
     });
 
     const artifactPath = path.join(gameDir, 'e2e-result.json');
@@ -291,10 +316,12 @@ class RealTranslationWorkflow {
 
     return {
       success: totalSuccess,
+      mode: modeName,
       gameDir,
       durationMs: Date.now() - t0,
       steps,
       evidenceArtifact,
+      fileVerified: allFileVerified,
       rollbackVerified
     };
   }

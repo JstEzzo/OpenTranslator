@@ -84,7 +84,9 @@ class FastTextPipeline {
       validationMs: 0,
       outputMs: 0,
       totalMs: 0,
-      pipelineMs: 0
+      pipelineMs: 0,
+      queueWaitMs: item.enqueuedAt ? Number((tStart - item.enqueuedAt).toFixed(3)) : 0,
+      processingMs: 0
     };
 
     // 1. Capture & Identity
@@ -141,7 +143,7 @@ class FastTextPipeline {
             this.consecutiveFailures = 0;
           } else {
             source = 'OFFLINE_FALLBACK';
-            translatedText = `[PT] ${originalText}`;
+            translatedText = originalText;
           }
         } catch (provErr) {
           this.consecutiveFailures++;
@@ -178,6 +180,7 @@ class FastTextPipeline {
     latencies.outputMs = Number((performance.now() - tOut0).toFixed(3));
 
     latencies.totalMs = Number((performance.now() - tStart).toFixed(3));
+    latencies.processingMs = latencies.totalMs;
     latencies.pipelineMs = Number((latencies.totalMs - latencies.providerMs).toFixed(3));
 
     return {

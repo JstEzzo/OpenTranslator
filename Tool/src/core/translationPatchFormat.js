@@ -1,60 +1,58 @@
 /**
- * OpenTranslator — TranslationPatchFormat
+ * OpenTranslator - TranslationPatchFormat
  * 
- * Formato canônico de patch de tradução (.otpatch / JSON):
- * - Header: gameId, gameHash, gameVersion, targetLanguage, provider, timestamp
- * - Entries: id, original, translation, location, fileHash, sourceHash, status, context
+ * Formato canônico unificado de patch de tradução (.otpatch / JSON v3.1):
+ * - Metadata unificado: patchId, gameId, gameHash, gameVersion, engine, runtime, targetLanguage, provider, createdAt
+ * - Entries unificadas: id, location, original, translation, sourceHash, fileHash, context, status
  * - Incremental Patching: computa delta (new, changed, unchanged, obsolete)
  * - Version-Aware: invalida ou marca para revisão caso a versão do jogo ou hash do arquivo mude
  */
 
 const crypto = require('crypto');
+const TranslationPatchSchema = require('./translationPatchSchema');
 
 class TranslationPatchFormat {
   /**
-   * Cria um novo pacote de patch estruturado
+   * Cria um novo pacote de patch estruturado em conformidade com o schema canônico
    */
   static createPatch(metadata = {}, entries = []) {
-    const patch = {
+    const raw = {
       otPatchVersion: '3.0',
-      gameId: metadata.gameId || 'game',
-      gameHash: metadata.gameHash || '',
-      gameVersion: metadata.gameVersion || '1.0',
-      targetLanguage: metadata.targetLanguage || 'pt_BR',
-      provider: metadata.provider || 'OpenTranslator Core',
-      createdAt: metadata.createdAt || Date.now(),
-      updatedAt: Date.now(),
-      stats: {
-        totalEntries: entries.length,
-        verifiedCount: entries.filter(e => e.status === 'VERIFIED').length,
-        needsReviewCount: entries.filter(e => e.status === 'NEEDS_REVIEW').length
+      metadata: {
+        patchId: metadata.patchId || `patch_${Date.now()}`,
+        gameId: metadata.gameId || 'game',
+        gameHash: metadata.gameHash || '',
+        gameVersion: metadata.gameVersion || '1.0',
+        engine: metadata.engine || 'generic',
+        runtime: metadata.runtime || 'unknown',
+        targetLanguage: metadata.targetLanguage || 'pt-BR',
+        provider: metadata.provider || 'OpenTranslator Core',
+        createdAt: metadata.createdAt || Date.now()
       },
       entries: entries.map(ent => ({
         id: ent.id || crypto.createHash('sha256').update(ent.original).digest('hex').slice(0, 16),
+        location: ent.location || 'unknown',
         original: ent.original,
         translation: ent.translation,
-        location: ent.location || 'unknown',
+        sourceHash: ent.sourceHash || crypto.createHash('sha256').update(ent.original || '').digest('hex').slice(0, 16),
         fileHash: ent.fileHash || '',
-        status: ent.status || 'VERIFIED',
-        context: ent.context || null,
-        updatedAt: ent.updatedAt || Date.now()
+        context: ent.context || '',
+        status: ent.status || 'VERIFIED'
       }))
     };
 
-    return patch;
+    return TranslationPatchSchema.normalize(raw);
   }
 
   /**
    * Computa o delta incremental entre um patch existente e uma nova versão de arquivos do jogo
-   * @param {object} existingPatch - Patch anterior carregado
-   * @param {Array<{ original: string, location: string, fileHash: string }>} currentSources - Novas strings extraídas
-   * @returns {{ unchanged: Array, newEntries: Array, changed: Array, obsolete: Array }}
    */
   static computeDiff(existingPatch, currentSources = []) {
+    const norm = TranslationPatchSchema.normalize(existingPatch);
     const existingMap = new Map();
     const origMap = new Map();
-    if (existingPatch && existingPatch.entries) {
-      for (const ent of existingPatch.entries) {
+    if (norm && norm.entries) {
+      for (const ent of norm.entries) {
         existingMap.set(ent.id, ent);
         origMap.set(ent.original, ent);
       }
@@ -75,7 +73,6 @@ class TranslationPatchFormat {
         seenIds.add(prev.id);
         seenOriginals.add(prev.original);
         if (prev.fileHash && src.fileHash && prev.fileHash !== src.fileHash) {
-          // Arquivo de origem mudou hash, marca para revisão
           changed.push({
             id: prev.id,
             original: src.original,
@@ -99,7 +96,6 @@ class TranslationPatchFormat {
       }
     }
 
-    // Identifica entradas obsoletas que não existem mais no jogo atualizado
     for (const [id, ent] of existingMap.entries()) {
       if (!seenIds.has(ent.id) && !seenOriginals.has(ent.original)) {
         obsolete.push({

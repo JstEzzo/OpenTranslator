@@ -222,7 +222,8 @@ async function main() {
     assert.strictEqual(cycleRes.success, true);
     assert.strictEqual(cycleRes.rollbackVerified, true);
     assert(cycleRes.evidenceArtifact);
-    assert.strictEqual(cycleRes.evidenceArtifact.visual.verified, true);
+    assert.strictEqual(cycleRes.fileVerified, true);
+    assert.strictEqual(cycleRes.evidenceArtifact.file.verified, true);
     assert.strictEqual(cycleRes.evidenceArtifact.rollback.sha256Matched, true);
 
     // Verify original content was restored byte-for-byte

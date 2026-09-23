@@ -1,7 +1,7 @@
 /**
  * OpenTranslator - Master Regression Test Suite
- * Executes all automated test suites from Phase 1 through Phase 8A
- * Formally separates AUTOMATED REGRESSION from REAL GAME VALIDATION.
+ * Executes all automated test suites from Phase 1 through Phase 8B
+ * Formally separates AUTOMATED REGRESSION from REAL GAME VALIDATION (REAL_GAME_FILE_E2E).
  */
 
 const { spawnSync } = require('child_process');
@@ -18,12 +18,13 @@ const suites = [
   { name: 'Phase 5C (Reality Audit)', script: 'run-phase5c-tests.js', expected: 7 },
   { name: 'Phase 6 (Production Core)', script: 'run-phase6-tests.js', expected: 16 },
   { name: 'Phase 7 (Product Hardening & UX)', script: 'run-phase7-tests.js', expected: 12 },
-  { name: 'Phase 8A (Real Translation & Evidence)', script: 'run-phase8a-tests.js', expected: 8 }
+  { name: 'Phase 8A (Real Translation & Evidence)', script: 'run-phase8a-tests.js', expected: 8 },
+  { name: 'Phase 8B (Core Hardening & Schema)', script: 'run-phase8b-tests.js', expected: 7 }
 ];
 
 console.log('================================================================');
 console.log('   OPENTRANSLATOR - MASTER REGRESSION TEST RUNNER');
-console.log('   SECTION 1: AUTOMATED REGRESSION SUITES (PHASE 1 - 8A)');
+console.log('   SECTION 1: AUTOMATED REGRESSION SUITES (PHASE 1 - 8B)');
 console.log('================================================================\n');
 
 let totalPassed = 0;
@@ -68,7 +69,7 @@ console.log('================================================================');
 console.log('   SECTION 2: REAL GAME VALIDATION (EMPIRICAL LAB EVIDENCE)');
 console.log('================================================================');
 
-let realGameE2ECount = 0;
+let realGameFileE2ECount = 0;
 const labReportPath = path.resolve(__dirname, '../../../docs/reports/PHASE7_REAL_LAB.json');
 
 if (fs.existsSync(labReportPath)) {
@@ -77,8 +78,8 @@ if (fs.existsSync(labReportPath)) {
     if (labData.results && Array.isArray(labData.results)) {
       for (const res of labData.results) {
         if (res.rollbackVerified && res.success) {
-          realGameE2ECount++;
-          console.log(`  [REAL_E2E_VERIFIED] Game: ${res.game} | Engine: ${res.engine} | Duration: ${res.durationMs}ms`);
+          realGameFileE2ECount++;
+          console.log(`  [REAL_GAME_FILE_E2E] Game: ${res.game} | Engine: ${res.engine} | Duration: ${res.durationMs}ms | Rollback SHA-256: VERIFIED`);
         }
       }
     }
@@ -86,7 +87,9 @@ if (fs.existsSync(labReportPath)) {
 }
 
 console.log('----------------------------------------------------------------');
-console.log(`REAL_GAME_E2E_COUNT: ${realGameE2ECount} (Factual E2E lab tests with rollback SHA-256)`);
+console.log(`REAL_GAME_FILE_E2E_COUNT: ${realGameFileE2ECount} (Staged game file translation + SHA-256 rollback)`);
+console.log(`REAL_GAME_RUNTIME_E2E_COUNT: 0 (Requires interactive OS window hook proof)`);
+console.log(`REAL_GAME_VISUAL_E2E_COUNT: 0 (Requires SCREEN_VERIFIED pixel confirmation)`);
 console.log('================================================================\n');
 
 if (totalFailed > 0) {
