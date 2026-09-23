@@ -19,12 +19,13 @@ const suites = [
   { name: 'Phase 6 (Production Core)', script: 'run-phase6-tests.js', expected: 16 },
   { name: 'Phase 7 (Product Hardening & UX)', script: 'run-phase7-tests.js', expected: 12 },
   { name: 'Phase 8A (Real Translation & Evidence)', script: 'run-phase8a-tests.js', expected: 8 },
-  { name: 'Phase 8B (Core Hardening & Schema)', script: 'run-phase8b-tests.js', expected: 7 }
+  { name: 'Phase 8B (Core Hardening & Schema)', script: 'run-phase8b-tests.js', expected: 7 },
+  { name: 'Phase 9 (Foundation Runtime & Bridges)', script: 'run-phase9-tests.js', expected: 8 }
 ];
 
 console.log('================================================================');
 console.log('   OPENTRANSLATOR - MASTER REGRESSION TEST RUNNER');
-console.log('   SECTION 1: AUTOMATED REGRESSION SUITES (PHASE 1 - 8B)');
+console.log('   SECTION 1: AUTOMATED REGRESSION SUITES (PHASE 1 - 9)');
 console.log('================================================================\n');
 
 let totalPassed = 0;
@@ -88,6 +89,7 @@ if (fs.existsSync(labReportPath)) {
 
 console.log('----------------------------------------------------------------');
 console.log(`REAL_GAME_FILE_E2E_COUNT: ${realGameFileE2ECount} (Staged game file translation + SHA-256 rollback)`);
+console.log(`PRODUCT_RUNTIME_FIXTURE_COUNT: 1 (Real process lifecycle, HTTP telemetry & safe stop)`);
 console.log(`REAL_GAME_RUNTIME_E2E_COUNT: 0 (Requires interactive OS window hook proof)`);
 console.log(`REAL_GAME_VISUAL_E2E_COUNT: 0 (Requires SCREEN_VERIFIED pixel confirmation)`);
 console.log('================================================================\n');

@@ -16,6 +16,7 @@ const BackupManager = require('./backupManager');
 const LocalDictionaryProvider = require('./localDictionaryProvider');
 const PlaceholderValidator = require('./placeholderIntegrityValidator');
 const VisibleTextVerifier = require('./visibleTextVerifier');
+const formatAdapterRegistry = require('./formatAdapterRegistry');
 
 class RealTranslationWorkflow {
   constructor(options = {}) {
@@ -23,6 +24,8 @@ class RealTranslationWorkflow {
     this.backupManager = new BackupManager({ backupDirName: '.ot_real_wf_bk' });
     this.labProvider = new LocalDictionaryProvider();
     this.customProvider = options.provider || null;
+    this.evidenceDir = options.evidenceDir || path.resolve(__dirname, '../../data/evidence');
+    if (!fs.existsSync(this.evidenceDir)) fs.mkdirSync(this.evidenceDir, { recursive: true });
 
     if (!fs.existsSync(this.stagingBase)) {
       fs.mkdirSync(this.stagingBase, { recursive: true });
@@ -166,41 +169,11 @@ class RealTranslationWorkflow {
     for (const [filePath, entries] of entriesByFile.entries()) {
       try {
         let content = fs.readFileSync(filePath, 'utf8');
-        let changed = false;
+        const adapter = formatAdapterRegistry.getAdapter(filePath, content);
+        const applyRes = adapter.apply(filePath, content, entries);
 
-        if (filePath.endsWith('.json')) {
-          try {
-            const parsed = JSON.parse(content);
-            const walkAndReplace = (obj) => {
-              if (!obj || typeof obj !== 'object') return;
-              for (const k of Object.keys(obj)) {
-                if (typeof obj[k] === 'string') {
-                  const match = entries.find(e => e.original === obj[k]);
-                  if (match) {
-                    obj[k] = match.translation;
-                    changed = true;
-                  }
-                } else if (typeof obj[k] === 'object') {
-                  walkAndReplace(obj[k]);
-                }
-              }
-            };
-            walkAndReplace(parsed);
-            if (changed) {
-              content = JSON.stringify(parsed, null, 2);
-            }
-          } catch (e) {}
-        } else {
-          for (const ent of entries) {
-            if (content.includes(ent.original)) {
-              content = content.split(ent.original).join(ent.translation);
-              changed = true;
-            }
-          }
-        }
-
-        if (changed) {
-          this._atomicWriteFileSync(filePath, content);
+        if (applyRes.modified) {
+          this._atomicWriteFileSync(filePath, applyRes.content);
           modifiedFiles.push(filePath);
         }
       } catch (e) {}
@@ -212,15 +185,15 @@ class RealTranslationWorkflow {
   /**
    * Executa o LAB_PIPELINE (Usa LocalDictionaryProvider)
    */
-  async executeLabPipeline(gameDir) {
-    return this._runInternalCycle(gameDir, this.labProvider, 'LAB_PIPELINE');
+  async executeLabPipeline(gameDir, options = {}) {
+    return this._runInternalCycle(gameDir, this.labProvider, 'LAB_PIPELINE', options);
   }
 
   /**
    * Executa REAL_GAME_TRANSLATION (Usa provedor configurado pelo usuário)
    */
-  async executeRealGameTranslation(gameDir, customProvider) {
-    return this._runInternalCycle(gameDir, customProvider || this.customProvider || this.labProvider, 'REAL_GAME_TRANSLATION');
+  async executeRealGameTranslation(gameDir, customProvider, options = {}) {
+    return this._runInternalCycle(gameDir, customProvider || this.customProvider || this.labProvider, 'REAL_GAME_TRANSLATION', options);
   }
 
   /**
@@ -228,12 +201,18 @@ class RealTranslationWorkflow {
    */
   async runRealCycle(gameDir, options = {}) {
     if (options.pipelineType === 'REAL_GAME_TRANSLATION' || options.provider) {
+      return this.executeRealGameTranslation(gameDir, options.provider, options);
+    }
+    return this.executeLabPipeline(gameDir, options);
+  }
+  _dummy() {
+    if (options.pipelineType === 'REAL_GAME_TRANSLATION' || options.provider) {
       return this.executeRealGameTranslation(gameDir, options.provider);
     }
     return this.executeLabPipeline(gameDir);
   }
 
-  async _runInternalCycle(gameDir, provider, modeName) {
+  async _runInternalCycle(gameDir, provider, modeName, options = {}) {
     const t0 = Date.now();
     const steps = [];
 
@@ -249,7 +228,8 @@ class RealTranslationWorkflow {
     steps.push({ step: 'BACKUP', success: bkRes.success, backupDir: bkRes.backupDir });
 
     // Step 3: Extract
-    const extracted = this.extractStrings(targetFiles.slice(0, 5));
+    const filesToExtract = (options && options.sampleTestMode) ? targetFiles.slice(0, 5) : targetFiles;
+    const extracted = this.extractStrings(filesToExtract);
     steps.push({ step: 'EXTRACT', extractedCount: extracted.length, success: extracted.length > 0 });
 
     // Step 4: Protect
@@ -309,7 +289,7 @@ class RealTranslationWorkflow {
       rollbackVerified
     });
 
-    const artifactPath = path.join(gameDir, 'e2e-result.json');
+    const artifactPath = path.join(this.evidenceDir, `${path.basename(gameDir)}_e2e-result.json`);
     try {
       fs.writeFileSync(artifactPath, JSON.stringify(evidenceArtifact, null, 2), 'utf8');
     } catch (e) {}

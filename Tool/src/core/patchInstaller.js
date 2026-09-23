@@ -16,6 +16,7 @@ const crypto = require('crypto');
 const BackupManager = require('./backupManager');
 const TranslationPatchSchema = require('./translationPatchSchema');
 const defaultJournal = require('./transactionJournal');
+const formatAdapterRegistry = require('./formatAdapterRegistry');
 
 class PatchInstaller {
   constructor(options = {}) {
@@ -192,48 +193,12 @@ class PatchInstaller {
         let content = fileItem.originalContent;
         let fileChanged = false;
 
-        // Se for JSON estruturado
-        if (fileItem.relPath.toLowerCase().endsWith('.json')) {
-          try {
-            const parsed = JSON.parse(content);
-            const walkAndReplace = (obj) => {
-              if (!obj || typeof obj !== 'object') return;
-              for (const k of Object.keys(obj)) {
-                if (typeof obj[k] === 'string') {
-                  for (const ent of fileItem.entries) {
-                    if (obj[k] === ent.original) {
-                      obj[k] = ent.translation;
-                      fileChanged = true;
-                      totalEntriesApplied++;
-                    }
-                  }
-                } else if (typeof obj[k] === 'object') {
-                  walkAndReplace(obj[k]);
-                }
-              }
-            };
-            walkAndReplace(parsed);
-            if (fileChanged) {
-              content = JSON.stringify(parsed, null, 2);
-            }
-          } catch (e) {
-            for (const ent of fileItem.entries) {
-              if (content.includes(ent.original)) {
-                content = content.split(ent.original).join(ent.translation);
-                fileChanged = true;
-                totalEntriesApplied++;
-              }
-            }
-          }
-        } else {
-          // Arquivos textuais
-          for (const ent of fileItem.entries) {
-            if (content.includes(ent.original)) {
-              content = content.split(ent.original).join(ent.translation);
-              fileChanged = true;
-              totalEntriesApplied++;
-            }
-          }
+        const adapter = formatAdapterRegistry.getAdapter(fileItem.relPath, content);
+        const applyRes = adapter.apply(fileItem.fullPath, content, fileItem.entries);
+        if (applyRes.modified) {
+          content = applyRes.content;
+          fileChanged = true;
+          totalEntriesApplied += fileItem.entries.length;
         }
 
         if (fileChanged) {
@@ -317,6 +282,22 @@ class PatchInstaller {
         safe: false,
         error: `PATH_TRAVERSAL_DETECTED: Tentativa de escapar do diretório raiz do jogo: [${relativePath}]`
       };
+    }
+
+    // Reparse point / Symlink hardening
+    if (fs.existsSync(resolvedPath)) {
+      try {
+        const lstat = fs.lstatSync(resolvedPath);
+        if (lstat.isSymbolicLink()) {
+          const realTarget = fs.realpathSync(resolvedPath);
+          if (!realTarget.startsWith(realGameRoot + path.sep) && realTarget !== realGameRoot) {
+            return {
+              safe: false,
+              error: `SYMLINK_ESCAPE_DETECTED: Link simbólico aponta para fora da raiz do jogo: [${realTarget}]`
+            };
+          }
+        }
+      } catch (e) {}
     }
 
     return { safe: true, resolvedPath };

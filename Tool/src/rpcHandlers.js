@@ -1436,6 +1436,73 @@ const handlers = {
     return {
       entries: global.__openTranslatorLiveEntries || []
     };
+  },
+
+  // ==================== PHASE 9 RUNTIME RPC HANDLERS ====================
+
+  async runtimeStartSession(params = {}) {
+    const RuntimeSession = require("./core/runtimeSessionManager");
+    const session = new RuntimeSession({
+      gameId: params.gameId || (params.gameDir ? path.basename(params.gameDir) : "game"),
+      gameDir: params.gameDir,
+      stagingDir: params.stagingDir,
+      executablePath: params.executablePath,
+      engine: params.engine,
+      runtime: params.runtime,
+      strategy: params.strategy
+    });
+    session.prepare();
+    const res = session.launch(params.args || []);
+    return { ok: true, sessionId: session.sessionId, pid: res.pid, executableHash: session.executableHash };
+  },
+
+  async runtimeStopSession(params = {}) {
+    const ownedProcessRegistry = require("./core/ownedProcessRegistry");
+    if (params.pid) {
+      const res = ownedProcessRegistry.stop(params.pid, params.reason || "RPC Stop");
+      return { ok: res.success, res };
+    }
+    if (params.sessionId) {
+      const res = ownedProcessRegistry.stopSession(params.sessionId, params.reason || "RPC Session Stop");
+      return { ok: res.success, res };
+    }
+    return { ok: false, error: "pid or sessionId required" };
+  },
+
+  async runtimeProbe(params = {}) {
+    const RuntimeProbe = require("./core/runtimeProbe");
+    const res = RuntimeProbe.probeProcess(params.pid);
+    return { ok: true, probe: res };
+  },
+
+  async runtimeCaptureScreen(params = {}) {
+    const screenCapture = require("./core/screenCapture");
+    const res = screenCapture.capture(params);
+    return { ok: res.success, capture: res };
+  },
+
+  async routerRecommend(params = {}) {
+    const router = require("./core/translationRuntimeRouter");
+    const recommendation = router.selectStrategy(params);
+    return { ok: true, recommendation };
+  },
+
+  async stagingPrepare(params = {}) {
+    const stagingPolicy = require("./core/stagingPolicy");
+    const res = stagingPolicy.createStaging(params.gameDir, params.sessionId);
+    return { ok: res.success, res };
+  },
+
+  async stagingCleanup(params = {}) {
+    const stagingPolicy = require("./core/stagingPolicy");
+    const res = stagingPolicy.cleanupStaging(params.stagingDir);
+    return { ok: res.success, res };
+  },
+
+  async evidenceList() {
+    const aggregator = require("./core/capabilityEvidenceAggregator");
+    const matrix = aggregator.aggregate();
+    return { ok: true, matrix };
   }
 };
 

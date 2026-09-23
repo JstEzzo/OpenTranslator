@@ -59,14 +59,13 @@ async function main() {
     const evidence = new EvidenceModel({
       method: 'METHOD_B_HOOK_RUNTIME',
       engine: 'unity',
-      target: 'TextMeshPro',
-      codeEvidence: true,
-      integrationEvidence: true,
-      gameEvidence: true,
-      runtimeEvidence: true,
-      visualEvidence: false,
-      rollbackEvidence: true
+      target: 'TextMeshPro'
     });
+    evidence.recordEvidence('CODE', { subject: 'Unit' });
+    evidence.recordEvidence('INTEGRATION', { subject: 'Inter' });
+    evidence.recordEvidence('FILE_VERIFIED', { subject: 'TextMeshPro', expected: 'A', observed: 'A' });
+    evidence.recordEvidence('RUNTIME_VERIFIED', { subject: 'Hook', expected: 'A', observed: 'A', processId: 100 });
+    evidence.recordEvidence('ROLLBACK_VERIFIED', { subject: 'Bk', expectedHash: 'abc', observedHash: 'abc' });
 
     assert.strictEqual(evidence.getGrade(), 'RUNTIME_VERIFIED');
 
@@ -80,7 +79,7 @@ async function main() {
     assert.strictEqual(runtimeClaim.legitimate, true);
 
     // After actual visual observation is recorded
-    evidence.visualEvidence = true;
+    evidence.recordEvidence('SCREEN_VERIFIED', { subject: 'Screen', expected: 'A', observed: 'A', artifactPath: 'screen.png', artifactHash: '123' });
     assert.strictEqual(evidence.getGrade(), 'VISUALLY_VERIFIED');
     assert.strictEqual(evidence.validateClaim('VISUALLY_VERIFIED').legitimate, true);
   });
