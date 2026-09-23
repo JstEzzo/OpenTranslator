@@ -106,7 +106,7 @@ A suíte mestra de regressão (`Tool/src/tests/run_master_regression.js`) execut
 
 | Classificação | Tecnologias e Métodos |
 |---|---|
-| **REALMENTE FUNCIONA** | Ren'Py (Estático, `tl/<lang>`, `RENPY_LANGUAGE`, `RENPY_UPDATE_STRINGS`), RPG Maker MV/MZ (JSON, escape codes, DOM hook), Unity Mono (TextMeshPro, UGUI, Unity Localization Package), Godot (CSV, PO/MO), Unreal Engine (Source PO / LocRes pipeline), Electron (ASAR, DOM MutationObserver), Unknown Game Forensics & Triage, Desktop HUD Overlay 2.0, Backup & Rollback SHA-256. |
+| **FORMAT SUPPORTED / LAB TESTED** | Ren'Py (Estático, `tl/<lang>`, `RENPY_LANGUAGE`, `RENPY_UPDATE_STRINGS`), RPG Maker MV/MZ (JSON, escape codes, DOM hook), Unity Mono (TextMeshPro, UGUI, Unity Localization Package), Godot (CSV, PO/MO), Unreal Engine (Source PO / LocRes pipeline), Electron (ASAR, DOM MutationObserver), Unknown Game Forensics & Triage, Desktop HUD Overlay 2.0, Backup & Rollback SHA-256. |
 | **FUNCIONA PARCIALMENTE** | RPG Maker RGSS (Scripts e dados extraídos via bridge Ruby/Marshal; hook em runtime depende de DLL externa), Unity IL2CPP Estático (descompactação de assets/bundles funcional; hook de runtime requer injeção nativa compilada), Wolf RPG (extração de `.dat`/`.wolf`), OCR Local (dependente de amostragem de tela). |
 | **EXPERIMENTAL** | Unity IL2CPP Runtime Method Detouring via C++ nativo em 64-bit, injeção in-place em contêineres comprimidos de Unreal PAK. |
 | **NÃO VERIFICADO** | Engines japonesas proprietárias legadas ausentes no laboratório local (ex: KAG3/Kirikiri). |

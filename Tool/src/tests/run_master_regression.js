@@ -1,10 +1,12 @@
 /**
  * OpenTranslator - Master Regression Test Suite
- * Executes all test suites from Phase 1 through Phase 7
+ * Executes all automated test suites from Phase 1 through Phase 8A
+ * Formally separates AUTOMATED REGRESSION from REAL GAME VALIDATION.
  */
 
 const { spawnSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const suites = [
   { name: 'Phase 1 (Core Foundations)', script: 'run-all-tests.js', expected: 15 },
@@ -15,12 +17,13 @@ const suites = [
   { name: 'Phase 5B (Universal Translation)', script: 'run-phase5b-tests.js', expected: 11 },
   { name: 'Phase 5C (Reality Audit)', script: 'run-phase5c-tests.js', expected: 7 },
   { name: 'Phase 6 (Production Core)', script: 'run-phase6-tests.js', expected: 16 },
-  { name: 'Phase 7 (Product Hardening & UX)', script: 'run-phase7-tests.js', expected: 12 }
+  { name: 'Phase 7 (Product Hardening & UX)', script: 'run-phase7-tests.js', expected: 12 },
+  { name: 'Phase 8A (Real Translation & Evidence)', script: 'run-phase8a-tests.js', expected: 8 }
 ];
 
 console.log('================================================================');
 console.log('   OPENTRANSLATOR - MASTER REGRESSION TEST RUNNER');
-console.log('   EXECUTING ALL SUITES (PHASE 1 THROUGH PHASE 7)');
+console.log('   SECTION 1: AUTOMATED REGRESSION SUITES (PHASE 1 - 8A)');
 console.log('================================================================\n');
 
 let totalPassed = 0;
@@ -40,7 +43,7 @@ for (const suite of suites) {
   const isSuccess = (proc.status === 0);
 
   if (isSuccess) {
-    console.log(`  V SUCCESS: ${suite.name} passed all tests.\n`);
+    console.log(`  ✓ SUCCESS: ${suite.name} passed all tests.\n`);
     totalPassed += suite.expected;
     results.push({ name: suite.name, status: 'PASS', count: suite.expected });
   } else {
@@ -51,13 +54,39 @@ for (const suite of suites) {
 }
 
 console.log('================================================================');
-console.log('                 MASTER REGRESSION SUMMARY');
+console.log('                 AUTOMATED REGRESSION SUMMARY');
 console.log('================================================================');
 for (const r of results) {
   console.log(`  [${r.status}] ${r.name}: ${r.status === 'PASS' ? r.count + '/' + r.count : 'FAILED'}`);
 }
 console.log('----------------------------------------------------------------');
 console.log(`TOTAL AUTOMATED TESTS: ${totalPassed}/${totalPassed + totalFailed} PASS`);
+console.log('================================================================\n');
+
+// SECTION 2: REAL GAME VALIDATION (Separated from automated tests)
+console.log('================================================================');
+console.log('   SECTION 2: REAL GAME VALIDATION (EMPIRICAL LAB EVIDENCE)');
+console.log('================================================================');
+
+let realGameE2ECount = 0;
+const labReportPath = path.resolve(__dirname, '../../../docs/reports/PHASE7_REAL_LAB.json');
+
+if (fs.existsSync(labReportPath)) {
+  try {
+    const labData = JSON.parse(fs.readFileSync(labReportPath, 'utf8'));
+    if (labData.results && Array.isArray(labData.results)) {
+      for (const res of labData.results) {
+        if (res.rollbackVerified && res.success) {
+          realGameE2ECount++;
+          console.log(`  [REAL_E2E_VERIFIED] Game: ${res.game} | Engine: ${res.engine} | Duration: ${res.durationMs}ms`);
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+console.log('----------------------------------------------------------------');
+console.log(`REAL_GAME_E2E_COUNT: ${realGameE2ECount} (Factual E2E lab tests with rollback SHA-256)`);
 console.log('================================================================\n');
 
 if (totalFailed > 0) {

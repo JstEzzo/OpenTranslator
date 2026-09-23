@@ -14,7 +14,7 @@ O ciclo de operação foi verificado ponto a ponto:
    - Status do servidor exibido em tempo real: `Backend Ativo (Porta 8080)`, `Dual Hook Ativo (Porta 16005)`.
 2. **Seleção e Análise Forense do Jogo**:
    - Navegação por diretório com detecção instantânea da engine, runtime e arquitetura binária (x86/x64).
-   - Indicação visual clara de compatibilidade: badges de cores com classificação (`REALMENTE FUNCIONA`, `FUNCIONA PARCIALMENTE`, `EXPERIMENTAL`).
+   - Indicação visual clara de compatibilidade: badges de cores com classificação (`LAB_TESTED / RUNTIME_VERIFIED`, `FUNCIONA PARCIALMENTE`, `EXPERIMENTAL`).
 3. **Dry-Run & Translation Preview**:
    - Visualização prévia de todos os arquivos a serem modificados, estimativa de risco e número de strings afetadas sem gravação física em disco.
    - Exibição de comparativo de variáveis e tags de controle antes/depois.

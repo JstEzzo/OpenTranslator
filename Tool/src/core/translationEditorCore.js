@@ -1,5 +1,5 @@
 /**
- * OpenTranslator — TranslationEditorCore
+ * OpenTranslator - TranslationEditorCore
  * 
  * Núcleo do Editor de Tradução Profissional:
  * - Modelo virtualizado de dados (Original, Translation, Context, Source, Provider, Status, Scene)
@@ -7,13 +7,15 @@
  * - Busca instantânea e ordenação
  * - Validação rigorosa de regras de qualidade (Quality Gate)
  * - Operações em lote (Bulk Operations) com pré-visualização obrigatória
+ * - Exportação nativa para pacote de distribuição .otpatch
  */
 
+const crypto = require('crypto');
 const PlaceholderValidator = require('./placeholderIntegrityValidator');
 
 class TranslationEditorCore {
   constructor(entries = []) {
-    this.entries = entries; // Array de { id, original, translation, context, source, provider, status, scene }
+    this.entries = entries; // Array de { id, original, translation, context, source, provider, status, scene, location }
     this.history = [];      // Pilha de undo
     this.redoStack = [];    // Pilha de redo
   }
@@ -156,6 +158,35 @@ class TranslationEditorCore {
     return {
       success: true,
       updatedCount
+    };
+  }
+
+  /**
+   * Exporta as traduções do editor diretamente para o formato de distribuição .otpatch
+   */
+  exportToOtPatch(metadata = {}) {
+    const validEntries = this.entries
+      .filter(e => e.translation && e.translation.trim().length > 0)
+      .map(e => ({
+        id: e.id,
+        location: e.location || e.file || 'data/System.json',
+        original: e.original,
+        translation: e.translation,
+        sourceHash: crypto.createHash('sha256').update(e.original || '').digest('hex').slice(0, 16),
+        context: e.context || e.scene || ''
+      }));
+
+    return {
+      otPatchVersion: '3.0',
+      metadata: {
+        patchId: metadata.patchId || `patch_${Date.now()}`,
+        gameId: metadata.gameId || 'game',
+        gameVersion: metadata.gameVersion || '1.0.0',
+        targetLanguage: metadata.targetLanguage || 'pt-BR',
+        createdAt: Date.now(),
+        author: metadata.author || 'OpenTranslator User'
+      },
+      entries: validEntries
     };
   }
 }
