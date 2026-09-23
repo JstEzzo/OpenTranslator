@@ -1,0 +1,128 @@
+{
+  "timestamp": 1790119589745,
+  "results": [
+    {
+      "game": "ArmoredSuitSolganteRenpy0.2-pc",
+      "engine": "renpy",
+      "success": true,
+      "rollbackVerified": true,
+      "steps": [
+        {
+          "step": "ANALYZE",
+          "engine": "renpy",
+          "triad": "renpy::python3::renpy_tl",
+          "success": true
+        },
+        {
+          "step": "DISCOVER_TARGETS",
+          "count": 87,
+          "success": true
+        },
+        {
+          "step": "BACKUP",
+          "success": true,
+          "backedUpCount": 87
+        },
+        {
+          "step": "APPLY_MODIFICATION",
+          "modifiedCount": 3,
+          "success": true
+        },
+        {
+          "step": "ROLLBACK",
+          "success": true,
+          "restoredCount": 87
+        },
+        {
+          "step": "VERIFY_ORIGINAL_SHA256",
+          "verifiedCount": 3,
+          "mismatchCount": 0,
+          "success": true
+        }
+      ],
+      "durationMs": 503
+    },
+    {
+      "game": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "engine": "generic",
+      "success": true,
+      "rollbackVerified": true,
+      "steps": [
+        {
+          "step": "ANALYZE",
+          "engine": "generic",
+          "triad": "generic::unknown::unknown",
+          "success": true
+        },
+        {
+          "step": "DISCOVER_TARGETS",
+          "count": 2,
+          "success": true
+        },
+        {
+          "step": "BACKUP",
+          "success": true,
+          "backedUpCount": 2
+        },
+        {
+          "step": "APPLY_MODIFICATION",
+          "modifiedCount": 2,
+          "success": true
+        },
+        {
+          "step": "ROLLBACK",
+          "success": true,
+          "restoredCount": 2
+        },
+        {
+          "step": "VERIFY_ORIGINAL_SHA256",
+          "verifiedCount": 2,
+          "mismatchCount": 0,
+          "success": true
+        }
+      ],
+      "durationMs": 61
+    },
+    {
+      "game": "Marge Mania v0.1",
+      "engine": "mz",
+      "success": true,
+      "rollbackVerified": true,
+      "steps": [
+        {
+          "step": "ANALYZE",
+          "engine": "mz",
+          "triad": "mz::v8::rpgmaker_window",
+          "success": true
+        },
+        {
+          "step": "DISCOVER_TARGETS",
+          "count": 67,
+          "success": true
+        },
+        {
+          "step": "BACKUP",
+          "success": true,
+          "backedUpCount": 67
+        },
+        {
+          "step": "APPLY_MODIFICATION",
+          "modifiedCount": 3,
+          "success": true
+        },
+        {
+          "step": "ROLLBACK",
+          "success": true,
+          "restoredCount": 67
+        },
+        {
+          "step": "VERIFY_ORIGINAL_SHA256",
+          "verifiedCount": 3,
+          "mismatchCount": 0,
+          "success": true
+        }
+      ],
+      "durationMs": 353
+    }
+  ]
+}
