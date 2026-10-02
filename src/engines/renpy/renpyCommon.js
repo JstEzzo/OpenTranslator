@@ -171,21 +171,19 @@ function buildRenpyStringTlContent(entries, lang = "pt_BR") {
     }
   }
 
-  for (const currentLang of langs) {
-    content += `translate ${currentLang} strings:\n\n`;
-    for (const entry of mergedEntries) {
-      if (!entry.oldText || !entry.newText || entry.oldText === entry.newText) continue;
-      const formattedOld = formatRenpyStringLiteral(entry.oldText);
-      const formattedNew = formatRenpyStringLiteral(entry.newText);
+  content += `translate ${lang} strings:\n\n`;
+  for (const entry of mergedEntries) {
+    if (!entry.oldText || !entry.newText || entry.oldText === entry.newText) continue;
+    const formattedOld = formatRenpyStringLiteral(entry.oldText);
+    const formattedNew = formatRenpyStringLiteral(entry.newText);
 
-      if (entry.location) {
-        content += `    # ${entry.location}\n`;
-      }
-      content += `    old ${formattedOld}\n`;
-      content += `    new ${formattedNew}\n\n`;
+    if (entry.location) {
+      content += `    # ${entry.location}\n`;
     }
-    content += `\n`;
+    content += `    old ${formattedOld}\n`;
+    content += `    new ${formattedNew}\n\n`;
   }
+  content += `\n`;
 
   return content;
 }

@@ -191,7 +191,6 @@ class RenpyInjector {
 
       if (blockCount > 0) {
         content += `translate pt_BR strings:\n\n` + entriesContent;
-        content += `translate pt strings:\n\n` + entriesContent;
       } else {
         content += `# Nenhuma entrada nesta categoria para injeção.\n`;
       }
