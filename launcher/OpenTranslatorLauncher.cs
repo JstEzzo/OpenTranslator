@@ -41,8 +41,19 @@ namespace OpenTranslatorLauncher
             }
 
             // Single Instance Enforcement
-            bool createdNew;
-            appMutex = new Mutex(true, "Global\\OpenTranslator_SingleInstance_Mutex_App", out createdNew);
+            bool createdNew = false;
+            try
+            {
+                appMutex = new Mutex(true, "Global\\OpenTranslator_SingleInstance_Mutex_App", out createdNew);
+            }
+            catch (AbandonedMutexException)
+            {
+                createdNew = true;
+            }
+            catch
+            {
+                createdNew = true;
+            }
 
             if (!createdNew)
             {
@@ -961,6 +972,8 @@ namespace OpenTranslatorLauncher
             this.BackColor = Color.FromArgb(24, 25, 28);
             this.ForeColor = Color.FromArgb(240, 240, 240);
             this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+            this.TopMost = true;
+            this.Shown += (s, e) => { this.TopMost = false; this.BringToFront(); this.Activate(); };
 
             string icoPath = engine.ResolveExistingPath(
                 Path.Combine(engine.BaseDir, "resources", "OpenTranslator.ico"),
@@ -1405,14 +1418,31 @@ namespace OpenTranslatorLauncher
                     try
                     {
                         string profileDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenTranslatorProfile");
+                        if (!Directory.Exists(profileDir)) Directory.CreateDirectory(profileDir);
+
+                        // Clear any orphaned lockfile if no browser window is running
+                        string lockFile = Path.Combine(profileDir, "lockfile");
+                        if (File.Exists(lockFile))
+                        {
+                            try { File.Delete(lockFile); } catch { }
+                        }
+
+                        string debugArg = isDebugMode ? " --remote-debugging-port=9222" : "";
                         var psi = new ProcessStartInfo
                         {
                             FileName = browserApp,
-                            Arguments = "--app=" + url + " --remote-debugging-port=9222 --user-data-dir=\"" + profileDir + "\" --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --window-size=1180,760",
+                            Arguments = "--app=" + url + debugArg + " --user-data-dir=\"" + profileDir + "\" --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --window-size=1200,800",
                             UseShellExecute = false
                         };
-                        Process.Start(psi);
-                        return;
+                        var proc = Process.Start(psi);
+                        if (proc != null)
+                        {
+                            Thread.Sleep(800);
+                            if (!proc.HasExited)
+                            {
+                                return;
+                            }
+                        }
                     }
                     catch { }
                 }
