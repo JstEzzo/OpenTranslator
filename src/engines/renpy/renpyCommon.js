@@ -74,9 +74,78 @@ function formatRenpyStringLiteral(text) {
   return `"${str}"`;
 }
 
+const RENPY_COMMON_STRINGS = [
+  // Dialog confirmation & common screen messages
+  { original: "Are you sure you want to quit?", translated: "Tem certeza de que deseja sair?" },
+  { original: "Are you sure you want to return to the main menu?\nThis will lose unsaved progress.", translated: "Tem certeza de que deseja voltar ao menu principal?\nTodo progresso não salvo será perdido." },
+  { original: "Are you sure you want to return to the main menu? This will lose unsaved progress.", translated: "Tem certeza de que deseja voltar ao menu principal? Todo progresso não salvo será perdido." },
+  { original: "Are you sure you want to overwrite your save?", translated: "Tem certeza de que deseja sobrescrever o seu save?" },
+  { original: "Are you sure you want to load this save? This will lose unsaved progress.", translated: "Tem certeza de que deseja carregar este save? Todo progresso não salvo será perdido." },
+  { original: "Are you sure you want to delete this save?", translated: "Tem certeza de que deseja excluir este save?" },
+  { original: "Are you sure you want to end the replay?", translated: "Tem certeza de que deseja encerrar o replay?" },
+
+  // Weekdays
+  { original: "Monday", translated: "Segunda-feira" },
+  { original: "Tuesday", translated: "Terça-feira" },
+  { original: "Wednesday", translated: "Quarta-feira" },
+  { original: "Thursday", translated: "Quinta-feira" },
+  { original: "Friday", translated: "Sexta-feira" },
+  { original: "Saturday", translated: "Sábado" },
+  { original: "Sunday", translated: "Domingo" },
+
+  // Weekdays abbreviations
+  { original: "Mon", translated: "Seg" },
+  { original: "Tue", translated: "Ter" },
+  { original: "Wed", translated: "Qua" },
+  { original: "Thu", translated: "Qui" },
+  { original: "Fri", translated: "Sex" },
+  { original: "Sat", translated: "Sáb" },
+  { original: "Sun", translated: "Dom" },
+
+  // Times of day
+  { original: "Morning", translated: "Manhã" },
+  { original: "Afternoon", translated: "Tarde" },
+  { original: "Evening", translated: "Tarde/Noite" },
+  { original: "Night", translated: "Noite" },
+  { original: "Dusk", translated: "Entardecer" },
+  { original: "Dawn", translated: "Amanhecer" },
+  { original: "Day", translated: "Dia" },
+
+  // Navigation & Screen Controls
+  { original: "Start", translated: "Iniciar" },
+  { original: "History", translated: "Histórico" },
+  { original: "Save", translated: "Salvar" },
+  { original: "Q.Save", translated: "Salvar Rápido" },
+  { original: "Q.Load", translated: "Carregar Rápido" },
+  { original: "Load", translated: "Carregar" },
+  { original: "Preferences", translated: "Preferências" },
+  { original: "Options", translated: "Opções" },
+  { original: "Main Menu", translated: "Menu Principal" },
+  { original: "About", translated: "Sobre" },
+  { original: "Help", translated: "Ajuda" },
+  { original: "Quit", translated: "Sair" },
+  { original: "Return", translated: "Voltar" },
+  { original: "Back", translated: "Voltar" },
+  { original: "Skip", translated: "Pular" },
+  { original: "Auto", translated: "Auto" },
+  { original: "Yes", translated: "Sim" },
+  { original: "No", translated: "Não" },
+  { original: "Empty Slot", translated: "Espaço Vazio" },
+  { original: "Empty Slot.", translated: "Espaço Vazio." },
+  { original: "Empty", translated: "Vazio" },
+
+  // Locations & Roles commonly used in screens
+  { original: "Bedroom", translated: "Quarto" },
+  { original: "Home", translated: "Casa" },
+  { original: "Student", translated: "Estudante" },
+  { original: "Teacher", translated: "Professor" },
+  { original: "Town", translated: "Cidade" }
+];
+
 /**
  * Formats translation entries into standard Ren'Py string translation blocks.
  * Generates dual translate blocks (pt_BR and pt) for maximum game engine compatibility.
+ * Automatically incorporates canonical engine strings for Ren'Py common screens.
  * @param {Array<{ oldText: string, newText: string, location?: string }>} entries 
  * @param {string} lang 
  * @returns {string} Generated .rpy content
@@ -87,9 +156,24 @@ function buildRenpyStringTlContent(entries, lang = "pt_BR") {
 
   const langs = (lang === "pt_BR" || lang === "pt") ? ["pt_BR", "pt"] : [lang];
 
+  // Merge common strings if not already supplied
+  const existingOlds = new Set((entries || []).map(e => e.oldText));
+  const mergedEntries = [...(entries || [])];
+  if (lang === "pt_BR" || lang === "pt") {
+    for (const cs of RENPY_COMMON_STRINGS) {
+      if (!existingOlds.has(cs.original)) {
+        mergedEntries.push({
+          oldText: cs.original,
+          newText: cs.translated,
+          location: "renpy/common baseline"
+        });
+      }
+    }
+  }
+
   for (const currentLang of langs) {
     content += `translate ${currentLang} strings:\n\n`;
-    for (const entry of entries) {
+    for (const entry of mergedEntries) {
       if (!entry.oldText || !entry.newText || entry.oldText === entry.newText) continue;
       const formattedOld = formatRenpyStringLiteral(entry.oldText);
       const formattedNew = formatRenpyStringLiteral(entry.newText);
@@ -266,12 +350,38 @@ function extractRenpyRpyTexts(rpyContent, filePath) {
   }
 
   // Step 3: Python attribute assignments & dictionary string values (e.g., name = "...", "title": "...")
-  const PYTHON_ATTR_RE = /\b(?:name|desc|description|title|label|heading|summary|text|prompt|msg|message|header|name_cap|short_name)\s*[:=]\s*(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g;
+  const PYTHON_ATTR_RE = /\b(?:name|alias|title|label|heading|summary|text|prompt|msg|message|header|name_cap|short_name|desc|description|hint|todo|note|bio|caption)\s*[:=]\s*(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g;
   let pyAttrMatch;
 
   while ((pyAttrMatch = PYTHON_ATTR_RE.exec(rpyContent)) !== null) {
     const val = pyAttrMatch[1] || pyAttrMatch[2] || pyAttrMatch[3] || pyAttrMatch[4];
     processMatch(val);
+  }
+
+  // Step 3b: Ren'Py Variable declarations (default <var> = "...", define <var> = "...")
+  const RENPY_VAR_DECL_RE = /^[ \t]*(?:default|define)\s+[a-zA-Z0-9_.]+\s*=\s*(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/gm;
+  let varDeclMatch;
+  while ((varDeclMatch = RENPY_VAR_DECL_RE.exec(rpyContent)) !== null) {
+    const val = varDeclMatch[1] || varDeclMatch[2] || varDeclMatch[3] || varDeclMatch[4];
+    processMatch(val);
+  }
+
+  // Step 3c: Character declarations (char.<id> = "..." or Character("...", ...))
+  const CHAR_DECL_RE = /^[ \t]*char\.[a-zA-Z0-9_]+\s*=\s*(?:Character\s*\(\s*)?(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/gm;
+  let charDeclMatch;
+  while ((charDeclMatch = CHAR_DECL_RE.exec(rpyContent)) !== null) {
+    const val = charDeclMatch[1] || charDeclMatch[2] || charDeclMatch[3] || charDeclMatch[4];
+    processMatch(val);
+  }
+
+  // Step 3d: Decompiled module string constants (when scanning .py files)
+  if (filePath && filePath.endsWith('.py')) {
+    const CONST_LINE_RE = /^[ \t]*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')[ \t]*$/gm;
+    let constLineMatch;
+    while ((constLineMatch = CONST_LINE_RE.exec(rpyContent)) !== null) {
+      const val = constLineMatch[1] !== undefined ? constLineMatch[1] : constLineMatch[2];
+      processMatch(val);
+    }
   }
 
   // Step 4: Standard Ren'Py Character Dialogues & Narrator Lines (e.g. tony e_c "Have ya ever seen...", "Hello!", anon "N-no, sir.")
@@ -484,5 +594,6 @@ module.exports = {
   purgeCacheFiles,
   formatRenpyStringLiteral,
   unescapeRenpyString,
-  healRenpyVariables
+  healRenpyVariables,
+  RENPY_COMMON_STRINGS
 };

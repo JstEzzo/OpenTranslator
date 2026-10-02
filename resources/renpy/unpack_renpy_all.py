@@ -65,23 +65,30 @@ def extract_fallback_strings(data):
     return lines
 
 def extract_code_consts(code_obj, result_list, visited=None):
-    """Recursively extracts constants and strings from Python code objects"""
+    """Recursively extracts constants and strings from Python code objects, tuples, lists, and dicts"""
     if visited is None:
         visited = set()
     if id(code_obj) in visited:
         return
     visited.add(id(code_obj))
 
-    if hasattr(code_obj, 'co_consts') and isinstance(code_obj.co_consts, (list, tuple)):
-        for const_val in code_obj.co_consts:
-            if hasattr(const_val, 'co_code'):
-                extract_code_consts(const_val, result_list, visited)
-            elif isinstance(const_val, str):
-                c_str = const_val.strip()
-                if len(c_str) > 0 and not c_str.startswith("renpy."):
-                    formatted = f'"{c_str}"' if '\n' not in c_str else f'"""{c_str}"""'
-                    if formatted not in result_list:
-                        result_list.append(formatted)
+    if hasattr(code_obj, 'co_consts'):
+        extract_code_consts(code_obj.co_consts, result_list, visited)
+    elif isinstance(code_obj, (list, tuple, set)):
+        for item in code_obj:
+            extract_code_consts(item, result_list, visited)
+    elif isinstance(code_obj, dict):
+        for k, v in code_obj.items():
+            extract_code_consts(k, result_list, visited)
+            extract_code_consts(v, result_list, visited)
+    elif hasattr(code_obj, 'co_code'):
+        extract_code_consts(code_obj, result_list, visited)
+    elif isinstance(code_obj, str):
+        c_str = code_obj.strip()
+        if len(c_str) > 1 and not c_str.startswith("renpy."):
+            formatted = f'"{c_str}"' if '\n' not in c_str else f'"""{c_str}"""'
+            if formatted not in result_list:
+                result_list.append(formatted)
 
 def decompile_python_pyc(file_path, out_py_path):
     """Decompiles a Python file (.pyc) directly into .py"""

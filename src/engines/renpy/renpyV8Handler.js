@@ -53,10 +53,12 @@ class RenpyV8Handler extends BaseEngineHandler {
             const scanRpyFiles = (dir) => {
               const entries = fs.readdirSync(dir, { withFileTypes: true });
               for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name);
-                if (entry.isDirectory() && entry.name !== 'tl' && entry.name !== 'renpy') {
+                const relSub = path.relative(gameSubDir, fullPath).replace(/\\/g, '/');
+                if (entry.isDirectory()) {
+                  if (entry.name === 'tl' || entry.name === 'cache' || entry.name === 'saves') continue;
+                  if (relSub === 'renpy' || relSub.startsWith('renpy/')) continue;
                   scanRpyFiles(fullPath);
-                } else if (entry.isFile() && (entry.name.endsWith('.rpy') || entry.name.endsWith('.py')) && !entry.name.startsWith('00_opent_') && !entry.name.startsWith('000_anti_')) {
+                } else if (entry.isFile() && (entry.name.endsWith('.rpy') || entry.name.endsWith('.rpym') || entry.name.endsWith('.py')) && !entry.name.startsWith('00_opent_') && !entry.name.startsWith('000_anti_')) {
                   extractedFiles.push(fullPath);
                   const content = fs.readFileSync(fullPath, 'utf-8');
                   const rpyTexts = extractRenpyRpyTexts(content, fullPath);

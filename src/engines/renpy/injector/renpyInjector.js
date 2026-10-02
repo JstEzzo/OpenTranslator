@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { formatRenpyStringLiteral, healRenpyVariables } = require('../renpyCommon');
+const { formatRenpyStringLiteral, healRenpyVariables, RENPY_COMMON_STRINGS } = require('../renpyCommon');
 
 class RenpyInjector {
   constructor(options = {}) {
@@ -153,6 +153,22 @@ class RenpyInjector {
       }
     }
 
+    // Incorpora strings comuns canônicas de engine Ren'Py (telas comuns, botões, confirmações)
+    const existingOriginals = new Set(translations.map(t => t.original));
+    if (RENPY_COMMON_STRINGS) {
+      for (const cs of RENPY_COMMON_STRINGS) {
+        if (!existingOriginals.has(cs.original)) {
+          stringsList.push({
+            original: cs.original,
+            translated: cs.translated,
+            type: 'interface_string',
+            file: 'renpy/common',
+            line: 1
+          });
+        }
+      }
+    }
+
     const globalSeen = new Set();
     const buildRpyBlock = (title, entries) => {
       let content = `# OpenTranslator — ${title}\n`;
@@ -175,6 +191,7 @@ class RenpyInjector {
 
       if (blockCount > 0) {
         content += `translate pt_BR strings:\n\n` + entriesContent;
+        content += `translate pt strings:\n\n` + entriesContent;
       } else {
         content += `# Nenhuma entrada nesta categoria para injeção.\n`;
       }

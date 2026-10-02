@@ -1536,7 +1536,7 @@ function extractAllRenpyRpyTexts(gameDir) {
         scan(full);
       } else if (
         entry.isFile() &&
-        entry.name.endsWith(".rpy") &&
+        (entry.name.endsWith(".rpy") || entry.name.endsWith(".rpym") || entry.name.endsWith(".py")) &&
         !entry.name.startsWith("00_opent_") &&
         !entry.name.startsWith("000_anti_")
       ) {
