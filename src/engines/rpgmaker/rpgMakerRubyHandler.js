@@ -24,8 +24,8 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
         });
       }
 
-      const candidate = "C:\\Users\\Teste\\AppData\\Roaming\\uv\\python\\cpython-3.12.8-windows-x86_64-none\\python.exe";
-      const pythonBin = fs.existsSync(candidate) ? candidate : 'python';
+      const { resolvePythonBinary } = require("../../utils/pythonResolver");
+      const pythonBin = resolvePythonBinary();
       const args = [sidecarScript, '--game-dir', gameDir, '--mode', mode];
       if (payloadFile) args.push('--payload', payloadFile);
 
@@ -64,8 +64,8 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
       if (!fs.existsSync(bridgeScript)) {
         return resolve({ success: false, error: 'rgss3a_bridge.py not found' });
       }
-      const candidate = "C:\\Users\\Teste\\AppData\\Roaming\\uv\\python\\cpython-3.12.8-windows-x86_64-none\\python.exe";
-      const pythonBin = fs.existsSync(candidate) ? candidate : 'python';
+      const { resolvePythonBinary } = require("../../utils/pythonResolver");
+      const pythonBin = resolvePythonBinary();
       const args = [bridgeScript, '--mode', mode, '--archive', archivePath, '--dir', outputDir];
       execFile(pythonBin, args, { maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => {
         if (err) return resolve({ success: false, error: stderr || err.message });

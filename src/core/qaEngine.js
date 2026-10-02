@@ -85,7 +85,11 @@ class QAEngine {
 
     // 7. Normalização Unicode e codificação
     if (translated.includes('\uFFFD')) {
-      qaErrors.push("Caractere de substituição Unicode detectado (corrupção de encoding).");
+      if (!original.includes('\uFFFD')) {
+        qaErrors.push("Caractere de substituição Unicode detectado (corrupção de encoding).");
+      } else {
+        qaWarnings.push("Caractere de substituição Unicode já presente no original preservado.");
+      }
     }
 
     // 8. Tamanho anômalo
@@ -104,6 +108,39 @@ class QAEngine {
     else if (qaWarnings.length > 0) qaStatus = "warn";
 
     return { qaStatus, qaErrors, qaWarnings };
+  }
+
+  /**
+   * Valida a integridade global da sessão de tradução contra falso sucesso.
+   * Impede que sessões incompletas com alta taxa de pendências ou cobertura irrisória passem silenciosamente.
+   */
+  static validateSession(metrics = {}) {
+    const totalTexts = metrics.totalDetected || metrics.totalTexts || 0;
+    const coveredTexts = metrics.coveredTexts || 0;
+    const pendingTexts = metrics.pendingTexts !== undefined ? metrics.pendingTexts : Math.max(0, totalTexts - coveredTexts);
+    const coveragePercent = metrics.coveragePercent !== undefined ? metrics.coveragePercent : (totalTexts > 0 ? Math.round((coveredTexts / totalTexts) * 100) : 100);
+    const errors = [];
+    const warnings = [];
+
+    if (totalTexts > 0 && pendingTexts > 0) {
+      if (coveragePercent < 50 || pendingTexts >= totalTexts * 0.5) {
+        errors.push(`Cobertura crítica insuficiente: apenas ${coveredTexts}/${totalTexts} (${coveragePercent}%) textos cobertos. ${pendingTexts} textos continuam pendentes.`);
+      } else {
+        warnings.push(`Tradução parcial: ${pendingTexts} textos permanecem pendentes (Cobertura: ${coveragePercent}%).`);
+      }
+    }
+
+    if (metrics.appliedCount === 0 && coveredTexts > 0) {
+      errors.push(`Inconsistência de aplicação: ${coveredTexts} textos estavam disponíveis, mas 0 textos foram efetivamente gravados no jogo.`);
+    }
+
+    return {
+      valid: errors.length === 0,
+      qaStatus: errors.length > 0 ? "fail" : (warnings.length > 0 ? "warn" : "pass"),
+      status: errors.length > 0 ? "FAILED_COVERAGE" : (warnings.length > 0 ? "PARTIAL_COVERAGE" : "COMPLETED_COVERAGE"),
+      errors,
+      warnings
+    };
   }
 }
 

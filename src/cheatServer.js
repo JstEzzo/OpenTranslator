@@ -173,7 +173,7 @@ function startHookServer() {
             const cfg = loadCfg();
             const sl = reqSl || cfg.sl || "auto";
             const tl = reqTl || cfg.tl || "pt";
-            const engine = cfg.engine || "google";
+            const engine = cfg.engine || "multi";
 
             const RuntimeTextManager = require("./core/runtimeTextManager");
             const rtm = RuntimeTextManager.getInstance();
@@ -296,7 +296,7 @@ function startHookServer() {
             const cfg = loadCfg();
             const sl = cfg.sl || "auto";
             const tl = cfg.tl || "pt";
-            const engine = cfg.engine || "google";
+            const engine = cfg.engine || "multi";
 
             const RuntimeTextManager = require("./core/runtimeTextManager");
             const rtm = RuntimeTextManager.getInstance();

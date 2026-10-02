@@ -132,14 +132,7 @@ const RENPY_COMMON_STRINGS = [
   { original: "No", translated: "Não" },
   { original: "Empty Slot", translated: "Espaço Vazio" },
   { original: "Empty Slot.", translated: "Espaço Vazio." },
-  { original: "Empty", translated: "Vazio" },
-
-  // Locations & Roles commonly used in screens
-  { original: "Bedroom", translated: "Quarto" },
-  { original: "Home", translated: "Casa" },
-  { original: "Student", translated: "Estudante" },
-  { original: "Teacher", translated: "Professor" },
-  { original: "Town", translated: "Cidade" }
+  { original: "Empty", translated: "Vazio" }
 ];
 
 /**

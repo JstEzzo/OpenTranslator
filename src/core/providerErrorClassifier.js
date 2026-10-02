@@ -11,17 +11,23 @@ class ProviderErrorClassifier {
 
     // 1. RATE LIMIT (429)
     if (status === 429 || msg.includes("429") || msg.toLowerCase().includes("too many requests") || body.includes("Too Many Requests")) {
-      let retryAfterMs = 10 * 60 * 1000;
+      let retryAfterMs = 15 * 1000; // 15s adaptive default, NOT 10 minutes!
+      let retryAfterProvided = false;
       if (response.headers && response.headers["retry-after"]) {
         const ra = parseInt(response.headers["retry-after"], 10);
-        if (!isNaN(ra)) retryAfterMs = ra * 1000;
+        if (!isNaN(ra) && ra > 0) {
+          retryAfterMs = ra * 1000;
+          retryAfterProvided = true;
+        }
       }
       return {
         type: "RATE_LIMITED",
         statusCode: 429,
         isRateLimit: true,
         retryAfterMs,
-        message: "HTTP 429 Too Many Requests (Rate limit atingido)"
+        retryAfterProvided,
+        retryAfterSec: Math.round(retryAfterMs / 1000),
+        message: `HTTP 429 Too Many Requests (Rate limit temporário; espera: ${Math.round(retryAfterMs / 1000)}s)`
       };
     }
 

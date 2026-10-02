@@ -49,8 +49,8 @@ class ProviderCircuitState {
 class GlobalCircuitBreaker {
   constructor() {
     this.providers = new Map();
-    this.baseCooldownMs = 10 * 60 * 1000; // 10 minutos base
-    this.maxCooldownMs = 120 * 60 * 1000; // 120 minutos teto
+    this.baseCooldownMs = 15 * 1000; // 15 segundos base adaptativo (NÃO 10 minutos!)
+    this.maxCooldownMs = 5 * 60 * 1000; // 5 minutos teto
   }
 
   static getInstance() {

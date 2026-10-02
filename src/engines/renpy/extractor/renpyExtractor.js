@@ -104,7 +104,7 @@ class RenpyExtractor {
 
     // Variáveis puras entre colchetes ou expressões python
     if (/^\[[a-zA-Z0-9._!]+\]$/.test(clean)) return false;
-    if (/\[.*?\b(or|and|not|in|is|if|else)\b.*?\]/i.test(clean)) return false;
+    if (/\[[^\]]*\b(or|and|not|in|is|if|else)\b[^\]]*\]/i.test(clean)) return false;
 
     // Chamadas de shader / python
     if (/\b(?:renpy\.register_shader|register_shader|def\s+[a-zA-Z_]\w*|\.texture2D|gl_FragColor)\b/.test(clean)) return false;
@@ -228,7 +228,7 @@ class RenpyExtractor {
       }
 
       // 3. Atribuições de propriedades e metadados (<objeto>.<propriedade> = "..." ou '...')
-      const ATTR_ASSIGN_RE = /^[ \t]*[a-zA-Z0-9_.]+\.(?:name|alias|title|label|caption|bio|desc|description|hint|todo|note|text|prompt|msg|message|summary)\s*=\s*(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/gm;
+      const ATTR_ASSIGN_RE = /^[ \t]*[a-zA-Z0-9_.]+\.(?:name|alias|title|label|caption|bio|desc|description|hint|todo|note|text|prompt|msg|message|summary)\s*=\s*(?:_{1,2}\s*\(\s*)?(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/gm;
       let attrMatch;
       while ((attrMatch = ATTR_ASSIGN_RE.exec(content)) !== null) {
         const raw = attrMatch[1] || attrMatch[2] || attrMatch[3] || attrMatch[4];
@@ -238,7 +238,7 @@ class RenpyExtractor {
       }
 
       // 4. Declarações diretas de personagens (char.<id> = "..." ou Character("...", ...))
-      const CHAR_DECL_RE = /^[ \t]*char\.[a-zA-Z0-9_]+\s*=\s*(?:Character\s*\(\s*)?(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/gm;
+      const CHAR_DECL_RE = /^[ \t]*char\.[a-zA-Z0-9_]+\s*=\s*(?:Character\s*\(\s*)?(?:_{1,2}\s*\(\s*)?(?:"{3}([\s\S]*?)"{3}|'{3}([\s\S]*?)'{3}|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/gm;
       let charDeclMatch;
       while ((charDeclMatch = CHAR_DECL_RE.exec(content)) !== null) {
         const raw = charDeclMatch[1] || charDeclMatch[2] || charDeclMatch[3] || charDeclMatch[4];
@@ -261,23 +261,43 @@ class RenpyExtractor {
 
       // 6. Varredura linha a linha para diálogos, escolhas de menu, telas e blocos old
       const lines = content.split(/\r?\n/);
+      let inPythonBlock = false;
+      let pythonBlockIndent = -1;
+
       for (let i = 0; i < lines.length; i++) {
         const lineNum = i + 1;
         const line = lines[i];
         const trimmed = line.trim();
 
         // Ignora comentários puros
-        if (trimmed.startsWith('#')) continue;
+        if (!trimmed || trimmed.startsWith('#')) continue;
+
+        // Detecta início e término de blocos Python (init python, python:, init -... python, etc.)
+        const currentIndent = line.search(/\S/);
+        if (/^(?:init\s+(?:-\d+\s+)?python(?:\s+hide)?|python(?:\s+early)?):/i.test(trimmed)) {
+          inPythonBlock = true;
+          pythonBlockIndent = currentIndent >= 0 ? currentIndent : 0;
+          continue;
+        }
+
+        if (inPythonBlock) {
+          if (currentIndent >= 0 && currentIndent <= pythonBlockIndent && !trimmed.startsWith('#')) {
+            inPythonBlock = false;
+            pythonBlockIndent = -1;
+          }
+        }
 
         // Atualiza contexto de label ou screen
         const labelMatch = trimmed.match(/^label\s+([a-zA-Z0-9_]+):/);
         if (labelMatch) {
           currentContext = `label:${labelMatch[1]}`;
+          inPythonBlock = false;
           continue;
         }
         const screenMatch = trimmed.match(/^screen\s+([a-zA-Z0-9_]+)/);
         if (screenMatch) {
           currentContext = `screen:${screenMatch[1]}`;
+          inPythonBlock = false;
           continue;
         }
 
@@ -305,14 +325,16 @@ class RenpyExtractor {
           addCandidate(unescaped, raw, 'screen_text', '', lineNum);
         }
 
-        // Diálogos com personagem (com ou sem atributos) ou narrador:
-        const dialogueMatch = trimmed.match(/^(?:([a-zA-Z0-9_]+)(?:\s+[@a-zA-Z0-9_]+)*\s+)?("((?:[^"\\]|\\.)*)")$/);
-        if (dialogueMatch) {
-          const charId = dialogueMatch[1] || 'narrator';
-          const raw = dialogueMatch[3];
-          if (!ignoredKeywords.has(charId)) {
-            const unescaped = unescapeRenpyString(raw);
-            addCandidate(unescaped, raw, 'dialogue', charId, lineNum);
+        // Diálogos com personagem (com ou sem atributos) ou narrador (somente fora de blocos Python):
+        if (!inPythonBlock) {
+          const dialogueMatch = trimmed.match(/^(?:([a-zA-Z0-9_]+)(?:\s+[@a-zA-Z0-9_]+)*\s+)?("((?:[^"\\]|\\.)*)")$/);
+          if (dialogueMatch) {
+            const charId = dialogueMatch[1] || 'narrator';
+            const raw = dialogueMatch[3];
+            if (!ignoredKeywords.has(charId)) {
+              const unescaped = unescapeRenpyString(raw);
+              addCandidate(unescaped, raw, 'dialogue', charId, lineNum);
+            }
           }
         }
       }

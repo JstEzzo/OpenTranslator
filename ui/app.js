@@ -1000,7 +1000,16 @@
 
     try {
       const r = await rpc("launchGame", { key });
-      updateLoadingState(100, t("cheatAlreadyTranslated") || "⚡ Game already translated! Loading executable...", "PID " + (r.pid || "Active"));
+
+      if (r && r.ok === false) {
+        const errMsg = r.error || (r.certificate && r.certificate.reason) || "Erro ao iniciar o jogo";
+        updateLoadingState(100, `Falha: ${errMsg}`, "Erro");
+        if (ld) ld.style.display = "none";
+        showToast("Launch failed: " + errMsg, "error");
+        return;
+      }
+
+      updateLoadingState(100, t("cheatAlreadyTranslated") || "⚡ Game loaded! Executable running...", "PID " + (r.pid || "Active"));
 
       const elapsed = Date.now() - startTime;
       const minDisplayMs = 1500;
@@ -1009,11 +1018,6 @@
       setTimeout(() => {
         if (ld) ld.style.display = "none";
       }, remainingMs);
-
-      if (r && r.ok === false) {
-        showToast("Launch failed: " + (r.error || "Unknown error"), "error");
-        return;
-      }
       S.launchedKey = key;
       renderGames();
       if (g.engine === "renpy" || (g.constArgs && g.constArgs.engine === "renpy")) { refreshAppDataCard(key, g.constArgs?.gameExe ? dirname(g.constArgs.gameExe) : "", title); } else { const c = $("renpy-appdata-card"); if (c) c.style.display = "none"; }

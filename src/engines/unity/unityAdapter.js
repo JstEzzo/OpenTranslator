@@ -42,9 +42,8 @@ class UnityAdapter extends BaseEngineAdapter {
   }
 
   getPythonBin() {
-    const candidate = "C:\\Users\\Teste\\AppData\\Roaming\\uv\\python\\cpython-3.12.8-windows-x86_64-none\\python.exe";
-    if (fs.existsSync(candidate)) return candidate;
-    return "python";
+    const { resolvePythonBinary } = require("../../utils/pythonResolver");
+    return resolvePythonBinary();
   }
 
   isIl2cpp(gameDir) {

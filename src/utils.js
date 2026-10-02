@@ -11,9 +11,10 @@
  *
  * Principais Componentes:
  * - MEDIA_EXT_RE / RESOURCE_PATH_RE / ESC_RE
- * - logWarn() / logInfo() / logError()
+ * - logWarn()
+ * - findDataDir()
  * - getLastRealKey()
- * - findGameDirectories()
+ * - isTranslatableText()
  */
 
 const fs = require("fs");

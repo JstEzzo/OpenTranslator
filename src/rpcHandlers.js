@@ -467,7 +467,10 @@ const handlers = {
         lang: cfg.lang || "pt_BR"
       });
       if (pipeRes && pipeRes.success === false) {
-        global.log("warn", "Aviso no pipeline RPG Maker: " + (pipeRes.error || ""));
+        const errorMsg = pipeRes.error || (pipeRes.details && pipeRes.details.length > 0 ? pipeRes.details.join('; ') : "Falha na tradução dos arquivos de dados.");
+        const stackInfo = pipeRes.stack ? `\nStack trace: ${pipeRes.stack}` : '';
+        global.log("error", `Falha no pipeline do RPG Maker: ${errorMsg}${stackInfo}`);
+        return { ok: false, error: errorMsg, details: pipeRes.details, stack: pipeRes.stack, certificate: pipeRes.certificate, status: pipeRes.status };
       }
 
       // Garante injeção de CheatOverlay.js para suporte ao Dual Hook / Runtime Translation
@@ -1955,8 +1958,8 @@ function verifyAndDiagnoseGame(gameDir, exe, pid) {
 
       if (!isNaN(handleNum) && handleNum > 0) {
         global.log(
-          "success",
-          `[Verificação de Saúde] O jogo (PID ${safePid}) está ativo com JANELA VISÍVEL na tela (Handle: ${handleNum}).`
+          "info",
+          `[Saúde de Processo / Process Health] O processo do jogo (PID ${safePid}) está ativo com JANELA VISÍVEL na tela (Handle: ${handleNum}).`
         );
       } else {
         global.log(

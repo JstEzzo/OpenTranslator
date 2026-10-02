@@ -494,12 +494,8 @@ function patchGameData(gameDir, texts, translations) {
       continue;
     }
 
-    // Suporte a plugins individuais .js (PluginSafePatcher)
+    // Suporte universal e seguro a plugins individuais .js via PluginSafePatcher
     if (file.startsWith("js/plugins/") && file.endsWith(".js")) {
-      // Protege contra escrita em lote dos 15.001: aplica apenas em plugins seguros aprovados
-      if (file !== "js/plugins/ItemBook.js") {
-        continue;
-      }
       const wwwDir = path.dirname(dataDir);
       const pluginFilePath = path.join(wwwDir, file);
       if (fs.existsSync(pluginFilePath)) {

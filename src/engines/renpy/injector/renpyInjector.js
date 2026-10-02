@@ -131,7 +131,6 @@ class RenpyInjector {
 
     initContent += `    if getattr(renpy, "translation", None) and hasattr(renpy.translation, "translate_string"):\n`;
     initContent += `        config.say_menu_text_filter = renpy.translation.translate_string\n\n`;
-
     fs.writeFileSync(initRpyPath, initContent, 'utf8');
     modifiedFiles.push(initRpyPath);
 

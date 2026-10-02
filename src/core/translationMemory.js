@@ -96,7 +96,7 @@ class TranslationMemory2 {
           LIMIT 1
         `);
         const row = stmt.get(hash, gameId, engine);
-        if (row) {
+        if (row && row.translated_text && typeof row.translated_text === "string" && row.translated_text.trim().length > 0 && row.translated_text.trim() !== sourceText.trim()) {
           this.cacheStats.hits++;
           return row.translated_text;
         }
@@ -104,8 +104,11 @@ class TranslationMemory2 {
     }
 
     if (this.inMemoryStore.has(hash)) {
-      this.cacheStats.hits++;
-      return this.inMemoryStore.get(hash).translated_text;
+      const entry = this.inMemoryStore.get(hash);
+      if (entry && entry.translated_text && typeof entry.translated_text === "string" && entry.translated_text.trim().length > 0 && entry.translated_text.trim() !== sourceText.trim()) {
+        this.cacheStats.hits++;
+        return entry.translated_text;
+      }
     }
 
     this.cacheStats.misses++;
@@ -114,6 +117,8 @@ class TranslationMemory2 {
 
   store(sourceText, translatedText, options = {}) {
     if (!sourceText || !translatedText) return;
+    if (typeof sourceText !== "string" || typeof translatedText !== "string") return;
+    if (sourceText.trim() === translatedText.trim()) return; // Nunca armazena texto idêntico ao original como tradução válida
     const norm = sourceText.trim().toLowerCase();
     const hash = crypto.createHash("sha256").update(norm).digest("hex");
     const engine = options.engine || "generic";

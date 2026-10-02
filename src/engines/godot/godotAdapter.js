@@ -28,15 +28,8 @@ class GodotAdapter extends BaseEngineAdapter {
   }
 
   _findPython() {
-    const candidates = [
-      "C:\\Users\\Teste\\AppData\\Roaming\\uv\\python\\cpython-3.12.8-windows-x86_64-none\\python.exe",
-      "python",
-      "python3"
-    ];
-    for (const c of candidates) {
-      if (fs.existsSync(c)) return c;
-    }
-    return "python";
+    const { resolvePythonBinary } = require("../../utils/pythonResolver");
+    return resolvePythonBinary();
   }
 
   getDetailedDeclaration() {

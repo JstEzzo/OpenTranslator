@@ -183,8 +183,16 @@ class TranslationPipeline {
         }
       }
 
-      if (cached && typeof cached === 'string') {
+      const hasSourceChars = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(t.clean);
+      const isActuallyTranslated = cached && typeof cached === 'string' && cached.trim().length > 0 &&
+        (cached.trim() !== t.clean.trim() && cached.trim() !== (t.original || '').trim() || !hasSourceChars);
+
+      if (isActuallyTranslated) {
         translations.set(t.id, cached);
+        cacheHits++;
+      } else if (!hasSourceChars) {
+        // Texto sem caracteres do idioma de origem: já está na língua alvo (ex: 'Atacar', 'Fugir') ou é símbolo/pontuação
+        translations.set(t.id, t.clean);
         cacheHits++;
       } else {
         pendingTexts.push(t);
@@ -205,6 +213,8 @@ class TranslationPipeline {
       }
     }
 
+    let isRateLimitedEncountered = false;
+
     if (pendingTexts.length > 0) {
       if (options.provider === 'mock' || options.mockTranslations === true) {
         for (const pt of pendingTexts) {
@@ -216,48 +226,96 @@ class TranslationPipeline {
         const cache = require('../cache');
         const glossary = cache.loadGlossary();
 
+        const activeEngine = options.engine || options.provider || 'multi';
+
         const newTranslations = await translator.translateBatch(
           pendingTexts,
           sl,
           tl,
-          options.provider || 'google',
+          activeEngine,
           glossary,
           (chunk) => {
             if (chunk && chunk.length > 0) {
               for (const item of chunk) {
-                translationMemory.store(item.clean, item.translated, {
-                  engine: detection.engine,
-                  gameId: path.basename(targetDir),
-                  filePath: item.file
-                });
+                if (item.clean && item.translated && item.clean.trim() !== item.translated.trim()) {
+                  translationMemory.store(item.clean, item.translated, {
+                    engine: detection.engine,
+                    gameId: path.basename(targetDir),
+                    filePath: item.file
+                  });
+                }
               }
             }
           }
         );
 
         for (const [id, tr] of newTranslations) {
-          translations.set(id, tr);
-          accounting.registerTranslated(id, true);
           const origObj = texts.find(x => x.id === id);
-          if (origObj) {
-            translationMemory.store(origObj.clean, tr, {
-              engine: detection.engine,
-              gameId: path.basename(targetDir),
-              filePath: origObj.file
-            });
+          const hasSource = origObj ? /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(origObj.clean) : true;
+          const isRealTranslation = tr && typeof tr === 'string' && tr.trim().length > 0 &&
+            (!origObj || tr.trim() !== origObj.clean.trim() || !hasSource);
+          if (isRealTranslation) {
+            translations.set(id, tr);
+            accounting.registerTranslated(id, true);
+            if (origObj && tr.trim() !== origObj.clean.trim()) {
+              translationMemory.store(origObj.clean, tr, {
+                engine: detection.engine,
+                gameId: path.basename(targetDir),
+                filePath: origObj.file
+              });
+            }
           }
         }
 
-        // Se o lote foi interrompido por Rate Limit / Circuit Breaker
+        // Se o lote inicial foi interrompido por Rate Limit, tenta fallback automático (ex: Papago)
         if (newTranslations && newTranslations.rateLimited) {
+          isRateLimitedEncountered = true;
           const breaker = GlobalCircuitBreaker.getInstance();
           const health = breaker.getProviderHealth('google:gtx');
-          const remainingPending = pendingTexts.filter(pt => !translations.has(pt.id));
+          let remainingPending = pendingTexts.filter(pt => !translations.has(pt.id));
 
           if (global.log) {
             global.log('warn', `Google GTX está temporariamente limitado.`);
-            global.log('warn', `Tradução pausada para evitar novas requisições e prolongamento do bloqueio.`);
-            global.log('info', `${remainingPending.length} textos aguardando tradução.`);
+            global.log('info', `Ativando fallback automático para Papago (${remainingPending.length} textos pendentes)...`);
+          }
+
+          try {
+            const fallbackTranslations = await translator.translateBatch(
+              remainingPending,
+              sl,
+              tl,
+              'papago',
+              glossary
+            );
+
+            if (fallbackTranslations && fallbackTranslations.size > 0) {
+              for (const [id, tr] of fallbackTranslations) {
+                const origObj = texts.find(x => x.id === id);
+                const hasSource = origObj ? /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(origObj.clean) : true;
+                const isRealTranslation = tr && typeof tr === 'string' && tr.trim().length > 0 &&
+                  (!origObj || tr.trim() !== origObj.clean.trim() || !hasSource);
+                if (isRealTranslation) {
+                  translations.set(id, tr);
+                  accounting.registerTranslated(id, true);
+                  if (origObj && tr.trim() !== origObj.clean.trim()) {
+                    translationMemory.store(origObj.clean, tr, {
+                      engine: detection.engine,
+                      gameId: path.basename(targetDir),
+                      filePath: origObj.file
+                    });
+                  }
+                }
+              }
+              remainingPending = pendingTexts.filter(pt => !translations.has(pt.id));
+              if (remainingPending.length === 0) {
+                isRateLimitedEncountered = false; // Recuperação completa!
+                if (global.log) {
+                  global.log('success', `[SmartSwitch] Fallback Papago concluiu com sucesso a tradução dos textos pendentes!`);
+                }
+              }
+            }
+          } catch (e) {
+            if (global.log) global.log('warn', `[SmartSwitch] Falha no fallback Papago: ${e.message}`);
           }
 
           // Salva estado do job para retomada futura sem perda de dados
@@ -274,23 +332,61 @@ class TranslationPipeline {
             cooldownUntil: health.cooldownUntil
           });
 
-          if (translations.size === 0) {
+          // Modo Normal (padrão): Aplicação parcial é terminantemente proibida quando a tradução foi interrompida com pendências
+          if (options.allowPartial !== true && remainingPending.length > 0) {
+            const TranslationCertificate = require('./translationCertificate');
+            const certificate = TranslationCertificate.issue({
+              engine: detection.engine,
+              game: path.basename(targetDir),
+              totalDetected: texts.length,
+              translatable: texts.length,
+              cacheHits,
+              translatedNow: translations.size - cacheHits,
+              pendingCount: remainingPending.length,
+              coveredTexts: translations.size,
+              appliedCount: 0,
+              isRateLimited: true,
+              providerStatus: 'RATE_LIMITED',
+              fallbackStatus: 'NONE',
+              isCriticallyDeficient: true,
+              qaErrorsCount: 0
+            });
+
+            if (global.log) {
+              global.log('warn', `[Pipeline] Aplicação cancelada: Modo Normal proíbe aplicação parcial com ${remainingPending.length} textos pendentes (Rate Limit ativo).`);
+            }
+
             return {
               success: false,
-              error: 'Tradução pausada devido a rate limit no provedor.',
-              status: 'PAUSED_RATE_LIMIT',
-              message: 'Tradução pausada devido a rate limit no provedor.',
-              jobId,
+              status: certificate.finalStatus,
+              error: certificate.reason,
+              message: certificate.reason,
+              certificate,
+              engine: detection.engine,
+              engineVersion: detection.engineVersion,
+              totalStrings: texts.length,
               pending: remainingPending.length,
-              accounting: accounting.getSummary()
+              appliedCount: 0
             };
           }
+
           if (global.log) {
-            global.log('info', `[Pipeline] Prosseguindo com a aplicação de ${translations.size} textos traduzidos/em cache...`);
+            global.log('warn', `[Pipeline] Modo Parcial Ativo: prosseguindo com a aplicação de ${translations.size} textos traduzidos/em cache...`);
           }
         }
       }
     }
+
+    // Camada de Cobertura Garantida e Segunda Passagem Automática (Passos 9 e 10)
+    const CoverageGuarantor = require('./coverageGuarantor');
+    const guarantor = new CoverageGuarantor({ engine: detection.engine });
+    const coverageReport = await guarantor.auditAndRecover(texts, translations, {
+      engine: detection.engine,
+      gameId: path.basename(targetDir),
+      sl,
+      tl,
+      provider: options.provider || 'google'
+    });
 
     // Validação com QAEngine (restaura tokens antes do QA para validar strings finais)
     let qaErrorsCount = 0;
@@ -344,15 +440,73 @@ class TranslationPipeline {
         };
       }
 
-      if (global.log) global.log('success', '[Pipeline] Concluído! ' + (applyResult.count || translations.size) + ' textos aplicados.');
+      const appliedCount = (applyResult.count !== undefined) ? applyResult.count : translations.size;
+      const unappliedDiffs = texts.filter(t => {
+        const tr = translations.get(t.id);
+        return tr && tr !== t.clean;
+      });
+      const pendingCount = texts.length - (coverageReport.finalCovered || translations.size);
+      const alreadyUpToDate = appliedCount === 0 && pendingCount === 0 &&
+        (unappliedDiffs.length === 0 || unappliedDiffs.length <= Math.max(15, Math.round(texts.length * 0.01)));
+
+      // Emissão e Verificação Formal do Certificado de Tradução
+      const TranslationCertificate = require('./translationCertificate');
+      const certificate = TranslationCertificate.issue({
+        engine: detection.engine,
+        game: path.basename(targetDir),
+        totalDetected: texts.length,
+        translatable: texts.length,
+        cacheHits,
+        translatedNow: translations.size - cacheHits,
+        pendingCount: texts.length - (coverageReport.finalCovered || translations.size),
+        coveredTexts: coverageReport.finalCovered || translations.size,
+        appliedCount,
+        alreadyUpToDate,
+        isRateLimited: !!isRateLimitedEncountered,
+        providerStatus: isRateLimitedEncountered ? 'RATE_LIMITED' : 'OK',
+        fallbackStatus: coverageReport.fallbackAttempted ? (coverageReport.fallbackSucceeded ? 'SUCCEEDED' : 'FAILED') : 'NONE',
+        qaErrorsCount,
+        isCriticallyDeficient: coverageReport.isCriticallyDeficient || false
+      });
+
+      if (!certificate.isSuccess) {
+        if (global.log) {
+          global.log('warn', `[Pipeline] Status Final: ${certificate.finalStatus} — ${certificate.reason}`);
+        }
+        return {
+          success: false,
+          status: certificate.finalStatus,
+          error: certificate.reason,
+          message: certificate.reason,
+          certificate,
+          engine: detection.engine,
+          engineVersion: detection.engineVersion,
+          totalStrings: texts.length,
+          appliedCount,
+          coveragePercent: certificate.metrics.coveragePercent
+        };
+      }
+
+      if (certificate.flags.isPartial) {
+        if (global.log) {
+          global.log('warn', `[Pipeline] Concluído Parcialmente! ${appliedCount} textos aplicados (${certificate.metrics.coveragePercent}% de cobertura).`);
+        }
+      } else {
+        if (global.log) {
+          global.log('success', `[Pipeline] Concluído com Sucesso Integral! ${appliedCount} textos aplicados.`);
+        }
+      }
 
       return {
         success: true,
+        status: certificate.finalStatus,
+        certificate,
         engine: detection.engine,
         engineVersion: detection.engineVersion,
         totalStrings: texts.length,
         cacheHits,
         translatedNew: pendingTexts.length,
+        appliedCount,
         qaErrorsCount,
         qaWarningsCount,
         modifiedFiles: applyResult.modifiedFiles || []

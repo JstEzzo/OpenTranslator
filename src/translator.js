@@ -15,6 +15,7 @@ const GlobalCircuitBreaker = require("./core/globalCircuitBreaker");
 const ProviderGateway = require("./core/providerGateway");
 const ProviderErrorClassifier = require("./core/providerErrorClassifier");
 const LogDeduplicator = require("./core/logDeduplicator");
+const TextChunker = require("./core/textChunker");
 if (typeof global.log !== "function") global.log = (lvl, msg) => {};
 const path = require("path");
 const https = require("https");
@@ -90,7 +91,7 @@ function openCaptchaSolver(redirectUrl) {
 // ===== Smart Switching =====
 var engineBans = {};
 const FALLBACK_ORDER = ["google", "papago", "mymemory", "bing", "yandex"];
-const BAN_DURATION_MS = 10 * 60 * 1000;
+const BAN_DURATION_MS = 15 * 1000; // 15 segundos adaptativo (NÃO 10 minutos)
 var papagoExhausted = false;
 var mymemoryExhausted = false;
 var yandexExhausted = false;
@@ -116,7 +117,7 @@ function getAvailableEngines(userEngine) {
 
 function triggerSmartSwitch(blockedEngine, userEngine) {
   engineBans[blockedEngine] = Date.now() + BAN_DURATION_MS;
-  global.log("warn", `Aviso: O motor [${blockedEngine}] foi temporariamente bloqueado (Smart Switching).`);
+  global.log("warn", `[SmartSwitch] Provedor [${blockedEngine}] em cooldown temporário (${Math.round(BAN_DURATION_MS / 1000)}s).`);
 }
 
 function checkRecoveryTimers(userEngine) {
@@ -557,82 +558,28 @@ async function translateDeepLBatchUnique(unique, sl, tl, config) {
 }
 
 async function translateMultiBatch(texts, sl, tl, glossary, onBatchTranslated) {
-  if (texts.length === 0) return new Map();
-  global.log("info", `Multi-Engine: iniciando traducao paralela para ${texts.length} textos...`);
-  const results = new Map();
-  texts.forEach(t => results.set(t.id, t.clean));
-
-  const SEP = "\n[|]\n";
-  const SEP_ENC = encodeURIComponent(SEP).length;
-  const GTX_MAX_URL = 4000;
-  const CONCURRENCY = 8;
-
-  function splitIntoGpxBatches(texts) {
-    const batches = [];
-    let cur = [];
-    let curLen = 0;
-    for (const t of texts) {
-      const tLen = encodeURIComponent(t.clean).length + SEP_ENC;
-      if (curLen + tLen > GTX_MAX_URL && cur.length > 0) {
-        batches.push(cur);
-        cur = [];
-        curLen = 0;
-      }
-      cur.push(t);
-      curLen += tLen;
-    }
-    if (cur.length > 0) batches.push(cur);
-    return batches;
-  }
-
-  const gpxBatches = splitIntoGpxBatches(texts);
-  await limitConcurrency(CONCURRENCY, gpxBatches, async (batch) => {
-    const joined = batch.map(t => t.clean).join(SEP);
-    let tr;
-    try {
-      tr = await translateSingle(joined, sl, tl, "google");
-    } catch (e) {
-      try {
-        tr = await translateGoogleMobileSingle(joined, sl, tl);
-      } catch (e2) {
-        tr = joined;
-      }
-    }
-    if (tr && tr !== joined) {
-      const parts = tr.split(SEP);
-      const toSave = [];
-      for (let i = 0; i < batch.length; i++) {
-        const t = batch[i];
-        const translated = parts[i] && parts[i].trim().length > 0 ? parts[i].trim() : t.clean;
-        if (translated !== t.clean) {
-          results.set(t.id, translated);
-          toSave.push([t.clean, translated]);
-        }
-      }
-      if (toSave.length > 0) {
-        try { saveNewGlobalTranslations(sl, tl, toSave); } catch(e) {}
-      }
-      if (typeof onBatchTranslated === "function") {
-        try { onBatchTranslated(toSave); } catch(e) {}
-      }
-    }
-  });
-  return results;
+  return translateBatch(texts, sl, tl, "multi", glossary, onBatchTranslated);
 }
 
 async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated) {
-  if (!engine || engine === "auto") engine = "google";
+  if (!engine || engine === "auto") engine = "multi";
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
-  if (engine === "multi") return translateMultiBatch(texts, sl, tl, glossary, onBatchTranslated);
   const results = new Map();
   if (texts.length === 0) return results;
 
   // Pre-apply glossary
-  const glos = glossary || loadGlossary();
+  let glos = glossary || loadGlossary();
+  if (!Array.isArray(glos)) {
+    if (glos && typeof glos === "object") {
+      glos = Object.entries(glos).map(([term, translation]) => ({ term, translation }));
+    } else {
+      glos = [];
+    }
+  }
   const glossaryMap = new Map();
   for (const g of glos) {
-    if (g.term && g.translation) {
-      glossaryMap.set(g.term.toLowerCase(), g.translation);
+    if (g && g.term && g.translation) {
+      glossaryMap.set(String(g.term).toLowerCase(), String(g.translation));
     }
   }
   const dedup = new Map();
@@ -664,10 +611,87 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     const actualCfg = loadCfg();
     return translateDeepLBatchUnique(unique, sl, tl, actualCfg);
   }
+  if (engine === "papago") {
+    const PAPAGO_BATCH_SIZE = 5;
+    const SEP = "\n---\n";
+    const papagoBatches = [];
+    for (let i = 0; i < unique.length; i += PAPAGO_BATCH_SIZE) {
+      papagoBatches.push(unique.slice(i, i + PAPAGO_BATCH_SIZE));
+    }
+
+    let completedTexts = 0;
+    const startTime = Date.now();
+    if (global.log) {
+      global.log("info", `[Papago] Processando ${unique.length} textos únicos em ${papagoBatches.length} lotes rápidos...`);
+    }
+
+    await limitConcurrency(3, papagoBatches, async (batch) => {
+      const items = batch.map(([clean]) => clean);
+      const joined = items.join(SEP);
+      let success = false;
+      try {
+        const rawTr = await translatePapagoSingle(joined, sl, tl);
+        if (rawTr && rawTr !== joined) {
+          const parts = rawTr.split(/\s*---\s*/);
+          if (parts.length === batch.length) {
+            const toSave = [];
+            for (let j = 0; j < batch.length; j++) {
+              const [clean, related] = batch[j];
+              const tr = parts[j] ? parts[j].trim() : clean;
+              const hasSource = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(clean);
+              if (tr && (tr !== clean || !hasSource)) {
+                for (const t of related) results.set(t.id, tr);
+                if (tr !== clean) toSave.push([clean, tr]);
+              }
+            }
+            if (toSave.length > 0 && typeof onBatchTranslated === "function") {
+              try { onBatchTranslated(toSave); } catch (e) {}
+            }
+            success = true;
+          }
+        }
+      } catch (e) {}
+
+      // Fallback individual pontual se a divisão em lote não alinhou
+      if (!success) {
+        for (const [clean, related] of batch) {
+          try {
+            const tr = await translatePapagoSingle(clean, sl, tl);
+            const hasSource = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(clean);
+            if (tr && typeof tr === "string" && (tr !== clean || !hasSource)) {
+              for (const t of related) results.set(t.id, tr);
+            }
+          } catch (e) {}
+        }
+      }
+
+      completedTexts += batch.length;
+      if (completedTexts % 50 === 0 || completedTexts === unique.length) {
+        const pct = ((completedTexts / unique.length) * 100).toFixed(1);
+        if (global.log) {
+          global.log("info", `[Papago] Progresso: ${completedTexts}/${unique.length} textos (${pct}%)...`);
+        }
+      }
+    });
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    if (global.log) {
+      global.log("success", `[Papago] Concluído: ${results.size}/${texts.length} textos traduzidos em ${elapsed}s.`);
+    }
+    return results;
+  }
+  if (engine === "multi" || engine === "google" || engine === "gtx") {
+    const breaker = GlobalCircuitBreaker.getInstance();
+    const initCheck = breaker.canExecute("google:gtx");
+    if (!initCheck.allowed) {
+      if (global.log) global.log("info", `[SmartSwitch] Google GTX em cooldown/limitado (${initCheck.reason}). Ativando fallback automático para Papago...`);
+      return translateBatch(texts, sl, tl, "papago", glossary, onBatchTranslated);
+    }
+  }
 
   const SEP = "\n[|]\n";
   const SEP_LEN = 15;
-  const MAX_URL_LEN = 1800;
+  const MAX_URL_LEN = 1000; // Limite conservador para evitar 414 / rate limits por payload grande
   const BASE_URL =
     "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
     sl +
@@ -684,7 +708,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     for (let j = batchIdx; j < unique.length; j++) {
       const addLen =
         encodeURIComponent(unique[j][0]).length + (j > batchIdx ? SEP_LEN : 0);
-      if ((estLen + addLen > MAX_URL_LEN || batchSize >= 15) && batchSize > 0)
+      if ((estLen + addLen > MAX_URL_LEN || batchSize >= 8) && batchSize > 0)
         break;
       estLen += addLen;
       batchSize++;
@@ -700,7 +724,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     `Dividido em ${unique.length} textos únicos em ${batches.length} lotes para tradução.`
   );
 
-  const CONCURRENCY_LIMIT = 5;
+  const CONCURRENCY_LIMIT = 2; // Concorrência controlada e segura para Google GTX
   let completedUniqueTexts = 0;
   let completedBatchesCount = 0;
   const startTime = Date.now();
@@ -745,15 +769,28 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
               rsp.on("data", (c) => (d += c));
               rsp.on("end", () => {
                 breaker.recordRequestEnd("google:gtx");
-                if (rsp.statusCode === 429 || rsp.statusCode === 302) {
-                  engineBans["google"] = Date.now() + 10 * 60 * 1000;
-                  const classified = ProviderErrorClassifier.classify(null, { statusCode: rsp.statusCode, headers: rsp.headers });
+                const classified = ProviderErrorClassifier.classify(null, { statusCode: rsp.statusCode, headers: rsp.headers });
+
+                if (rsp.statusCode === 429) {
+                  const retryAfter = rsp.headers["retry-after"] || "desconhecido";
                   breaker.recordError("google:gtx", classified);
-                  LogDeduplicator.getInstance().logRateLimit("google:gtx", `HTTP ${rsp.statusCode}`);
-                  return rej(new Error(`HTTP ${rsp.statusCode} Rate Limit`));
+                  LogDeduplicator.getInstance().logRateLimit(
+                    "google:gtx",
+                    `HTTP 429 | Retry-After: ${retryAfter} | Cooldown: ${classified.retryAfterSec || 15}s`
+                  );
+                  return rej(new Error(`HTTP 429 Rate Limit`));
                 }
+
+                if (rsp.statusCode === 302) {
+                  breaker.recordError("google:gtx", classified);
+                  LogDeduplicator.getInstance().logRateLimit(
+                    "google:gtx",
+                    `HTTP 302 | CAPTCHA / Unusual Traffic redirect`
+                  );
+                  return rej(new Error(`HTTP 302 Redirect`));
+                }
+
                 if (rsp.statusCode !== 200) {
-                  const classified = ProviderErrorClassifier.classify(null, { statusCode: rsp.statusCode });
                   breaker.recordError("google:gtx", classified);
                   return rej(new Error(`HTTP ${rsp.statusCode}`));
                 }
@@ -796,11 +833,12 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
   };
 
   const processBatch = async (batch, bIdx) => {
-    await new Promise((r) => setTimeout(r, Math.random() * 50 + 20));
+    await new Promise((r) => setTimeout(r, 200 + Math.floor(Math.random() * 100)));
     const joined = batch.map(([clean]) => clean).join(SEP);
     try {
-      if (engineBans["google"] && engineBans["google"] > Date.now()) {
-        throw new Error("Google está banido temporariamente.");
+      const gCheck = breaker.canExecute("google:gtx");
+      if (!gCheck.allowed) {
+        throw new Error(`Google GTX temporariamente limitado (${gCheck.reason}).`);
       }
       const postData = querystring.stringify({
         client: "gtx",
@@ -884,12 +922,40 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
       blockedRequests: breaker.getProviderHealth("google:gtx").requestsBlocked,
       cooldownUntil: breaker.getProviderHealth("google:gtx").cooldownUntil
     });
+
+    // Fallback transparente: tenta concluir textos pendentes restantes via Papago
+    const uncompleted = texts.filter(t => !results.has(t.id));
+    if (uncompleted.length > 0) {
+      if (global.log) {
+        global.log("info", `[SmartSwitch] Ativando fallback automático para Papago (${uncompleted.length} textos restantes)...`);
+      }
+      try {
+        const fallbackResults = await translateBatch(uncompleted, sl, tl, "papago", glossary, onBatchTranslated);
+        if (fallbackResults && fallbackResults.size > 0) {
+          for (const [id, tr] of fallbackResults.entries()) {
+            results.set(id, tr);
+          }
+          if (texts.every(t => results.has(t.id))) {
+            results.rateLimited = false; // Recuperado com sucesso via fallback!
+          }
+        }
+      } catch (fbErr) {
+        if (global.log) global.log("warn", `[SmartSwitch] Falha no fallback Papago: ${fbErr.message}`);
+      }
+    }
   }
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  global.log(
-    "info",
-    `Tradução concluída: ${unique.length} textos únicos em ${elapsed}s.`
-  );
+  if (results.rateLimited) {
+    global.log(
+      "warn",
+      `Lote interrompido por Rate Limit: ${results.size}/${texts.length} textos processados em ${elapsed}s.`
+    );
+  } else {
+    global.log(
+      "info",
+      `Lote de tradução concluído: ${results.size}/${texts.length} textos obtidos em ${elapsed}s.`
+    );
+  }
   return results;
 }
 
@@ -922,8 +988,8 @@ async function translateGoogleMobileSingle(text, sl, tl) {
               if (rsp.statusCode === 429 || rsp.statusCode === 302) {
                 if (attempt < 2) { return rej(new Error(`retry ${rsp.statusCode}`)); }
                 const redirect = rsp.headers.location || "https://www.google.com/sorry/index";
-                global.log("warn", `[translator] Google Mobile HTTP ${rsp.statusCode}. Banindo 10min.`);
-                engineBans["google-mobile"] = Date.now() + 10 * 60 * 1000;
+                global.log("warn", `[translator] Google Mobile HTTP ${rsp.statusCode}. Cooldown temporário ativado.`);
+                engineBans["google-mobile"] = Date.now() + 30 * 1000;
                 openCaptchaSolver(redirect).then(() => {
                   global.log("info", "CAPTCHA resolvido! Reativando Google Mobile.");
                   delete engineBans["google-mobile"];
@@ -956,8 +1022,8 @@ async function translateGoogleMobileSingle(text, sl, tl) {
         rq.setTimeout(25000, () => {
           if (!completed) {
             completed = true;
-            global.log("warn", `[Google Mobile] timeout. Banindo.`);
-            engineBans["google-mobile"] = Date.now() + 10 * 60 * 1000;
+            global.log("warn", `[Google Mobile] timeout. Cooldown temporário ativado.`);
+            engineBans["google-mobile"] = Date.now() + 30 * 1000;
             if (rq.socket) rq.socket.destroy();
             rq.destroy();
             rej(new Error("timeout"));
@@ -1019,11 +1085,81 @@ async function translateGoogleMobileBatch(texts, sl, tl) {
 
 async function translateSingle(text, sl, tl, engine) {
   const cfg = loadCfg();
-  if (!engine || engine === "auto" || engine === "google") engine = "google";
+  if (!engine || engine === "auto") engine = cfg.engine || "multi";
   if (engine === "bing") return translateBingSingle(text, sl, tl);
-  if (engine === "multi") return translateMultiSingle(text, sl, tl);
+  if (engine === "papago") return translatePapagoSingle(text, sl, tl);
+  if (engine === "mymemory") return translateMyMemoryOne(text, sl, tl);
   if (engine === "llm") return translateLlm(text, sl, tl, cfg);
   if (engine === "deepl") return translateDeepL(text, sl, tl, cfg);
+
+  if (!text || typeof text !== "string" || !text.trim()) return text;
+
+  // Proteção universal: chunking se exceder tamanho seguro
+  const chunkResult = TextChunker.chunk(text, { maxChars: 800, maxBytes: 1500 });
+  if (chunkResult.isChunked) {
+    global.log("info", `[TextChunker] Texto longo (${text.length} chars) dividido em ${chunkResult.chunks.length} partes seguras.`);
+    const translatedParts = [];
+    for (const ch of chunkResult.chunks) {
+      const partTr = await translateSingleWithFallback(ch, sl, tl);
+      translatedParts.push(partTr);
+    }
+    return TextChunker.recombine(translatedParts);
+  }
+
+  return translateSingleWithFallback(text, sl, tl);
+}
+
+async function translateSingleWithFallback(text, sl, tl) {
+  if (!text || typeof text !== "string" || !text.trim()) return text;
+
+  const breaker = GlobalCircuitBreaker.getInstance();
+  const googleCheck = breaker.canExecute("google:gtx");
+
+  // Se Google GTX estiver disponível e não bloqueado por rate limit, tenta Google primeiro
+  if (googleCheck.allowed) {
+    try {
+      const gRes = await translateSingleRawGoogle(text, sl, tl);
+      if (gRes && typeof gRes === "string" && gRes.trim() !== text.trim() && gRes.trim().length > 0) {
+        return gRes;
+      }
+    } catch (e) {}
+  }
+
+  // Fallback 1: Papago (excelente para CJK e diálogo em tempo real)
+  try {
+    const papagoRes = await translatePapagoSingle(text, sl, tl);
+    if (papagoRes && typeof papagoRes === "string" && papagoRes.trim() !== text.trim() && papagoRes.trim().length > 0) {
+      return papagoRes;
+    }
+  } catch (e) {}
+
+  // Fallback 2: MyMemory (robusto para strings curtas e diálogo)
+  try {
+    const mmRes = await translateMyMemoryOne(text, sl, tl);
+    if (mmRes && typeof mmRes === "string" && mmRes.trim() !== text.trim() && mmRes.trim().length > 0) {
+      return mmRes;
+    }
+  } catch (e) {}
+
+  // Fallback 3: Bing
+  try {
+    const bingRes = await translateBingSingle(text, sl, tl);
+    if (bingRes && typeof bingRes === "string" && bingRes.trim() !== text.trim() && bingRes.trim().length > 0) {
+      return bingRes;
+    }
+  } catch (e) {}
+
+  return text;
+}
+
+async function translateSingleRawGoogle(text, sl, tl) {
+  if (!text || typeof text !== "string" || !text.trim()) return text;
+  const breaker = GlobalCircuitBreaker.getInstance();
+  const initCheck = breaker.canExecute("google:gtx");
+  if (!initCheck.allowed) {
+    return text;
+  }
+
   try {
     const q = encodeURIComponent(text);
     const url =
@@ -1033,6 +1169,11 @@ async function translateSingle(text, sl, tl, engine) {
       tl +
       "&dt=t&q=" +
       q;
+    const reqChars = text.length;
+    const reqBytes = Buffer.byteLength(text, "utf8");
+    const urlLen = url.length;
+
+    breaker.recordRequestStart("google:gtx");
     const raw = await new Promise((res, rej) => {
       const rq = https.get(
         url,
@@ -1044,25 +1185,67 @@ async function translateSingle(text, sl, tl, engine) {
           rsp.setEncoding("utf8");
           rsp.on("data", (c) => (d += c));
           rsp.on("end", () => {
-            if (rsp.statusCode === 429 || rsp.statusCode === 302) {
-              engineBans["google"] = Date.now() + 10 * 60 * 1000;
-              global.log("warn", `translator: Google GTX HTTP ${rsp.statusCode}. Banido por 10min.`);
-              return rej(new Error(`HTTP ${rsp.statusCode} Rate Limit`));
+            breaker.recordRequestEnd("google:gtx");
+            const classified = ProviderErrorClassifier.classify(null, {
+              statusCode: rsp.statusCode,
+              headers: rsp.headers,
+              body: d
+            });
+
+            if (rsp.statusCode === 429) {
+              const retryAfter = rsp.headers["retry-after"] || "desconhecido";
+              breaker.recordError("google:gtx", classified);
+              global.log(
+                "warn",
+                `[PROVIDER RATE LIMIT] Google GTX retornou HTTP 429. Request chars: ${reqChars} | Request bytes: ${reqBytes} | URL length: ${urlLen} | Retry-After: ${retryAfter} | Classificação: RATE_LIMITED | Cooldown: ${classified.retryAfterSec || 15}s`
+              );
+              return rej(new Error(`HTTP 429 Rate Limit`));
             }
+
+            if (rsp.statusCode === 302) {
+              const location = rsp.headers.location || "";
+              breaker.recordError("google:gtx", classified);
+              global.log(
+                "warn",
+                `[PROVIDER REDIRECT] Google GTX retornou HTTP 302 (Location: ${location}). Request chars: ${reqChars} | Request bytes: ${reqBytes} | URL length: ${urlLen} | Classificação: CAPTCHA_OR_BLOCK`
+              );
+              return rej(new Error(`HTTP 302 Redirect`));
+            }
+
+            if (rsp.statusCode === 413 || rsp.statusCode === 414) {
+              breaker.recordError("google:gtx", classified);
+              global.log(
+                "warn",
+                `[PROVIDER PAYLOAD] Request excedeu o limite seguro (HTTP ${rsp.statusCode}). Chars: ${reqChars} | Bytes: ${reqBytes} | URL length: ${urlLen} | Classificação: PAYLOAD_TOO_LARGE`
+              );
+              return rej(new Error(`HTTP ${rsp.statusCode} Payload Too Large`));
+            }
+
             if (rsp.statusCode !== 200) {
+              breaker.recordError("google:gtx", classified);
               return rej(new Error(`HTTP ${rsp.statusCode}`));
             }
+
+            breaker.recordSuccess("google:gtx");
             res(d);
           });
-          rsp.on("error", rej);
+          rsp.on("error", (e) => {
+            breaker.recordRequestEnd("google:gtx");
+            rej(e);
+          });
         },
       );
-      rq.on("error", (e) => rej(e));
+      rq.on("error", (e) => {
+        breaker.recordRequestEnd("google:gtx");
+        rej(e);
+      });
       rq.setTimeout(15000, () => {
+        breaker.recordRequestEnd("google:gtx");
         rq.destroy();
         rej(new Error("timeout"));
       });
     });
+
     const j = JSON.parse(raw);
     return j && j[0]
       ? j[0]
@@ -1076,10 +1259,7 @@ async function translateSingle(text, sl, tl, engine) {
 }
 
 async function translateMultiSingle(text, sl, tl) {
-  const googleResult = await translateSingle(text, sl, tl, "google");
-  if (googleResult !== text && googleResult.length > 0) return googleResult;
-  const bingResult = await translateBingSingle(text, sl, tl);
-  return bingResult !== text ? bingResult : googleResult;
+  return translateSingleWithFallback(text, sl, tl);
 }
 
 // Papago (single) - real implementation
@@ -1113,7 +1293,7 @@ async function translatePapagoSingle(text, sl, tl) {
       rq.write(body); rq.end();
     });
     if (raw.status === 429 || raw.status === 302) {
-      engineBans["papago"] = Date.now() + 10 * 60 * 1000;
+      engineBans["papago"] = Date.now() + 30 * 1000;
       return text;
     }
     if (raw.status !== 200) return text;
@@ -1146,7 +1326,7 @@ async function translateMyMemoryOne(text, sl, tl) {
       rq.setTimeout(10000, () => { if (!done) { done = true; rq.destroy(); rej(new Error("timeout")); } });
     });
     if (raw.status === 429) {
-      engineBans["mymemory"] = Date.now() + 10 * 60 * 1000;
+      engineBans["mymemory"] = Date.now() + 30 * 1000;
       return text;
     }
     if (raw.status !== 200) return text;
@@ -1154,7 +1334,7 @@ async function translateMyMemoryOne(text, sl, tl) {
     if (j.responseStatus !== 200) return text;
     const tr = j.responseData && j.responseData.translatedText;
     if (tr && /MYMEMORY WARNING/i.test(tr)) {
-      engineBans["mymemory"] = Date.now() + 10 * 60 * 1000;
+      engineBans["mymemory"] = Date.now() + 30 * 1000;
       return text;
     }
     if (tr && tr !== text && tr.length > 0) return fixTranslation(text, tr);
@@ -1184,7 +1364,7 @@ async function translateYandexSingle(text, sl, tl) {
       rq.setTimeout(10000, () => { if (!done) { done = true; rq.destroy(); rej(new Error("timeout")); } });
     });
     if (raw.status === 429 || raw.status === 302) {
-      engineBans["yandex"] = Date.now() + 10 * 60 * 1000;
+      engineBans["yandex"] = Date.now() + 30 * 1000;
       return text;
     }
     if (raw.status !== 200) return text;
