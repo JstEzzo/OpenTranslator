@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+        <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTranslator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="OpenTranslator.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/png" href="OpenTranslator.png">
+    <link rel="apple-touch-icon" href="OpenTranslator.png">
+    <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+        html, body { height: 100%; background: #121316; color: #f1f3f5; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11'; }
+        /* Ultra Crisp HD Font Anti-Aliasing */
+        h1, h2, h3, h4, h5, h6, label, span, button, input, select, textarea, div {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+        }
+        #root {
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; width: 100vw;
+            font-size: 16px; color: #5c5f66;
+            flex-direction: column; gap: 16px;
+        }
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid #2c2e33; border-top-color: #4c9aff;
+            border-radius: 50%; animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #app {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@font-face{font-family:'NotoSansCJK';src:url('NotoSans/cjk/NotoSansCJKsc-Regular.otf') format('opentype');font-weight:400;font-style:normal}
+@font-face{font-family:'Noto Emoji';src:url('NotoSans/emoji/NotoColorEmoji-Regular.ttf') format('truetype');font-weight:400;font-style:normal}
+@font-face{font-family:'Unifont Smooth';src:url('unifont-all.ttf') format('truetype');font-weight:400;font-style:normal}
+@font-face{font-family:'OpenT PGMMV';src:url('../loaders/opent_PGMMV_font.ttf') format('truetype');font-weight:400;font-style:normal}
+@font-face{font-family:'Notdef Fallback';src:url('rawres/notdef.ttf') format('truetype');font-weight:400;font-style:normal}
+:root{
+  --bg:#08080c;
+  --bg2:#0d0d14;
+  --bg3:#13131f;
+  --bg4:#1a1a2b;
+  --bg5:#222238;
+  --bd:rgba(255,255,255,0.06);
+  --bd2:rgba(255,255,255,0.12);
+  --bd3:rgba(255,255,255,0.18);
+  --txt:#f2f3f8;
+  --txt2:#969ab5;
+  --txt3:#60657c;
+  --accent:#6c5ce7;
+  --accent-grad:linear-gradient(135deg,#6c5ce7,#a29bfe);
+  --accent2:#a29bfe;
+  --accent3:#5849cf;
+  --green:#00b894;
+  --green2:#55efc4;
+  --red:#d63031;
+  --red2:#ff7675;
+  --orange:#fdcb6e;
+  --purple:#e84393;
+  --font:'Outfit','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --fontGame:'Unifont Smooth','NotoSansCJK','Noto Emoji','OpenT PGMMV',sans-serif;
+  --radius:8px;
+  --radius-sm:6px;
+  --radius-lg:12px;
+  --shadow:0 4px 12px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+  --transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+*{margin:0;padding:0;box-sizing:border-box;min-width:0}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--txt);
+  overflow:hidden;height:100vh;font-size:14px;line-height:1.5;
+  -webkit-user-select:none;user-select:none;
+  width:100%;
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--bd3)}
+
+/* ===== APP LAYOUT ===== */
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* Title bar */
+#bar{
+  display:flex;align-items:center;height:38px;background:rgba(8,8,12,0.4);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd);
+  -webkit-app-region:drag;flex-shrink:0
+}
+#bar-l{
+  flex:1;padding:0 14px;display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--txt2);font-weight:600;letter-spacing:0.3px
+}
+#bar-r{display:flex}
+
+#ly{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+#sd{
+  width:68px;background:rgba(13,13,20,0.55);backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;gap:4px;padding:12px 6px;flex-shrink:0
+}
+#sd button{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 4px;border:none;background:transparent;color:var(--txt3);
+  cursor:pointer;border-radius:var(--radius);font-size:8px;line-height:1.1;
+  transition:var(--transition);position:relative;font-weight:500
+}
+#sd button:hover{background:rgba(255,255,255,0.03);color:var(--txt)}
+#sd button.on{background:rgba(108,92,231,0.08);color:var(--accent)}
+#sd button.on::before{
+  content:'';position:absolute;left:2px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;background:var(--accent-grad);border-radius:2px
+}
+#sd button .si{width:20px;height:20px;stroke:currentColor;transition:stroke var(--transition)}
+#sd button .sl{font-size:8px;letter-spacing:.2px;margin-top:2px;text-transform:uppercase}
+
+/* Main content */
+#mc{flex:1;overflow:hidden;background:var(--bg)}
+.tb{display:none;height:100%;overflow-y:auto;padding:0}
+.tb.on{display:block;animation:tabIn .25s ease}
+@keyframes tabIn{0%{opacity:.6;transform:scale(0.99)}100%{opacity:1;transform:scale(1)}}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:7px 16px;border:1px solid var(--bd);background:rgba(255,255,255,0.02);
+  color:var(--txt);border-radius:var(--radius-sm);cursor:pointer;
+  font-size:11px;font-family:var(--font);transition:var(--transition);
+  white-space:nowrap;box-shadow:var(--shadow)
+}
+.btn:hover{background:rgba(255,255,255,0.06);border-color:var(--bd2);transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,0.25)}
+.btn:active{transform:translateY(0);box-shadow:var(--shadow)}
+.btn.pri{background:var(--accent-grad);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(108,92,231,0.2)}
+.btn.pri:hover{filter:brightness(1.1);box-shadow:0 6px 18px rgba(108,92,231,0.35);transform:translateY(-2px)}
+.btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.dgr{color:var(--red);border-color:var(--red)}
+.btn.dgr:hover{background:rgba(214,48,49,0.08);border-color:var(--red2);transform:translateY(-2px)}
+.btn.sm{font-size:10px;padding:5px 12px;border-radius:var(--radius-sm)}
+.btn.xs{font-size:9px;padding:3px 8px;border-radius:var(--radius-sm)}
+.btn .bi{font-size:13px}
+.st{
+  border-radius:20px;padding:1px 8px;font-size:8px;letter-spacing:.3px;
+  background:rgba(90,91,106,.12);color:var(--txt3);white-space:nowrap;
+  border:1px solid rgba(90,91,106,.08);text-transform:uppercase
+}
+.st.on{background:rgba(78,202,110,.06);color:var(--green);border-color:rgba(78,202,110,.1)}
+#cstat{font-size:8px}
+
+/* ===== STATUS BAR ===== */
+#statusbar{
+  display:flex;align-items:center;height:24px;
+  background:var(--bg2);border-top:1px solid var(--bd);
+  padding:0 12px;font-size:10px;color:var(--txt3);gap:12px;
+  flex-shrink:0;-webkit-app-region:no-drag
+}
+#sbInfo{color:var(--txt3);font-size:9px}
+#sbCenter{flex:1;text-align:center;font-size:9px;color:var(--txt3)}
+#sbRight{color:var(--txt2);font-size:9px;display:flex;gap:8px}
+
+/* ===== GAME LIBRARY ===== */
+#tb-gl{padding:10px 14px}
+#drop-zone{
+  border:2px dashed var(--bd);padding:16px 20px 12px;
+  text-align:center;color:var(--txt3);font-size:12px;
+  margin-bottom:8px;cursor:pointer;border-radius:var(--radius-lg);
+  transition:all var(--transition);display:flex;flex-direction:column;
+  align-items:center;gap:6px;background:var(--bg2);max-width:100%
+}
+#drop-zone .dz-txt{word-break:break-word;max-width:100%}
+#drop-zone:hover{border-color:var(--txt2);background:var(--bg3)}
+#drop-zone.dragover{border-color:var(--accent);background:rgba(59,142,240,.04);box-shadow:0 0 20px rgba(59,142,240,.06)}
+
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.dz-icon{font-size:22px;color:var(--txt2)}
+.dz-txt{font-size:10px;color:var(--txt2);max-width:400px;line-height:1.4}
+.dz-engines{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:2px}
+.dz-el{
+  font-size:8px;color:var(--txt3);background:var(--bg4);
+  padding:2px 7px;border-radius:20px;border:1px solid var(--bd)
+}
+.gl-bar{display:flex;gap:5px;margin-bottom:6px;align-items:center;padding:0}
+.gl-inp{
+  flex:1;padding:5px 10px;background:var(--bg2);border:1px solid var(--bd);
+  color:var(--txt);font-size:11px;font-family:var(--font);border-radius:var(--radius-sm);
+  transition:border-color var(--transition)
+}
+.gl-inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,142,240,.08)}
+#gl-list{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));width:100%;}
+.gc{
+  background:rgba(255,255,255,0.01);border:1px solid var(--bd);padding:12px 14px;
+  cursor:pointer;display:flex;align-items:center;gap:12px;
+  border-radius:var(--radius-lg);transition:var(--transition);
+  box-shadow:var(--shadow)
+}
+.gc:hover{border-color:var(--accent2);background:rgba(255,255,255,0.03);transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.gc.launched{border-color:var(--green);background:rgba(0,184,148,0.04);box-shadow:0 0 16px rgba(0,184,148,0.12)}
+.gc.launched:hover{transform:translateY(-2px);box-shadow:0 0 20px rgba(0,184,148,0.18)}
+.gc .gi{flex:1;min-width:0}
+.gc .gt{font-size:12px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.gc .gs{font-size:9px;color:var(--txt3);margin-top:4px;display:flex;gap:8px;align-items:center}
+.gc .ga{display:flex;gap:6px;flex-shrink:0}
+.gc .ga .btn{padding:3px 8px;font-size:10px;min-width:24px;justify-content:center}
+.eng-ok{color:var(--green);background:rgba(0,184,148,0.15);border:1px solid rgba(0,184,148,0.3)}
+.eng-plan{color:var(--orange);background:rgba(253,204,91,0.15);border:1px solid rgba(253,204,91,0.3)}
+.eng-warn{color:var(--orange);background:rgba(253,204,91,0.1);border:1px dashed rgba(253,204,91,0.5)}
+
+#tb-sv{padding:8px 14px}
+#tb-sv .sg{margin-bottom:10px;border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden}
+#tb-sv .sg-h{background:var(--bg2);padding:8px 12px;font-size:11px;font-weight:600;color:var(--txt);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background var(--transition)}
+#tb-sv .sg-h:hover{background:var(--bg3)}
+#tb-sv .sg-b{padding:0;overflow:hidden;transition:max-height .2s;max-height:0}
+#tb-sv .sg-b.on{max-height:2000px}
+#tb-sv .sf{display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:10px;border-top:1px solid var(--bd);transition:background var(--transition)}
+#tb-sv .sf:hover{background:var(--bg3)}
+#tb-sv .sf .sfn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt)}
+#tb-sv .sf .sfs{color:var(--txt3);font-size:9px;white-space:nowrap}
+#tb-sv .sf .sfa{display:flex;gap:3px}
+#tb-sv .empty{padding:30px;text-align:center;color:var(--txt3);font-size:11px}
+#tb-sv .sg-ico{font-size:12px}
+
+/* ===== CONFIG ===== */
+#tb-cf{overflow-y:auto;padding:10px 14px 40px}
+.cg{
+  background:rgba(255,255,255,0.015);border:1px solid var(--bd);border-radius:var(--radius-lg);
+  margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)
+}
+.cg h4{
+  font-size:10px;color:var(--accent2);padding:10px 14px;
+  background:rgba(255,255,255,0.02);border-bottom:1px solid var(--bd);
+  text-transform:uppercase;letter-spacing:.5px;font-weight:700
+}
+.cg-body{padding:4px 0}
+.ci{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 12px;border-bottom:1px solid rgba(30,30,46,.4);
+  gap:8px;min-height:30px
+}
+.ci:last-child{border-bottom:none}
+.ci label{
+  font-size:10px;color:var(--txt2);white-space:nowrap;
+  min-width:80px;flex-shrink:0
+}
+.ci input,.ci select{
+  padding:5px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--bd);
+  color:var(--txt);font-size:10px;font-family:var(--font);border-radius:var(--radius-sm);
+  transition:var(--transition);width:150px;flex-shrink:0
+}
+.ci input:focus,.ci select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,0.15);background:rgba(255,255,255,0.04)}
+.ci input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.ci .btn{flex-shrink:0}
+.ci .btn+.btn{margin-left:4px}
+
+/* Config tool buttons grid */
+#tb-cf .tools-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:6px;padding:8px 12px
+}
+#tb-cf .tools-grid .btn{
+  width:100%;justify-content:flex-start;padding:6px 12px;font-size:10px;
+  background:rgba(255,255,255,0.01);border-color:var(--bd)
+}
+#tb-cf .tools-grid .btn:hover{background:rgba(255,255,255,0.04);border-color:var(--accent2);transform:translateY(-2px)}
+#tb-cf .tools-grid .btn .bi{font-size:12px}
+
+/* Stats values */
+.ci .sv{
+  font-size:10px;font-weight:600;text-align:right;width:80px;flex-shrink:0
+}
+.ci .sv.gr{color:var(--green)}
+.ci .sv.or{color:var(--orange)}
+.ci .sv.pr{color:var(--purple)}
+
+/* ===== CHEATS ===== */
+#tb-ch{display:none;flex-direction:column;height:100%;overflow-y:auto;padding:10px 14px 40px}
+#tb-ch.on{display:flex}
+
+/* ===== LOG ===== */
+#tb-lg{display:none;flex-direction:column;height:100%;padding:0}
+#tb-lg.on{display:flex}
+#tb-lg .lg-header{
+  display:flex;align-items:center;gap:8px;padding:4px 12px;
+  background:var(--bg2);border-bottom:1px solid var(--bd);
+  font-size:10px;color:var(--txt3);flex-shrink:0
+}
+#lb{
+  flex:1;overflow-y:auto;font-family:var(--font);font-size:12px;
+  background:#07070c;padding:2px 0;line-height:1.6
+}
+.le{display:flex;padding:1px 12px;font-size:12px;word-break:break-word;gap:6px;-webkit-user-select:text;user-select:text;cursor:text}
+.lt{color:var(--txt3);width:65px;flex-shrink:0;font-size:10px;text-align:right}
+.le .lm{flex:1}
+.le.li{color:var(--txt)}
+.le.le{color:var(--red)}
+.le.ls{color:var(--green)}
+.le.lw{color:var(--orange)}
+
+/* ===== GAME EDIT MODAL ===== */
+#modal{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.7);z-index:999;padding:20px;overflow-y:auto;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)
+}
+#modal.on{display:block;animation:fadeIn .15s ease}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+#modal-inner{
+  background:var(--bg3);border:1px solid var(--bd2);
+  border-radius:var(--radius-lg);max-width:540px;margin:40px auto;
+  padding:16px;box-shadow:var(--shadow-lg)
+}
+.mh{font-size:12px;color:var(--accent);margin-bottom:10px;border-bottom:1px solid var(--bd);padding-bottom:6px;font-weight:600}
+.mg{display:flex;gap:12px}
+.mc2{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+#modal-inner .f{margin-bottom:2px;display:flex;flex-direction:column;gap:2px}
+#modal-inner .f label{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px}
+#modal-inner .f input,#modal-inner .f select{
+  padding:4px 8px;background:var(--bg2);border:1px solid var(--bd);
+  color:var(--txt);border-radius:var(--radius-sm);font-size:10px;font-family:var(--font);
+  transition:border-color var(--transition)
+}
+#modal-inner .f input:focus,#modal-inner .f select:focus{outline:none;border-color:var(--accent)}
+#modal-inner .fi{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:10px}
+#modal-inner .fi label{color:var(--txt3)}
+#modal-inner .fi .fv{color:var(--txt2)}
+#modal-inner .fb{display:flex;gap:6px;justify-content:flex-end;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px}
+
+/* ===== SAVES ===== */
+.sv-item{
+  padding:5px 10px;background:var(--bg2);border:1px solid var(--bd);
+  border-radius:var(--radius-sm);margin-bottom:4px;font-size:10px;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:background var(--transition)
+}
+.sv-item:hover{background:var(--bg3)}
+#ps{
+  width:100%;padding:5px 8px;margin:0 0 6px;background:var(--bg2);
+  border:1px solid var(--bd);color:var(--txt);border-radius:var(--radius-sm);
+  font-size:10px;font-family:var(--font);transition:border-color var(--transition)
+}
+#ps:focus{outline:none;border-color:var(--accent)}
+.hd{display:none!important}
+input{outline:none}
+.help-tip {
+  display: block;
+  font-size: 9px;
+  color: var(--txt2);
+  margin-bottom: 6px;
+  margin-top: -2px;
+  padding: 0 12px;
+  line-height: 1.3;
+  font-weight: 400;
+}
+.toast-card {
+  animation: toastIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+@keyframes toastIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+select option {
+  background-color: var(--bg3) !important;
+  color: var(--txt) !important;
+}
+  </style><style id="custom-theme-style">:root {
+      --accent: #3b8ef0;
+      --accent2: #3278cc;
+      --accent3: #2963a8;
+    }
+        body {
+          background-image: none !important;
+          background: var(--bg) !important;
+        }
+      
+      .cg, .gc, #sd, #bar, #modal-inner, .tb, #statusbar {
+        background: rgba(15, 15, 22, 0.45) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+      }
+      /* Prevent blur bleeding onto text elements */
+      h1, h2, h3, h4, h5, h6, label, span, button, input, select, textarea {
+        transform: translateZ(0);
+        -webkit-font-smoothing: antialiased !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      }
+      body, button, input, select, textarea {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      }
+    </style></head>
+<body>
+<div id="root">
+<div id="app">
+  <div id="bar">
+    <div id="bar-l"><img src="/resources/OpenTranslator.png" style="height:18px;vertical-align:middle;margin-right:6px;border-radius:3px"> OpenTranslator</div>
+    <div id="bar-r"></div>
+  </div>
+  <div id="ly">
+    <div id="sd">
+      <button class="on" data-t="gl"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"></rect><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"></path></svg><span class="sl">Games</span></button>
+      <button data-t="sv"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg><span class="sl">Saves</span></button>
+      <button data-t="cf"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span class="sl">Config</span></button>
+      <button data-t="ch" id="btn-cheats"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span class="sl">Cheats ⚡</span></button>
+      <button data-t="lg"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span class="sl">Log</span></button>
+      <button data-t="pf" id="btn-performance"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg><span class="sl">Engines &amp; Velocidade</span></button>
+    </div>
+    <div id="mc">
+
+      <!-- GAMES -->
+      <div id="tb-gl" class="tb on">
+        <div id="drop-zone">
+          <div class="dz-icon">📂</div>
+          <div class="dz-txt">Drag &amp; drop Game.exe here, or use the 📁 button above to select the game folder</div>
+        </div>
+        <div class="gl-bar">
+          <input id="glSearch" placeholder="Search games..." class="gl-inp">
+          <button id="glRefresh" class="btn sm" title="Refresh">↻</button>
+        </div>
+        <div id="gl-list" data-bound="true"><div class="gc" data-key="g_1790546138384"><div class="gi"><div class="gt">NightLessons</div><div class="gs">🎭 Ren'Py Visual Novel Engine <span class="eng-ok" title="Full Support" style="font-size:9px;padding:1px 4px;border-radius:3px">✓</span></div></div><div class="ga"><button class="btn xs glPlay">▶</button><button class="btn xs glEdit">✎</button><button class="btn xs dgr glDel">✕</button></div></div><div class="gc" data-key="g_1790551805141"><div class="gi"><div class="gt">[Kimochi] RJ236979</div><div class="gs">🎮 RPG Maker MZ <span class="eng-ok" title="Full Support" style="font-size:9px;padding:1px 4px;border-radius:3px">✓</span></div></div><div class="ga"><button class="btn xs glPlay">▶</button><button class="btn xs glEdit">✎</button><button class="btn xs dgr glDel">✕</button></div></div></div>
+        <!-- Modern Glassmorphic Launch Progress Modal -->
+        <div id="gl-loading" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; width:100%; height:100%; background:rgba(8,8,16,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:999999; align-items:center; justify-content:center">
+          <div style="width:480px; max-width:90%; background:var(--bg2); border:1px solid var(--bd); border-radius:12px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.6); display:flex; flex-direction:column; gap:16px; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--accent), var(--pri), var(--accent)); background-size:200% 100%; animation:gradientMove 2s linear infinite"></div>
+            
+            <div style="display:flex; align-items:center; gap:14px">
+              <div style="width:44px; height:44px; border-radius:50%; background:rgba(99,102,241,0.1); border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:20px; animation:pulse 1.5s infinite">
+                🎮
+              </div>
+              <div style="display:flex; flex-direction:column; flex:1">
+                <span id="gl-loading-title" style="font-size:14px; font-weight:700; color:var(--txt)">Inicializando Jogo...</span>
+                <span id="gl-loading-sub" style="font-size:11px; color:var(--txt2)">Preparando ambiente, traduções e patches</span>
+              </div>
+              <div style="font-size:18px; animation:spin 1s linear infinite; color:var(--accent)">⟳</div>
+            </div>
+
+            <!-- Animated Progress Bar -->
+            <div style="width:100%; background:rgba(255,255,255,0.05); height:8px; border-radius:4px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); position:relative">
+              <div id="gl-loading-bar" style="width:15%; height:100%; background:linear-gradient(90deg, var(--accent), var(--pri)); transition:width 0.4s ease; border-radius:4px"></div>
+            </div>
+
+            <!-- Current Real-Time Phase Message -->
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px">
+              <span id="gl-loading-msg" style="color:var(--txt); font-weight:600; display:flex; align-items:center; gap:6px">
+                <span style="width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; animation:ping 1s infinite"></span>
+                <span>Iniciando verificação do pipeline...</span>
+              </span>
+              <span id="gl-loading-pct" style="color:var(--txt2); font-family:monospace; font-size:10px">15%</span>
+            </div>
+
+            <!-- Real-Time Log Stream Banner -->
+            <div id="gl-loading-stream" style="font-size:10px; color:var(--txt3); font-family:monospace; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); max-height:60px; overflow-y:auto; word-break:break-all">
+              [OpenTranslator Boot Engine Ready]
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAVES -->
+      <div id="tb-sv" class="tb">
+        <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+          <span style="font-size:10px;color:var(--txt2)">Saves</span>
+          <span style="flex:1"></span>
+          <button id="svOpenDir" class="btn sm">Browse...</button>
+          <button id="svRef" class="btn sm">Refresh</button>
+        </div>
+        <div id="sv-list"><div class="empty">No saves found. Launch a game first to create saves.</div></div>
+      </div>
+
+      <!-- CONFIG -->
+      <div id="tb-cf" class="tb">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <label style="font-size:10px;color:var(--txt2);white-space:nowrap">App Language:</label>
+          <select id="cfgAppLang" style="flex:1">
+            <option value="pt">Português</option>
+            <option value="en" selected="">English</option>
+          </select>
+        </div>
+        <div class="cg">
+          <h4>Visual Theme 🎨</h4>
+          <div class="cg-body">
+            <div class="ci">
+              <label>Accent Color</label>
+              <input id="themeAccent" type="color" style="width:50px;height:22px;padding:0;cursor:pointer;border:none;background:transparent">
+            </div>
+            <div class="ci">
+              <label>Background Image</label>
+              <input id="themeBgImage" type="text" placeholder="Ex: C:Imagenswallpaper.jpg" style="width:180px">
+            </div>
+            <div class="ci">
+              <label>Glass Effect (Opacity)</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input id="themeGlass" type="range" min="0" max="100" style="width:80px">
+                <span id="themeGlassVal" style="font-size:10px;color:var(--txt2);width:30px;text-align:right">45%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Provider Health Panel -->
+        <div class="cg" id="provider-health-card" style="border:1px solid var(--bd); background:rgba(15,15,25,0.4)">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-bottom:1px solid var(--bd)">
+            <h4 style="margin:0; font-size:11px">🛡️ Provider Health &amp; Circuit Breaker</h4>
+            <button id="btnRefreshProviderHealth" class="btn xs" style="font-size:9px">Atualizar</button>
+          </div>
+          <div class="cg-body" style="padding:8px 10px; display:flex; flex-direction:column; gap:6px">
+            <div id="provider-health-notice" style="display:none; padding:6px 8px; border-radius:4px; font-size:10px; font-weight:600"></div>
+            <div id="provider-health-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+        <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
+          <strong style="color:var(--txt)">Google GTX</strong><br>
+          STATUS: <span style="color:#52c41a; font-weight:bold">AVAILABLE</span><br>
+          COOLDOWN: N/A<br>
+          IN FLIGHT: 0<br>
+          BLOCKED REQUESTS: 0<br>
+          SUCCESS: 0<br>
+          429: 0
+        </div>
+        <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
+          <strong style="color:var(--txt)">Gemini</strong><br>
+          STATUS: <span style="color:var(--txt3)">NOT CONFIGURED</span>
+        </div>
+        <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
+          <strong style="color:var(--txt)">Google Cloud</strong><br>
+          STATUS: <span style="color:var(--txt3)">NOT CONFIGURED</span>
+        </div>
+        <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
+          <strong style="color:var(--txt)">DeepL</strong><br>
+          STATUS: <span style="color:var(--txt3)">NOT CONFIGURED</span>
+        </div>
+      </div>
+          </div>
+        </div>
+
+        <div class="cg">
+          <h4>Translation</h4>
+          <div class="cg-body">
+            <div class="ci"><label>Source Lang</label><select id="cfgSL"><option value="auto">AUTO - Auto Detect</option><option value="af">AF - Afrikaans</option><option value="sq">SQ - Albanian</option><option value="am">AM - Amharic</option><option value="ar">AR - Arabic</option><option value="hy">HY - Armenian</option><option value="az">AZ - Azerbaijani</option><option value="eu">EU - Basque</option><option value="be">BE - Belarusian</option><option value="bn">BN - Bengali</option><option value="bs">BS - Bosnian</option><option value="bg">BG - Bulgarian</option><option value="ca">CA - Catalan</option><option value="ceb">CEB - Cebuano</option><option value="zh">ZH - Chinese (Simplified)</option><option value="zh-TW">ZH-TW - Chinese (Traditional)</option><option value="co">CO - Corsican</option><option value="hr">HR - Croatian</option><option value="cs">CS - Czech</option><option value="da">DA - Danish</option><option value="nl">NL - Dutch</option><option value="en">EN - English</option><option value="eo">EO - Esperanto</option><option value="et">ET - Estonian</option><option value="tl">TL - Filipino / Tagalog</option><option value="fi">FI - Finnish</option><option value="fr">FR - French</option><option value="fy">FY - Frisian</option><option value="gl">GL - Galician</option><option value="ka">KA - Georgian</option><option value="de">DE - German</option><option value="el">EL - Greek</option><option value="gu">GU - Gujarati</option><option value="ht">HT - Haitian Creole</option><option value="ha">HA - Hausa</option><option value="haw">HAW - Hawaiian</option><option value="he">HE - Hebrew</option><option value="hi">HI - Hindi</option><option value="hmn">HMN - Hmong</option><option value="hu">HU - Hungarian</option><option value="is">IS - Icelandic</option><option value="ig">IG - Igbo</option><option value="id">ID - Indonesian</option><option value="ga">GA - Irish</option><option value="it">IT - Italian</option><option value="ja">JA - Japanese</option><option value="jv">JV - Javanese</option><option value="kn">KN - Kannada</option><option value="kk">KK - Kazakh</option><option value="km">KM - Khmer</option><option value="rw">RW - Kinyarwanda</option><option value="ko">KO - Korean</option><option value="ku">KU - Kurdish</option><option value="ky">KY - Kyrgyz</option><option value="lo">LO - Lao</option><option value="la">LA - Latin</option><option value="lv">LV - Latvian</option><option value="lt">LT - Lithuanian</option><option value="lb">LB - Luxembourgish</option><option value="mk">MK - Macedonian</option><option value="mg">MG - Malagasy</option><option value="ms">MS - Malay</option><option value="ml">ML - Malayalam</option><option value="mt">MT - Maltese</option><option value="mi">MI - Maori</option><option value="mr">MR - Marathi</option><option value="mn">MN - Mongolian</option><option value="my">MY - Myanmar (Burmese)</option><option value="ne">NE - Nepali</option><option value="no">NO - Norwegian</option><option value="ny">NY - Nyanja (Chichewa)</option><option value="or">OR - Odia (Oriya)</option><option value="ps">PS - Pashto</option><option value="fa">FA - Persian</option><option value="pl">PL - Polish</option><option value="pt">PT - Portuguese (Brazil)</option><option value="pt-PT">PT-PT - Portuguese (Portugal)</option><option value="pa">PA - Punjabi</option><option value="ro">RO - Romanian</option><option value="ru">RU - Russian</option><option value="sm">SM - Samoan</option><option value="gd">GD - Scots Gaelic</option><option value="sr">SR - Serbian</option><option value="st">ST - Sesotho</option><option value="sn">SN - Shona</option><option value="sd">SD - Sindhi</option><option value="si">SI - Sinhala</option><option value="sk">SK - Slovak</option><option value="sl">SL - Slovenian</option><option value="so">SO - Somali</option><option value="es">ES - Spanish</option><option value="su">SU - Sundanese</option><option value="sw">SW - Swahili</option><option value="sv">SV - Swedish</option><option value="tg">TG - Tajik</option><option value="ta">TA - Tamil</option><option value="tt">TT - Tatar</option><option value="te">TE - Telugu</option><option value="th">TH - Thai</option><option value="tr">TR - Turkish</option><option value="tk">TK - Turkmen</option><option value="uk">UK - Ukrainian</option><option value="ur">UR - Urdu</option><option value="ug">UG - Uyghur</option><option value="uz">UZ - Uzbek</option><option value="vi">VI - Vietnamese</option><option value="cy">CY - Welsh</option><option value="xh">XH - Xhosa</option><option value="yi">YI - Yiddish</option><option value="yo">YO - Yoruba</option><option value="zu">ZU - Zulu</option></select></div>
+            <div class="ci"><label>Target Lang</label><select id="cfgTL"><option value="auto">AUTO - Auto Detect</option><option value="af">AF - Afrikaans</option><option value="sq">SQ - Albanian</option><option value="am">AM - Amharic</option><option value="ar">AR - Arabic</option><option value="hy">HY - Armenian</option><option value="az">AZ - Azerbaijani</option><option value="eu">EU - Basque</option><option value="be">BE - Belarusian</option><option value="bn">BN - Bengali</option><option value="bs">BS - Bosnian</option><option value="bg">BG - Bulgarian</option><option value="ca">CA - Catalan</option><option value="ceb">CEB - Cebuano</option><option value="zh">ZH - Chinese (Simplified)</option><option value="zh-TW">ZH-TW - Chinese (Traditional)</option><option value="co">CO - Corsican</option><option value="hr">HR - Croatian</option><option value="cs">CS - Czech</option><option value="da">DA - Danish</option><option value="nl">NL - Dutch</option><option value="en">EN - English</option><option value="eo">EO - Esperanto</option><option value="et">ET - Estonian</option><option value="tl">TL - Filipino / Tagalog</option><option value="fi">FI - Finnish</option><option value="fr">FR - French</option><option value="fy">FY - Frisian</option><option value="gl">GL - Galician</option><option value="ka">KA - Georgian</option><option value="de">DE - German</option><option value="el">EL - Greek</option><option value="gu">GU - Gujarati</option><option value="ht">HT - Haitian Creole</option><option value="ha">HA - Hausa</option><option value="haw">HAW - Hawaiian</option><option value="he">HE - Hebrew</option><option value="hi">HI - Hindi</option><option value="hmn">HMN - Hmong</option><option value="hu">HU - Hungarian</option><option value="is">IS - Icelandic</option><option value="ig">IG - Igbo</option><option value="id">ID - Indonesian</option><option value="ga">GA - Irish</option><option value="it">IT - Italian</option><option value="ja">JA - Japanese</option><option value="jv">JV - Javanese</option><option value="kn">KN - Kannada</option><option value="kk">KK - Kazakh</option><option value="km">KM - Khmer</option><option value="rw">RW - Kinyarwanda</option><option value="ko">KO - Korean</option><option value="ku">KU - Kurdish</option><option value="ky">KY - Kyrgyz</option><option value="lo">LO - Lao</option><option value="la">LA - Latin</option><option value="lv">LV - Latvian</option><option value="lt">LT - Lithuanian</option><option value="lb">LB - Luxembourgish</option><option value="mk">MK - Macedonian</option><option value="mg">MG - Malagasy</option><option value="ms">MS - Malay</option><option value="ml">ML - Malayalam</option><option value="mt">MT - Maltese</option><option value="mi">MI - Maori</option><option value="mr">MR - Marathi</option><option value="mn">MN - Mongolian</option><option value="my">MY - Myanmar (Burmese)</option><option value="ne">NE - Nepali</option><option value="no">NO - Norwegian</option><option value="ny">NY - Nyanja (Chichewa)</option><option value="or">OR - Odia (Oriya)</option><option value="ps">PS - Pashto</option><option value="fa">FA - Persian</option><option value="pl">PL - Polish</option><option value="pt">PT - Portuguese (Brazil)</option><option value="pt-PT">PT-PT - Portuguese (Portugal)</option><option value="pa">PA - Punjabi</option><option value="ro">RO - Romanian</option><option value="ru">RU - Russian</option><option value="sm">SM - Samoan</option><option value="gd">GD - Scots Gaelic</option><option value="sr">SR - Serbian</option><option value="st">ST - Sesotho</option><option value="sn">SN - Shona</option><option value="sd">SD - Sindhi</option><option value="si">SI - Sinhala</option><option value="sk">SK - Slovak</option><option value="sl">SL - Slovenian</option><option value="so">SO - Somali</option><option value="es">ES - Spanish</option><option value="su">SU - Sundanese</option><option value="sw">SW - Swahili</option><option value="sv">SV - Swedish</option><option value="tg">TG - Tajik</option><option value="ta">TA - Tamil</option><option value="tt">TT - Tatar</option><option value="te">TE - Telugu</option><option value="th">TH - Thai</option><option value="tr">TR - Turkish</option><option value="tk">TK - Turkmen</option><option value="uk">UK - Ukrainian</option><option value="ur">UR - Urdu</option><option value="ug">UG - Uyghur</option><option value="uz">UZ - Uzbek</option><option value="vi">VI - Vietnamese</option><option value="cy">CY - Welsh</option><option value="xh">XH - Xhosa</option><option value="yi">YI - Yiddish</option><option value="yo">YO - Yoruba</option><option value="zu">ZU - Zulu</option></select></div>
+            <div class="ci"><label>Engine</label><select id="cfgEngine">
+              <option value="google">Google 🌐</option>
+              <option value="bing">Bing 🔍</option>
+              <option value="multi">Multi-Engine (Google+Bing) 🔁</option>
+              <option value="llm">AI / LLM Translator 🤖</option>
+              <option value="deepl">DeepL Translator 📄</option>
+            </select></div>
+            
+            <!-- Configurações de LLM -->
+            <div id="llmConfigArea" style="display:none;flex-direction:column;gap:6px;margin-top:8px;padding:8px;background:var(--bg2);border:1px dashed var(--bd);border-radius:4px">
+              <div class="ci"><label>Provedor LLM</label><select id="cfgLlmProvider" style="font-size:10px">
+                <option value="openai">OpenAI</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="anthropic">Claude/Anthropic</option>
+                <option value="local">Ollama/LM Studio (Local)</option>
+              </select></div>
+              <div class="ci"><label>API Key</label><input id="cfgLlmApiKey" type="password" placeholder="Chave da API" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci"><label>Modelo</label><input id="cfgLlmModel" type="text" placeholder="Ex: gpt-4o-mini" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci"><label>Base URL</label><input id="cfgLlmBaseUrl" type="text" placeholder="Ex: http://localhost:11434/v1" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci" style="flex-direction:column;align-items:stretch"><label>Prompt de Sistema</label><textarea id="cfgLlmPrompt" rows="3" placeholder="Instruções de tradução..." style="padding:4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px;resize:vertical;margin-top:2px"></textarea></div>
+            </div>
+            
+            <!-- Configurações de DeepL -->
+            <div id="deeplConfigArea" style="display:none;flex-direction:column;gap:6px;margin-top:8px;padding:8px;background:var(--bg2);border:1px dashed var(--bd);border-radius:4px">
+              <div class="ci"><label>DeepL API Key</label><input id="cfgDeeplApiKey" type="password" placeholder="Chave da API DeepL" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci" style="justify-content:space-between;align-items:center"><label>Usar API Gratuita</label><input id="cfgDeeplUseFree" type="checkbox" checked="" style="margin:0"></div>
+            </div>
+            <div class="ci">
+              <label>Word Wrap Limit</label>
+              <input id="cfgWordWrapLimit" type="number" min="0" max="100" style="width:60px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            </div>
+          </div>
+        </div>
+        <div class="cg">
+          <h4>Glossary</h4>
+          <div class="cg-body">
+            <div class="ci" style="flex-direction:column;align-items:stretch;gap:4px">
+              <div id="glossary-list" style="max-height:200px;overflow-y:auto"><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)"></span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)"></span><button class="btn xs dgr glossary-rm" data-idx="0">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">BGM Volume</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume da Música (BGM)</span><button class="btn xs dgr glossary-rm" data-idx="1">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Volume da música musical</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume da Música (BGM)</span><button class="btn xs dgr glossary-rm" data-idx="2">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">BGS Volume</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume Ambiente (BGS)</span><button class="btn xs dgr glossary-rm" data-idx="3">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Volume BGS</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume Ambiente (BGS)</span><button class="btn xs dgr glossary-rm" data-idx="4">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">ME Volume</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume dos Efeitos Musicais (ME)</span><button class="btn xs dgr glossary-rm" data-idx="5">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Volume EM</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume dos Efeitos Musicais (ME)</span><button class="btn xs dgr glossary-rm" data-idx="6">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">SE Volume</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume dos Efeitos Sonoros (SE)</span><button class="btn xs dgr glossary-rm" data-idx="7">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Volume SE</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume dos Efeitos Sonoros (SE)</span><button class="btn xs dgr glossary-rm" data-idx="8">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Always Dash</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Sempre Correr</span><button class="btn xs dgr glossary-rm" data-idx="9">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Sempre traço</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Sempre Correr</span><button class="btn xs dgr glossary-rm" data-idx="10">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Command Memory</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Lembrar Comando</span><button class="btn xs dgr glossary-rm" data-idx="11">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Memória de comando</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Lembrar Comando</span><button class="btn xs dgr glossary-rm" data-idx="12">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Battle Animation</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Animação de Batalha</span><button class="btn xs dgr glossary-rm" data-idx="13">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Voice Volume</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Volume das Vozes</span><button class="btn xs dgr glossary-rm" data-idx="14">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Difficulty</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Dificuldade</span><button class="btn xs dgr glossary-rm" data-idx="15">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Alert Level</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Nível de Alerta</span><button class="btn xs dgr glossary-rm" data-idx="16">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Elements</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Elementos</span><button class="btn xs dgr glossary-rm" data-idx="17">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Equipment</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Equipamento</span><button class="btn xs dgr glossary-rm" data-idx="18">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Next</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Próximo</span><button class="btn xs dgr glossary-rm" data-idx="19">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Taxa estadual</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Taxa de Estados</span><button class="btn xs dgr glossary-rm" data-idx="20">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Please select a save slot</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Selecione um slot de salvamento</span><button class="btn xs dgr glossary-rm" data-idx="21">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Empty</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Vazio</span><button class="btn xs dgr glossary-rm" data-idx="22">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Playtime:</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Tempo de jogo:</span><button class="btn xs dgr glossary-rm" data-idx="23">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Save count:</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Salvamentos:</span><button class="btn xs dgr glossary-rm" data-idx="24">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Fastest</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Mais rápido</span><button class="btn xs dgr glossary-rm" data-idx="25">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Faster</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Mais veloz</span><button class="btn xs dgr glossary-rm" data-idx="26">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Fast</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Rápido</span><button class="btn xs dgr glossary-rm" data-idx="27">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Normal</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Normal</span><button class="btn xs dgr glossary-rm" data-idx="28">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Slow</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Lento</span><button class="btn xs dgr glossary-rm" data-idx="29">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Very Fast</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Muito rápido</span><button class="btn xs dgr glossary-rm" data-idx="30">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Title</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Título</span><button class="btn xs dgr glossary-rm" data-idx="31">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Strength</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Força</span><button class="btn xs dgr glossary-rm" data-idx="32">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Poise</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Equilíbrio</span><button class="btn xs dgr glossary-rm" data-idx="33">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Skill</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Habilidade</span><button class="btn xs dgr glossary-rm" data-idx="34">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Faith</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Fé</span><button class="btn xs dgr glossary-rm" data-idx="35">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Speed</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Velocidade</span><button class="btn xs dgr glossary-rm" data-idx="36">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Perception</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Percepção</span><button class="btn xs dgr glossary-rm" data-idx="37">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Accuracy</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Precisão</span><button class="btn xs dgr glossary-rm" data-idx="38">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Evasion</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Evasão</span><button class="btn xs dgr glossary-rm" data-idx="39">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Critical Rate</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Taxa Crítica</span><button class="btn xs dgr glossary-rm" data-idx="40">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Counter Rate</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Taxa de Contra-ataque</span><button class="btn xs dgr glossary-rm" data-idx="41">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Special Items</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Itens Especiais</span><button class="btn xs dgr glossary-rm" data-idx="42">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Unique Items</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Itens Únicos</span><button class="btn xs dgr glossary-rm" data-idx="43">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Consumable</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Consumível</span><button class="btn xs dgr glossary-rm" data-idx="44">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Usable</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Utilizável</span><button class="btn xs dgr glossary-rm" data-idx="45">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Battle</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Batalha</span><button class="btn xs dgr glossary-rm" data-idx="46">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Field</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Campo</span><button class="btn xs dgr glossary-rm" data-idx="47">✕</button></div><div style="display:flex;gap:4px;align-items:center;padding:2px 0;font-size:10px"><span style="flex:1;color:var(--txt2)">Misc</span><span style="color:var(--txt3)">→</span><span style="flex:1;color:var(--txt)">Diversos</span><button class="btn xs dgr glossary-rm" data-idx="48">✕</button></div></div>
+              <div style="display:flex;gap:4px">
+                <input id="glossary-term" placeholder="Term" style="flex:1;padding:3px 6px;background:var(--bg);border:1px solid var(--bd);color:var(--txt);border-radius:3px;font-size:10px">
+                <input id="glossary-trans" placeholder="Translation" style="flex:1;padding:3px 6px;background:var(--bg);border:1px solid var(--bd);color:var(--txt);border-radius:3px;font-size:10px">
+                <button id="glossary-add" class="btn xs">Add</button>
+              </div>
+              <div style="display:flex;gap:4px;justify-content:flex-end">
+                <button id="glossary-save" class="btn xs pri">Save Glossary</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cg">
+          <h4>Unity Tools</h4>
+          <span class="help-tip">Install and configure the XUnity AutoTranslator plugin for real-time translation.</span>
+          <div class="tools-grid">
+            <button class="btn sm unity-install">Install XUnity + Plugin</button>
+          </div>
+        </div>
+        <div class="cg">
+          <h4>Wolf RPG Tools</h4>
+          <span class="help-tip">Decompress data files (.wolf) or repack modified directories.</span>
+          <div class="tools-grid">
+            <button class="btn sm wolf-extract">Extract Wolf Game</button>
+            <button class="btn sm wolf-pack">Pack Wolf Directory</button>
+          </div>
+        </div>
+        <div class="cg">
+          <h4>RPG Maker Tools</h4>
+          <span class="help-tip">Install the real-time translator in-game or export/import translations in Excel (.xlsx) format.</span>
+          <div class="tools-grid">
+            <button class="btn sm overlay-install">Install RPG Maker Overlay</button>
+            <button class="btn sm excel-export">Export to Excel (.xlsx) 📊</button>
+            <button class="btn sm excel-import">Import from Excel (.xlsx) 📥</button>
+          </div>
+        </div>
+        <div class="cg">
+          <h4>Enigma Virtual Box Tools 📦</h4>
+          <span class="help-tip">Unpack virtual files from single executables packed with Enigma Virtual Box.</span>
+          <div class="tools-grid">
+            <button class="btn sm evb-extract">Extract EVB Executable</button>
+          </div>
+        </div>
+        <div class="cg">
+          <h4>Diagnostics</h4>
+          <div class="cg-body">
+            <div class="ci"><label>Test Google Translate</label><button id="testTr" class="btn sm">Test Google Translate</button></div>
+            <div class="ci"><label>Result</label><span id="testTrRes" style="font-size:10px;color:var(--txt3)">-</span></div>
+            <div class="ci" style="border-top:1px dashed var(--bd);padding-top:8px;margin-top:4px">
+              <label>Auto-Diagnóstico</label>
+              <button id="btnSelfTest" class="btn sm pri">Executar Self-Test 🛡️</button>
+            </div>
+            <div class="ci">
+              <label>Dossiê do Sistema</label>
+              <button id="btnExportDiag" class="btn sm">Exportar Diagnóstico 📋</button>
+            </div>
+            <div class="ci">
+              <label>Matriz de Evidências</label>
+              <button id="btnEvidenceMatrix" class="btn sm">Ver Evidências 📊</button>
+            </div>
+          </div>
+        </div>
+        <div class="cg">
+          <h4>History</h4>
+          <div class="cg-body">
+            <div class="ci">
+              <label>Clear all translations saved in the global cache</label>
+              <button id="clearGlobalCache" class="btn sm" style="background:#e03131;color:#fff;border-color:#c92a2a">Clear History</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHEATS -->
+      <!-- CHEATS -->
+      <div id="tb-ch" class="tb" style="flex-direction:column;gap:12px;padding:12px;overflow-y:auto;height:100%">
+        <div id="cheat-no-game" style="text-align:center;padding:40px;color:var(--txt3)">
+          No active game connected. Start an RPG Maker MZ/MV game to enable Cheat functions.
+        </div>
+        <div id="cheat-panel" style="display:none;flex-direction:column;gap:12px">
+          <!-- Subtabs Navigation -->
+          <div style="display:flex;gap:6px;border-bottom:1px solid var(--bd);padding-bottom:6px">
+            <button id="cheatSubTabGeral" class="btn sm active" style="flex:1">General</button>
+            <button id="cheatSubTabGrupo" class="btn sm" style="flex:1">Party Members / HP</button>
+            <button id="cheatSubTabInv" class="btn sm" style="flex:1">Inventory</button>
+          </div>
+          
+           <!-- Tab 1: Geral / Batalha -->
+           <div id="cheat-sec-geral" style="display:flex;flex-direction:column;gap:12px">
+             <!-- Live Telemetry Panel -->
+             <div class="cg" style="margin-bottom:0">
+               <h4 style="display:flex;justify-content:space-between;align-items:center">
+                 <span>Live Telemetry</span>
+                 <span id="cheat-telemetry-status" style="font-size:9px;color:var(--txt3)">Waiting for connection…</span>
+               </h4>
+               <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 12px">
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">HP</label>
+                   <div style="font-size:13px;font-weight:700;color:var(--red);font-family:var(--fontGame)"><span id="tele-hp-cur">—</span> / <span id="tele-hp-max">—</span></div>
+                 </div>
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">MP</label>
+                   <div style="font-size:13px;font-weight:700;color:var(--accent2);font-family:var(--fontGame)"><span id="tele-mp-cur">—</span> / <span id="tele-mp-max">—</span></div>
+                 </div>
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">Ouro</label>
+                   <div style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--fontGame)"><span id="tele-gold">—</span></div>
+                 </div>
+                 <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
+                   <label style="font-size:9px;color:var(--txt2)">Loc.</label>
+                   <div style="font-size:11px;color:var(--txt);font-family:var(--fontGame);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span id="tele-map">—</span></div>
+                 </div>
+               </div>
+             </div>
+
+             <div class="cg" style="margin-bottom:0">
+               <h4>General Modifications</h4>
+              <div class="cg-body" style="display:flex;flex-direction:column;gap:8px">
+                <div class="ci" style="display:flex;justify-content:space-between;align-items:center">
+                  <label>Gold</label>
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <input id="cheatGoldVal" type="number" style="width:100px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px" value="0">
+                    <button id="cheatGoldBtn" class="btn sm">Set</button>
+                  </div>
+                </div>
+                <div class="ci" style="display:flex;justify-content:space-between;align-items:center">
+                  <label>Walk Through Walls (NoClip)</label>
+                  <input id="cheatThrough" type="checkbox">
+                </div>
+                <div class="ci" style="display:flex;justify-content:space-between;align-items:center">
+                  <label>Disable Enemy Encounters</label>
+                  <input id="cheatNoEncounter" type="checkbox">
+                </div>
+              </div>
+            </div>
+            
+            <div class="cg" style="margin-bottom:0">
+              <h4>Battle / God Mode</h4>
+              <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px">
+                <button id="cheatGodHP" class="btn sm">Infinite Health (Max HP) [OFF]</button>
+                <button id="cheatGodMP" class="btn sm">Infinite Mana (Max MP) [OFF]</button>
+                <button id="cheatInstaWin" class="btn sm pri">Instant Victory</button>
+                <button id="cheatInstaKill" class="btn sm dgr">Enemies at 1 HP</button>
+              </div>
+            </div>
+            
+            <div class="cg" style="margin-bottom:0">
+              <h4>Tools</h4>
+              <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px">
+                <button id="cheatOpenDevTools" class="btn sm">Developer Console (F12)</button>
+              </div>
+            </div>
+
+            <div class="cg" style="margin-bottom:0">
+              <h4>⚡ Velocidade &amp; Atalhos</h4>
+              <div class="cg-body" style="display:flex;flex-direction:column;gap:8px;padding:8px 12px">
+                <div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+                  <label style="flex:1;min-width:140px">Acelerar jogo (segure a tecla)</label>
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <select id="cheatSpeedKey" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"><option value="">(Desativado)</option><option value="ControlLeft" selected="">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option></select>
+                    <input id="cheatSpeedMult" type="number" min="1" max="10" value="3" title="Multiplicador de velocidade" style="width:52px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+                  </div>
+                </div>
+                <div id="cheatHotkeyRows" style="display:flex;flex-direction:column;gap:6px"><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Vitória Instantânea</label>
+          <select id="hk_victory" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Derrota Forçada</label>
+          <select id="hk_defeat" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Fuga</label>
+          <select id="hk_escape" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Grupo HP = 1</label>
+          <select id="hk_groupHp1" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Grupo HP = Max</label>
+          <select id="hk_groupHpMax" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Recuperar Grupo</label>
+          <select id="hk_groupRecover" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Inimigo HP = 1</label>
+          <select id="hk_enemyHp1" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Inimigo HP = 0</label>
+          <select id="hk_enemyHp0" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Inimigo HP = Max</label>
+          <select id="hk_enemyHpMax" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div><div class="ci" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <label style="flex:1;min-width:130px;font-size:10px">Acelerar Diálogo (segurar)</label>
+          <select id="hk_skipMsg" style="width:110px;padding:3px 6px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+            <option value="" selected="">(Desativado)</option><option value="ControlLeft">ControlLeft</option><option value="ControlRight">ControlRight</option><option value="ShiftLeft">ShiftLeft</option><option value="ShiftRight">ShiftRight</option><option value="AltLeft">AltLeft</option><option value="AltRight">AltRight</option><option value="Numpad0">Numpad0</option><option value="Numpad1">Numpad1</option><option value="Numpad2">Numpad2</option><option value="Numpad3">Numpad3</option><option value="Numpad4">Numpad4</option><option value="Numpad5">Numpad5</option><option value="Numpad6">Numpad6</option><option value="Numpad7">Numpad7</option><option value="Numpad8">Numpad8</option><option value="Numpad9">Numpad9</option><option value="KeyQ">KeyQ</option><option value="KeyE">KeyE</option><option value="KeyR">KeyR</option><option value="KeyT">KeyT</option><option value="KeyY">KeyY</option><option value="KeyU">KeyU</option><option value="KeyI">KeyI</option><option value="KeyO">KeyO</option><option value="KeyP">KeyP</option><option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option><option value="F6">F6</option><option value="F7">F7</option><option value="F8">F8</option><option value="F9">F9</option><option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option>
+          </select>
+        </div></div>
+                <div style="display:flex;justify-content:flex-end">
+                  <button id="cheatApplyHotkeys" class="btn sm pri">Aplicar Atalhos</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Memory Scanner (renpy.store / Universal) -->
+            
+            <!-- AppData Save Manager Card (Ren'Py / Universal) -->
+            <div class="cg" id="renpy-appdata-card" style="margin-bottom:0; background:rgba(15,15,25,0.4); border:1px solid var(--bd)">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid var(--bd)">
+                <h4 style="margin:0; font-size:11px; display:flex; align-items:center; gap:6px">
+                  <span>📂</span> <span>Save Manager &amp; AppData (%APPDATA%RenPy)</span>
+                </h4>
+                <div style="display:flex; gap:6px">
+                  <button id="cheatOpenAppDataBtn" class="btn sm" style="background:var(--accent); color:#fff; font-size:10px">📁 Open Save Folder</button>
+                  <button id="cheatRefreshAppDataBtn" class="btn sm" style="font-size:10px">🔄 Refresh</button>
+                </div>
+              </div>
+              <div class="cg-body" style="padding:10px 12px; display:flex; flex-direction:column; gap:8px">
+                <div style="font-size:10px; color:var(--txt2); word-break:break-all">
+                  <strong>Resolved Path:</strong> <span id="renpy-appdata-full-path" style="color:var(--txt)">Awaiting game selection...</span>
+                </div>
+                <div style="font-size:10px; color:var(--txt2)">
+                  <strong>Resolution Method:</strong> <span id="renpy-appdata-method" style="color:var(--accent2)">-</span>
+                </div>
+                <div>
+                  <div style="font-size:10px; font-weight:600; color:var(--txt2); margin-bottom:4px">Detected Save / Persistent Files:</div>
+                  <div id="renpy-appdata-file-list" style="display:flex; flex-wrap:wrap; gap:4px; max-height:120px; overflow-y:auto; padding:4px; background:var(--bg2); border:1px solid var(--bd); border-radius:4px">
+                    <span style="font-size:10px; color:var(--txt3)">No save files detected yet.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cg" id="renpy-live-scanner" style="margin-bottom:0">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:0 6px">
+                <h4>Live Memory Scanner (renpy.store)</h4>
+                <button id="cheatRenpyScanBtn" class="btn sm pri">Scan Variables</button>
+              </div>
+              
+              <div style="padding: 6px;">
+                <input id="cheatRenpySearch" type="text" placeholder="Filter variables (e.g., points, love, money)..." style="width:100%; padding:4px; font-size:10px; background:var(--bg); color:var(--txt); border:1px solid var(--bd); border-radius:3px">
+              </div>
+
+              <div class="cg-body" id="renpy-var-list" style="display:flex; flex-direction:column; gap:4px; padding:8px 12px; max-height:400px; overflow-y:auto">
+                <div style="text-align: center; color: var(--txt3); font-size: 10px;">
+                  Click "Scan Variables" to read renpy.store
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Tab 2: Membros / HP -->
+          <div id="cheat-sec-grupo" style="display:none;flex-direction:column;gap:12px">
+            <div class="cg" style="margin-bottom:0">
+              <h4>Party Status and HP/MP Editing</h4>
+              <div class="cg-body" id="cheat-actors-list" style="display:flex;flex-direction:column;gap:8px;padding:8px 12px">
+                <!-- Renderizado dinamicamente -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- Tab 3: Inventário -->
+          <div id="cheat-sec-inv" style="display:none;flex-direction:column;gap:12px">
+            <!-- Add Item Section -->
+            <div class="cg" style="margin-bottom:0">
+              <h4>Add Item / Weapon / Armor</h4>
+              <div class="cg-body" style="display:flex;flex-direction:column;gap:8px;padding:8px 12px">
+                <div class="ci" style="display:flex;flex-direction:column;gap:4px;align-items:stretch">
+                  <label style="font-size:9px;color:var(--txt3)">Select Item/Equipment:</label>
+                  <select id="cheatInvItemSelect" style="width:100%;padding:4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
+                    <option value="">Waiting for game data...</option>
+                  </select>
+                </div>
+                <div class="ci" style="display:flex;justify-content:space-between;align-items:center">
+                  <label>Quantity</label>
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <input id="cheatInvItemQty" type="number" style="width:60px;padding:3px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px" value="1" min="1">
+                    <button id="cheatInvItemAddBtn" class="btn sm pri">Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Inventory List -->
+            <div class="cg" style="margin-bottom:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px">
+                <h4>Items in Inventory</h4>
+                <input id="cheatInvSearch" type="text" placeholder="Filter items..." style="width:100px;padding:2px 6px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px">
+              </div>
+              <div class="cg-body" id="cheat-inventory-list" style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;max-height:300px;overflow-y:auto">
+                <!-- Renderizado dinamicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div id="tb-lg" class="tb">
+        <div class="lg-header">
+          <span style="font-size:10px;color:var(--txt3)">~ $</span><span style="font-size:10px;color:var(--txt2)">tail -f openT.log</span>
+          <span style="flex:1"></span>
+          <button id="cpyL" class="btn sm" title="Copy">Copy</button>
+          <button id="clrL" class="btn sm">Clear</button>
+        </div>
+        <div id="lb"><div class="le ls"><span class="lt">[2026-10-01 01:41:21.660]</span> <span class="ll">[SUCCESS]</span><span class="lo"> [httpServer.js:L225]</span> <span class="lm">OpenTranslator server running on http://localhost:8080</span></div><div class="le ls"><span class="lt">[2026-10-01 01:41:21.673]</span> <span class="ll">[SUCCESS]</span><span class="lo"> [cheatServer.js:L340]</span> <span class="lm">Dual Hook Server listening on port 16005</span></div><div class="le li"><span class="lt">[2026-10-01 01:41:22.688]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L241]</span> <span class="lm">Game hook connected via WebSocket to 16005</span></div><div class="le li"><span class="lt">[2026-10-01 01:41:22.702]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">WebSocket Dual Hook conectado (16005).</span></div><div class="le li"><span class="lt">[2026-10-01 01:41:22.887]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">OpenTranslator ready</span></div><div class="le li"><span class="lt">[2026-10-01 01:46:58.853]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L241]</span> <span class="lm">Game hook connected via WebSocket to 16005</span></div><div class="le li"><span class="lt">[2026-10-01 01:46:58.860]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">WebSocket Dual Hook conectado (16005).</span></div><div class="le li"><span class="lt">[2026-10-01 01:46:58.989]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">OpenTranslator ready</span></div><div class="le li"><span class="lt">[2026-10-01 01:46:59.383]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L324]</span> <span class="lm">Game hook WebSocket connection closed</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:05.636]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L241]</span> <span class="lm">Game hook connected via WebSocket to 16005</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:05.640]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">WebSocket Dual Hook conectado (16005).</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:05.774]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">OpenTranslator ready</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:06.166]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L324]</span> <span class="lm">Game hook WebSocket connection closed</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:15.199]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L241]</span> <span class="lm">Game hook connected via WebSocket to 16005</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:15.205]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">WebSocket Dual Hook conectado (16005).</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:15.306]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">OpenTranslator ready</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:15.425]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L324]</span> <span class="lm">Game hook WebSocket connection closed</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:22.247]</span> <span class="ll">[INFO]</span><span class="lo"> [cheatServer.js:L241]</span> <span class="lm">Game hook connected via WebSocket to 16005</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:22.252]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">WebSocket Dual Hook conectado (16005).</span></div><div class="le li"><span class="lt">[2026-10-01 01:47:22.371]</span> <span class="ll">[INFO]</span><span class="lo"> [rpcHandlers.js:L859]</span> <span class="lm">OpenTranslator ready</span></div></div>
+      </div>
+
+      <!-- PERFORMANCE & ENGINES MATRIX -->
+      <div id="tb-pf" class="tb" style="padding:16px; overflow-y:auto; height:calc(100vh - 65px)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px">
+          <div>
+            <h2 style="font-size:18px; font-weight:700; color:var(--txt); margin:0 0 4px 0">Plataforma Universal de Engines &amp; Performance</h2>
+            <p style="font-size:12px; color:var(--txt2); margin:0">Matriz estrita de 14 engines suportadas, benchmark de concorrência e telemetria de throughput.</p>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button id="btnRunBenchmark" class="btn sm pri" style="display:flex; align-items:center; gap:6px">
+              <span>⚡</span> <span>Executar Benchmark Real</span>
+            </button>
+            <button id="btnRefreshMatrix" class="btn sm">Atualizar Matriz</button>
+          </div>
+        </div>
+
+        <!-- Important Methodological Notices -->
+        <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap">
+          <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; color:#f87171">
+            ⚠️ PEAK BURST ≠ RECOMMENDED SPEED (Picos em janelas curtas não são recomendados para traduções longas)
+          </div>
+          <div style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; color:#60a5fa">
+            ℹ️ CACHE SPEED ≠ TRANSLATION SPEED (Resolução em memória local não representa transporte via internet)
+          </div>
+        </div>
+
+        <!-- Real HTTP Speed & Saturation Dashboard -->
+        <div style="font-size:12px; font-weight:700; color:var(--txt); margin-bottom:8px">1. NETWORK TRANSLATION THROUGHPUT — BENCHMARK HTTP REAL (Google GTX)</div>
+        <div id="pf-dashboard-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px">
+          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
+            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">VELOCIDADE SEGURA (SAFE)</div>
+            <div id="pf-safe-val" style="font-size:22px; font-weight:700; color:var(--green)">100.7 txt/s</div>
+            <div style="font-size:10px; color:var(--txt3)">2.136 chars/s | P95: 279ms | 2 workers</div>
+          </div>
+          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
+            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">MÁXIMA SUSTENTADA</div>
+            <div id="pf-sustained-val" style="font-size:22px; font-weight:700; color:var(--accent)">149.3 txt/s</div>
+            <div style="font-size:10px; color:var(--txt3)">3.165 chars/s | P95: 236ms | 4 workers</div>
+          </div>
+          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
+            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">PICO MÁXIMO (BURST)</div>
+            <div id="pf-peak-val" style="font-size:22px; font-weight:700; color:var(--accent2)">238.1 txt/s</div>
+            <div style="font-size:10px; color:var(--txt3)">5.050 chars/s | 8 workers (janela curta)</div>
+          </div>
+          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
+            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">EXECUÇÃO HISTÓRICA REAL</div>
+            <div id="pf-hist-val" style="font-size:20px; font-weight:700; color:var(--yellow)">~131 txt/s</div>
+            <div style="font-size:10px; color:var(--txt3)">Summertime Saga: 2.834 textos em 21.6s</div>
+          </div>
+        </div>
+
+        <!-- Real HTTP Benchmark Table -->
+        <div id="pf-bench-details" style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px; margin-bottom:20px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <h3 style="font-size:13px; font-weight:700; color:var(--txt); margin:0">Resultados HTTP Reais por Concorrência (Google GTX — 100 Textos Reais)</h3>
+            <span style="font-size:10px; padding:2px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:var(--green)">HTTP Real Validado</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left">
+              <thead>
+                <tr style="border-bottom:1px solid var(--bd); color:var(--txt2)">
+                  <th style="padding:6px">Workers</th>
+                  <th style="padding:6px">Batch</th>
+                  <th style="padding:6px">Vazão (txt/s)</th>
+                  <th style="padding:6px">Vazão (chars/s)</th>
+                  <th style="padding:6px">Req/s</th>
+                  <th style="padding:6px">P50</th>
+                  <th style="padding:6px">P95</th>
+                  <th style="padding:6px">429 Rate</th>
+                  <th style="padding:6px">Status</th>
+                </tr>
+              </thead>
+              <tbody id="pf-bench-rows">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">1 worker</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--txt)">45.6 txt/s</td><td style="padding:6px">968 chars/s</td><td style="padding:6px">4.6</td><td style="padding:6px">213ms</td><td style="padding:6px">436ms</td><td style="padding:6px">0%</td><td style="padding:6px">OK</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">2 workers</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--green); font-weight:700">100.7 txt/s</td><td style="padding:6px">2.136 chars/s</td><td style="padding:6px">10.1</td><td style="padding:6px">199ms</td><td style="padding:6px">279ms</td><td style="padding:6px">0%</td><td style="padding:6px; color:var(--green)">SAFE SPEED</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">4 workers</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--accent); font-weight:700">149.3 txt/s</td><td style="padding:6px">3.165 chars/s</td><td style="padding:6px">14.9</td><td style="padding:6px">186ms</td><td style="padding:6px">236ms</td><td style="padding:6px">0%</td><td style="padding:6px; color:var(--accent)">MAX SUSTAINED</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">8 workers</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--accent2); font-weight:700">238.1 txt/s</td><td style="padding:6px">5.050 chars/s</td><td style="padding:6px">23.8</td><td style="padding:6px">175ms</td><td style="padding:6px">232ms</td><td style="padding:6px">0%</td><td style="padding:6px; color:var(--accent2)">PEAK BURST</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Synthetic Internal Queue Benchmark -->
+        <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px; margin-bottom:20px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <div>
+              <h3 style="font-size:13px; font-weight:700; color:var(--txt); margin:0">2. CACHE RESOLUTION &amp; SYNTHETIC QUEUE THROUGHPUT (Local / SQLite / RAM)</h3>
+              <p style="font-size:10px; color:var(--txt2); margin:2px 0 0 0">Mede exclusivamente a capacidade de leitura local do armazenamento/memória. Não representa velocidade de rede.</p>
+            </div>
+            <span style="font-size:10px; padding:2px 8px; border-radius:4px; background:rgba(234,179,8,0.15); color:var(--yellow)">Fila / Memória Local</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left">
+              <thead>
+                <tr style="border-bottom:1px solid var(--bd); color:var(--txt2)">
+                  <th style="padding:6px">Concorrência</th>
+                  <th style="padding:6px">Vazão Fila Interna</th>
+                  <th style="padding:6px">Latência Local P95</th>
+                  <th style="padding:6px">Saturação da Fila</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">1 worker</td><td style="padding:6px">180 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Sem contenção</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">2 workers</td><td style="padding:6px">360 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Sem contenção</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">4 workers</td><td style="padding:6px">720 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Sem contenção</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">8 workers</td><td style="padding:6px">1.440 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Ótimo</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">12 workers</td><td style="padding:6px">2.160 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Contenção de deserialização</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">16 workers</td><td style="padding:6px">2.880 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Pico sintético de CPU</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Strict Capability Matrix -->
+        <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
+          <h3 style="font-size:13px; font-weight:700; color:var(--txt); margin:0 0 10px 0">Matriz Estrita de Capacidades Técnicas (14 Engines)</h3>
+          <div style="overflow-x:auto">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left">
+              <thead>
+                <tr style="border-bottom:1px solid var(--bd); color:var(--txt2)">
+                  <th style="padding:6px">Engine</th>
+                  <th style="padding:6px">Versões</th>
+                  <th style="padding:6px">Status</th>
+                  <th style="padding:6px">Estática</th>
+                  <th style="padding:6px">Runtime</th>
+                  <th style="padding:6px">Empacotados</th>
+                  <th style="padding:6px">Tokens/Placeholders</th>
+                  <th style="padding:6px">Pluralização</th>
+                </tr>
+              </thead>
+              <tbody id="pf-matrix-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="statusbar">
+    <span id="sbInfo">OpenTranslator v1.0</span>
+    <span id="sbCenter"></span>
+    <span id="sbRight"><span id="sbGames">2</span> games</span>
+  </div>
+</div>
+<div id="modal"></div></div>
+<script src="app.js"></script>
+
+
+</body></html>

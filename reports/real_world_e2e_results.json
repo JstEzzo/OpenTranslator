@@ -1,0 +1,76 @@
+{
+  "totalScanned": 25,
+  "gamesTested": 0,
+  "nonGamesTested": 4,
+  "cacheIsolationPassed": true,
+  "sequentialRunsPassed": true,
+  "partialGamesHandledCleanly": true,
+  "unsupportedGamesHandledSafely": true,
+  "repeatedCyclesPassed": true,
+  "results": [
+    {
+      "item": "MTool",
+      "type": "NON_GAME",
+      "status": "SAFE_REJECT",
+      "note": "mv"
+    },
+    {
+      "item": "save",
+      "type": "NON_GAME",
+      "status": "SAFE_REJECT",
+      "note": "generic"
+    },
+    {
+      "item": "Starmaker 1.8E",
+      "type": "NON_GAME",
+      "status": "SAFE_REJECT",
+      "note": "unity"
+    },
+    {
+      "item": "女体狂乱プリンセス inプリズン(DL版)",
+      "type": "NON_GAME",
+      "status": "SAFE_REJECT",
+      "note": "generic"
+    },
+    {
+      "item": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "type": "SPECIAL_GAME",
+      "detectedEngine": "cocos2dx",
+      "recommendedStrategy": "OCR de Tela Adaptativo",
+      "safeNonDestructive": true,
+      "status": "HANDLED_SAFELY"
+    },
+    {
+      "item": "Dane",
+      "type": "SPECIAL_GAME",
+      "detectedEngine": "unity",
+      "recommendedStrategy": "OCR de Tela Adaptativo",
+      "safeNonDestructive": true,
+      "status": "HANDLED_SAFELY"
+    },
+    {
+      "item": "Rabbit Hood English 2026-06-30",
+      "type": "SPECIAL_GAME",
+      "detectedEngine": "wolf",
+      "recommendedStrategy": "OCR de Tela Adaptativo",
+      "safeNonDestructive": true,
+      "status": "HANDLED_SAFELY"
+    },
+    {
+      "item": "BLACK SOULS",
+      "type": "SPECIAL_GAME",
+      "detectedEngine": "rgss",
+      "recommendedStrategy": "OCR de Tela Adaptativo",
+      "safeNonDestructive": true,
+      "status": "HANDLED_SAFELY"
+    },
+    {
+      "item": "harem-heaven-03.5-alpha2-pc-plus",
+      "type": "SPECIAL_GAME",
+      "detectedEngine": "godot",
+      "recommendedStrategy": "OCR de Tela Adaptativo",
+      "safeNonDestructive": true,
+      "status": "HANDLED_SAFELY"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "[RPG] [happypink] +EXORCIST+": {
+    "game": "[RPG] [happypink] +EXORCIST+",
+    "engine": "rgss",
+    "detect": "PASS",
+    "inspect": "PASS",
+    "extract": "PASS",
+    "translate": "PASS",
+    "apply": "PASS",
+    "rollback": "PASS",
+    "runtime": "PASS",
+    "extractedCount": 37843,
+    "tier": "RUNTIME VERIFIED",
+    "notes": "",
+    "version": "VX Ace",
+    "runtimePid": 24440
+  },
+  "BLACK SOULS": {
+    "game": "BLACK SOULS",
+    "engine": "rgss",
+    "detect": "PASS",
+    "inspect": "PASS",
+    "extract": "PASS",
+    "translate": "PASS",
+    "apply": "PASS",
+    "rollback": "NOT_TESTED",
+    "runtime": "PASS",
+    "extractedCount": 24031,
+    "tier": "EXTERNAL TOOL REQUIRED",
+    "notes": "",
+    "version": "VX Ace",
+    "runtimePid": 18084
+  }
+}

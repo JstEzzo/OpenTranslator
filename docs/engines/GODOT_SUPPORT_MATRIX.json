@@ -1,0 +1,11 @@
+{
+  "game": "harem-heaven-03.5-alpha2-pc-plus",
+  "engine": "Godot Engine",
+  "engineVersion": "4.6.2",
+  "pckVersion": 3,
+  "extractedCount": 118131,
+  "pipeline": "PASS",
+  "runtime": "PASS",
+  "rollback": "PASS (SHA-256 100% Match)",
+  "status": "RUNTIME VERIFIED"
+}

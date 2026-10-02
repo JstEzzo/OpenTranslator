@@ -1,0 +1,153 @@
+{
+  "timestamp": "2026-10-02T04:31:57.776Z",
+  "mode": "DRY_RUN",
+  "candidates": {
+    "scratchDirs": [],
+    "testLogs": [
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\server_stdout.log",
+        "size": 0
+      }
+    ],
+    "staleTransactions": [
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790440689296_f1f85837.json",
+        "size": 364
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790440691549_3aeeff25.json",
+        "size": 549
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790440691573_b43de232.json",
+        "size": 553
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790440691739_a576c1a1.json",
+        "size": 552
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790475566432_d8436eeb.json",
+        "size": 364
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790475569665_46e5fa32.json",
+        "size": 549
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790475569688_3071d4d1.json",
+        "size": 553
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790475569842_074bc044.json",
+        "size": 552
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790476866417_de82ceb4.json",
+        "size": 364
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790476868824_379510ec.json",
+        "size": 549
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790476868847_4be6c2e4.json",
+        "size": 553
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\transactions\\tx_1790476869002_4714ae07.json",
+        "size": 552
+      }
+    ],
+    "staleSessions": [
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_NightLessons-1.8_TEST-pc_1790546326376.json",
+        "size": 7177851
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_summertimesaga-21.0.0-wip.8189-pc_1790907726034.json",
+        "size": 5923798
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_summertimesaga-21.0.0-wip.8189-pc_1790909338910.json",
+        "size": 5914181
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_summertimesaga-21.0.0-wip.8189-pc_1790912710864.json",
+        "size": 5914181
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_summertimesaga-21.0.0-wip.8189-pc_1790913451550.json",
+        "size": 5914181
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790443127428.json",
+        "size": 61069731
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790451647997.json",
+        "size": 21492414
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790457778413.json",
+        "size": 21524215
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790458284557.json",
+        "size": 21524571
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790459256374.json",
+        "size": 21297211
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790459550006.json",
+        "size": 21262918
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790459920389.json",
+        "size": 21294885
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790838274647.json",
+        "size": 36390404
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790838684737.json",
+        "size": 36395367
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790838830420.json",
+        "size": 36397137
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\job_Toki kan Yuusha (gitgud)_1790839013890.json",
+        "size": 36397137
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\sess_1790440691865_yrioa.json",
+        "size": 598
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\sess_1790475569979_bonkx.json",
+        "size": 598
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\sessions\\sess_1790476869118_5lhr4.json",
+        "size": 598
+      }
+    ],
+    "sqliteWalShm": [
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\translation_memory.sqlite-shm",
+        "size": 32768
+      },
+      {
+        "path": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\data\\translation_memory.sqlite-wal",
+        "size": 0
+      }
+    ],
+    "rootClutter": []
+  },
+  "totalCandidateBytes": 365930798
+}

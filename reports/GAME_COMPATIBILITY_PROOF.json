@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-10-02T03:40:43.008Z",
+  "step": "PASSO 25 — TESTE FINAL DE JOGO NOVO",
+  "testGameName": "NewGame_Universal_Proof_AutoTest",
+  "manualRegistrationUsed": false,
+  "gameSpecificJsUsed": false,
+  "result": {
+    "sessionId": "session_1790912442977_6415x",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NewGame_Universal_Proof_AutoTest",
+    "gameName": "NewGame_Universal_Proof_AutoTest",
+    "startedAt": "2026-10-02T03:40:42.979Z",
+    "completedAt": "2026-10-02T03:40:43.005Z",
+    "classification": null,
+    "engine": "unknown",
+    "engineVersion": "unknown",
+    "confidence": 0,
+    "supportStatus": "UNKNOWN",
+    "metrics": {
+      "DETECT": "NOT_TESTED",
+      "INSPECT": "NOT_TESTED",
+      "EXTRACT": "N/A",
+      "TRANSLATE": "N/A",
+      "APPLY": "N/A",
+      "LAUNCH": "N/A",
+      "GAMEPLAY": "N/A",
+      "RUNTIME": "N/A",
+      "SAVE_LOAD": "NOT_TESTED",
+      "REOPEN": "N/A",
+      "ROLLBACK": "N/A"
+    },
+    "evidence": [],
+    "hashes": null,
+    "status": "FAIL",
+    "error": "fetch failed"
+  }
+}

@@ -27,31 +27,6 @@
     "note": ""
   },
   {
-    "folder": "Aunt don't be sad - English version",
-    "engine": "mv",
-    "engineVersion": "MV 1.x",
-    "architecture": "x32",
-    "confidence": "98%",
-    "evidence": [
-      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
-    ],
-    "warnings": [],
-    "capabilities": {
-      "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
-      "frameworkState": false,
-      "ocr": true,
-      "backupSupported": true
-    },
-    "extractionTested": true,
-    "stringsExtracted": 4575,
-    "tokensProtected": 0,
-    "note": ""
-  },
-  {
     "folder": "BLACK SOULS",
     "engine": "rgss",
     "engineVersion": "VX Ace",
@@ -73,31 +48,6 @@
     },
     "extractionTested": true,
     "stringsExtracted": 2705,
-    "tokensProtected": 0,
-    "note": ""
-  },
-  {
-    "folder": "Daily Lives of My Countryside v0.3.5.3 (PC) (Full)",
-    "engine": "mv",
-    "engineVersion": "MV 1.x",
-    "architecture": "x64",
-    "confidence": "98%",
-    "evidence": [
-      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
-    ],
-    "warnings": [],
-    "capabilities": {
-      "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
-      "frameworkState": false,
-      "ocr": true,
-      "backupSupported": true
-    },
-    "extractionTested": true,
-    "stringsExtracted": 64566,
     "tokensProtected": 0,
     "note": ""
   },
@@ -124,31 +74,6 @@
     "extractionTested": true,
     "stringsExtracted": 6759,
     "tokensProtected": 0,
-    "note": ""
-  },
-  {
-    "folder": "Marie's Adventure",
-    "engine": "mv",
-    "engineVersion": "MV 1.x",
-    "architecture": "x64",
-    "confidence": "98%",
-    "evidence": [
-      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
-    ],
-    "warnings": [],
-    "capabilities": {
-      "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
-      "frameworkState": false,
-      "ocr": true,
-      "backupSupported": true
-    },
-    "extractionTested": true,
-    "stringsExtracted": 37591,
-    "tokensProtected": 5,
     "note": ""
   },
   {
@@ -236,9 +161,10 @@
     "folder": "Nova pasta (2)",
     "engine": "unity",
     "engineVersion": "Unity Mono",
-    "architecture": "x32",
+    "architecture": "x64",
     "confidence": "96%",
     "evidence": [
+      "Jogo localizado na subpasta: Starmaker 1.8E",
       "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
       "Compilação Unity Mono (.NET Managed Assemblies presentes)"
     ],
@@ -247,12 +173,12 @@
       "staticFiles": false,
       "nativeLocalization": false,
       "archives": true,
-      "runtimeHook": false,
+      "runtimeHook": true,
       "dom": false,
       "frameworkState": false,
       "ocr": true,
       "backupSupported": true,
-      "strategy": "OCR Fallback (Hook Ausente)"
+      "strategy": "BepInEx Runtime Hook"
     },
     "extractionTested": true,
     "stringsExtracted": 0,
@@ -365,32 +291,6 @@
     "note": ""
   },
   {
-    "folder": "RWLHPMK_D1.00",
-    "engine": "mz",
-    "engineVersion": "MZ 1.x",
-    "architecture": "x64",
-    "confidence": "98%",
-    "evidence": [
-      "Jogo localizado na subpasta: 令和DEロリホイMZ",
-      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
-    ],
-    "warnings": [],
-    "capabilities": {
-      "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
-      "frameworkState": false,
-      "ocr": true,
-      "backupSupported": true
-    },
-    "extractionTested": true,
-    "stringsExtracted": 164994,
-    "tokensProtected": 0,
-    "note": ""
-  },
-  {
     "folder": "save",
     "engine": "generic",
     "engineVersion": "Desconhecida",
@@ -445,29 +345,30 @@
     "note": ""
   },
   {
-    "folder": "Succubus＆Judgement-COMPLETE EDITION-",
-    "engine": "mz",
-    "engineVersion": "MZ 1.x",
+    "folder": "summertime_saga_realistic_remake-0.3.0-win",
+    "engine": "renpy",
+    "engineVersion": "8.x",
     "architecture": "x64",
-    "confidence": "98%",
+    "confidence": "96%",
     "evidence": [
-      "Jogo localizado na subpasta: EnglishData",
-      "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+      "Pasta 'game/' encontrada com scripts .rpy/.rpyc/.rpa",
+      "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
     ],
     "warnings": [],
     "capabilities": {
       "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
+      "nativeLocalization": true,
+      "archives": true,
+      "compiledScripts": true,
+      "runtimeHook": false,
+      "dom": false,
       "frameworkState": false,
       "ocr": true,
       "backupSupported": true
     },
     "extractionTested": true,
-    "stringsExtracted": 24213,
-    "tokensProtected": 0,
+    "stringsExtracted": 2834,
+    "tokensProtected": 3,
     "note": ""
   },
   {
@@ -602,56 +503,6 @@
     },
     "extractionTested": true,
     "stringsExtracted": 0,
-    "tokensProtected": 0,
-    "note": ""
-  },
-  {
-    "folder": "白銀の聖騎士ルナ・グランツ 製品版",
-    "engine": "mv",
-    "engineVersion": "MV 1.x",
-    "architecture": "x32",
-    "confidence": "98%",
-    "evidence": [
-      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
-    ],
-    "warnings": [],
-    "capabilities": {
-      "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
-      "frameworkState": false,
-      "ocr": true,
-      "backupSupported": true
-    },
-    "extractionTested": true,
-    "stringsExtracted": 16327,
-    "tokensProtected": 0,
-    "note": ""
-  },
-  {
-    "folder": "空気に漂う秘密",
-    "engine": "mv",
-    "engineVersion": "MV 1.x",
-    "architecture": "x32",
-    "confidence": "98%",
-    "evidence": [
-      "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
-    ],
-    "warnings": [],
-    "capabilities": {
-      "staticFiles": true,
-      "nativeLocalization": false,
-      "archives": false,
-      "runtimeHook": true,
-      "dom": true,
-      "frameworkState": false,
-      "ocr": true,
-      "backupSupported": true
-    },
-    "extractionTested": true,
-    "stringsExtracted": 4320,
     "tokensProtected": 0,
     "note": ""
   }

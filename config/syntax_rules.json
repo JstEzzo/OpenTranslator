@@ -1,0 +1,54 @@
+{
+  "DANGER_PREFIXES": [
+    "gui/",
+    "audio/",
+    "images/",
+    "fonts/",
+    "tl/",
+    "renpy/",
+    "game/gui/",
+    "game/audio/",
+    "game/images/",
+    "game/fonts/",
+    "game/tl/",
+    "game/renpy/"
+  ],
+  "COMMON_RENPY_UI_KEYS": [
+    "Start",
+    "Load",
+    "Save",
+    "Options",
+    "Preferences",
+    "Main Menu",
+    "Return",
+    "Back",
+    "History",
+    "Skip",
+    "Auto",
+    "Help",
+    "Quit",
+    "About",
+    "Sound",
+    "Music",
+    "Display",
+    "Window",
+    "Fullscreen"
+  ],
+  "PROTECTED_ENGINE_DIRS": [
+    "renpy/common",
+    "common"
+  ],
+  "VERSION_PROBING": {
+    "RENPY_PREFERENCE_HOOK_MAX_VERSION": "9.9.99",
+    "SAFE_PURGE_FILES": [
+      "00_opent_runtime.rpy",
+      "00_opent_runtime.rpyc",
+      "zz_opent_runtime.rpy",
+      "zz_opent_runtime.rpyc",
+      "000_opent_runtime.rpy",
+      "000_opent_runtime.rpyc",
+      "z_opentranslator.rpy",
+      "z_opentranslator.rpyc"
+    ]
+  }
+}

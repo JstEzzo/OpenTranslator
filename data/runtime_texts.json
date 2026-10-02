@@ -1,0 +1,17 @@
+[
+  {
+    "id": "rt_1790476859026_182563",
+    "hash": "18256385f8d884bf",
+    "original": "Special Secret Item",
+    "translated": "[PT] Special Secret Item",
+    "engine": "rpgmaker",
+    "scene": "Menu",
+    "script": null,
+    "context": "runtime_capture",
+    "origin": "hook",
+    "firstSeen": "2026-09-27T02:40:59.026Z",
+    "lastSeen": "2026-09-27T02:40:59.027Z",
+    "occurrences": 1,
+    "addedToTM": true
+  }
+]

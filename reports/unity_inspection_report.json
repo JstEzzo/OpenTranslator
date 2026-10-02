@@ -1,0 +1,566 @@
+{
+  "Dane": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/Dane",
+    "unityPyAvailable": true,
+    "textSources": [
+      "IL2CPP Compiled Metadata",
+      "StreamingAssets (28 files)",
+      "Serialized TextAssets (98 found in sampled assets)"
+    ],
+    "textAssetsFound": 98,
+    "monoBehavioursWithText": 142,
+    "stringTablesFound": 0,
+    "looseTextFiles": [],
+    "autoTranslatorDictionaries": [],
+    "streamingAssetsFiles": [
+      "trailer.mp4",
+      "UnityServicesProjectConfiguration.json",
+      "aa\\catalog.bin",
+      "aa\\catalog.hash",
+      "aa\\settings.json",
+      "aa\\AddressablesLink\\link.xml",
+      "aa\\StandaloneWindows64\\82ce4aead5c99a805bec10de3e85ebb4_monoscripts_0cd43153c17917f6bcc036ff0f1861f5.bundle",
+      "aa\\StandaloneWindows64\\disavoiceid_assets_all_364f796d9007a7521d100017c285e60d.bundle",
+      "aa\\StandaloneWindows64\\eastereggsscenes_assets_all_c001aeef43ab1ff368d5997378e8bee7.bundle",
+      "aa\\StandaloneWindows64\\localization-assets-shared_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-locales_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-chinese(simplified)(zh)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-english(en)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-french(fr)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-german(de)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-italian(it)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-japanese(ja)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-korean(ko)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-polish(pl)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-portuguese(pt)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-russian(ru)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-spanish(es)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-thai(th)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-turkish(tr)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\localization-string-tables-ukrainian(uk)_assets_all.bundle",
+      "aa\\StandaloneWindows64\\newspinecharacters_assets_all_9d9311ea50f1bc05448399b62a1582f1.bundle",
+      "aa\\StandaloneWindows64\\sexscenes_assets_all_d2a0ac7427eddb51fb8ab110b8714d4f.bundle",
+      "aa\\StandaloneWindows64\\spinecharacters_assets_all_fb4c741b2b7c54d081b5dfa70cfd337a.bundle"
+    ],
+    "serializedAssetFiles": [
+      {
+        "name": "globalgamemanagers",
+        "sizeBytes": 184180
+      },
+      {
+        "name": "globalgamemanagers.assets",
+        "sizeBytes": 186744
+      },
+      {
+        "name": "resources.assets",
+        "sizeBytes": 261792
+      },
+      {
+        "name": "resources.assets.resS",
+        "sizeBytes": 353648
+      },
+      {
+        "name": "resources.resource",
+        "sizeBytes": 69928576
+      },
+      {
+        "name": "sharedassets0.assets",
+        "sizeBytes": 35446032
+      },
+      {
+        "name": "sharedassets0.assets.resS",
+        "sizeBytes": 1739632368
+      },
+      {
+        "name": "sharedassets0.resource",
+        "sizeBytes": 6567872
+      }
+    ],
+    "managedAssemblies": [],
+    "il2cppMetadata": {
+      "path": "C:/Users/Teste/Desktop/Nova pasta/Dane\\Dane_Data\\il2cpp_data\\Metadata\\global-metadata.dat",
+      "sizeBytes": 7159832
+    },
+    "textAssetsSample": [
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "sharedassets0.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "sharedassets0.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "sharedassets0.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "sharedassets0.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "sharedassets0.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "sharedassets0.assets",
+        "name": "unnamed",
+        "size": 0
+      }
+    ]
+  },
+  "MiniGamePackVol1_v1.0_forWin_demo": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/MiniGamePackVol1_v1.0_demo/MiniGamePackVol1_v1.0_forWin_demo",
+    "unityPyAvailable": true,
+    "textSources": [
+      "Mono Managed Assemblies (146 DLLs)",
+      "StreamingAssets (1 files)",
+      "Serialized TextAssets (5 found in sampled assets)"
+    ],
+    "textAssetsFound": 5,
+    "monoBehavioursWithText": 656,
+    "stringTablesFound": 0,
+    "looseTextFiles": [],
+    "autoTranslatorDictionaries": [],
+    "streamingAssetsFiles": [
+      "ChokenPress\\cha01parts.4096_mask\\texture_00.png"
+    ],
+    "serializedAssetFiles": [
+      {
+        "name": "globalgamemanagers",
+        "sizeBytes": 408964
+      },
+      {
+        "name": "globalgamemanagers.assets",
+        "sizeBytes": 1440964
+      },
+      {
+        "name": "globalgamemanagers.assets.resS",
+        "sizeBytes": 6316192
+      },
+      {
+        "name": "resources.assets",
+        "sizeBytes": 1728712
+      },
+      {
+        "name": "resources.assets.resS",
+        "sizeBytes": 2611456
+      },
+      {
+        "name": "sharedassets0.assets",
+        "sizeBytes": 705600
+      },
+      {
+        "name": "sharedassets0.assets.resS",
+        "sizeBytes": 9533744
+      },
+      {
+        "name": "sharedassets0.resource",
+        "sizeBytes": 42880
+      },
+      {
+        "name": "sharedassets1.assets",
+        "sizeBytes": 617616
+      },
+      {
+        "name": "sharedassets1.assets.resS",
+        "sizeBytes": 52766720
+      },
+      {
+        "name": "sharedassets1.resource",
+        "sizeBytes": 590272
+      }
+    ],
+    "managedAssemblies": [
+      "Assembly-CSharp.dll",
+      "ConditionalExpression.dll",
+      "Live2D.Cubism.dll",
+      "Mono.Security.dll",
+      "mscorlib.dll",
+      "netstandard.dll",
+      "PlayMaker.dll",
+      "System.ComponentModel.Composition.dll",
+      "System.Configuration.dll",
+      "System.Core.dll",
+      "System.Data.DataSetExtensions.dll",
+      "System.Data.dll",
+      "System.dll",
+      "System.Drawing.dll",
+      "System.EnterpriseServices.dll",
+      "System.IO.Compression.dll",
+      "System.IO.Compression.FileSystem.dll",
+      "System.IO.Hashing.dll",
+      "System.Memory.dll",
+      "System.Net.Http.dll"
+    ],
+    "il2cppMetadata": null,
+    "managedAssembliesCount": 146,
+    "textAssetsSample": [
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      }
+    ]
+  },
+  "BunnyQuotaStruggles": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/Nova pasta",
+    "unityPyAvailable": true,
+    "textSources": [
+      "Mono Managed Assemblies (19 DLLs)"
+    ],
+    "textAssetsFound": 0,
+    "monoBehavioursWithText": 0,
+    "stringTablesFound": 0,
+    "looseTextFiles": [],
+    "autoTranslatorDictionaries": [],
+    "streamingAssetsFiles": [],
+    "serializedAssetFiles": [],
+    "managedAssemblies": [
+      "0Harmony.dll",
+      "ExIni.dll",
+      "Mono.Cecil.dll",
+      "Mono.Security.dll",
+      "MonoMod.RuntimeDetour.dll",
+      "MonoMod.Utils.dll",
+      "mscorlib.dll",
+      "netstandard.dll",
+      "System.Configuration.dll",
+      "System.Core.dll",
+      "System.dll",
+      "System.Numerics.dll",
+      "System.Runtime.Serialization.dll",
+      "System.Xml.dll",
+      "System.Xml.Linq.dll",
+      "XUnity.AutoTranslator.Plugin.Core.dll",
+      "XUnity.AutoTranslator.Plugin.ExtProtocol.dll",
+      "XUnity.Common.dll",
+      "XUnity.ResourceRedirector.dll"
+    ],
+    "il2cppMetadata": null,
+    "managedAssembliesCount": 19,
+    "textAssetsSample": []
+  },
+  "Starmaker 1.8E": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/Nova pasta (2)/Starmaker 1.8E",
+    "unityPyAvailable": true,
+    "textSources": [
+      "Mono Managed Assemblies (159 DLLs)",
+      "StreamingAssets (1 files)",
+      "Serialized TextAssets (4 found in sampled assets)"
+    ],
+    "textAssetsFound": 4,
+    "monoBehavioursWithText": 8054,
+    "stringTablesFound": 0,
+    "looseTextFiles": [],
+    "autoTranslatorDictionaries": [],
+    "streamingAssetsFiles": [
+      "bun33s.mp4"
+    ],
+    "serializedAssetFiles": [
+      {
+        "name": "globalgamemanagers",
+        "sizeBytes": 1570644
+      },
+      {
+        "name": "globalgamemanagers.assets",
+        "sizeBytes": 7451440
+      },
+      {
+        "name": "globalgamemanagers.assets.resS",
+        "sizeBytes": 29451248
+      },
+      {
+        "name": "globalgamemanagers.resource",
+        "sizeBytes": 470528
+      },
+      {
+        "name": "resources.assets",
+        "sizeBytes": 8687220
+      },
+      {
+        "name": "resources.assets.resS",
+        "sizeBytes": 4587024
+      },
+      {
+        "name": "resources.resource",
+        "sizeBytes": 35264
+      },
+      {
+        "name": "sharedassets0.assets",
+        "sizeBytes": 9617164
+      },
+      {
+        "name": "sharedassets0.assets.resS",
+        "sizeBytes": 77276704
+      },
+      {
+        "name": "sharedassets0.resource",
+        "sizeBytes": 7348544
+      },
+      {
+        "name": "sharedassets1.assets",
+        "sizeBytes": 29264752
+      },
+      {
+        "name": "sharedassets1.assets.resS",
+        "sizeBytes": 836727040
+      },
+      {
+        "name": "sharedassets1.resource",
+        "sizeBytes": 205343986
+      },
+      {
+        "name": "sharedassets2.assets",
+        "sizeBytes": 4184
+      },
+      {
+        "name": "sharedassets2.assets.resS",
+        "sizeBytes": 20736
+      }
+    ],
+    "managedAssemblies": [
+      "AllIn1SpriteShaderAssembly.dll",
+      "Assembly-CSharp-firstpass.dll",
+      "Assembly-CSharp.dll",
+      "CFXRDemo.dll",
+      "CFXRRuntime.dll",
+      "DamageNumbersPro.dll",
+      "Febucci.Attributes.Runtime.dll",
+      "Febucci.TextAnimator.Demo.Runtime.dll",
+      "Febucci.TextAnimator.Runtime.dll",
+      "Febucci.TextAnimator.TMP.Runtime.dll",
+      "Fullscreen.NanoSave.dll",
+      "GameCreator.Runtime.Core.dll",
+      "GameCreator.Runtime.Dialogue.dll",
+      "GameCreator.Runtime.Inventory.dll",
+      "GameCreator.Runtime.Quests.dll",
+      "GameCreator.Runtime.Stats.dll",
+      "KinoBloom.Runtime.dll",
+      "Mono.Security.dll",
+      "mscorlib.dll",
+      "netstandard.dll"
+    ],
+    "il2cppMetadata": null,
+    "managedAssembliesCount": 159,
+    "textAssetsSample": [
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      },
+      {
+        "asset": "resources.assets",
+        "name": "unnamed",
+        "size": 0
+      }
+    ]
+  },
+  "NL": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/NTR Legend Unofficial Fan Remake 0.9.0 MTL/NL",
+    "unityPyAvailable": true,
+    "textSources": [
+      "Mono Managed Assemblies (128 DLLs)",
+      "AutoTranslator Dictionaries (7 files)",
+      "Loose Text Files (1 files)"
+    ],
+    "textAssetsFound": 0,
+    "monoBehavioursWithText": 0,
+    "stringTablesFound": 0,
+    "looseTextFiles": [
+      "changelog.txt"
+    ],
+    "autoTranslatorDictionaries": [
+      "AutoTranslator\\Translation\\en\\Text\\_Postprocessors.txt",
+      "AutoTranslator\\Translation\\en\\Text\\_Preprocessors.txt",
+      "AutoTranslator\\Translation\\en\\Text\\_Substitutions.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_AutoGeneratedTranslations.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_Postprocessors.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_Preprocessors.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_Substitutions.txt"
+    ],
+    "streamingAssetsFiles": [],
+    "serializedAssetFiles": [
+      {
+        "name": "sharedassets1.resource",
+        "sizeBytes": 532160
+      },
+      {
+        "name": "sharedassets2.resource",
+        "sizeBytes": 23600608
+      },
+      {
+        "name": "sharedassets5.resource",
+        "sizeBytes": 9410944
+      },
+      {
+        "name": "sharedassets6.resource",
+        "sizeBytes": 197664
+      }
+    ],
+    "managedAssemblies": [
+      "0Harmony.dll",
+      "Assembly-CSharp-firstpass.dll",
+      "Assembly-CSharp.dll",
+      "ConditionalExpression.dll",
+      "ExIni.dll",
+      "Mono.Cecil.dll",
+      "Mono.Security.dll",
+      "MonoMod.RuntimeDetour.dll",
+      "MonoMod.Utils.dll",
+      "mscorlib.dll",
+      "netstandard.dll",
+      "PlayMaker.dll",
+      "System.ComponentModel.Composition.dll",
+      "System.Configuration.dll",
+      "System.Core.dll",
+      "System.Data.DataSetExtensions.dll",
+      "System.Data.dll",
+      "System.dll",
+      "System.Drawing.dll",
+      "System.EnterpriseServices.dll"
+    ],
+    "il2cppMetadata": null,
+    "managedAssembliesCount": 128,
+    "textAssetsSample": []
+  },
+  "NTR伝説 FInal_Ver.1.0.2_64bit": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/NTR伝説 FInal_Ver.1.0.2_64bit",
+    "unityPyAvailable": true,
+    "textSources": [
+      "Mono Managed Assemblies (97 DLLs)"
+    ],
+    "textAssetsFound": 0,
+    "monoBehavioursWithText": 0,
+    "stringTablesFound": 0,
+    "looseTextFiles": [],
+    "autoTranslatorDictionaries": [],
+    "streamingAssetsFiles": [],
+    "serializedAssetFiles": [
+      {
+        "name": "resources.resource",
+        "sizeBytes": 951232
+      },
+      {
+        "name": "sharedassets0.resource",
+        "sizeBytes": 3208608
+      },
+      {
+        "name": "sharedassets1.resource",
+        "sizeBytes": 642240
+      },
+      {
+        "name": "sharedassets2.resource",
+        "sizeBytes": 40731904
+      },
+      {
+        "name": "sharedassets3.resource",
+        "sizeBytes": 9824
+      }
+    ],
+    "managedAssemblies": [
+      "Assembly-CSharp-firstpass.dll",
+      "Assembly-CSharp.dll",
+      "ConditionalExpression.dll",
+      "DOTween.dll",
+      "Febucci.TextAnimator.Demo.Runtime.dll",
+      "Febucci.TextAnimator.Runtime.dll",
+      "Mono.Security.dll",
+      "mscorlib.dll",
+      "netstandard.dll",
+      "PlayMaker.dll",
+      "System.ComponentModel.Composition.dll",
+      "System.Configuration.dll",
+      "System.Core.dll",
+      "System.Data.dll",
+      "System.Diagnostics.StackTrace.dll",
+      "System.dll",
+      "System.Drawing.dll",
+      "System.EnterpriseServices.dll",
+      "System.Globalization.Extensions.dll",
+      "System.IO.Compression.dll"
+    ],
+    "il2cppMetadata": null,
+    "managedAssembliesCount": 97,
+    "textAssetsSample": []
+  },
+  "ロリっ子健康診断2_1.0": {
+    "gameDir": "C:/Users/Teste/Desktop/Nova pasta/ロリっ子健康診断2_1.0",
+    "unityPyAvailable": true,
+    "textSources": [
+      "AutoTranslator Dictionaries (4 files)",
+      "Loose Text Files (1 files)"
+    ],
+    "textAssetsFound": 0,
+    "monoBehavioursWithText": 0,
+    "stringTablesFound": 0,
+    "looseTextFiles": [
+      "readme.txt"
+    ],
+    "autoTranslatorDictionaries": [
+      "AutoTranslator\\Translation\\pt\\Text\\_AutoGeneratedTranslations.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_Postprocessors.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_Preprocessors.txt",
+      "AutoTranslator\\Translation\\pt\\Text\\_Substitutions.txt"
+    ],
+    "streamingAssetsFiles": [],
+    "serializedAssetFiles": [],
+    "managedAssemblies": [],
+    "il2cppMetadata": null
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-10-01T08:35:00.000Z",
+  "auditPurpose": "OpenTranslator Engine Expansion Baseline Audit (Passo 1)",
+  "overallArchitecture": {
+    "coreComponents": {
+      "BaseEngineAdapter": "Universal engine contract defining full lifecycle: detect, inspect, getCapabilities, extractTexts, extractResources, prepareTranslation, translate, restorePlaceholders, validate, applyTranslations, package, launch, rollback, diagnose.",
+      "EngineDetector": "Structural multi-criteria heuristic scanner inspecting PE headers, DLLs, directory trees, and config signatures.",
+      "EngineRegistry": "Central registry resolving engineId to adapter instance with fallbacks.",
+      "EngineCapabilityMatrix": "Formal capability declaration database for all engines and verified versions.",
+      "GameService": "High-level service orchestrating analysis, dry-run, jobs, pipelines, and transactions.",
+      "BackupManager": "Transactional backup engine with session/transaction tracking and SHA-256 integrity validation.",
+      "CodeProtector": "Placeholder and control code masking/restoration for safe translation without breaking syntax."
+    }
+  },
+  "engineAudit": {
+    "renpy": {
+      "status": "PROVEN_VERIFIED",
+      "exists": "Full adapter with RPA extraction, RPY/RPYC parsing, AST scanner, tl/pt_BR generation, and font patching.",
+      "incomplete": "None for 8.x; 6.x/7.x python2 legacy bytecode.",
+      "diagnosisOnly": "None",
+      "duplicated": "Minimal",
+      "reusable": "100% of pipeline, AST extractor, and tl injection architecture."
+    },
+    "rpgmaker_mv_mz": {
+      "status": "PROVEN_VERIFIED",
+      "exists": "Native JSON patching, plugin injection, hook bridge, cheat overlay, and automated rollback.",
+      "incomplete": "None",
+      "diagnosisOnly": "None",
+      "duplicated": "None",
+      "reusable": "100% of JSON parsing and transactional backup."
+    },
+    "unity": {
+      "status": "EXTERNAL_TOOL_REQUIRED_OR_PARTIAL",
+      "exists": "Detection of Unity Mono vs IL2CPP; basic parsing of AutoTranslator ini/txt dictionaries; BepInEx hook injection if pre-installed; bundled UnityPy 1.25.2 in Tool/resources/unity/site-packages.",
+      "incomplete": "Native parsing of Unity serialized assets (.assets, resources.assets, AssetBundles, TextAssets, MonoScript/ScriptableObject) was delegated to external tools or OCR instead of utilizing the bundled UnityPy.",
+      "diagnosisOnly": "IL2CPP games previously classified as OCR-only; Mono games without BepInEx flagged as requiring manual installation.",
+      "duplicated": "Capability probing logic split between unityAdapter and unityRuntimeCapabilityProbe.",
+      "reusable": "UnityPy 1.25.2 in Tool/resources/unity/site-packages (confirmed working with Python 3.12), CodeProtector for Unity rich text/tags, AutoTranslator dictionary parser for modded games."
+    },
+    "wolf": {
+      "status": "EXTERNAL_TOOL_REQUIRED_OR_PARTIAL",
+      "exists": "Detection of Wolf RPG (data.wolf, GuruguruSMF4.dll, BasicData); plain text/JSON scanner in Data folder; reference to UberWolfCli.exe.",
+      "incomplete": "Direct extraction and injection of unencrypted/standard Wolf data files (mps, project data, common events) without external UberWolfCli.",
+      "diagnosisOnly": "data.wolf games were flagged as REQUIRES_EXTERNAL_TOOL.",
+      "duplicated": "Recursive file walk duplicated in extract method.",
+      "reusable": "CodeProtector for Wolf RPG escape codes, backup and rollback integration."
+    },
+    "rgss": {
+      "status": "EXTERNAL_TOOL_REQUIRED_OR_PARTIAL",
+      "exists": "Detection of RGSS1 (XP), RGSS2 (VX), RGSS3 (VX Ace); RpgMakerRubyHandler with Marshal bridge invocation; word-wrap and font patch scripts.",
+      "incomplete": "Standalone Marshal bridge script (resources/rpgmaker/marshal_bridge.py) missing or not standalone, causing fallback to fail.",
+      "diagnosisOnly": "Games with encrypted rgss3a/rvdata2 flagged as external tool required.",
+      "duplicated": "RpgMakerAdapter routes to RpgMakerRubyHandler with duplicated backup logic.",
+      "reusable": "Word-wrap script, font patch logic, and ruby text protection."
+    },
+    "godot": {
+      "status": "PARTIAL",
+      "exists": "Detection of Godot 3.x and 4.x (.pck, project.godot); CSV and PO/MO native localization parser and serializer.",
+      "incomplete": "Binary PCK archive reader/writer for games where localization or scenes are packed inside .pck.",
+      "diagnosisOnly": "PCK without loose CSV/PO marked as static scene scanner fallback.",
+      "duplicated": "CSV serializer/parser split across GodotLocalizationProvider.",
+      "reusable": "GodotLocalizationProvider CSV/PO parser, Godot token protector."
+    }
+  },
+  "actionPlanForExpansion": [
+    "Harmonize all adapters with BaseEngineAdapter universal lifecycle contract.",
+    "Implement generic Unity serialized asset bridge (TextAsset, MonoBehaviour, String tables) via bundled UnityPy and generic dictionary parser.",
+    "Implement generic Wolf RPG data extractor and injector for Data and loose project formats.",
+    "Implement generic RGSS3/VX Ace Marshal bridge for .rvdata2 files.",
+    "Implement generic Godot PCK unpacker/repacker and translation injector.",
+    "Validate each step with real games in library C:/Users/Teste/Desktop/Nova pasta.",
+    "Run full regression suite on previously verified engines (MV, MZ, Ren'Py) after every engine expansion."
+  ]
+}

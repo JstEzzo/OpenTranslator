@@ -1,0 +1,198 @@
+{
+  "Dane": {
+    "game": "Dane",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/Dane",
+    "runtimeType": "Unity IL2CPP",
+    "version": "6000.3.15f1",
+    "versionEvidence": "globalgamemanagers: 6000.3.15f1",
+    "structure": {
+      "hasGameAssembly": true,
+      "hasMonoBleedingEdge": false,
+      "hasManaged": false,
+      "hasIl2cppData": true,
+      "hasStreamingAssets": true,
+      "streamingAssetsContents": [
+        "aa",
+        "trailer.mp4",
+        "UnityServicesProjectConfiguration.json"
+      ],
+      "hasResources": true,
+      "hasAddressables": true,
+      "assetFilesCount": 7,
+      "assetFilesSample": [
+        "globalgamemanagers.assets",
+        "resources.assets",
+        "resources.assets.resS",
+        "resources.resource",
+        "sharedassets0.assets",
+        "sharedassets0.assets.resS",
+        "sharedassets0.resource"
+      ],
+      "hasBepInEx": false,
+      "hasAutoTranslator": false
+    }
+  },
+  "MiniGamePackVol1_v1.0_forWin_demo": {
+    "game": "MiniGamePackVol1_v1.0_forWin_demo",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/MiniGamePackVol1_v1.0_demo/MiniGamePackVol1_v1.0_forWin_demo",
+    "runtimeType": "Unity Mono",
+    "version": "6000.3.14f1",
+    "versionEvidence": "globalgamemanagers: 6000.3.14f1",
+    "structure": {
+      "hasGameAssembly": false,
+      "hasMonoBleedingEdge": true,
+      "hasManaged": true,
+      "hasIl2cppData": false,
+      "hasStreamingAssets": true,
+      "streamingAssetsContents": [
+        "ChokenPress"
+      ],
+      "hasResources": true,
+      "hasAddressables": false,
+      "assetFilesCount": 10,
+      "assetFilesSample": [
+        "globalgamemanagers.assets",
+        "globalgamemanagers.assets.resS",
+        "resources.assets",
+        "resources.assets.resS",
+        "sharedassets0.assets",
+        "sharedassets0.assets.resS",
+        "sharedassets0.resource",
+        "sharedassets1.assets",
+        "sharedassets1.assets.resS",
+        "sharedassets1.resource"
+      ],
+      "hasBepInEx": false,
+      "hasAutoTranslator": false
+    }
+  },
+  "BunnyQuotaStruggles": {
+    "game": "BunnyQuotaStruggles",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/Nova pasta",
+    "runtimeType": "Unity Mono",
+    "version": "2018.3.0a1",
+    "versionEvidence": "UnityPlayer.dll: 2018.3.0a1",
+    "structure": {
+      "hasGameAssembly": false,
+      "hasMonoBleedingEdge": true,
+      "hasManaged": true,
+      "hasIl2cppData": false,
+      "hasStreamingAssets": false,
+      "streamingAssetsContents": [],
+      "hasResources": false,
+      "hasAddressables": false,
+      "assetFilesCount": 0,
+      "assetFilesSample": [],
+      "hasBepInEx": false,
+      "hasAutoTranslator": true
+    }
+  },
+  "Starmaker 1.8E": {
+    "game": "Starmaker 1.8E",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/Nova pasta (2)/Starmaker 1.8E",
+    "runtimeType": "Unity Mono",
+    "version": "6000.0.64f1",
+    "versionEvidence": "globalgamemanagers: 6000.0.64f1",
+    "structure": {
+      "hasGameAssembly": false,
+      "hasMonoBleedingEdge": true,
+      "hasManaged": true,
+      "hasIl2cppData": false,
+      "hasStreamingAssets": true,
+      "streamingAssetsContents": [
+        "bun33s.mp4"
+      ],
+      "hasResources": true,
+      "hasAddressables": false,
+      "assetFilesCount": 14,
+      "assetFilesSample": [
+        "globalgamemanagers.assets",
+        "globalgamemanagers.assets.resS",
+        "globalgamemanagers.resource",
+        "resources.assets",
+        "resources.assets.resS",
+        "resources.resource",
+        "sharedassets0.assets",
+        "sharedassets0.assets.resS",
+        "sharedassets0.resource",
+        "sharedassets1.assets"
+      ],
+      "hasBepInEx": true,
+      "hasAutoTranslator": false
+    }
+  },
+  "NL": {
+    "game": "NL",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/NTR Legend Unofficial Fan Remake 0.9.0 MTL/NL",
+    "runtimeType": "Unity Mono",
+    "version": "2018.3.0a1",
+    "versionEvidence": "UnityPlayer.dll: 2018.3.0a1",
+    "structure": {
+      "hasGameAssembly": false,
+      "hasMonoBleedingEdge": true,
+      "hasManaged": true,
+      "hasIl2cppData": false,
+      "hasStreamingAssets": false,
+      "streamingAssetsContents": [],
+      "hasResources": true,
+      "hasAddressables": false,
+      "assetFilesCount": 4,
+      "assetFilesSample": [
+        "sharedassets1.resource",
+        "sharedassets2.resource",
+        "sharedassets5.resource",
+        "sharedassets6.resource"
+      ],
+      "hasBepInEx": true,
+      "hasAutoTranslator": true
+    }
+  },
+  "NTR伝説 FInal_Ver.1.0.2_64bit": {
+    "game": "NTR伝説 FInal_Ver.1.0.2_64bit",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/NTR伝説 FInal_Ver.1.0.2_64bit",
+    "runtimeType": "Unity Mono",
+    "version": "2018.4.26f1",
+    "versionEvidence": "UnityPlayer.dll: 2018.4.26f1",
+    "structure": {
+      "hasGameAssembly": false,
+      "hasMonoBleedingEdge": true,
+      "hasManaged": true,
+      "hasIl2cppData": false,
+      "hasStreamingAssets": false,
+      "streamingAssetsContents": [],
+      "hasResources": true,
+      "hasAddressables": false,
+      "assetFilesCount": 5,
+      "assetFilesSample": [
+        "resources.resource",
+        "sharedassets0.resource",
+        "sharedassets1.resource",
+        "sharedassets2.resource",
+        "sharedassets3.resource"
+      ],
+      "hasBepInEx": false,
+      "hasAutoTranslator": false
+    }
+  },
+  "ロリっ子健康診断2_1.0": {
+    "game": "ロリっ子健康診断2_1.0",
+    "rootPath": "C:/Users/Teste/Desktop/Nova pasta/ロリっ子健康診断2_1.0",
+    "runtimeType": "Unity Mono",
+    "version": "2018.3.0a1",
+    "versionEvidence": "UnityPlayer.dll: 2018.3.0a1",
+    "structure": {
+      "hasGameAssembly": false,
+      "hasMonoBleedingEdge": true,
+      "hasManaged": false,
+      "hasIl2cppData": false,
+      "hasStreamingAssets": false,
+      "streamingAssetsContents": [],
+      "hasResources": false,
+      "hasAddressables": false,
+      "assetFilesCount": 0,
+      "assetFilesSample": [],
+      "hasBepInEx": false,
+      "hasAutoTranslator": true
+    }
+  }
+}

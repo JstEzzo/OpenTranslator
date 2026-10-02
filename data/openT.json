@@ -1,0 +1,19 @@
+{
+  "lang": "en",
+  "sl": "auto",
+  "tl": "pt",
+  "engine": "multi",
+  "wordWrapLimit": 50,
+  "llmProvider": "openai",
+  "llmApiKey": "",
+  "llmModel": "",
+  "llmBaseUrl": "",
+  "llmPrompt": "",
+  "deeplApiKey": "",
+  "deeplUseFreeApi": true,
+  "theme": {
+    "accent": "#3b8ef0",
+    "bgImage": "",
+    "glassOpacity": 45
+  }
+}

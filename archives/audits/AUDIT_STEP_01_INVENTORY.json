@@ -1,0 +1,2304 @@
+{
+  "timestamp": "2026-10-01T06:15:10.994Z",
+  "step": "PASSO 1 — INVENTARIAR TUDO ANTES DE APAGAR",
+  "summary": {
+    "totalCertificationArtifacts": 8,
+    "auditGamesTracked": 25,
+    "totalJsFiles": 337,
+    "jsClassificationCounts": {
+      "GAME_SPECIFIC": 13,
+      "TEMPORARY": 50,
+      "CERTIFICATION_SPECIFIC": 1,
+      "CORE": 151,
+      "TEST_RUNNER": 60,
+      "ENGINE": 58,
+      "VALIDATOR": 4
+    },
+    "gamesWithResidualArtifacts": 8
+  },
+  "certificationArtifacts": [
+    {
+      "file": "Tool/execute_real_ui_certification_suite.js",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\Tool\\execute_real_ui_certification_suite.js",
+      "exists": true,
+      "size": 18380,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "validate_real_ui_certification.js",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\validate_real_ui_certification.js",
+      "exists": true,
+      "size": 6071,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_GAME_MATRIX.json",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\OPEN_TRANSLATOR_REAL_GAME_MATRIX.json",
+      "exists": true,
+      "size": 35183,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_WORLD_UI_CERTIFICATION.json",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\OPEN_TRANSLATOR_REAL_WORLD_UI_CERTIFICATION.json",
+      "exists": true,
+      "size": 15191,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json",
+      "exists": true,
+      "size": 15191,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.md",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.md",
+      "exists": true,
+      "size": 14428,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "OPEN_TRANSLATOR_UNEXPECTED_BEHAVIOR_REPORT.md",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\OPEN_TRANSLATOR_UNEXPECTED_BEHAVIOR_REPORT.md",
+      "exists": true,
+      "size": 12450,
+      "type": "CERTIFICATION_ARTIFACT"
+    },
+    {
+      "file": "OPEN_TRANSLATOR_HARDENING_FINAL_REPORT.md",
+      "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\OPEN_TRANSLATOR_HARDENING_FINAL_REPORT.md",
+      "exists": true,
+      "size": 10385,
+      "type": "CERTIFICATION_ARTIFACT"
+    }
+  ],
+  "auditDirectory": {
+    "path": "_open_translator_audit",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Arquivos Switch\\OpenTranslator\\_open_translator_audit",
+    "exists": true,
+    "gamesCount": 25,
+    "games": [
+      {
+        "name": "An Obedient Childhood Friend Is Easily Cucked",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "ArmoredSuitSolganteRenpy0.2-pc",
+        "hasRealUiTest": false,
+        "subdirs": [
+          "audit.json",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "ArmoredSuitSolganteRenpy0.3-pc",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "extraction",
+          "hashes",
+          "marker_test.json",
+          "real_ui_test",
+          "report.md",
+          "rollback",
+          "rollback.json",
+          "runtime",
+          "runtime.log",
+          "save_load_roundtrip.json",
+          "translated",
+          "translation",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "BLACK SOULS",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Dane",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "harem-heaven-03.5-alpha2-pc-plus",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Marge Mania v0.1",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "marker_runtime_dump.json",
+          "marker_test.json",
+          "real_ui_test",
+          "rollback.json",
+          "roundtrip_load_signal.json",
+          "roundtrip_save_signal.json",
+          "runtime.log",
+          "save_load_roundtrip.json",
+          "save_test_result.json",
+          "translated",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "MiniGamePackVol1_v1.0_demo",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "MTool",
+        "hasRealUiTest": false,
+        "subdirs": [
+          "audit.json",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Nova pasta",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Nova pasta (2)",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "NTR伝説 FInal_Ver.1.0.2_64bit",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Rabbit Hood English 2026-06-30",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "RJ01058687_en",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "marker_test.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "translated",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "RJ01618221",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "marker_runtime_dump.json",
+          "marker_test.json",
+          "real_ui_test",
+          "rollback.json",
+          "roundtrip_load_signal.json",
+          "roundtrip_save_signal.json",
+          "runtime.log",
+          "save_load_roundtrip.json",
+          "save_test_result.json",
+          "translated",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "save",
+        "hasRealUiTest": false,
+        "subdirs": [
+          "audit.json",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Starmaker 1.8E",
+        "hasRealUiTest": false,
+        "subdirs": [
+          "audit.json",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "summertime_saga_realistic_remake-0.3.0-win",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "extraction",
+          "hashes",
+          "marker_test.json",
+          "real_ui_test",
+          "report.md",
+          "rollback",
+          "rollback.json",
+          "runtime.log",
+          "save_load_roundtrip.json",
+          "translated",
+          "translation",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "extraction",
+          "hashes",
+          "marker_test.json",
+          "real_ui_test",
+          "report.md",
+          "rollback",
+          "rollback.json",
+          "runtime",
+          "runtime.log",
+          "save_load_roundtrip.json",
+          "translated",
+          "translation",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "Toki kan Yuusha (gitgud)",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "baseline",
+          "marker_runtime.json",
+          "marker_test.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "translated",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "ロリっ子健康診断2_1.0",
+        "hasRealUiTest": true,
+        "subdirs": [
+          "audit.json",
+          "real_ui_test",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      },
+      {
+        "name": "女体狂乱プリンセス inプリズン(DL版)",
+        "hasRealUiTest": false,
+        "subdirs": [
+          "audit.json",
+          "rollback.json",
+          "runtime.log",
+          "validation.json"
+        ]
+      }
+    ]
+  },
+  "jsFiles": [
+    {
+      "path": "Tool/audit_game_rj01058687.js",
+      "size": 10655,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/build_step01_inventory.js",
+      "size": 8066,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/certify_mz_rigorous.js",
+      "size": 28421,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/certify_renpy_rigorous.js",
+      "size": 18573,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/certify_solgante_rigorous.js",
+      "size": 16444,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/certify_summertime03_rigorous.js",
+      "size": 15834,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/check_damage.js",
+      "size": 1552,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/check_e07.js",
+      "size": 1246,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/cli-compat.js",
+      "size": 4080,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/create_backup_before_next_engine.js",
+      "size": 4065,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/create_backup_before_renpy_full_integration.js",
+      "size": 3816,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/deep_dive_interesting.js",
+      "size": 1819,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/deep_game_analyzer.js",
+      "size": 12691,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/execute_real_ui_certification_suite.js",
+      "size": 18380,
+      "classification": "CERTIFICATION_SPECIFIC"
+    },
+    {
+      "path": "Tool/generate_audit_evidence.js",
+      "size": 23817,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/init_audit_dir.js",
+      "size": 372,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/inspect_all_games.js",
+      "size": 7298,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/inspect_games_inventory.js",
+      "size": 3918,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/inspect_kimochi.js",
+      "size": 1559,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/inspect_specific_folders.js",
+      "size": 1706,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/inspect_trsdata.js",
+      "size": 865,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/read_bat.js",
+      "size": 226,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.addGold.js",
+      "size": 143,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.giveAllItems.js",
+      "size": 420,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.godmode.js",
+      "size": 343,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.instantWin.js",
+      "size": 261,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.maxHpMp.js",
+      "size": 220,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.maxParams.js",
+      "size": 327,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.noEncounters.js",
+      "size": 262,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.oneHitKill.js",
+      "size": 378,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.switches.js",
+      "size": 3066,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.variables.js",
+      "size": 3988,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/rm.walkThroughWalls.js",
+      "size": 198,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/_footer.js",
+      "size": 126,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/cheats/rpgmaker/_header.js",
+      "size": 6574,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/resources/rpgmaker/LatinNameInput.js",
+      "size": 2465,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/restore_keys.js",
+      "size": 944,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/run-lab-tests.js",
+      "size": 5050,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/run-pipeline-cli.js",
+      "size": 1636,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/scratch_apply_patches.js",
+      "size": 1888,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_capture_9_screens.js",
+      "size": 6681,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_capture_full_dialogue.js",
+      "size": 965,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_capture_options.js",
+      "size": 1623,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_capture_title.js",
+      "size": 1489,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_check_dialogue_state.js",
+      "size": 1620,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_check_extmsg.js",
+      "size": 706,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_check_menu.js",
+      "size": 1380,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_check_save.js",
+      "size": 1378,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_check_scenes.js",
+      "size": 1686,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_check_volumes.js",
+      "size": 307,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_clean_capture.js",
+      "size": 1395,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_compare_mv.js",
+      "size": 2346,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_get_options.js",
+      "size": 731,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_marge_full_cycle.js",
+      "size": 22196,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/scratch_mv_full_regression.js",
+      "size": 11068,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_qa_verify_all.js",
+      "size": 3385,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_query_options.js",
+      "size": 1660,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_query_windows.js",
+      "size": 1174,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_release_validation.js",
+      "size": 13294,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_render_dialogue.js",
+      "size": 1411,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_rj_full_cycle.js",
+      "size": 19165,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_rj_mz_full_cycle.js",
+      "size": 23053,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/scratch_test_boot.js",
+      "size": 2648,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_test_csv.js",
+      "size": 2627,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_test_csv_patch.js",
+      "size": 2129,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_test_dialogue.js",
+      "size": 1407,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_test_renpy_runtime.js",
+      "size": 1779,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/scratch_test_solgante_saveload.js",
+      "size": 1560,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/scratch_toki_regression.js",
+      "size": 5137,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/scratch_verify_dialogue.js",
+      "size": 2678,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/server.js",
+      "size": 6574,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/cache.js",
+      "size": 7246,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/cheatServer.js",
+      "size": 12660,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/adaptiveConcurrency.js",
+      "size": 4786,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/applyGate.js",
+      "size": 1932,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/backupManager.js",
+      "size": 5287,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/baseEngineAdapter.js",
+      "size": 10215,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/batchOptimizer.js",
+      "size": 2053,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/cachePolicy.js",
+      "size": 4688,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/capabilityEvidenceAggregator.js",
+      "size": 2636,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/claimAudit.js",
+      "size": 2717,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/codeProtector.js",
+      "size": 5702,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/contentLayerManager.js",
+      "size": 3866,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/diagnosticBundle.js",
+      "size": 2028,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/engineCapabilityMatrix.js",
+      "size": 12163,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/engineDetector.js",
+      "size": 25780,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/engineRegistry.js",
+      "size": 3523,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/engineRoutingGuard.js",
+      "size": 1454,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/engineRuntimeTriad.js",
+      "size": 10062,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/evidenceModel.js",
+      "size": 8751,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/fastTextPipeline.js",
+      "size": 6545,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/fontCompatibilityEngine.js",
+      "size": 3746,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/formatAdapterRegistry.js",
+      "size": 7503,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/formatAwareOutput.js",
+      "size": 5606,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/gameRules.js",
+      "size": 844,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/gameService.js",
+      "size": 5686,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/globalCircuitBreaker.js",
+      "size": 8344,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/glossaryEngine.js",
+      "size": 4557,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/healthMonitor.js",
+      "size": 2753,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/hierarchicalGlossary.js",
+      "size": 8738,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/imageTextLayer.js",
+      "size": 1413,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/jobPersistence.js",
+      "size": 1731,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/jobSystem.js",
+      "size": 9866,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/layoutAnalyzer.js",
+      "size": 1436,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/localDictionaryProvider.js",
+      "size": 6348,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/logDeduplicator.js",
+      "size": 2608,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/multiLevelCache.js",
+      "size": 3180,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/outputProvider.js",
+      "size": 691,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/ownedProcess.js",
+      "size": 769,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/ownedProcessRegistry.js",
+      "size": 5219,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/patchInstaller.js",
+      "size": 11912,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/performanceMonitor.js",
+      "size": 1080,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/performanceProfiler.js",
+      "size": 1348,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/placeholderIntegrityValidator.js",
+      "size": 1272,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/pluginSafePatcher.js",
+      "size": 14697,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/pluginSdk.js",
+      "size": 3066,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/priorityQueue.js",
+      "size": 1995,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/providerErrorClassifier.js",
+      "size": 3532,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/providerGateway.js",
+      "size": 1889,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/providerProfiles.js",
+      "size": 3771,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/providerRateLimiter.js",
+      "size": 2982,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/qaEngine.js",
+      "size": 4182,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/queueStarvationManager.js",
+      "size": 2897,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/realGameWorkflow.js",
+      "size": 4186,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/realProviderBenchmark.js",
+      "size": 11612,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/realTranslationWorkflow.js",
+      "size": 11787,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/runtimeLogCollector.js",
+      "size": 5142,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/runtimeProbe.js",
+      "size": 5592,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/runtimeSessionManager.js",
+      "size": 12057,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/runtimeTextManager.js",
+      "size": 10298,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/runtimeWatchdog.js",
+      "size": 3376,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/screenCapture.js",
+      "size": 3996,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/screenDiff.js",
+      "size": 1777,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/selfTest.js",
+      "size": 9741,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/speedBenchmark.js",
+      "size": 1265,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/stagingPolicy.js",
+      "size": 4715,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/strategyPlanner.js",
+      "size": 5635,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/structuredLogger.js",
+      "size": 4725,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/subtitleSystem.js",
+      "size": 2452,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/syntheticBenchmark.js",
+      "size": 2400,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/textCaptureQuality.js",
+      "size": 1008,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/textClassifier.js",
+      "size": 5021,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/textObjectIdentity.js",
+      "size": 2317,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/textProvenance2.js",
+      "size": 2447,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/textStabilizer.js",
+      "size": 1944,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/transactionJournal.js",
+      "size": 2827,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationAccounting.js",
+      "size": 8470,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationContext.js",
+      "size": 2077,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationEditorCore.js",
+      "size": 6571,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationLayoutValidator.js",
+      "size": 3759,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationMemory.js",
+      "size": 6895,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationMemory3.js",
+      "size": 5044,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationPatchFormat.js",
+      "size": 4150,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationPatchSchema.js",
+      "size": 5822,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationPipeline.js",
+      "size": 13681,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationProvider.js",
+      "size": 1953,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationQueue.js",
+      "size": 6526,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationRouter.js",
+      "size": 4336,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationRuntimeRouter.js",
+      "size": 3957,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationSession.js",
+      "size": 2737,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationStateMachine.js",
+      "size": 1211,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/translationUnit.js",
+      "size": 5361,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/universalTokenEngine.js",
+      "size": 6170,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/untranslatedDetector.js",
+      "size": 12371,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/visibleTextVerifier.js",
+      "size": 5998,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/core/visualQAEngine.js",
+      "size": 9769,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/diagnostics/errorAnalyzer.js",
+      "size": 2963,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/diagnostics/executableAnalyzer.js",
+      "size": 3779,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/diagnostics/logIntelligence.js",
+      "size": 2475,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/diagnostics/logParsers.js",
+      "size": 1666,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/diagnostics/processInspector.js",
+      "size": 2575,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/diagnostics/universalGameIntelligence.js",
+      "size": 3919,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/discovery/discoveryExperimentEngine.js",
+      "size": 2029,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/discovery/gameCompatibilityPassport.js",
+      "size": 2214,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/discovery/textProvenanceGraph.js",
+      "size": 2693,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/discovery/universalDiscoveryEngine.js",
+      "size": 6713,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/discovery/unknownGameTriage.js",
+      "size": 3540,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/engines/baseEngineHandler.js",
+      "size": 1903,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/cocos/cocos2dxAdapter.js",
+      "size": 9766,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/cocos/cocosCreatorAdapter.js",
+      "size": 5282,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/construct/constructAdapter.js",
+      "size": 4335,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/defold/defoldAdapter.js",
+      "size": 5510,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/asarRepacker.js",
+      "size": 2833,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/asarUtil.js",
+      "size": 4158,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/electronAdapter.js",
+      "size": 10093,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/electronArchiveProvider.js",
+      "size": 3644,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/electronBridge.js",
+      "size": 4267,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/electronDOMProvider.js",
+      "size": 2924,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/electron/electronRuntimeBridge.js",
+      "size": 3733,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/gamemaker/gameMakerAdapter.js",
+      "size": 8406,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/gdevelop/gdevelopAdapter.js",
+      "size": 5987,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/generic/genericAdapter.js",
+      "size": 9144,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/generic/universalScanner.js",
+      "size": 1986,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/godot/godotAdapter.js",
+      "size": 8818,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/godot/godotControlTextProvider.js",
+      "size": 2622,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/godot/godotLocalizationProvider.js",
+      "size": 7899,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/adapter/renpyAdapter.js",
+      "size": 5124,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/extractor/renpyExtractor.js",
+      "size": 10414,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/injector/renpyInjector.js",
+      "size": 10074,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyAdapter.js",
+      "size": 237,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyCommon.js",
+      "size": 16328,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyParser.js",
+      "size": 3279,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyProductionProvider.js",
+      "size": 4595,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyRuntimeBridge.js",
+      "size": 4440,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyV7Handler.js",
+      "size": 6680,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyV8Handler.js",
+      "size": 6788,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/renpyWorkflow.js",
+      "size": 2687,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/runtime/renpyRuntime.js",
+      "size": 13751,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/translator/renpyTranslator.js",
+      "size": 6129,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/renpy/validator/renpyValidator.js",
+      "size": 4834,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/rpgmaker/rpgMakerAdapter.js",
+      "size": 4996,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/rpgmaker/rpgMakerMvMzHandler.js",
+      "size": 9845,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/rpgmaker/rpgMakerRubyHandler.js",
+      "size": 7091,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/rpgmaker/rpgMakerRuntimeBridge.js",
+      "size": 4412,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unity/unityAdapter.js",
+      "size": 9066,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unity/unityFrameworkMatrix.js",
+      "size": 4408,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unity/unityLocalizationPackageProvider.js",
+      "size": 3630,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unity/unityRuntimeCapabilityProbe.js",
+      "size": 3399,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unity/unityTextMeshProProvider.js",
+      "size": 2738,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unity/unityUGUIProvider.js",
+      "size": 1717,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unreal/unrealAdapter.js",
+      "size": 7130,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unreal/unrealHandler.js",
+      "size": 8990,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unreal/unrealLocalizationProvider.js",
+      "size": 3608,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unreal/unrealLocalizationWorkflow.js",
+      "size": 2182,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unreal/unrealLocResProvider.js",
+      "size": 9246,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/unreal/unrealStringTableProvider.js",
+      "size": 2071,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/engines/wolf/wolfAdapter.js",
+      "size": 8267,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/extractor.js",
+      "size": 27986,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/fixtures/runtime-fixture/fixture.js",
+      "size": 2243,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/gameEngine.js",
+      "size": 61705,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/httpServer.js",
+      "size": 9762,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/logger.js",
+      "size": 337,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/loggerManager.js",
+      "size": 6284,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/BaseMediaExtractor.js",
+      "size": 5127,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/GenericMediaExtractor.js",
+      "size": 1847,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/index.js",
+      "size": 3173,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/RenPyMediaExtractor.js",
+      "size": 7073,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/RPGMakerMediaExtractor.js",
+      "size": 8453,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/UnityMediaExtractor.js",
+      "size": 9046,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/UnrealMediaExtractor.js",
+      "size": 4823,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/mediaExtractor/WolfRPGMediaExtractor.js",
+      "size": 3433,
+      "classification": "ENGINE"
+    },
+    {
+      "path": "Tool/src/ocr/ocrProvider.js",
+      "size": 4508,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/providers/translationProviderRegistry.js",
+      "size": 4059,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/renpyAppDataResolver.js",
+      "size": 7014,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/rpcHandlers.js",
+      "size": 67712,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/runtime/hookProvider.js",
+      "size": 5893,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/runtime/providers/runtimeProviders.js",
+      "size": 1499,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/runtime/runtimeEventBus.js",
+      "size": 1417,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/runtime/textFrameworkProvider.js",
+      "size": 1529,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/runtime/universalOverlay.js",
+      "size": 1168,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/runtime/universalRuntimeHost.js",
+      "size": 3885,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tests/adaptive_concurrency.test.js",
+      "size": 1467,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/circuit_breaker_100_workers.test.js",
+      "size": 2192,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/completion_state.test.js",
+      "size": 1575,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/comprehensive_platform_audit.test.js",
+      "size": 18733,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/engine_adapter_contract.test.js",
+      "size": 1919,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/engine_detection.test.js",
+      "size": 2909,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/engine_diagnostic_routing.test.js",
+      "size": 1655,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/engine_launch_routing.test.js",
+      "size": 1637,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/engine_routing_all_engines.test.js",
+      "size": 1603,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/job_persistence_117k_realistic.test.js",
+      "size": 4288,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/lab_phase3_real_apply.js",
+      "size": 6393,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/log_deduplication.test.js",
+      "size": 1853,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/placeholder_preservation.test.js",
+      "size": 2114,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/plugin_rollback.test.js",
+      "size": 1674,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/plugin_runtime_translation.test.js",
+      "size": 8561,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/plugin_safe_patch.test.js",
+      "size": 2893,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/plugin_safe_patcher_integration.test.js",
+      "size": 7160,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/plugin_string_extraction.test.js",
+      "size": 1689,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/plugin_syntax_validation.test.js",
+      "size": 1538,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_bypass_prevention.test.js",
+      "size": 1443,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_circuit_half_open.test.js",
+      "size": 2844,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_error_classifier.test.js",
+      "size": 2045,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_failover.test.js",
+      "size": 1082,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_failover_strict.test.js",
+      "size": 1606,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_health.test.js",
+      "size": 1360,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_rate_limit_storm.test.js",
+      "size": 2689,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/provider_resume.test.js",
+      "size": 1970,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/rate_limit.test.js",
+      "size": 792,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/real_game_launch_smoke.test.js",
+      "size": 8718,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-all-tests.js",
+      "size": 6751,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase2-tests.js",
+      "size": 5710,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase3-tests.js",
+      "size": 6967,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase4a-tests.js",
+      "size": 6743,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase5-tests.js",
+      "size": 10891,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase5b-tests.js",
+      "size": 9405,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase5c-tests.js",
+      "size": 6549,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase6-tests.js",
+      "size": 19279,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase7-tests.js",
+      "size": 15566,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase8a-tests.js",
+      "size": 11563,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase8b-tests.js",
+      "size": 10395,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-phase9-tests.js",
+      "size": 10270,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-product-runtime-test.js",
+      "size": 7463,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run-real-staged-game-test.js",
+      "size": 7544,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/run_master_regression.js",
+      "size": 4790,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/testPaths.js",
+      "size": 2289,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/test_translation_qa_launch_bug.js",
+      "size": 2809,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/toki_15k_real_audit.test.js",
+      "size": 5274,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/src/tests/toki_end_to_end_final_validation.js",
+      "size": 12123,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/src/tests/translation_accounting.test.js",
+      "size": 1956,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/translation_accounting_realistic.test.js",
+      "size": 2692,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/translation_resume.test.js",
+      "size": 1047,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/translation_speed.test.js",
+      "size": 1374,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/tests/unit_of_count_consistency.test.js",
+      "size": 2058,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/test_engines.js",
+      "size": 1162,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/src/tools/capture_game.js",
+      "size": 792,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/check_loading.js",
+      "size": 1339,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/check_map.js",
+      "size": 1951,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/cleanup_project.js",
+      "size": 5642,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/interact_game.js",
+      "size": 2546,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/package_release.js",
+      "size": 5618,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/qa_browser_runner.js",
+      "size": 8403,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/repoLint.js",
+      "size": 1175,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/tools/run-phase7-real-lab.js",
+      "size": 3106,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/src/translator.js",
+      "size": 43082,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/utils/resourceResolver.js",
+      "size": 1617,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/src/utils.js",
+      "size": 5687,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/survey_engine_adapters.js",
+      "size": 1371,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/templates/CheatOverlayTemplate.js",
+      "size": 19168,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/tests/renpy/extractor.test.js",
+      "size": 4616,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/tests/renpy/injector.test.js",
+      "size": 4699,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/tests/renpy/runtime.test.js",
+      "size": 3645,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/tests/renpy/run_all.js",
+      "size": 1234,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/tests/renpy/translator.test.js",
+      "size": 4032,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/tests/renpy/validator.test.js",
+      "size": 4259,
+      "classification": "TEST_RUNNER"
+    },
+    {
+      "path": "Tool/test_adapters_live.js",
+      "size": 3649,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/test_core_detector.js",
+      "size": 1070,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/test_engine_detection.js",
+      "size": 1602,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/test_kimochi_decrypt.js",
+      "size": 2015,
+      "classification": "GAME_SPECIFIC"
+    },
+    {
+      "path": "Tool/test_multi_game_pipeline.js",
+      "size": 6277,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/test_real_world_e2e_all_games.js",
+      "size": 10376,
+      "classification": "TEMPORARY"
+    },
+    {
+      "path": "Tool/www/app.js",
+      "size": 199818,
+      "classification": "CORE"
+    },
+    {
+      "path": "Tool/www/UltraTranslateOverlay.js",
+      "size": 21247,
+      "classification": "CORE"
+    },
+    {
+      "path": "validate_audit_consistency.js",
+      "size": 7395,
+      "classification": "VALIDATOR"
+    },
+    {
+      "path": "validate_mz_certification.js",
+      "size": 13664,
+      "classification": "VALIDATOR"
+    },
+    {
+      "path": "validate_real_ui_certification.js",
+      "size": 6071,
+      "classification": "VALIDATOR"
+    },
+    {
+      "path": "validate_renpy_certification.js",
+      "size": 15789,
+      "classification": "VALIDATOR"
+    }
+  ],
+  "gameLibraryResidualArtifacts": [
+    {
+      "game": "ArmoredSuitSolganteRenpy0.3-pc",
+      "artifacts": [
+        {
+          "relPath": "ArmoredSuitSolganteRenpy-pc/game/tl",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc\\ArmoredSuitSolganteRenpy-pc\\game\\tl",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "Marge Mania v0.1",
+      "artifacts": [
+        {
+          "relPath": "data/js_plugins_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1\\data\\js_plugins_bak",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "data/plugins.js_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1\\data\\plugins.js_bak",
+          "isDirectory": false,
+          "size": 185,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "artifacts": [
+        {
+          "relPath": "NL/NTR_Data/Managed/UnityEngine.CoreModule.dll.2026-09-15_02-53-20.bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL\\NL\\NTR_Data\\Managed\\UnityEngine.CoreModule.dll.2026-09-15_02-53-20.bak",
+          "isDirectory": false,
+          "size": 1380632,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "RJ01058687_en",
+      "artifacts": [
+        {
+          "relPath": "www/CheatOverlay.js",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\CheatOverlay.js",
+          "isDirectory": false,
+          "size": 19168,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/data/js_plugins_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\data\\js_plugins_bak",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/data/plugins.js_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\data\\plugins.js_bak",
+          "isDirectory": false,
+          "size": 277959,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/save/common.rpgsave",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\save\\common.rpgsave",
+          "isDirectory": false,
+          "size": 92,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/save/config.rpgsave",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\save\\config.rpgsave",
+          "isDirectory": false,
+          "size": 120,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/save/file1.rpgsave",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\save\\file1.rpgsave",
+          "isDirectory": false,
+          "size": 58880,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/save/global.rpgsave",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\www\\save\\global.rpgsave",
+          "isDirectory": false,
+          "size": 304,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "RJ01618221",
+      "artifacts": [
+        {
+          "relPath": "data/js_plugins_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221\\data\\js_plugins_bak",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "data/plugins.js_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221\\data\\plugins.js_bak",
+          "isDirectory": false,
+          "size": 40354,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "summertime_saga_realistic_remake-0.3.0-win",
+      "artifacts": [
+        {
+          "relPath": "game/fonts/opentranslator_font.ttf",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win\\game\\fonts\\opentranslator_font.ttf",
+          "isDirectory": false,
+          "size": 21185512,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "game/tl",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win\\game\\tl",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "game/tl/pt/opentranslator_tl.rpy",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win\\game\\tl\\pt\\opentranslator_tl.rpy",
+          "isDirectory": false,
+          "size": 366956,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "game/tl/pt/opentranslator_tl.rpyc",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win\\game\\tl\\pt\\opentranslator_tl.rpyc",
+          "isDirectory": false,
+          "size": 266394,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "artifacts": [
+        {
+          "relPath": "game/fonts/opentranslator_font.ttf",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win\\game\\fonts\\opentranslator_font.ttf",
+          "isDirectory": false,
+          "size": 21185512,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "game/tl",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win\\game\\tl",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    },
+    {
+      "game": "Toki kan Yuusha (gitgud)",
+      "artifacts": [
+        {
+          "relPath": "trans_cache.json",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)\\trans_cache.json",
+          "isDirectory": false,
+          "size": 11220252,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/CheatOverlay.js",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)\\www\\CheatOverlay.js",
+          "isDirectory": false,
+          "size": 19168,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/data/js_plugins_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)\\www\\data\\js_plugins_bak",
+          "isDirectory": true,
+          "size": 0,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/data/plugins.js_bak",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)\\www\\data\\plugins.js_bak",
+          "isDirectory": false,
+          "size": 287511,
+          "origin": "OpenTranslator Test / Runtime"
+        },
+        {
+          "relPath": "www/save/config.rpgsave",
+          "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)\\www\\save\\config.rpgsave",
+          "isDirectory": false,
+          "size": 200,
+          "origin": "OpenTranslator Test / Runtime"
+        }
+      ]
+    }
+  ]
+}

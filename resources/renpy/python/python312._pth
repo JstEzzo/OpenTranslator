@@ -1,0 +1,6 @@
+python312.zip
+.
+..\unrpyc_v2
+..\unrpyc_legacy
+# Enable site module
+import site

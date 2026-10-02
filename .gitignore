@@ -2,6 +2,8 @@
 skills_whitepaper/
 
 # Arquivos de biblioteca de jogo gerados em runtime
+gameLib/*.gljson
+gameLib/*_pic
 Tool/gameLib/*.gljson
 Tool/gameLib/*_pic
 
@@ -13,27 +15,50 @@ node_modules/
 **/node_modules/
 
 # Binarios portateis — baixados automaticamente pelo launcher
+bin/
 Tool/bin/
 
 # Logs e dados de runtime — nao pertencem ao repositorio
 *.log
+data/openT.log
+data/server.pid
 Tool/data/openT.log
 Tool/data/server.pid
 
 # Banco de dados local — gerado em runtime
-Tool/data/global_cache.db
-Tool/data/global_cache.db-shm
-Tool/data/global_cache.db-wal
-Tool/global_cache.db*
+data/global_cache.db*
+Tool/data/global_cache.db*
 *.db*
 *.sqlite*
 
 # Binarios pesados (acima do limite do GitHub)
+loaders/inject.exe
+resources/godot/gdre_tools.exe
+resources/godot/GodotMonoDecompNativeAOT.dll
 Tool/loaders/inject.exe
 Tool/resources/godot/gdre_tools.exe
 Tool/resources/godot/GodotMonoDecompNativeAOT.dll
 
+scratch/
 Tool/scratch/
 **/__pycache__/
+data/staging/
+data/transactions/
+data/temp_chrome_profile/
+data/sessions/
+data/cache/
+data/jobs/
+data/logs/
+data/evidence/
+data/qa_artifacts/
 Tool/data/staging/
 Tool/data/transactions/
+Tool/data/temp_chrome_profile/
+_open_translator_audit/
+archives/audits/_open_translator_audit/
+archives/analysis/graphify-out/cache/
+archives/backups/
+archives/logs/
+archives/sessions/
+archives/staging/
+archives/transactions/

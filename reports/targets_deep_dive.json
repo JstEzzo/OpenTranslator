@@ -1,0 +1,955 @@
+[
+  {
+    "name": "harem-heaven-03.5-alpha2-pc-plus",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+    "exists": true,
+    "files": [
+      {
+        "name": "Harem Heaven.exe",
+        "isDir": false,
+        "sizeKB": "102172.5"
+      },
+      {
+        "name": "Harem Heaven.pck",
+        "isDir": false,
+        "sizeKB": "1195297.8"
+      },
+      {
+        "name": "libspine_godot.windows.template_release.x86_64.dll",
+        "isDir": false,
+        "sizeKB": "1526.0"
+      },
+      {
+        "name": "mods",
+        "isDir": true,
+        "children": [
+          "looks",
+          "portraits"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+    "exists": true,
+    "files": [
+      {
+        "name": "action_log.txt",
+        "isDir": false,
+        "sizeKB": "2.3"
+      },
+      {
+        "name": "credits.html",
+        "isDir": false,
+        "sizeKB": "221.4"
+      },
+      {
+        "name": "glew32.dll",
+        "isDir": false,
+        "sizeKB": "324.0"
+      },
+      {
+        "name": "iconv.dll",
+        "isDir": false,
+        "sizeKB": "868.0"
+      },
+      {
+        "name": "imgui.ini",
+        "isDir": false,
+        "sizeKB": "0.1"
+      },
+      {
+        "name": "libcocos2d.dll",
+        "isDir": false,
+        "sizeKB": "9214.0"
+      },
+      {
+        "name": "libcrypto-1_1.dll",
+        "isDir": false,
+        "sizeKB": "2038.5"
+      },
+      {
+        "name": "libcurl.dll",
+        "isDir": false,
+        "sizeKB": "308.0"
+      },
+      {
+        "name": "libmpg123.dll",
+        "isDir": false,
+        "sizeKB": "146.0"
+      },
+      {
+        "name": "libogg.dll",
+        "isDir": false,
+        "sizeKB": "17.5"
+      },
+      {
+        "name": "libssl-1_1.dll",
+        "isDir": false,
+        "sizeKB": "363.0"
+      },
+      {
+        "name": "libvlc.dll",
+        "isDir": false,
+        "sizeKB": "141.4"
+      },
+      {
+        "name": "libvlccore.dll",
+        "isDir": false,
+        "sizeKB": "2570.9"
+      },
+      {
+        "name": "libvorbis.dll",
+        "isDir": false,
+        "sizeKB": "651.0"
+      },
+      {
+        "name": "libvorbisfile.dll",
+        "isDir": false,
+        "sizeKB": "29.0"
+      },
+      {
+        "name": "mozjs-33.dll",
+        "isDir": false,
+        "sizeKB": "3088.0"
+      },
+      {
+        "name": "OpenAL32.dll",
+        "isDir": false,
+        "sizeKB": "350.0"
+      },
+      {
+        "name": "player.exe",
+        "isDir": false,
+        "sizeKB": "8548.0"
+      },
+      {
+        "name": "player.lib",
+        "isDir": false,
+        "sizeKB": "4530.3"
+      },
+      {
+        "name": "plugins",
+        "isDir": true,
+        "children": [
+          "access",
+          "audio_output",
+          "codec",
+          "video_chroma",
+          "video_output"
+        ]
+      },
+      {
+        "name": "Resources",
+        "isDir": true,
+        "children": [
+          "animations",
+          "audio",
+          "data",
+          "fonts",
+          "icon",
+          "img",
+          "js",
+          "movies",
+          "plugins",
+          "save",
+          "script"
+        ]
+      },
+      {
+        "name": "sqlite3.dll",
+        "isDir": false,
+        "sizeKB": "527.0"
+      },
+      {
+        "name": "thread.log",
+        "isDir": false,
+        "sizeKB": "0.0"
+      },
+      {
+        "name": "uv.dll",
+        "isDir": false,
+        "sizeKB": "143.0"
+      },
+      {
+        "name": "websockets.dll",
+        "isDir": false,
+        "sizeKB": "171.5"
+      },
+      {
+        "name": "zlib1.dll",
+        "isDir": false,
+        "sizeKB": "76.0"
+      },
+      {
+        "name": "説明書.txt",
+        "isDir": false,
+        "sizeKB": "1.8"
+      }
+    ]
+  },
+  {
+    "name": "Nova pasta",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+    "exists": true,
+    "files": [
+      {
+        "name": "BunnyQuotaStruggles.exe",
+        "isDir": false,
+        "sizeKB": "652.0"
+      },
+      {
+        "name": "BunnyQuotaStruggles_Data",
+        "isDir": true,
+        "children": [
+          "Managed",
+          "Plugins"
+        ]
+      },
+      {
+        "name": "D3D12",
+        "isDir": true,
+        "children": [
+          "D3D12Core.dll"
+        ]
+      },
+      {
+        "name": "MonoBleedingEdge",
+        "isDir": true,
+        "children": [
+          "EmbedRuntime",
+          "etc"
+        ]
+      },
+      {
+        "name": "ReiPatcher",
+        "isDir": true,
+        "children": [
+          "BunnyQuotaStruggles.ini",
+          "ExIni.dll",
+          "Mono.Cecil.dll",
+          "Mono.Cecil.Inject.dll",
+          "Mono.Cecil.Mdb.dll",
+          "Mono.Cecil.Pdb.dll",
+          "Mono.Cecil.Rocks.dll",
+          "Patches",
+          "ReiPatcher.exe"
+        ]
+      },
+      {
+        "name": "UnityCrashHandler64.exe",
+        "isDir": false,
+        "sizeKB": "1571.9"
+      },
+      {
+        "name": "UnityPlayer.dll",
+        "isDir": false,
+        "sizeKB": "34970.9"
+      }
+    ]
+  },
+  {
+    "name": "Nova pasta (2)",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)",
+    "exists": true,
+    "files": [
+      {
+        "name": "Starmaker 1.8E",
+        "isDir": true,
+        "children": [
+          ".doorstop_version",
+          "BepInEx",
+          "D3D12",
+          "doorstop_config.ini",
+          "MonoBleedingEdge",
+          "Starmaker Story.exe",
+          "Starmaker Story_Data",
+          "UnityCrashHandler64.exe",
+          "UnityPlayer.dll",
+          "winhttp.dll"
+        ]
+      },
+      {
+        "name": "_translation_project",
+        "isDir": true,
+        "children": [
+          "00_MASTER_REPORT.md",
+          "01_GAME_FORENSICS.md",
+          "02_UNITY_ANALYSIS.md",
+          "03_TEXT_SYSTEM.md",
+          "04_ASSEMBLY_ANALYSIS.md",
+          "05_OPENTRANSLATOR_ANALYSIS.md",
+          "06_GAME_TESTS_ANALYSIS.md",
+          "07_COMPATIBILITY.md",
+          "08_TRANSLATION_STRATEGY.md",
+          "09_EXTRACTION_REPORT.md",
+          "10_FONT_ANALYSIS.md",
+          "11_TRANSLATION_STATUS.md",
+          "12_VALIDATION_REPORT.md",
+          "13_FAILURES.md",
+          "14_ROLLBACK.md"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Starmaker 1.8E",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Starmaker 1.8E",
+    "exists": true,
+    "files": [
+      {
+        "name": "Starmaker Story_Data",
+        "isDir": true,
+        "children": [
+          "Managed"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Dane",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+    "exists": true,
+    "files": [
+      {
+        "name": "baselib.dll",
+        "isDir": false,
+        "sizeKB": "233.9"
+      },
+      {
+        "name": "D3D12",
+        "isDir": true,
+        "children": [
+          "D3D12Core.dll"
+        ]
+      },
+      {
+        "name": "Dane.exe",
+        "isDir": false,
+        "sizeKB": "652.0"
+      },
+      {
+        "name": "Dane_Data",
+        "isDir": true,
+        "children": [
+          "app.info",
+          "boot.config",
+          "globalgamemanagers",
+          "globalgamemanagers.assets",
+          "il2cpp_data",
+          "level0",
+          "Plugins",
+          "Resources",
+          "resources.assets",
+          "resources.assets.resS",
+          "resources.resource",
+          "RuntimeInitializeOnLoads.json",
+          "ScriptingAssemblies.json",
+          "sharedassets0.assets",
+          "sharedassets0.assets.resS"
+        ]
+      },
+      {
+        "name": "GameAssembly.dll",
+        "isDir": false,
+        "sizeKB": "36855.0"
+      },
+      {
+        "name": "UnityCrashHandler64.exe",
+        "isDir": false,
+        "sizeKB": "1583.4"
+      },
+      {
+        "name": "UnityPlayer.dll",
+        "isDir": false,
+        "sizeKB": "35435.9"
+      }
+    ]
+  },
+  {
+    "name": "MiniGamePackVol1_v1.0_demo",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo",
+    "exists": true,
+    "files": [
+      {
+        "name": "MiniGamePackVol1_v1.0_forAndroid_demo.apk",
+        "isDir": false,
+        "sizeKB": "94435.6"
+      },
+      {
+        "name": "MiniGamePackVol1_v1.0_forWin_demo",
+        "isDir": true,
+        "children": [
+          "D3D12",
+          "MiniGamePackVol.1.exe",
+          "MiniGamePackVol.1_Data",
+          "MonoBleedingEdge",
+          "UnityCrashHandler64.exe",
+          "UnityPlayer.dll"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+    "exists": true,
+    "files": [
+      {
+        "name": "english_v01.txt",
+        "isDir": false,
+        "sizeKB": "23.1"
+      },
+      {
+        "name": "NL",
+        "isDir": true,
+        "children": [
+          ".doorstop_version",
+          "AutoTranslator",
+          "BepInEx",
+          "changelog.txt",
+          "doorstop_config.ini",
+          "dotnet",
+          "MonoBleedingEdge",
+          "NTR (Patch and Run).lnk",
+          "NTR.exe",
+          "NTR_Data",
+          "preloader_20260915_025322_959.log",
+          "preloader_20260915_025458_802.log",
+          "ReiPatcher",
+          "SetupReiPatcherAndAutoTranslator.exe",
+          "UnityCrashHandler64.exe"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "NTR伝説 FInal_Ver.1.0.2_64bit",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+    "exists": true,
+    "files": [
+      {
+        "name": "MonoBleedingEdge",
+        "isDir": true,
+        "children": [
+          "EmbedRuntime",
+          "etc"
+        ]
+      },
+      {
+        "name": "NTR Legend.exe",
+        "isDir": false,
+        "sizeKB": "635.5"
+      },
+      {
+        "name": "NTR Legend_Data",
+        "isDir": true,
+        "children": [
+          "app.info",
+          "boot.config",
+          "data.unity3d",
+          "Managed",
+          "Resources",
+          "resources.resource",
+          "sharedassets0.resource",
+          "sharedassets1.resource",
+          "sharedassets2.resource",
+          "sharedassets3.resource"
+        ]
+      },
+      {
+        "name": "UnityCrashHandler64.exe",
+        "isDir": false,
+        "sizeKB": "1426.9"
+      },
+      {
+        "name": "UnityPlayer.dll",
+        "isDir": false,
+        "sizeKB": "22799.9"
+      },
+      {
+        "name": "WinPixEventRuntime.dll",
+        "isDir": false,
+        "sizeKB": "41.7"
+      }
+    ]
+  },
+  {
+    "name": "ロリっ子健康診断2_1.0",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+    "exists": true,
+    "files": [
+      {
+        "name": "AutoTranslator",
+        "isDir": true,
+        "children": [
+          "Config.ini",
+          "Translation"
+        ]
+      },
+      {
+        "name": "MonoBleedingEdge",
+        "isDir": true,
+        "children": [
+          "EmbedRuntime",
+          "etc"
+        ]
+      },
+      {
+        "name": "readme.txt",
+        "isDir": false,
+        "sizeKB": "1.1"
+      },
+      {
+        "name": "ReiPatcher",
+        "isDir": true,
+        "children": [
+          "ExIni.dll",
+          "Mono.Cecil.dll",
+          "Mono.Cecil.Inject.dll",
+          "Mono.Cecil.Mdb.dll",
+          "Mono.Cecil.Pdb.dll",
+          "Mono.Cecil.Rocks.dll",
+          "Patches",
+          "ReiPatcher.exe",
+          "ロリっ子健康診断2_1.0.ini"
+        ]
+      },
+      {
+        "name": "save",
+        "isDir": true,
+        "children": [
+          "save1.txt"
+        ]
+      },
+      {
+        "name": "SetupReiPatcherAndAutoTranslator.exe",
+        "isDir": false,
+        "sizeKB": "3025.0"
+      },
+      {
+        "name": "UnityCrashHandler64.exe",
+        "isDir": false,
+        "sizeKB": "1157.4"
+      },
+      {
+        "name": "UnityPlayer.dll",
+        "isDir": false,
+        "sizeKB": "30371.9"
+      },
+      {
+        "name": "ロリっ子健康診断2_1.0 (Patch and Run).lnk",
+        "isDir": false,
+        "sizeKB": "2.0"
+      },
+      {
+        "name": "ロリっ子健康診断2_1.0.exe",
+        "isDir": false,
+        "sizeKB": "651.0"
+      },
+      {
+        "name": "画面の見方と操作方法",
+        "isDir": true,
+        "children": [
+          "画面の見方と操作方法.txt",
+          "遊び方01.jpg",
+          "遊び方02.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "BLACK SOULS",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+    "exists": true,
+    "files": [
+      {
+        "name": "Audio",
+        "isDir": true,
+        "children": [
+          "BGM",
+          "BGS",
+          "ME",
+          "SE"
+        ]
+      },
+      {
+        "name": "Bonus",
+        "isDir": true,
+        "children": [
+          "1.png",
+          "2.png",
+          "3.png",
+          "4.png",
+          "5.png",
+          "6.png",
+          "7.png",
+          "8.png"
+        ]
+      },
+      {
+        "name": "Fonts",
+        "isDir": true,
+        "children": [
+          "lolita.ttf",
+          "VL-Gothic-Regular.ttf",
+          "VL-PGothic-Regular.ttf",
+          "VLGothic"
+        ]
+      },
+      {
+        "name": "Game.exe",
+        "isDir": false,
+        "sizeKB": "137.5"
+      },
+      {
+        "name": "Game.ini",
+        "isDir": false,
+        "sizeKB": "0.1"
+      },
+      {
+        "name": "Game.rgss3a",
+        "isDir": false,
+        "sizeKB": "144448.9"
+      },
+      {
+        "name": "Graphics",
+        "isDir": true,
+        "children": [
+          "Animations",
+          "Battlebacks1",
+          "Battlebacks2",
+          "Battlers",
+          "Characters",
+          "Faces",
+          "Parallaxes",
+          "System",
+          "Tilesets",
+          "Titles1",
+          "Titles2"
+        ]
+      },
+      {
+        "name": "Guide.txt",
+        "isDir": false,
+        "sizeKB": "3.1"
+      },
+      {
+        "name": "Iniciar com a Ferramenta.bat",
+        "isDir": false,
+        "sizeKB": "1.1"
+      },
+      {
+        "name": "Map.png",
+        "isDir": false,
+        "sizeKB": "636.8"
+      },
+      {
+        "name": "read_me.txt",
+        "isDir": false,
+        "sizeKB": "2.6"
+      },
+      {
+        "name": "Remover documento da ferramenta do jogo.bat",
+        "isDir": false,
+        "sizeKB": "0.9"
+      },
+      {
+        "name": "Save01.rvdata2",
+        "isDir": false,
+        "sizeKB": "75.9"
+      },
+      {
+        "name": "steam_api.dll",
+        "isDir": false,
+        "sizeKB": "1454.0"
+      },
+      {
+        "name": "System",
+        "isDir": true,
+        "children": [
+          "RGSS300.dll",
+          "RGSS301.dll"
+        ]
+      },
+      {
+        "name": "TrsData.bin",
+        "isDir": false,
+        "sizeKB": "2566.2"
+      },
+      {
+        "name": "TrsData_Bing_12092026 131640P.bin",
+        "isDir": false,
+        "sizeKB": "2566.2"
+      },
+      {
+        "name": "ver.txt",
+        "isDir": false,
+        "sizeKB": "0.0"
+      }
+    ]
+  },
+  {
+    "name": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "exists": true,
+    "files": [
+      {
+        "name": ".opent_generic_backup",
+        "isDir": true,
+        "children": [
+          "metadata.json",
+          "original"
+        ]
+      },
+      {
+        "name": "Audio",
+        "isDir": true,
+        "children": [
+          "BGM",
+          "BGS",
+          "ME",
+          "SE"
+        ]
+      },
+      {
+        "name": "Data",
+        "isDir": true,
+        "children": [
+          "Actors.rvdata2",
+          "Animations.rvdata2",
+          "Armors.rvdata2",
+          "Classes.rvdata2",
+          "CommonEvents.rvdata2",
+          "Enemies.rvdata2",
+          "Items.rvdata2",
+          "Map001.rvdata2",
+          "Map002.rvdata2",
+          "Map003.rvdata2",
+          "Map004.rvdata2",
+          "Map005.rvdata2",
+          "Map006.rvdata2",
+          "Map007.rvdata2",
+          "Map008.rvdata2"
+        ]
+      },
+      {
+        "name": "Game.exe",
+        "isDir": false,
+        "sizeKB": "137.5"
+      },
+      {
+        "name": "Game.ini",
+        "isDir": false,
+        "sizeKB": "0.2"
+      },
+      {
+        "name": "Graphics",
+        "isDir": true,
+        "children": [
+          "Animations",
+          "Battlebacks1",
+          "Battlebacks2",
+          "Battlers",
+          "Characters",
+          "Faces",
+          "Parallaxes",
+          "Pictures",
+          "Pictures_TRADUZIDAS",
+          "System",
+          "Tilesets"
+        ]
+      },
+      {
+        "name": "Iniciar com a Ferramenta.bat",
+        "isDir": false,
+        "sizeKB": "1.1"
+      },
+      {
+        "name": "Remover documento da ferramenta do jogo.bat",
+        "isDir": false,
+        "sizeKB": "0.9"
+      },
+      {
+        "name": "Save01.rvdata2",
+        "isDir": false,
+        "sizeKB": "1447.3"
+      },
+      {
+        "name": "Save02.rvdata2",
+        "isDir": false,
+        "sizeKB": "1353.2"
+      },
+      {
+        "name": "Save03.rvdata2",
+        "isDir": false,
+        "sizeKB": "1352.8"
+      },
+      {
+        "name": "Save04.rvdata2",
+        "isDir": false,
+        "sizeKB": "1323.3"
+      },
+      {
+        "name": "System",
+        "isDir": true,
+        "children": [
+          "RGSS301.dll"
+        ]
+      },
+      {
+        "name": "TLNotes.txt",
+        "isDir": false,
+        "sizeKB": "4.0"
+      },
+      {
+        "name": "TrsData.bin",
+        "isDir": false,
+        "sizeKB": "3803.4"
+      },
+      {
+        "name": "TrsData_Bing_18092026 064725P.bin",
+        "isDir": false,
+        "sizeKB": "3831.8"
+      },
+      {
+        "name": "TrsData_Bing_18092026 064946P.bin",
+        "isDir": false,
+        "sizeKB": "3803.4"
+      },
+      {
+        "name": "TrsData_Bing_18092026 065009P.bin",
+        "isDir": false,
+        "sizeKB": "3803.4"
+      },
+      {
+        "name": "はじめにお読み下さい(操作方法など).txt",
+        "isDir": false,
+        "sizeKB": "6.0"
+      }
+    ]
+  },
+  {
+    "name": "An Obedient Childhood Friend Is Easily Cucked",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+    "exists": true,
+    "files": [
+      {
+        "name": "Config.exe",
+        "isDir": false,
+        "sizeKB": "288.0"
+      },
+      {
+        "name": "Data",
+        "isDir": true,
+        "children": [
+          "BasicData",
+          "BattleEffect",
+          "BGM",
+          "CharaChip",
+          "EnemyGraphic",
+          "Fog_BackGround",
+          "MapChip",
+          "MapData",
+          "Picture",
+          "SE",
+          "SystemFile"
+        ]
+      },
+      {
+        "name": "Game.exe",
+        "isDir": false,
+        "sizeKB": "6156.0"
+      },
+      {
+        "name": "Game.ini",
+        "isDir": false,
+        "sizeKB": "0.2"
+      },
+      {
+        "name": "GuruguruSMF4.dll",
+        "isDir": false,
+        "sizeKB": "144.0"
+      }
+    ]
+  },
+  {
+    "name": "Rabbit Hood English 2026-06-30",
+    "fullPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+    "exists": true,
+    "files": [
+      {
+        "name": "Config.exe",
+        "isDir": false,
+        "sizeKB": "292.0"
+      },
+      {
+        "name": "Data",
+        "isDir": true,
+        "children": [
+          "BasicData",
+          "BasicData.zip",
+          "BGM",
+          "CharaChip",
+          "EnemyGraphic",
+          "MapChip",
+          "MapData",
+          "okinavoice",
+          "Picture",
+          "Picture-KAJINO",
+          "Picture2022",
+          "Picture2023",
+          "Picture2024",
+          "Picture2025",
+          "Picture2026"
+        ]
+      },
+      {
+        "name": "Editor 2.24Z.exe",
+        "isDir": false,
+        "sizeKB": "17096.0"
+      },
+      {
+        "name": "Editor.ini",
+        "isDir": false,
+        "sizeKB": "1.7"
+      },
+      {
+        "name": "Game.exe",
+        "isDir": false,
+        "sizeKB": "6216.0"
+      },
+      {
+        "name": "Game.ini",
+        "isDir": false,
+        "sizeKB": "0.2"
+      },
+      {
+        "name": "GuruguruSMF4.dll",
+        "isDir": false,
+        "sizeKB": "144.0"
+      },
+      {
+        "name": "Save",
+        "isDir": true,
+        "children": []
+      },
+      {
+        "name": "SaveData01.sav",
+        "isDir": false,
+        "sizeKB": "224.3"
+      },
+      {
+        "name": "Save_MTool",
+        "isDir": true,
+        "children": []
+      },
+      {
+        "name": "読んで.txt",
+        "isDir": false,
+        "sizeKB": "3.8"
+      }
+    ]
+  }
+]

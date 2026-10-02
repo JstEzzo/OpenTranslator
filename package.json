@@ -1,0 +1,23 @@
+{
+  "name": "opentranslator",
+  "version": "1.0.0",
+  "description": "Universal AI-Powered Game Translation Suite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/validate_real_ui_certification.js",
+    "test:renpy": "node tests/validate_renpy_certification.js",
+    "test:mz": "node tests/validate_mz_certification.js",
+    "smoke": "OpenTranslator.exe --smoke-test",
+    "lint": "node tools/repoLint.js"
+  },
+  "private": true,
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "exceljs": "^4.4.0",
+    "ws": "^8.21.1"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true
+  }
+}

@@ -1,0 +1,440 @@
+{
+  "version": "1.0.0",
+  "description": "OpenTranslator Loaders & Binaries Manifest",
+  "lastUpdated": "2026-09-16T17:12:28.318Z",
+  "count": 48,
+  "binaries": [
+    {
+      "file": "0Harmony.dll",
+      "sizeBytes": 921704,
+      "type": "dll",
+      "engine": "unity",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "Unity Mono/IL2CPP Harmony patching"
+    },
+    {
+      "file": "AgtkHook.dll",
+      "sizeBytes": 576112,
+      "type": "dll",
+      "engine": "pgmmv",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "Pixel Game Maker MV Hook"
+    },
+    {
+      "file": "BakinLauncher.exe",
+      "sizeBytes": 20072,
+      "type": "exe",
+      "engine": "bakin",
+      "architecture": "x64",
+      "status": "REFERENCED",
+      "usedBy": "RPG Bakin Launcher"
+    },
+    {
+      "file": "BakinPlayerWrapper.exe",
+      "sizeBytes": 378480,
+      "type": "exe",
+      "engine": "bakin",
+      "architecture": "x64",
+      "status": "REFERENCED",
+      "usedBy": "RPG Bakin Wrapper"
+    },
+    {
+      "file": "Client.js.arm64",
+      "sizeBytes": 255464,
+      "type": "payload",
+      "engine": "generic",
+      "architecture": "arm64",
+      "status": "OPTIONAL",
+      "usedBy": "ARM64 client payload"
+    },
+    {
+      "file": "CPUInstructionCheck.exe",
+      "sizeBytes": 210032,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Instruction set detection"
+    },
+    {
+      "file": "ele64.exe",
+      "sizeBytes": 44160,
+      "type": "exe",
+      "engine": "electron",
+      "architecture": "x64",
+      "status": "USED",
+      "usedBy": "Electron/NW.js CDP wrapper"
+    },
+    {
+      "file": "fixFontName",
+      "sizeBytes": 14,
+      "type": "config",
+      "engine": "generic",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "Font replacement config"
+    },
+    {
+      "file": "fixFontSizeOffBakin",
+      "sizeBytes": 2,
+      "type": "config",
+      "engine": "bakin",
+      "architecture": "any",
+      "status": "REFERENCED",
+      "usedBy": "Bakin font size flag"
+    },
+    {
+      "file": "fixFontSizeOffKmy",
+      "sizeBytes": 2,
+      "type": "config",
+      "engine": "generic",
+      "architecture": "any",
+      "status": "REFERENCED",
+      "usedBy": "Kmy font size flag"
+    },
+    {
+      "file": "fontSetting.exe",
+      "sizeBytes": 347248,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Font patch utility"
+    },
+    {
+      "file": "fontSizeKRKR2",
+      "sizeBytes": 2,
+      "type": "config",
+      "engine": "krkr",
+      "architecture": "any",
+      "status": "REFERENCED",
+      "usedBy": "Kirikiri 2 font size flag"
+    },
+    {
+      "file": "fontSizeSRPG",
+      "sizeBytes": 2,
+      "type": "config",
+      "engine": "srpg",
+      "architecture": "any",
+      "status": "REFERENCED",
+      "usedBy": "SRPG Studio font size flag"
+    },
+    {
+      "file": "GetPEFileInfo.exe",
+      "sizeBytes": 222832,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Legacy PE inspector"
+    },
+    {
+      "file": "inject.bin",
+      "sizeBytes": 880640,
+      "type": "payload",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Shellcode injection stub"
+    },
+    {
+      "file": "inject.exe",
+      "sizeBytes": 192770048,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Legacy single-binary injector"
+    },
+    {
+      "file": "inject.ver",
+      "sizeBytes": 11,
+      "type": "config",
+      "engine": "generic",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "Injector version flag"
+    },
+    {
+      "file": "JoyCon2Mapper.exe",
+      "sizeBytes": 884096,
+      "type": "exe",
+      "engine": "utility",
+      "architecture": "x86",
+      "status": "OPTIONAL",
+      "usedBy": "Controller mapper"
+    },
+    {
+      "file": "kmyHook.exe",
+      "sizeBytes": 116336,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "Kmy game hook runner"
+    },
+    {
+      "file": "kmyHookUnity.dll",
+      "sizeBytes": 328808,
+      "type": "dll",
+      "engine": "unity",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "Kmy Unity hook helper"
+    },
+    {
+      "file": "krkr2Hook.dll",
+      "sizeBytes": 611712,
+      "type": "dll",
+      "engine": "krkr",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "Kirikiri 2 Hook"
+    },
+    {
+      "file": "krkrzHook32.dll",
+      "sizeBytes": 614272,
+      "type": "dll",
+      "engine": "krkr",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "KirikiriZ 32-bit Hook"
+    },
+    {
+      "file": "krkrzHook64.dll",
+      "sizeBytes": 674688,
+      "type": "dll",
+      "engine": "krkr",
+      "architecture": "x64",
+      "status": "REFERENCED",
+      "usedBy": "KirikiriZ 64-bit Hook"
+    },
+    {
+      "file": "listenPort",
+      "sizeBytes": 5,
+      "type": "config",
+      "engine": "generic",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "IPC port override marker"
+    },
+    {
+      "file": "mini_chcp.exe",
+      "sizeBytes": 1072,
+      "type": "exe",
+      "engine": "utility",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Console encoding helper"
+    },
+    {
+      "file": "MonoJunkiex64.dll",
+      "sizeBytes": 772200,
+      "type": "dll",
+      "engine": "unity",
+      "architecture": "x64",
+      "status": "USED",
+      "usedBy": "Unity Mono 64-bit runtime injector"
+    },
+    {
+      "file": "MonoJunkiex86.dll",
+      "sizeBytes": 630384,
+      "type": "dll",
+      "engine": "unity",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Unity Mono 32-bit runtime injector"
+    },
+    {
+      "file": "MToolWolfCache",
+      "sizeBytes": 1019812,
+      "type": "cache",
+      "engine": "wolf",
+      "architecture": "any",
+      "status": "REFERENCED",
+      "usedBy": "Wolf RPG editor cache"
+    },
+    {
+      "file": "mzHook.dll",
+      "sizeBytes": 1519728,
+      "type": "dll",
+      "engine": "rpgmaker",
+      "architecture": "x64",
+      "status": "USED",
+      "usedBy": "RPG Maker MZ/MV 64-bit Hook"
+    },
+    {
+      "file": "mzHook32.dll",
+      "sizeBytes": 1267304,
+      "type": "dll",
+      "engine": "rpgmaker",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "RPG Maker MZ/MV 32-bit Hook"
+    },
+    {
+      "file": "opent_PGMMV_font.ttf",
+      "sizeBytes": 21185512,
+      "type": "font",
+      "engine": "pgmmv",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "PGMMV font file"
+    },
+    {
+      "file": "PIDDLLInject64.exe",
+      "sizeBytes": 34408,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x64",
+      "status": "USED",
+      "usedBy": "Remote DLL injection 64-bit"
+    },
+    {
+      "file": "PidFinder.exe",
+      "sizeBytes": 172656,
+      "type": "exe",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Window-to-PID resolution"
+    },
+    {
+      "file": "PythonHook.dll",
+      "sizeBytes": 421480,
+      "type": "dll",
+      "engine": "renpy",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "RenPy/Python 32-bit Hook"
+    },
+    {
+      "file": "PythonHook64.dll",
+      "sizeBytes": 488552,
+      "type": "dll",
+      "engine": "renpy",
+      "architecture": "x64",
+      "status": "USED",
+      "usedBy": "RenPy/Python 64-bit Hook"
+    },
+    {
+      "file": "remoteOps.dll",
+      "sizeBytes": 172544,
+      "type": "dll",
+      "engine": "generic",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Process remote memory ops"
+    },
+    {
+      "file": "rgssFixFontOff",
+      "sizeBytes": 2,
+      "type": "config",
+      "engine": "rgss",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "RGSS font toggle"
+    },
+    {
+      "file": "RGSSHook.dll",
+      "sizeBytes": 531840,
+      "type": "dll",
+      "engine": "rgss",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "RPG Maker XP/VX/VX Ace 32-bit Hook"
+    },
+    {
+      "file": "RGSSHook64.dll",
+      "sizeBytes": 640384,
+      "type": "dll",
+      "engine": "rgss",
+      "architecture": "x64",
+      "status": "USED",
+      "usedBy": "RPG Maker XP/VX/VX Ace 64-bit Hook"
+    },
+    {
+      "file": "Server.js.arm64",
+      "sizeBytes": 264672,
+      "type": "payload",
+      "engine": "generic",
+      "architecture": "arm64",
+      "status": "OPTIONAL",
+      "usedBy": "ARM64 server payload"
+    },
+    {
+      "file": "SRPGHook.dll",
+      "sizeBytes": 618096,
+      "type": "dll",
+      "engine": "srpg",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "SRPG Studio Hook"
+    },
+    {
+      "file": "tjsjson32.dll",
+      "sizeBytes": 172648,
+      "type": "dll",
+      "engine": "krkr",
+      "architecture": "x86",
+      "status": "REFERENCED",
+      "usedBy": "Kirikiri TJS to JSON parser (32-bit)"
+    },
+    {
+      "file": "tjsjson64.dll",
+      "sizeBytes": 207472,
+      "type": "dll",
+      "engine": "krkr",
+      "architecture": "x64",
+      "status": "REFERENCED",
+      "usedBy": "Kirikiri TJS to JSON parser (64-bit)"
+    },
+    {
+      "file": "v8init",
+      "sizeBytes": 315353,
+      "type": "payload",
+      "engine": "electron",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "V8 initialization bytecode/stub"
+    },
+    {
+      "file": "V8InitStatus",
+      "sizeBytes": 4,
+      "type": "config",
+      "engine": "electron",
+      "architecture": "any",
+      "status": "USED",
+      "usedBy": "Chromium V8 status marker"
+    },
+    {
+      "file": "wolfFontSizePercent",
+      "sizeBytes": 3,
+      "type": "config",
+      "engine": "wolf",
+      "architecture": "any",
+      "status": "REFERENCED",
+      "usedBy": "Wolf RPG font percentage"
+    },
+    {
+      "file": "wolfHook.dll",
+      "sizeBytes": 1024624,
+      "type": "dll",
+      "engine": "wolf",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Wolf RPG 2.x Hook"
+    },
+    {
+      "file": "wolfHook3.dll",
+      "sizeBytes": 1294720,
+      "type": "dll",
+      "engine": "wolf",
+      "architecture": "x86",
+      "status": "USED",
+      "usedBy": "Wolf RPG 3.x Hook"
+    }
+  ]
+}

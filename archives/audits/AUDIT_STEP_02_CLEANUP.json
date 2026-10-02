@@ -1,0 +1,287 @@
+{
+  "timestamp": "2026-10-01T06:18:04.911Z",
+  "step": "PASSO 2 — LIMPAR A CERTIFICAÇÃO ANTIGA",
+  "deletedCertificationArtifacts": [
+    {
+      "file": "Tool/execute_real_ui_certification_suite.js",
+      "size": 18380
+    },
+    {
+      "file": "validate_real_ui_certification.js",
+      "size": 6071
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_GAME_MATRIX.json",
+      "size": 35183
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_WORLD_UI_CERTIFICATION.json",
+      "size": 15191
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json",
+      "size": 15191
+    },
+    {
+      "file": "OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.md",
+      "size": 14428
+    },
+    {
+      "file": "OPEN_TRANSLATOR_UNEXPECTED_BEHAVIOR_REPORT.md",
+      "size": 12450
+    },
+    {
+      "file": "OPEN_TRANSLATOR_HARDENING_FINAL_REPORT.md",
+      "size": 10385
+    }
+  ],
+  "deletedGameSpecificScripts": [
+    {
+      "file": "Tool/certify_mz_rigorous.js",
+      "size": 28421
+    },
+    {
+      "file": "Tool/certify_renpy_rigorous.js",
+      "size": 18573
+    },
+    {
+      "file": "Tool/certify_solgante_rigorous.js",
+      "size": 16444
+    },
+    {
+      "file": "Tool/certify_summertime03_rigorous.js",
+      "size": 15834
+    },
+    {
+      "file": "Tool/audit_game_rj01058687.js",
+      "size": 10655
+    },
+    {
+      "file": "Tool/scratch_toki_regression.js",
+      "size": 5137
+    },
+    {
+      "file": "Tool/scratch_marge_full_cycle.js",
+      "size": 22196
+    },
+    {
+      "file": "Tool/scratch_rj_full_cycle.js",
+      "size": 19165
+    },
+    {
+      "file": "Tool/scratch_rj_mz_full_cycle.js",
+      "size": 23053
+    },
+    {
+      "file": "Tool/scratch_test_solgante_saveload.js",
+      "size": 1560
+    },
+    {
+      "file": "Tool/inspect_kimochi.js",
+      "size": 1559
+    },
+    {
+      "file": "Tool/src/tests/toki_15k_real_audit.test.js",
+      "size": 5274
+    }
+  ],
+  "deletedTemporaryScripts": [
+    {
+      "file": "Tool/scratch_apply_patches.js",
+      "size": 1888
+    },
+    {
+      "file": "Tool/scratch_capture_9_screens.js",
+      "size": 6681
+    },
+    {
+      "file": "Tool/scratch_capture_full_dialogue.js",
+      "size": 965
+    },
+    {
+      "file": "Tool/scratch_capture_options.js",
+      "size": 1623
+    },
+    {
+      "file": "Tool/scratch_capture_title.js",
+      "size": 1489
+    },
+    {
+      "file": "Tool/scratch_check_dialogue_state.js",
+      "size": 1620
+    },
+    {
+      "file": "Tool/scratch_check_extmsg.js",
+      "size": 706
+    },
+    {
+      "file": "Tool/scratch_check_menu.js",
+      "size": 1380
+    },
+    {
+      "file": "Tool/scratch_check_save.js",
+      "size": 1378
+    },
+    {
+      "file": "Tool/scratch_check_scenes.js",
+      "size": 1686
+    },
+    {
+      "file": "Tool/scratch_check_volumes.js",
+      "size": 307
+    },
+    {
+      "file": "Tool/scratch_clean_capture.js",
+      "size": 1395
+    },
+    {
+      "file": "Tool/scratch_compare_mv.js",
+      "size": 2346
+    },
+    {
+      "file": "Tool/scratch_get_options.js",
+      "size": 731
+    },
+    {
+      "file": "Tool/scratch_qa_verify_all.js",
+      "size": 3385
+    },
+    {
+      "file": "Tool/scratch_query_options.js",
+      "size": 1660
+    },
+    {
+      "file": "Tool/scratch_query_windows.js",
+      "size": 1174
+    },
+    {
+      "file": "Tool/scratch_release_validation.js",
+      "size": 13294
+    },
+    {
+      "file": "Tool/scratch_render_dialogue.js",
+      "size": 1411
+    },
+    {
+      "file": "Tool/scratch_test_boot.js",
+      "size": 2648
+    },
+    {
+      "file": "Tool/scratch_test_csv.js",
+      "size": 2627
+    },
+    {
+      "file": "Tool/scratch_test_csv_patch.js",
+      "size": 2129
+    },
+    {
+      "file": "Tool/scratch_test_dialogue.js",
+      "size": 1407
+    },
+    {
+      "file": "Tool/scratch_test_renpy_runtime.js",
+      "size": 1779
+    },
+    {
+      "file": "Tool/scratch_verify_dialogue.js",
+      "size": 2678
+    },
+    {
+      "file": "Tool/prompt_real_ui.txt",
+      "size": 17204
+    }
+  ],
+  "deletedGameResidualArtifacts": [
+    {
+      "game": "ArmoredSuitSolganteRenpy0.3-pc",
+      "path": "ArmoredSuitSolganteRenpy-pc/game/tl"
+    },
+    {
+      "game": "Marge Mania v0.1",
+      "path": "data/js_plugins_bak"
+    },
+    {
+      "game": "Marge Mania v0.1",
+      "path": "data/plugins.js_bak"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/CheatOverlay.js"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/data/js_plugins_bak"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/data/plugins.js_bak"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/save/common.rpgsave"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/save/config.rpgsave"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/save/file1.rpgsave"
+    },
+    {
+      "game": "RJ01058687_en",
+      "path": "www/save/global.rpgsave"
+    },
+    {
+      "game": "RJ01618221",
+      "path": "data/js_plugins_bak"
+    },
+    {
+      "game": "RJ01618221",
+      "path": "data/plugins.js_bak"
+    },
+    {
+      "game": "summertime_saga_realistic_remake-0.3.0-win",
+      "path": "game/fonts/opentranslator_font.ttf"
+    },
+    {
+      "game": "summertime_saga_realistic_remake-0.3.0-win",
+      "path": "game/tl"
+    },
+    {
+      "game": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "path": "game/fonts/opentranslator_font.ttf"
+    },
+    {
+      "game": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "path": "game/tl"
+    },
+    {
+      "game": "Toki kan Yuusha (gitgud)",
+      "path": "trans_cache.json"
+    },
+    {
+      "game": "Toki kan Yuusha (gitgud)",
+      "path": "www/CheatOverlay.js"
+    },
+    {
+      "game": "Toki kan Yuusha (gitgud)",
+      "path": "www/data/js_plugins_bak"
+    },
+    {
+      "game": "Toki kan Yuusha (gitgud)",
+      "path": "www/data/plugins.js_bak"
+    },
+    {
+      "game": "Toki kan Yuusha (gitgud)",
+      "path": "www/save/config.rpgsave"
+    }
+  ],
+  "preservedLegitimateFiles": [
+    {
+      "game": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "path": "NL/NTR_Data/Managed/UnityEngine.CoreModule.dll.2026-09-15_02-53-20.bak",
+      "reason": "Pre-existing modding file from 2026-09-15, NOT created by OpenTranslator"
+    }
+  ]
+}

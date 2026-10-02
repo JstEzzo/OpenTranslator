@@ -1,0 +1,32 @@
+{
+  "Rabbit Hood English 2026-06-30": {
+    "game": "Rabbit Hood English 2026-06-30",
+    "engine": "wolf",
+    "detect": "PASS",
+    "inspect": "PASS",
+    "extract": "PASS",
+    "translate": "PASS",
+    "apply": "PASS",
+    "rollback": "PASS",
+    "runtime": "PASS",
+    "extractedCount": 13938,
+    "tier": "RUNTIME VERIFIED",
+    "version": "Wolf RPG",
+    "runtimePid": 12668
+  },
+  "An Obedient Childhood Friend Is Easily Cucked": {
+    "game": "An Obedient Childhood Friend Is Easily Cucked",
+    "engine": "wolf",
+    "detect": "PASS",
+    "inspect": "PASS",
+    "extract": "PASS",
+    "translate": "PASS",
+    "apply": "PASS",
+    "rollback": "PASS",
+    "runtime": "PASS",
+    "extractedCount": 21800,
+    "tier": "RUNTIME VERIFIED",
+    "version": "Wolf RPG",
+    "runtimePid": 11764
+  }
+}

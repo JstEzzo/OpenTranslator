@@ -1,0 +1,294 @@
+[
+  {
+    "src": "TestProd",
+    "dst": "TesteProducao"
+  },
+  {
+    "src": "BGM Volume",
+    "dst": "Volume da Música (BGM)",
+    "term": "BGM Volume",
+    "translation": "Volume da Música (BGM)"
+  },
+  {
+    "src": "Volume da música musical",
+    "dst": "Volume da Música (BGM)",
+    "term": "Volume da música musical",
+    "translation": "Volume da Música (BGM)"
+  },
+  {
+    "src": "BGS Volume",
+    "dst": "Volume Ambiente (BGS)",
+    "term": "BGS Volume",
+    "translation": "Volume Ambiente (BGS)"
+  },
+  {
+    "src": "Volume BGS",
+    "dst": "Volume Ambiente (BGS)",
+    "term": "Volume BGS",
+    "translation": "Volume Ambiente (BGS)"
+  },
+  {
+    "src": "ME Volume",
+    "dst": "Volume dos Efeitos Musicais (ME)",
+    "term": "ME Volume",
+    "translation": "Volume dos Efeitos Musicais (ME)"
+  },
+  {
+    "src": "Volume EM",
+    "dst": "Volume dos Efeitos Musicais (ME)",
+    "term": "Volume EM",
+    "translation": "Volume dos Efeitos Musicais (ME)"
+  },
+  {
+    "src": "SE Volume",
+    "dst": "Volume dos Efeitos Sonoros (SE)",
+    "term": "SE Volume",
+    "translation": "Volume dos Efeitos Sonoros (SE)"
+  },
+  {
+    "src": "Volume SE",
+    "dst": "Volume dos Efeitos Sonoros (SE)",
+    "term": "Volume SE",
+    "translation": "Volume dos Efeitos Sonoros (SE)"
+  },
+  {
+    "src": "Always Dash",
+    "dst": "Sempre Correr",
+    "term": "Always Dash",
+    "translation": "Sempre Correr"
+  },
+  {
+    "src": "Sempre traço",
+    "dst": "Sempre Correr",
+    "term": "Sempre traço",
+    "translation": "Sempre Correr"
+  },
+  {
+    "src": "Command Memory",
+    "dst": "Lembrar Comando",
+    "term": "Command Memory",
+    "translation": "Lembrar Comando"
+  },
+  {
+    "src": "Memória de comando",
+    "dst": "Lembrar Comando",
+    "term": "Memória de comando",
+    "translation": "Lembrar Comando"
+  },
+  {
+    "src": "Battle Animation",
+    "dst": "Animação de Batalha",
+    "term": "Battle Animation",
+    "translation": "Animação de Batalha"
+  },
+  {
+    "src": "Voice Volume",
+    "dst": "Volume das Vozes",
+    "term": "Voice Volume",
+    "translation": "Volume das Vozes"
+  },
+  {
+    "src": "Difficulty",
+    "dst": "Dificuldade",
+    "term": "Difficulty",
+    "translation": "Dificuldade"
+  },
+  {
+    "src": "Alert Level",
+    "dst": "Nível de Alerta",
+    "term": "Alert Level",
+    "translation": "Nível de Alerta"
+  },
+  {
+    "src": "Elements",
+    "dst": "Elementos",
+    "term": "Elements",
+    "translation": "Elementos"
+  },
+  {
+    "src": "Equipment",
+    "dst": "Equipamento",
+    "term": "Equipment",
+    "translation": "Equipamento"
+  },
+  {
+    "src": "Next",
+    "dst": "Próximo",
+    "term": "Next",
+    "translation": "Próximo"
+  },
+  {
+    "src": "Taxa estadual",
+    "dst": "Taxa de Estados",
+    "term": "Taxa estadual",
+    "translation": "Taxa de Estados"
+  },
+  {
+    "src": "Please select a save slot",
+    "dst": "Selecione um slot de salvamento",
+    "term": "Please select a save slot",
+    "translation": "Selecione um slot de salvamento"
+  },
+  {
+    "src": "Empty",
+    "dst": "Vazio",
+    "term": "Empty",
+    "translation": "Vazio"
+  },
+  {
+    "src": "Playtime:",
+    "dst": "Tempo de jogo:",
+    "term": "Playtime:",
+    "translation": "Tempo de jogo:"
+  },
+  {
+    "src": "Save count:",
+    "dst": "Salvamentos:",
+    "term": "Save count:",
+    "translation": "Salvamentos:"
+  },
+  {
+    "src": "Fastest",
+    "dst": "Mais rápido",
+    "term": "Fastest",
+    "translation": "Mais rápido"
+  },
+  {
+    "src": "Faster",
+    "dst": "Mais veloz",
+    "term": "Faster",
+    "translation": "Mais veloz"
+  },
+  {
+    "src": "Fast",
+    "dst": "Rápido",
+    "term": "Fast",
+    "translation": "Rápido"
+  },
+  {
+    "src": "Normal",
+    "dst": "Normal",
+    "term": "Normal",
+    "translation": "Normal"
+  },
+  {
+    "src": "Slow",
+    "dst": "Lento",
+    "term": "Slow",
+    "translation": "Lento"
+  },
+  {
+    "src": "Very Fast",
+    "dst": "Muito rápido",
+    "term": "Very Fast",
+    "translation": "Muito rápido"
+  },
+  {
+    "src": "Title",
+    "dst": "Título",
+    "term": "Title",
+    "translation": "Título"
+  },
+  {
+    "src": "Strength",
+    "dst": "Força",
+    "term": "Strength",
+    "translation": "Força"
+  },
+  {
+    "src": "Poise",
+    "dst": "Equilíbrio",
+    "term": "Poise",
+    "translation": "Equilíbrio"
+  },
+  {
+    "src": "Skill",
+    "dst": "Habilidade",
+    "term": "Skill",
+    "translation": "Habilidade"
+  },
+  {
+    "src": "Faith",
+    "dst": "Fé",
+    "term": "Faith",
+    "translation": "Fé"
+  },
+  {
+    "src": "Speed",
+    "dst": "Velocidade",
+    "term": "Speed",
+    "translation": "Velocidade"
+  },
+  {
+    "src": "Perception",
+    "dst": "Percepção",
+    "term": "Perception",
+    "translation": "Percepção"
+  },
+  {
+    "src": "Accuracy",
+    "dst": "Precisão",
+    "term": "Accuracy",
+    "translation": "Precisão"
+  },
+  {
+    "src": "Evasion",
+    "dst": "Evasão",
+    "term": "Evasion",
+    "translation": "Evasão"
+  },
+  {
+    "src": "Critical Rate",
+    "dst": "Taxa Crítica",
+    "term": "Critical Rate",
+    "translation": "Taxa Crítica"
+  },
+  {
+    "src": "Counter Rate",
+    "dst": "Taxa de Contra-ataque",
+    "term": "Counter Rate",
+    "translation": "Taxa de Contra-ataque"
+  },
+  {
+    "src": "Special Items",
+    "dst": "Itens Especiais",
+    "term": "Special Items",
+    "translation": "Itens Especiais"
+  },
+  {
+    "src": "Unique Items",
+    "dst": "Itens Únicos",
+    "term": "Unique Items",
+    "translation": "Itens Únicos"
+  },
+  {
+    "src": "Consumable",
+    "dst": "Consumível",
+    "term": "Consumable",
+    "translation": "Consumível"
+  },
+  {
+    "src": "Usable",
+    "dst": "Utilizável",
+    "term": "Usable",
+    "translation": "Utilizável"
+  },
+  {
+    "src": "Battle",
+    "dst": "Batalha",
+    "term": "Battle",
+    "translation": "Batalha"
+  },
+  {
+    "src": "Field",
+    "dst": "Campo",
+    "term": "Field",
+    "translation": "Campo"
+  },
+  {
+    "src": "Misc",
+    "dst": "Diversos",
+    "term": "Misc",
+    "translation": "Diversos"
+  }
+]

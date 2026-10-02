@@ -1,0 +1,149 @@
+[
+  {
+    "name": "RJ01058687_en",
+    "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+    "detect": {
+      "engine": "mv",
+      "version": "MV 1.x",
+      "confidence": 0.98,
+      "arch": "x32"
+    },
+    "extract": {
+      "success": true,
+      "count": 27527
+    },
+    "classify": {
+      "sampledCount": 30
+    },
+    "apply": {
+      "success": true,
+      "count": 30,
+      "modified": [
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en\\data"
+      ]
+    },
+    "validate": null,
+    "rollback": {
+      "success": true
+    },
+    "integrityOk": true
+  },
+  {
+    "name": "Marge Mania v0.1",
+    "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+    "detect": {
+      "engine": "mz",
+      "version": "MZ 1.x",
+      "confidence": 0.98,
+      "arch": "x64"
+    },
+    "extract": {
+      "success": true,
+      "count": 6830
+    },
+    "classify": {
+      "sampledCount": 30
+    },
+    "apply": {
+      "success": true,
+      "count": 30,
+      "modified": [
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1\\data"
+      ]
+    },
+    "validate": null,
+    "rollback": {
+      "success": true
+    },
+    "integrityOk": true
+  },
+  {
+    "name": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "detect": {
+      "engine": "rgss",
+      "version": "VX Ace",
+      "confidence": 0.95,
+      "arch": "x32"
+    },
+    "extract": {
+      "success": true,
+      "count": 37843
+    },
+    "classify": {
+      "sampledCount": 30
+    },
+    "apply": {
+      "success": true,
+      "count": 30,
+      "modified": [
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2\\Data"
+      ]
+    },
+    "validate": null,
+    "rollback": {
+      "success": true
+    },
+    "integrityOk": true
+  },
+  {
+    "name": "ArmoredSuitSolganteRenpy0.2-pc",
+    "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc",
+    "detect": {
+      "engine": "renpy",
+      "version": "8.x",
+      "confidence": 0.96,
+      "arch": "x64"
+    },
+    "extract": {
+      "success": true,
+      "count": 2844
+    },
+    "classify": {
+      "sampledCount": 30
+    },
+    "apply": {
+      "success": true,
+      "count": 60,
+      "modified": [
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc\\game\\tl\\pt_BR\\opentranslator_tl.rpy",
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc\\game\\tl\\pt\\opentranslator_tl.rpy"
+      ]
+    },
+    "validate": null,
+    "rollback": {
+      "success": true
+    },
+    "integrityOk": true
+  },
+  {
+    "name": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+    "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+    "detect": {
+      "engine": "renpy",
+      "version": "8.x",
+      "confidence": 0.96,
+      "arch": "x64"
+    },
+    "extract": {
+      "success": true,
+      "count": 443
+    },
+    "classify": {
+      "sampledCount": 30
+    },
+    "apply": {
+      "success": true,
+      "count": 60,
+      "modified": [
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win\\game\\tl\\pt_BR\\opentranslator_tl.rpy",
+        "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win\\game\\tl\\pt\\opentranslator_tl.rpy"
+      ]
+    },
+    "validate": null,
+    "rollback": {
+      "success": true
+    },
+    "integrityOk": true
+  }
+]

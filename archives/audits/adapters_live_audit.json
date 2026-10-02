@@ -1,0 +1,436 @@
+[
+  {
+    "name": "Toki kan Yuusha (gitgud)",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 86719,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "RJ01058687_en",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 27527,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "Marge Mania v0.1",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 6830,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "RJ01618221",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 40145,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "BLACK SOULS",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": true,
+      "dom": true,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 37843,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "An Obedient Childhood Friend Is Easily Cucked",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "Wolf RPG Data Unpack via UberWolfCli"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "Rabbit Hood English 2026-06-30",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "Wolf RPG Data Unpack via UberWolfCli"
+    },
+    "extract": {
+      "textCount": 60,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "ArmoredSuitSolganteRenpy0.2-pc",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.2-pc",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": true,
+      "archives": true,
+      "compiledScripts": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 2844,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "summertime_saga_realistic_remake-0.3.0-win",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": true,
+      "archives": true,
+      "compiledScripts": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 2834,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": true,
+      "archives": false,
+      "compiledScripts": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true
+    },
+    "extract": {
+      "textCount": 443,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "Dane",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR / Read-Only Diagnostics"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "MiniGamePackVol1_v1.0_demo",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": true,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "BepInEx / AutoTranslator Runtime Hook"
+    },
+    "extract": {
+      "textCount": 1121,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "NTR伝説 FInal_Ver.1.0.2_64bit",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "Nova pasta",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "OCR Fallback (Hook Ausente)"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "Nova pasta (2)",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": true,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "BepInEx / AutoTranslator Runtime Hook"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "ロリっ子健康診断2_1.0",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+    "capabilities": {
+      "staticFiles": false,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": true,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "BepInEx / AutoTranslator Runtime Hook"
+    },
+    "extract": {
+      "textCount": 124,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "harem-heaven-03.5-alpha2-pc-plus",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": false,
+      "archives": true,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": true,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "Static Scene / Resource Scanner"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  },
+  {
+    "name": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+    "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+    "capabilities": {
+      "staticFiles": true,
+      "nativeLocalization": true,
+      "archives": false,
+      "runtimeHook": false,
+      "dom": false,
+      "frameworkState": false,
+      "ocr": true,
+      "backupSupported": true,
+      "strategy": "Cocos2d-x .plist & JSON Resource Tables"
+    },
+    "extract": {
+      "textCount": 0,
+      "requiresExternalTool": false,
+      "externalToolInfo": null,
+      "error": null,
+      "details": null
+    }
+  }
+]

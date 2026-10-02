@@ -1,77 +1,123 @@
 <div align="center">
 
-<img src="Tool/OpenTranslator.png" width="120" alt="OpenTranslator Logo"/>
+<img src="Tool/resources/OpenTranslator.ico" width="100" alt="OpenTranslator Logo"/>
 
 # OpenTranslator
 
-**Ferramenta de tradução e modding offline-first para jogos — Sem anúncios, sem rastreamento.**
+**Plataforma Universal de Tradução, Modding e Cheats Offline-First para Jogos.**
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/License-Free%20%7C%20Non--Commercial-purple)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-Port%C3%A1til%20Integrado-green?logo=node.js)](Tool/bin)
+[![Status](https://img.shields.io/badge/Status-Produ%C3%A7%C3%A3o%20Est%C3%A1vel-success)](#)
+[![Zero BAT](https://img.shields.io/badge/Launcher-Nativo%20EXE-orange)](#)
 
 </div>
 
 ---
 
-## 🎮 Motores Suportados (Supported Engines)
+## ✨ Destaques da Aplicação
 
-| Engine | Tradução de Arquivos | Hook em Tempo Real |
-|--------|:-------------------:|:------------------:|
-| **Ren'Py (Python)** | ✅ (Ultra-Rápida / 32 Threads) | ✅ (Autônoma) |
-| **RPG Maker MZ / MV** | ✅ | ✅ |
-| **TyranoScript** | ✅ | ✅ |
-| **Wolf RPG** | ✅ | ✅ |
-| **Godot Engine** | ✅ | — |
-| **Unity / XUnity** | ✅ | ✅ |
-| **Kirikiri (KRKR)** | — | ✅ |
-| **SRPG Studio** | — | ✅ |
+- **Ponto Único de Entrada**: Inicie diretamente pelo executável nativo `OpenTranslator.exe`.
+- **Autodiagnóstico Real Pré-Voo**: O launcher realiza 10 verificações reais (arquivos, runtime, dependências NPM, banco de dados, portas 8080/16005, permissões, servidor backend, conexão HTTP 200, ativos frontend e RPC) antes de liberar a interface.
+- **Tela de Recuperação & Safe Start**: Se qualquer problema ocorrer (como uma porta ocupada ou processo antigo travado), o launcher exibe uma tela explicativa com a causa exata e botões para **[Tentar Corrigir]**, **[Modo de Recuperação]** e **[Copiar Relatório]**.
+- **Rollback Atômico com SHA-256**: Seus jogos originais nunca são perdidos; qualquer modificação possui backup automático com verificação criptográfica.
+- **Dual Hook em Tempo Real (Porta 16005)**: Suporte a overlay e cheats em tempo real enquanto o jogo roda.
+- **Zero Configuração Manual**: Runtime portátil incluído e caminhos 100% dinâmicos (funciona em qualquer pasta ou pendrive).
 
 ---
 
-## 🚀 Início Rápido (Quick Start)
+## 🎮 Motores de Jogos Suportados
 
-### 1. Clone o repositório
+| Motor de Jogo | Tradução de Arquivos | Hook em Tempo Real | Recursos Especiais |
+|---|:---:|:---:|---|
+| **Ren'Py (Python 2 & 3)** | ✅ | ✅ | Descompilação `.rpyc`, injeção `000_anti_crash.rpy` |
+| **RPG Maker (MV & MZ)** | ✅ | ✅ | Dual Hook WebSocket (16005), LatinNameInput, CheatOverlay |
+| **RPG Maker (XP, VX, VX Ace)** | ✅ | ✅ | Descriptografia `.rgss3a`, Ruby Marshal Bridge |
+| **Wolf RPG Editor** | ✅ | ✅ | UberWolfCli integrado, tradução de strings de eventos |
+| **Unity Engine** | ✅ | ✅ | UltraBatchEndpoint.dll, BepInEx XUnity AutoTranslator |
+| **Unreal Engine** | ✅ | — | Extração de `.pak` e tabelas `.locres` |
+| **Visual Novels / Genérico** | ✅ | ✅ | Hook de memória e tradução com memória global SQLite |
+
+---
+
+## 🚀 Como Executar
+
+### Para o Usuário Final:
+1. Dê um duplo-clique em **`OpenTranslator.exe`** na raiz da pasta.
+2. O sistema fará a checagem de integridade em ~2 segundos.
+3. A interface web será aberta automaticamente no seu navegador padrão (`http://localhost:8080`).
+4. Para fechar, clique em **Encerrar OpenTranslator** no painel do launcher ou na bandeja do Windows (System Tray).
+
+### Modo de Teste e Autodiagnóstico por Linha de Comando (CI/Dev):
 ```bash
-git clone https://github.com/JstEzzo/OpenTranslator.git
+# Executa todas as 10 checagens de integridade e retorna código 0 (sucesso) ou 1 (falha):
+OpenTranslator.exe --smoke-test
+
+# Inicia exibindo diretamente o painel de logs detalhados:
+OpenTranslator.exe --debug
+
+# Inicia em modo de segurança:
+OpenTranslator.exe --safe
 ```
 
-### 2. Execute
-Duplo clique em qualquer um dos inicializadores:
-- **`OpenTranslator.lnk`** (Atalho nativo com ícone personalizado)
-- **`OpenTranslator.bat`** (Launcher inteligente e silencioso)
-
-Na primeira execução, o launcher verifica e baixa automaticamente tudo o que estiver faltando (Node.js portátil) de forma 100% autônoma e silenciosa.
-
 ---
 
-## 🛠️ Requisitos de Sistema
+## 📁 Estrutura do Projeto & Governança
 
-- **OS**: Windows 10 / Windows 11 (64-bit) — Compatível com **Windows Sandbox (`WDAGUtilityAccount`)** e contas sem privilégios de Administrador.
-- **Rede**: Conexão com a internet apenas no primeiro boot (para baixar o Node.js portátil se não houver instalado).
-- **Node.js**: v18+ (caso não haja no sistema, o launcher baixa a versão v20.18.3 LTS automaticamente).
-
----
-
-## 📐 Estrutura do Projeto
+O repositório é rigorosamente estruturado segundo as diretrizes de governança em [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) e [PRODUCTION_MANIFEST.md](docs/PRODUCTION_MANIFEST.md):
 
 ```text
-OpenTranslator/
-├── OpenTranslator.bat           ← Launcher principal silencioso
-├── OpenTranslator.lnk           ← Atalho com ícone personalizado
-├── Tool/                        ← Executáveis, módulo Node.js e UI
-│   ├── server.js                ← Backend Node.js (porta 3000)
-│   ├── open_translator.py       ← Motor agregador paralelo (32 threads)
-│   ├── src/                     ← Código-fonte modular (utilitários, RPC, motores, cache)
-│   ├── bin/                     ← Executáveis e scripts nativos (download_node.ps1)
-│   ├── www/                     ← Interface web (UI Glassmorphism)
-│   ├── loaders/                 ← Hooks e injetores por engine
-│   └── resources/               ← Sidecars por engine (Python, Unity, EVB, Godot)
-└── skills_whitepaper/           ← Documentação técnica completa (WHITEPAPER.md)
+OpenTranslator/                  ← [PRODUTO & DESENVOLVIMENTO] (~454 MB)
+├── OpenTranslator.exe           ← Executável principal unificado (Launcher nativo C#)
+├── docs/                        ← Documentação completa organizada (docs/INDEX.md)
+│   ├── architecture/            ← Arquitetura técnica, pipeline e memória
+│   ├── engines/                 ← Matrizes de suporte por motor de jogo
+│   ├── runtime/                 ← Arquitetura de hooks e injeção em tempo de execução
+│   ├── user/                    ← Manual do usuário e resolução de problemas
+│   ├── PRODUCTION_MANIFEST.md   ← Manifesto de dependências de produção
+│   └── PROJECT_STRUCTURE.md     ← Topologia e governança de diretórios
+├── Tool/                        ← Núcleo da aplicação e runtimes
+│   ├── server.js                ← Servidor HTTP/WebSocket principal
+│   ├── src/                     ← Backend modular, engines e suíte de testes
+│   ├── www/                     ← Interface web frontend e overlay HUD
+│   ├── bin/                     ← Node.js portátil v20.18.3 x64 integrado
+│   ├── loaders/                 ← Injetor nativo e DLLs Dual Hook
+│   ├── resources/               ← Sidecars por engine (Python, UnityPy, Retoc)
+│   ├── node_modules/            # Dependências nativas compiladas (better-sqlite3, ws)
+│   └── data/                    ← Cache global SQLite (66k traduções) e configs
+├── archive/                     ← [ARQUIVO] Auditorias históricas, logs e snapshots
+└── OpenTranslator-Lab/          ← [LABORATÓRIO] Fixtures pesadas externas (OpenTranslator-Lab/)
+```
+
+---
+
+## 🛠️ Ferramentas de Manutenção e Release
+
+```bash
+# Executar a suíte mestre de 121 testes de regressão (100% PASS):
+node Tool/src/tests/run_master_regression.js
+
+# Executar o SelfTest de 23 verificações de ambiente (23/23 PASS):
+node -e "require('./Tool/src/core/selfTest').runAll()"
+
+# Gerar pacote limpo e portátil de distribuição final (OpenTranslator-release/):
+node Tool/src/tools/package_release.js
+
+# Auditar e limpar artefatos temporários com segurança:
+node Tool/src/tools/cleanup_project.js
+```
+
+---
+
+## 🧪 Suíte de Testes Automatizados
+
+Para rodar os testes mestres de regressão (121 testes, 100% aprovados):
+```bash
+node Tool/src/tests/run_master_regression.js
 ```
 
 ---
 
 <div align="center">
-  <sub>Construído para jogadores. Tradução universal com alta performance.</sub>
+  <sub>OpenTranslator — Tradução Universal para Jogos sem barreiras.</sub>
 </div>

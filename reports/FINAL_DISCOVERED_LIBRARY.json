@@ -1,0 +1,695 @@
+{
+  "timestamp": "2026-10-01T06:59:32.801Z",
+  "libraryPath": "C:/Users/Teste/Desktop/Nova pasta",
+  "stats": {
+    "TOTAL_ITEMS": 25,
+    "TOTAL_CONTAINERS": 5,
+    "TOTAL_GAMES_DIRECT": 16,
+    "TOTAL_GAMES_CONTAINED": 5,
+    "TOTAL_REAL_GAMES": 21,
+    "TOTAL_TOOLS": 1,
+    "TOTAL_SAVES": 1,
+    "TOTAL_AUXILIARY": 1,
+    "TOTAL_EMPTY": 1,
+    "TOTAL_UNKNOWN": 0
+  },
+  "topLevelItems": [
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+      "name": "An Obedient Childhood Friend Is Easily Cucked",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor wolf",
+      "evidence": [
+        "Arquivos e estrutura do Wolf RPG Editor identificados"
+      ],
+      "confidence": 0.95,
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": true,
+        "archives": true,
+        "runtimeHook": true,
+        "dom": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc",
+      "name": "ArmoredSuitSolganteRenpy0.3-pc",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "evidence": [
+        "Jogo interno: ArmoredSuitSolganteRenpy-pc (renpy 8.x)"
+      ],
+      "confidence": 0.98,
+      "containedGames": [
+        {
+          "name": "ArmoredSuitSolganteRenpy-pc",
+          "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc\\ArmoredSuitSolganteRenpy-pc",
+          "engine": "renpy",
+          "engineVersion": "8.x",
+          "confidence": 0.98
+        }
+      ]
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+      "name": "BLACK SOULS",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor rgss",
+      "evidence": [
+        "Arquivos e dados do RGSS3 (RPG Maker VX Ace) identificados (arquivos .rvdata/.rgss)"
+      ],
+      "confidence": 0.95,
+      "engine": "rgss",
+      "engineVersion": "VX Ace",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": false,
+        "nativeLocalization": false,
+        "archives": true,
+        "runtimeHook": true,
+        "dom": false,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+      "name": "Dane",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor unity",
+      "evidence": [
+        "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+        "Compilação nativa Unity IL2CPP (GameAssembly.dll presente)"
+      ],
+      "confidence": 0.94,
+      "engine": "unity",
+      "engineVersion": "Unity IL2CPP",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": false,
+        "nativeLocalization": false,
+        "archives": true,
+        "runtimeHook": false,
+        "dom": false,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+      "name": "harem-heaven-03.5-alpha2-pc-plus",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor godot",
+      "evidence": [
+        "Estrutura da Godot Engine identificada (project.godot / .pck)"
+      ],
+      "confidence": 0.95,
+      "engine": "godot",
+      "engineVersion": "Godot 3.x/4.x",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": true,
+        "archives": true,
+        "runtimeHook": false,
+        "dom": false,
+        "frameworkState": true,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+      "name": "Marge Mania v0.1",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor mz",
+      "evidence": [
+        "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+      ],
+      "confidence": 0.98,
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "supportStatus": "SUPPORTED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": false,
+        "archives": false,
+        "runtimeHook": true,
+        "dom": true,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo",
+      "name": "MiniGamePackVol1_v1.0_demo",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "evidence": [
+        "Jogo interno: MiniGamePackVol1_v1.0_forWin_demo (unity Unity Mono)"
+      ],
+      "confidence": 0.98,
+      "containedGames": [
+        {
+          "name": "MiniGamePackVol1_v1.0_forWin_demo",
+          "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo\\MiniGamePackVol1_v1.0_forWin_demo",
+          "engine": "unity",
+          "engineVersion": "Unity Mono",
+          "confidence": 0.96
+        }
+      ]
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MTool",
+      "name": "MTool",
+      "classification": "TOOL",
+      "reason": "Estrutura condizente com utilitário, toolkit ou ferramenta de tradução/modding",
+      "evidence": [
+        "Scripts de inicialização de utilitário (.bat)",
+        "Runtime de ferramenta identificado (mtool-runtime / vfs-runtime)"
+      ],
+      "confidence": 0.95
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+      "name": "Nova pasta",
+      "classification": "CONTAINER",
+      "reason": "Contêiner genérico contendo jogo descompactado: BunnyQuotaStruggles",
+      "evidence": [
+        "Nome de contêiner genérico: Nova pasta",
+        "Executável principal do jogo: BunnyQuotaStruggles.exe",
+        "Motor identificado: unity (Unity Mono)"
+      ],
+      "confidence": 0.95,
+      "containedGames": [
+        {
+          "name": "BunnyQuotaStruggles",
+          "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+          "engine": "unity",
+          "engineVersion": "Unity Mono",
+          "confidence": 0.96
+        }
+      ]
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)",
+      "name": "Nova pasta (2)",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "evidence": [
+        "Jogo interno: Starmaker 1.8E (unity Unity Mono)"
+      ],
+      "confidence": 0.98,
+      "containedGames": [
+        {
+          "name": "Starmaker 1.8E",
+          "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)\\Starmaker 1.8E",
+          "engine": "unity",
+          "engineVersion": "Unity Mono",
+          "confidence": 0.96
+        }
+      ]
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "name": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "evidence": [
+        "Jogo interno: NL (unity Unity Mono)"
+      ],
+      "confidence": 0.98,
+      "containedGames": [
+        {
+          "name": "NL",
+          "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL\\NL",
+          "engine": "unity",
+          "engineVersion": "Unity Mono",
+          "confidence": 0.96
+        }
+      ]
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+      "name": "NTR伝説 FInal_Ver.1.0.2_64bit",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor unity",
+      "evidence": [
+        "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+        "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+      ],
+      "confidence": 0.96,
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": false,
+        "nativeLocalization": false,
+        "archives": true,
+        "runtimeHook": true,
+        "dom": false,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+      "name": "Rabbit Hood English 2026-06-30",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor wolf",
+      "evidence": [
+        "Arquivos e estrutura do Wolf RPG Editor identificados"
+      ],
+      "confidence": 0.95,
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": true,
+        "archives": true,
+        "runtimeHook": true,
+        "dom": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+      "name": "RJ01058687_en",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor mv",
+      "evidence": [
+        "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+      ],
+      "confidence": 0.98,
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "supportStatus": "SUPPORTED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": false,
+        "archives": false,
+        "runtimeHook": true,
+        "dom": true,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221",
+      "name": "RJ01618221",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor mz",
+      "evidence": [
+        "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+      ],
+      "confidence": 0.98,
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "supportStatus": "SUPPORTED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": false,
+        "archives": false,
+        "runtimeHook": true,
+        "dom": true,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\save",
+      "name": "save",
+      "classification": "SAVE",
+      "reason": "Diretório composto exclusivamente de arquivos de progresso / save slots",
+      "evidence": [
+        "Arquivo de save: save.dat"
+      ],
+      "confidence": 0.98
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Starmaker 1.8E",
+      "name": "Starmaker 1.8E",
+      "classification": "AUXILIARY",
+      "reason": "Dados ou assets parciais de jogo sem executável ou binários de runtime",
+      "evidence": [
+        "Entrada parcial: Starmaker Story_Data"
+      ],
+      "confidence": 0.95
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win",
+      "name": "summertime_saga_realistic_remake-0.3.0-win",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor Ren'Py Visual Novel Engine",
+      "evidence": [
+        "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+        "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+      ],
+      "confidence": 0.98,
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "supportStatus": "SUPPORTED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": true,
+        "archives": true,
+        "compiledScripts": true,
+        "runtimeHook": false,
+        "dom": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "name": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor Ren'Py Visual Novel Engine",
+      "evidence": [
+        "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+        "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+      ],
+      "confidence": 0.98,
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "supportStatus": "SUPPORTED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": true,
+        "archives": false,
+        "compiledScripts": true,
+        "runtimeHook": false,
+        "dom": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)",
+      "name": "Toki kan Yuusha (gitgud)",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor mv",
+      "evidence": [
+        "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+      ],
+      "confidence": 0.98,
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "supportStatus": "SUPPORTED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": false,
+        "archives": false,
+        "runtimeHook": true,
+        "dom": true,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] RJ01541990 v1.01 64bit",
+      "name": "[Kimochi] RJ01541990 v1.01 64bit",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor electron",
+      "evidence": [
+        "Pacote Electron 'resources/app.asar' encontrado",
+        "Assinaturas do runtime Electron/Chromium encontradas (v8_context_snapshot, resources.pak)"
+      ],
+      "confidence": 0.95,
+      "engine": "electron",
+      "engineVersion": "Chromium / Electron",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": false,
+        "archives": true,
+        "runtimeHook": false,
+        "dom": true,
+        "frameworkState": true,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "name": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor cocos2dx",
+      "evidence": [
+        "Estrutura do Cocos identificada (Cocos2d-x)"
+      ],
+      "confidence": 0.93,
+      "engine": "cocos2dx",
+      "engineVersion": "Cocos2d-x",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": true,
+        "nativeLocalization": true,
+        "archives": false,
+        "runtimeHook": false,
+        "dom": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "name": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor rgss",
+      "evidence": [
+        "Arquivos e dados do RGSS3 (RPG Maker VX Ace) identificados (arquivos .rvdata/.rgss)"
+      ],
+      "confidence": 0.95,
+      "engine": "rgss",
+      "engineVersion": "VX Ace",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": false,
+        "nativeLocalization": false,
+        "archives": true,
+        "runtimeHook": true,
+        "dom": false,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+      "name": "ロリっ子健康診断2_1.0",
+      "classification": "GAME",
+      "reason": "Estrutura de jogo completa identificada com motor unity",
+      "evidence": [
+        "Binários do motor Unity (UnityPlayer.dll / *_Data) encontrados",
+        "Compilação Unity Mono (.NET Managed Assemblies presentes)"
+      ],
+      "confidence": 0.96,
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "capabilities": {
+        "staticFiles": false,
+        "nativeLocalization": false,
+        "archives": true,
+        "runtimeHook": true,
+        "dom": false,
+        "frameworkState": false,
+        "ocr": true,
+        "backupSupported": true
+      }
+    },
+    {
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\女体狂乱プリンセス inプリズン(DL版)",
+      "name": "女体狂乱プリンセス inプリズン(DL版)",
+      "classification": "EMPTY",
+      "reason": "Diretório não contém nenhum arquivo ou pasta",
+      "evidence": [
+        "Diretório vazio (0 itens)"
+      ],
+      "confidence": 1
+    }
+  ],
+  "allRealGames": [
+    {
+      "name": "An Obedient Childhood Friend Is Easily Cucked",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+      "parentContainer": null,
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG",
+      "confidence": 0.95
+    },
+    {
+      "name": "ArmoredSuitSolganteRenpy-pc",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc\\ArmoredSuitSolganteRenpy-pc",
+      "parentContainer": "ArmoredSuitSolganteRenpy0.3-pc",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "BLACK SOULS",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+      "parentContainer": null,
+      "engine": "rgss",
+      "engineVersion": "VX Ace",
+      "confidence": 0.95
+    },
+    {
+      "name": "Dane",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+      "parentContainer": null,
+      "engine": "unity",
+      "engineVersion": "Unity IL2CPP",
+      "confidence": 0.94
+    },
+    {
+      "name": "harem-heaven-03.5-alpha2-pc-plus",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+      "parentContainer": null,
+      "engine": "godot",
+      "engineVersion": "Godot 3.x/4.x",
+      "confidence": 0.95
+    },
+    {
+      "name": "Marge Mania v0.1",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+      "parentContainer": null,
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "MiniGamePackVol1_v1.0_forWin_demo",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo\\MiniGamePackVol1_v1.0_forWin_demo",
+      "parentContainer": "MiniGamePackVol1_v1.0_demo",
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "confidence": 0.96
+    },
+    {
+      "name": "BunnyQuotaStruggles",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+      "parentContainer": "Nova pasta",
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "confidence": 0.96
+    },
+    {
+      "name": "Starmaker 1.8E",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)\\Starmaker 1.8E",
+      "parentContainer": "Nova pasta (2)",
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "confidence": 0.96
+    },
+    {
+      "name": "NL",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL\\NL",
+      "parentContainer": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "confidence": 0.96
+    },
+    {
+      "name": "NTR伝説 FInal_Ver.1.0.2_64bit",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+      "parentContainer": null,
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "confidence": 0.96
+    },
+    {
+      "name": "Rabbit Hood English 2026-06-30",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+      "parentContainer": null,
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG",
+      "confidence": 0.95
+    },
+    {
+      "name": "RJ01058687_en",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+      "parentContainer": null,
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "RJ01618221",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221",
+      "parentContainer": null,
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "summertime_saga_realistic_remake-0.3.0-win",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win",
+      "parentContainer": null,
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "parentContainer": null,
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "Toki kan Yuusha (gitgud)",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)",
+      "parentContainer": null,
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "confidence": 0.98
+    },
+    {
+      "name": "[Kimochi] RJ01541990 v1.01 64bit",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] RJ01541990 v1.01 64bit",
+      "parentContainer": null,
+      "engine": "electron",
+      "engineVersion": "Chromium / Electron",
+      "confidence": 0.95
+    },
+    {
+      "name": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "parentContainer": null,
+      "engine": "cocos2dx",
+      "engineVersion": "Cocos2d-x",
+      "confidence": 0.93
+    },
+    {
+      "name": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "parentContainer": null,
+      "engine": "rgss",
+      "engineVersion": "VX Ace",
+      "confidence": 0.95
+    },
+    {
+      "name": "ロリっ子健康診断2_1.0",
+      "path": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+      "parentContainer": null,
+      "engine": "unity",
+      "engineVersion": "Unity Mono",
+      "confidence": 0.96
+    }
+  ]
+}

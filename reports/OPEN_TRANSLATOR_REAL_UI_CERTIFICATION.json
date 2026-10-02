@@ -1,0 +1,3703 @@
+{
+  "timestamp": "2026-10-01T12:38:35.088Z",
+  "methodology": {
+    "framework": "OpenTranslator Authentic Forensic UI Certification Suite",
+    "mode": "GENUINE_CDP_DOM_DISPATCH_AND_NATIVE_SPAWN",
+    "tiersDefinition": {
+      "PIPELINE_VERIFIED": "DETECT + INSPECT + EXTRACT + TRANSLATE + APPLY + LAUNCH + ROLLBACK comprovados",
+      "RUNTIME_VERIFIED": "PIPELINE + RUNTIME (PID ativo e heartbeat) + REOPEN comprovados",
+      "GAMEPLAY_VERIFIED": "RUNTIME + Entrada real em mapa/diálogo jogável além da tela de título",
+      "SAVE_LOAD_VERIFIED": "GAMEPLAY + Ciclo completo Save Slot -> Close -> Reopen -> Load Slot -> Continue",
+      "FULLY_VERIFIED": "SAVE_LOAD + ROLLBACK Perfeito SHA-256 (Todos os critérios cumpridos)"
+    },
+    "tierHierarchy": "FULLY_VERIFIED ⊂ SAVE_LOAD_VERIFIED ⊂ GAMEPLAY_VERIFIED ⊂ RUNTIME_VERIFIED ⊂ PIPELINE_VERIFIED",
+    "versionTaxonomy": {
+      "EXACT": "Versão exata comprovada por DLL específica, cabeçalho numérico ou executável oficial",
+      "MAJOR_VERSION": "Versão maior identificada com segurança estrutural (ex: Ren'Py 8.x, RPG Maker MZ 1.x)",
+      "RUNTIME_VERSION": "Arquitetura e família de runtime identificada (ex: Unity Mono, Unity IL2CPP, Electron ASAR)",
+      "BASELINE": "Geração ou baseline de formato comprovada (ex: Godot PCK v3, Cocos2d-x SpiderMonkey 33)",
+      "FAMILY_ONLY": "Apenas a família da engine é conhecida sem discriminação de versão",
+      "UNKNOWN": "Sem versão identificada"
+    },
+    "containerRule": "CONTAINERS_CATALOGED_INTERNAL_GAMES_TESTED_INDIVIDUALLY",
+    "nonGameRule": "NON_GAMES_SEPARATED_FROM_REAL_GAME_MATRIX"
+  },
+  "inventorySummary": {
+    "TOTAL_TOP_LEVEL_ITEMS": 25,
+    "TOTAL_CONTAINERS": 5,
+    "TOTAL_GAMES_DIRECT": 16,
+    "TOTAL_GAMES_CONTAINED": 5,
+    "TOTAL_REAL_GAMES": 21,
+    "TOTAL_TOOLS": 1,
+    "TOTAL_SAVES": 1,
+    "TOTAL_AUXILIARY": 1,
+    "TOTAL_EMPTY": 1,
+    "TOTAL_UNKNOWN": 0
+  },
+  "engineRecognitionSummary": {
+    "TOTAL_REAL_GAMES": 21,
+    "ENGINE_FAMILY_DETECTION": 21,
+    "ENGINE_VERSION_DETECTION": 21,
+    "ENGINE_VERSION_EXACT": 3,
+    "ENGINE_VERSION_MAJOR": 8,
+    "ENGINE_VERSION_RUNTIME": 8,
+    "ENGINE_VERSION_BASELINE": 2,
+    "ENGINE_FAMILY_ONLY": 0,
+    "ENGINE_VERSION_UNKNOWN": 0
+  },
+  "certificationTiersSummary": {
+    "TOTAL_REAL_GAMES": 21,
+    "PIPELINE_VERIFIED": 18,
+    "RUNTIME_VERIFIED": 18,
+    "GAMEPLAY_VERIFIED": 4,
+    "SAVE_LOAD_VERIFIED": 4,
+    "FULLY_VERIFIED": 4,
+    "EXTERNAL_TOOL_REQUIRED": 1,
+    "UNSUPPORTED_SAFE_REJECT": 2,
+    "FAIL": 0
+  },
+  "realGameSessions": [
+    {
+      "sessionId": "session_1790852986817_6eak1",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+      "gameName": "An Obedient Childhood Friend Is Easily Cucked",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Wolf RPG",
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG Editor 2.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.92,
+      "engineVersionEvidence": {
+        "file": "Data/BasicData/CDataBase.dat",
+        "signature": "Magic bytes \\x00W\\x00\\x00OLF em offset 0x00 + WOLF_FileReadText em Game.exe",
+        "detectedValue": "Wolf RPG Editor 2.x format",
+        "interpretation": "Versão maior 2.x do formato binário Wolf RPG"
+      },
+      "ENGINE_FAMILY": "Wolf RPG",
+      "ENGINE_VERSION": "Wolf RPG Editor 2.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.92,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "Data/BasicData/CDataBase.dat",
+        "signature": "Magic bytes \\x00W\\x00\\x00OLF em offset 0x00 + WOLF_FileReadText em Game.exe",
+        "detectedValue": "Wolf RPG Editor 2.x format",
+        "interpretation": "Versão maior 2.x do formato binário Wolf RPG"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "Data/BasicData/CDataBase.dat",
+          "signature": "Magic bytes \\x00W\\x00\\x00OLF em offset 0x00 + WOLF_FileReadText em Game.exe",
+          "detectedValue": "Wolf RPG Editor 2.x format",
+          "interpretation": "Versão maior 2.x do formato binário Wolf RPG"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 1122,
+        "afterTotal": 1124,
+        "restoredTotal": 1122,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852986817_6eak1"
+    },
+    {
+      "sessionId": "session_1790839053373_lljca",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc\\ArmoredSuitSolganteRenpy-pc",
+      "gameName": "ArmoredSuitSolganteRenpy-pc",
+      "parentContainer": "ArmoredSuitSolganteRenpy0.3-pc",
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.9",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "ENGINE_FAMILY": "Ren'Py",
+      "ENGINE_VERSION": "8.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.9",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+          "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+        ],
+        "gameplayDetails": "Janela visível, tela de título e menu principal renderizados",
+        "saveLoadDetails": "Automação em slots não executada",
+        "versionEvidence": {
+          "file": "lib/py3-windows-x86_64",
+          "signature": "lib/py3-windows-x86_64 + python3.9",
+          "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+          "interpretation": "Versão maior 8.x do motor Ren'Py"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 3502,
+        "afterTotal": 3506,
+        "restoredTotal": 3502,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790839053373_lljca"
+    },
+    {
+      "sessionId": "session_1790855287840_j2ekt",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+      "gameName": "BLACK SOULS",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "rgss",
+      "engineVersion": "VX Ace (RGSS3 v3.0.1)",
+      "engineVersionType": "EXACT",
+      "engineVersionConfidence": 0.99,
+      "engineVersionEvidence": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "VX Ace (RGSS3 v3.0.1)",
+      "ENGINE_VERSION_TYPE": "EXACT",
+      "ENGINE_VERSION_CONFIDENCE": 0.99,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "System/RGSS301.dll",
+          "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+          "detectedValue": "RGSS3 versão exata 3.0.1",
+          "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 1597,
+        "afterTotal": 1763,
+        "restoredTotal": 1597,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855287840_j2ekt"
+    },
+    {
+      "sessionId": "session_1790853016814_dd8lw",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+      "gameName": "Dane",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "IL2CPP (Native x64)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "GameAssembly.dll",
+        "signature": "GameAssembly.dll + UnityPlayer.dll (sem MonoBleedingEdge)",
+        "detectedValue": "Unity IL2CPP x64 native compilation",
+        "interpretation": "Arquitetura de runtime Unity IL2CPP compilado"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "IL2CPP (Native x64)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "GameAssembly.dll",
+        "signature": "GameAssembly.dll + UnityPlayer.dll (sem MonoBleedingEdge)",
+        "detectedValue": "Unity IL2CPP x64 native compilation",
+        "interpretation": "Arquitetura de runtime Unity IL2CPP compilado"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "GameAssembly.dll",
+          "signature": "GameAssembly.dll + UnityPlayer.dll (sem MonoBleedingEdge)",
+          "detectedValue": "Unity IL2CPP x64 native compilation",
+          "interpretation": "Arquitetura de runtime Unity IL2CPP compilado"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 59,
+        "afterTotal": 61,
+        "restoredTotal": 59,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853016814_dd8lw"
+    },
+    {
+      "sessionId": "session_1790852906443_453ev",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+      "gameName": "harem-heaven-03.5-alpha2-pc-plus",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Godot",
+      "engine": "godot",
+      "engineVersion": "Godot PCK v3 (Format 4.x/3.x)",
+      "engineVersionType": "BASELINE",
+      "engineVersionConfidence": 0.85,
+      "engineVersionEvidence": {
+        "file": "Harem Heaven.pck",
+        "signature": "Offset 0x00: magic GDPC; Offset 0x04: PCK format version 3",
+        "detectedValue": "PCK Format Version 3 (Godot 4.x / 3.x baseline)",
+        "interpretation": "Baseline de formato de pacote binário do motor Godot"
+      },
+      "ENGINE_FAMILY": "Godot",
+      "ENGINE_VERSION": "Godot PCK v3 (Format 4.x/3.x)",
+      "ENGINE_VERSION_TYPE": "BASELINE",
+      "ENGINE_VERSION_CONFIDENCE": 0.85,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "Harem Heaven.pck",
+        "signature": "Offset 0x00: magic GDPC; Offset 0x04: PCK format version 3",
+        "detectedValue": "PCK Format Version 3 (Godot 4.x / 3.x baseline)",
+        "interpretation": "Baseline de formato de pacote binário do motor Godot"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "Harem Heaven.pck",
+          "signature": "Offset 0x00: magic GDPC; Offset 0x04: PCK format version 3",
+          "detectedValue": "PCK Format Version 3 (Godot 4.x / 3.x baseline)",
+          "interpretation": "Baseline de formato de pacote binário do motor Godot"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 6,
+        "afterTotal": 9,
+        "restoredTotal": 6,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852906443_453ev"
+    },
+    {
+      "sessionId": "session_1790838095324_045ij",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+      "gameName": "Marge Mania v0.1",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + package.json (Chromium NW.js)",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MZ 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + package.json (Chromium NW.js)",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Scene_Map ativa, mapId: 8, posição jogador X: 7, Y: 5",
+        "saveLoadDetails": "Ciclo completo Save Slot 1 -> Close -> Reopen -> Load Slot 1 -> Continue comprovado",
+        "versionEvidence": {
+          "file": "js/rmmz_core.js",
+          "signature": "rmmz_core.js + package.json (Chromium NW.js)",
+          "detectedValue": "RPG Maker MZ 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MZ"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 689,
+        "afterTotal": 689,
+        "restoredTotal": 689,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838095324_045ij"
+    },
+    {
+      "sessionId": "session_1790855051042_n9aax",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo\\MiniGamePackVol1_v1.0_forWin_demo",
+      "gameName": "MiniGamePackVol1_v1.0_forWin_demo",
+      "parentContainer": "MiniGamePackVol1_v1.0_demo",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + globalgamemanagers (Unity 6000.3.14f1)",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + globalgamemanagers (Unity 6000.3.14f1)",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + globalgamemanagers (Unity 6000.3.14f1)",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 193,
+        "afterTotal": 193,
+        "restoredTotal": 193,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855051042_n9aax"
+    },
+    {
+      "sessionId": "session_1790855338774_1539l",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+      "gameName": "BunnyQuotaStruggles",
+      "parentContainer": "Nova pasta",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + BunnyQuotaStruggles_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + BunnyQuotaStruggles_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "N/A",
+        "TRANSLATE": "N/A",
+        "APPLY": "N/A",
+        "LAUNCH": "N/A",
+        "TITLE_MENU": "N/A",
+        "GAMEPLAY": "N/A",
+        "RUNTIME": "N/A",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "N/A",
+        "ROLLBACK": "N/A"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": false,
+        "RUNTIME_VERIFIED": false,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "EXTERNAL_TOOL_REQUIRED",
+      "status": "EXTERNAL TOOL REQUIRED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + BunnyQuotaStruggles_Data/Managed",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790855338774_1539l"
+    },
+    {
+      "sessionId": "session_1790855082984_23uwh",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)\\Starmaker 1.8E",
+      "gameName": "Starmaker 1.8E",
+      "parentContainer": "Nova pasta (2)",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + Starmaker Story_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + Starmaker Story_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + Starmaker Story_Data/Managed",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 251,
+        "afterTotal": 251,
+        "restoredTotal": 251,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855082984_23uwh"
+    },
+    {
+      "sessionId": "session_1790853222224_z5smr",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL\\NL",
+      "gameName": "NL",
+      "parentContainer": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + NTR_Data/Managed/Assembly-CSharp.dll",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + NTR_Data/Managed/Assembly-CSharp.dll",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + NTR_Data/Managed/Assembly-CSharp.dll",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 492,
+        "afterTotal": 492,
+        "restoredTotal": 492,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853222224_z5smr"
+    },
+    {
+      "sessionId": "session_1790855119497_dk20c",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+      "gameName": "NTR伝説 FInal_Ver.1.0.2_64bit",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + NTR Legend_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + NTR Legend_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + NTR Legend_Data/Managed",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 130,
+        "afterTotal": 130,
+        "restoredTotal": 130,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855119497_dk20c"
+    },
+    {
+      "sessionId": "session_1790852875545_dth28",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+      "gameName": "Rabbit Hood English 2026-06-30",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Wolf RPG",
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG Editor 2.24Z",
+      "engineVersionType": "EXACT",
+      "engineVersionConfidence": 0.99,
+      "engineVersionEvidence": {
+        "file": "Editor 2.24Z.exe",
+        "signature": "Editor 2.24Z.exe na raiz + CDataBase.dat magic \\x00W\\x00\\x00OLF",
+        "detectedValue": "Wolf RPG Editor v2.24Z",
+        "interpretation": "Versão exata 2.24Z do Wolf RPG Editor"
+      },
+      "ENGINE_FAMILY": "Wolf RPG",
+      "ENGINE_VERSION": "Wolf RPG Editor 2.24Z",
+      "ENGINE_VERSION_TYPE": "EXACT",
+      "ENGINE_VERSION_CONFIDENCE": 0.99,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "Editor 2.24Z.exe",
+        "signature": "Editor 2.24Z.exe na raiz + CDataBase.dat magic \\x00W\\x00\\x00OLF",
+        "detectedValue": "Wolf RPG Editor v2.24Z",
+        "interpretation": "Versão exata 2.24Z do Wolf RPG Editor"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "Editor 2.24Z.exe",
+          "signature": "Editor 2.24Z.exe na raiz + CDataBase.dat magic \\x00W\\x00\\x00OLF",
+          "detectedValue": "Wolf RPG Editor v2.24Z",
+          "interpretation": "Versão exata 2.24Z do Wolf RPG Editor"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 774,
+        "afterTotal": 776,
+        "restoredTotal": 774,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852875545_dth28"
+    },
+    {
+      "sessionId": "session_1790838126640_rb1ox",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+      "gameName": "RJ01058687_en",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MV 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Janela visível, tela de título e menus renderizados",
+        "saveLoadDetails": "Automação em slots não executada",
+        "versionEvidence": {
+          "file": "www/js/rpg_core.js",
+          "signature": "rpg_core.js + package.json (main: www/index.html)",
+          "detectedValue": "RPG Maker MV 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MV"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 4977,
+        "afterTotal": 4977,
+        "restoredTotal": 4977,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838126640_rb1ox"
+    },
+    {
+      "sessionId": "session_1790838158477_xriad",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221",
+      "gameName": "RJ01618221",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + System.json MZ + package.json",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MZ 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + System.json MZ + package.json",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Scene_Map ativa, mapId: 1, posição jogador X: 4, Y: 4",
+        "saveLoadDetails": "Ciclo completo Save Slot 1 -> Close -> Reopen -> Load Slot 1 -> Continue comprovado",
+        "versionEvidence": {
+          "file": "js/rmmz_core.js",
+          "signature": "rmmz_core.js + System.json MZ + package.json",
+          "detectedValue": "RPG Maker MZ 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MZ"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 2248,
+        "afterTotal": 2248,
+        "restoredTotal": 2248,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838158477_xriad"
+    },
+    {
+      "sessionId": "session_1790838188343_tpluk",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win",
+      "gameName": "summertime_saga_realistic_remake-0.3.0-win",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "ENGINE_FAMILY": "Ren'Py",
+      "ENGINE_VERSION": "8.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+          "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+        ],
+        "gameplayDetails": "Janela visível, tela de título e menu principal renderizados",
+        "saveLoadDetails": "Automação em slots não executada",
+        "versionEvidence": {
+          "file": "lib/py3-windows-x86_64",
+          "signature": "lib/py3-windows-x86_64 + python3.12",
+          "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+          "interpretation": "Versão maior 8.x do motor Ren'Py"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 3084,
+        "afterTotal": 3088,
+        "restoredTotal": 3084,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838188343_tpluk"
+    },
+    {
+      "sessionId": "session_1790838216592_7brem",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "gameName": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "ENGINE_FAMILY": "Ren'Py",
+      "ENGINE_VERSION": "8.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+          "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+        ],
+        "gameplayDetails": "Cena de prólogo jogável renderizada com avanço de script",
+        "saveLoadDetails": "Ciclo completo Save Slot ot_test_slot_1 -> Close -> Reopen -> Load -> Continue comprovado",
+        "versionEvidence": {
+          "file": "lib/py3-windows-x86_64",
+          "signature": "lib/py3-windows-x86_64 + python3.12",
+          "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+          "interpretation": "Versão maior 8.x do motor Ren'Py"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 1583,
+        "afterTotal": 1587,
+        "restoredTotal": 1583,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838216592_7brem"
+    },
+    {
+      "sessionId": "session_1790838972710_365hq",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)",
+      "gameName": "Toki kan Yuusha (gitgud)",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MV 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Scene_Map ativa, mapId: 261, posição jogador X: 7, Y: 4",
+        "saveLoadDetails": "Ciclo completo Save Slot 1 -> Close -> Reopen -> Load Slot 1 -> Scene_Map (mapId: 261, X: 7, Y: 4) comprovado",
+        "versionEvidence": {
+          "file": "www/js/rpg_core.js",
+          "signature": "rpg_core.js + package.json (main: www/index.html)",
+          "detectedValue": "RPG Maker MV 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MV"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 7479,
+        "afterTotal": 7479,
+        "restoredTotal": 7479,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838972710_365hq"
+    },
+    {
+      "sessionId": "session_1790838306995_c82bo",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] RJ01541990 v1.01 64bit",
+      "gameName": "[Kimochi] RJ01541990 v1.01 64bit",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Electron",
+      "engine": "electron",
+      "engineVersion": "Chromium / ASAR",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.9,
+      "engineVersionEvidence": {
+        "file": "resources/app.asar",
+        "signature": "resources/app.asar + framework Chromium (icudtl.dat, d3dcompiler_47.dll)",
+        "detectedValue": "Electron Chromium ASAR bundle",
+        "interpretation": "Runtime Electron empacotado com ASAR"
+      },
+      "ENGINE_FAMILY": "Electron",
+      "ENGINE_VERSION": "Chromium / ASAR",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.9,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "resources/app.asar",
+        "signature": "resources/app.asar + framework Chromium (icudtl.dat, d3dcompiler_47.dll)",
+        "detectedValue": "Electron Chromium ASAR bundle",
+        "interpretation": "Runtime Electron empacotado com ASAR"
+      },
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "N/A",
+        "TRANSLATE": "N/A",
+        "APPLY": "N/A",
+        "LAUNCH": "N/A",
+        "TITLE_MENU": "N/A",
+        "GAMEPLAY": "N/A",
+        "RUNTIME": "N/A",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "N/A",
+        "ROLLBACK": "N/A"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": false,
+        "RUNTIME_VERIFIED": false,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "UNSUPPORTED_SAFE_REJECT",
+      "status": "UNSUPPORTED SAFE REJECT",
+      "evidence": {
+        "engineSignatures": [
+          "Pacote Electron 'resources/app.asar' encontrado",
+          "Assinaturas do runtime Electron/Chromium encontradas (v8_context_snapshot, resources.pak)"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "resources/app.asar",
+          "signature": "resources/app.asar + framework Chromium (icudtl.dat, d3dcompiler_47.dll)",
+          "detectedValue": "Electron Chromium ASAR bundle",
+          "interpretation": "Runtime Electron empacotado com ASAR"
+        }
+      },
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838306995_c82bo"
+    },
+    {
+      "sessionId": "session_1790838308516_pbp0l",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "gameName": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Cocos2d-x",
+      "engine": "cocos2dx",
+      "engineVersion": "Cocos2d-x (SpiderMonkey 33)",
+      "engineVersionType": "BASELINE",
+      "engineVersionConfidence": 0.85,
+      "engineVersionEvidence": {
+        "file": "mozjs-33.dll",
+        "signature": "mozjs-33.dll + libcocos2d.dll",
+        "detectedValue": "Cocos2d-x SpiderMonkey 33 runtime",
+        "interpretation": "Baseline de runtime Cocos2d-x associado ao SpiderMonkey 33"
+      },
+      "ENGINE_FAMILY": "Cocos2d-x",
+      "ENGINE_VERSION": "Cocos2d-x (SpiderMonkey 33)",
+      "ENGINE_VERSION_TYPE": "BASELINE",
+      "ENGINE_VERSION_CONFIDENCE": 0.85,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "mozjs-33.dll",
+        "signature": "mozjs-33.dll + libcocos2d.dll",
+        "detectedValue": "Cocos2d-x SpiderMonkey 33 runtime",
+        "interpretation": "Baseline de runtime Cocos2d-x associado ao SpiderMonkey 33"
+      },
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "N/A",
+        "TRANSLATE": "N/A",
+        "APPLY": "N/A",
+        "LAUNCH": "N/A",
+        "TITLE_MENU": "N/A",
+        "GAMEPLAY": "N/A",
+        "RUNTIME": "N/A",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "N/A",
+        "ROLLBACK": "N/A"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": false,
+        "RUNTIME_VERIFIED": false,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "UNSUPPORTED_SAFE_REJECT",
+      "status": "UNSUPPORTED SAFE REJECT",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura do Cocos identificada (Cocos2d-x)"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "mozjs-33.dll",
+          "signature": "mozjs-33.dll + libcocos2d.dll",
+          "detectedValue": "Cocos2d-x SpiderMonkey 33 runtime",
+          "interpretation": "Baseline de runtime Cocos2d-x associado ao SpiderMonkey 33"
+        }
+      },
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838308516_pbp0l"
+    },
+    {
+      "sessionId": "session_1790852942395_u341p",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "gameName": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "rgss",
+      "engineVersion": "VX Ace (RGSS3 v3.0.1)",
+      "engineVersionType": "EXACT",
+      "engineVersionConfidence": 0.99,
+      "engineVersionEvidence": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "VX Ace (RGSS3 v3.0.1)",
+      "ENGINE_VERSION_TYPE": "EXACT",
+      "ENGINE_VERSION_CONFIDENCE": 0.99,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "System/RGSS301.dll",
+          "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+          "detectedValue": "RGSS3 versão exata 3.0.1",
+          "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 9648,
+        "afterTotal": 9853,
+        "restoredTotal": 9648,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852942395_u341p"
+    },
+    {
+      "sessionId": "session_1790853431992_7abcx",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+      "gameName": "ロリっ子健康診断2_1.0",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + AutoTranslator/ReiPatcher",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + AutoTranslator/ReiPatcher",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + AutoTranslator/ReiPatcher",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 43,
+        "afterTotal": 43,
+        "restoredTotal": 43,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853431992_7abcx"
+    }
+  ],
+  "nonGameSessions": [
+    {
+      "sessionId": "session_1790838088833_53piy",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc",
+      "itemName": "ArmoredSuitSolganteRenpy0.3-pc",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "CONTAINER",
+      "status": "CONTAINER_CATALOGED",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838088833_53piy"
+    },
+    {
+      "sessionId": "session_1790838115352_c3y1h",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo",
+      "itemName": "MiniGamePackVol1_v1.0_demo",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "CONTAINER",
+      "status": "CONTAINER_CATALOGED",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838115352_c3y1h"
+    },
+    {
+      "sessionId": "session_1790838116882_optuo",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MTool",
+      "itemName": "MTool",
+      "classification": "TOOL",
+      "reason": "Estrutura condizente com utilitário, toolkit ou ferramenta de tradução/modding",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "N/A",
+      "status": "EXTERNAL_TOOL_REQUIRED",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838116882_optuo"
+    },
+    {
+      "sessionId": "session_1790839127620_n6t97",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+      "itemName": "Nova pasta",
+      "classification": "CONTAINER",
+      "reason": "Contêiner genérico contendo jogo descompactado: BunnyQuotaStruggles",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "CONTAINER",
+      "status": "CONTAINER_CATALOGED",
+      "sessionDir": "_open_translator_audit/sessions/session_1790839127620_n6t97"
+    },
+    {
+      "sessionId": "session_1790838119921_zpy8h",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)",
+      "itemName": "Nova pasta (2)",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "CONTAINER",
+      "status": "CONTAINER_CATALOGED",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838119921_zpy8h"
+    },
+    {
+      "sessionId": "session_1790838121480_7g5zu",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "itemName": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "classification": "CONTAINER",
+      "reason": "Pasta contêiner agrupando 1 jogo(s) em subdiretórios",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "CONTAINER",
+      "status": "CONTAINER_CATALOGED",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838121480_7g5zu"
+    },
+    {
+      "sessionId": "session_1790838185467_wfanf",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\save",
+      "itemName": "save",
+      "classification": "SAVE",
+      "reason": "Diretório composto exclusivamente de arquivos de progresso / save slots",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "N/A",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838185467_wfanf"
+    },
+    {
+      "sessionId": "session_1790838186910_p6bfx",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Starmaker 1.8E",
+      "itemName": "Starmaker 1.8E",
+      "classification": "AUXILIARY",
+      "reason": "Dados ou assets parciais de jogo sem executável ou binários de runtime",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "N/A",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838186910_p6bfx"
+    },
+    {
+      "sessionId": "session_1790838313471_u2puc",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\女体狂乱プリンセス inプリズン(DL版)",
+      "itemName": "女体狂乱プリンセス inプリズン(DL版)",
+      "classification": "EMPTY",
+      "reason": "Diretório não contém nenhum arquivo ou pasta",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "UNKNOWN",
+      "engineVersionConfidence": 0,
+      "engineVersionEvidence": null,
+      "ENGINE_FAMILY": "N/A",
+      "ENGINE_VERSION": "N/A",
+      "ENGINE_VERSION_TYPE": "UNKNOWN",
+      "ENGINE_VERSION_CONFIDENCE": 0,
+      "ENGINE_VERSION_EVIDENCE": null,
+      "supportStatus": "N/A",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "sessionDir": "_open_translator_audit/sessions/session_1790838313471_u2puc"
+    }
+  ],
+  "topLevelSessions": [
+    {
+      "sessionId": "session_1790852986817_6eak1",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+      "itemName": "An Obedient Childhood Friend Is Easily Cucked",
+      "classification": "GAME",
+      "engineFamily": "Wolf RPG",
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG Editor 2.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 1122,
+        "afterTotal": 1124,
+        "restoredTotal": 1122,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852986817_6eak1"
+    },
+    {
+      "sessionId": "session_1790838088833_53piy",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc",
+      "itemName": "ArmoredSuitSolganteRenpy0.3-pc",
+      "classification": "CONTAINER",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "CONTAINER_CATALOGED",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838088833_53piy"
+    },
+    {
+      "sessionId": "session_1790855287840_j2ekt",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+      "itemName": "BLACK SOULS",
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "rgss",
+      "engineVersion": "VX Ace (RGSS3 v3.0.1)",
+      "engineVersionType": "EXACT",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 1597,
+        "afterTotal": 1763,
+        "restoredTotal": 1597,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855287840_j2ekt"
+    },
+    {
+      "sessionId": "session_1790853016814_dd8lw",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+      "itemName": "Dane",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "IL2CPP (Native x64)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 59,
+        "afterTotal": 61,
+        "restoredTotal": 59,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853016814_dd8lw"
+    },
+    {
+      "sessionId": "session_1790852906443_453ev",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+      "itemName": "harem-heaven-03.5-alpha2-pc-plus",
+      "classification": "GAME",
+      "engineFamily": "Godot",
+      "engine": "godot",
+      "engineVersion": "Godot PCK v3 (Format 4.x/3.x)",
+      "engineVersionType": "BASELINE",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 6,
+        "afterTotal": 9,
+        "restoredTotal": 6,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852906443_453ev"
+    },
+    {
+      "sessionId": "session_1790838095324_045ij",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+      "itemName": "Marge Mania v0.1",
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 689,
+        "afterTotal": 689,
+        "restoredTotal": 689,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838095324_045ij"
+    },
+    {
+      "sessionId": "session_1790838115352_c3y1h",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo",
+      "itemName": "MiniGamePackVol1_v1.0_demo",
+      "classification": "CONTAINER",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "CONTAINER_CATALOGED",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838115352_c3y1h"
+    },
+    {
+      "sessionId": "session_1790838116882_optuo",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MTool",
+      "itemName": "MTool",
+      "classification": "TOOL",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "EXTERNAL_TOOL_REQUIRED",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838116882_optuo"
+    },
+    {
+      "sessionId": "session_1790839127620_n6t97",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+      "itemName": "Nova pasta",
+      "classification": "CONTAINER",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "CONTAINER_CATALOGED",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790839127620_n6t97"
+    },
+    {
+      "sessionId": "session_1790838119921_zpy8h",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)",
+      "itemName": "Nova pasta (2)",
+      "classification": "CONTAINER",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "CONTAINER_CATALOGED",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838119921_zpy8h"
+    },
+    {
+      "sessionId": "session_1790838121480_7g5zu",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "itemName": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "classification": "CONTAINER",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "CONTAINER_CATALOGED",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838121480_7g5zu"
+    },
+    {
+      "sessionId": "session_1790855119497_dk20c",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+      "itemName": "NTR伝説 FInal_Ver.1.0.2_64bit",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 130,
+        "afterTotal": 130,
+        "restoredTotal": 130,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855119497_dk20c"
+    },
+    {
+      "sessionId": "session_1790852875545_dth28",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+      "itemName": "Rabbit Hood English 2026-06-30",
+      "classification": "GAME",
+      "engineFamily": "Wolf RPG",
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG Editor 2.24Z",
+      "engineVersionType": "EXACT",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 774,
+        "afterTotal": 776,
+        "restoredTotal": 774,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852875545_dth28"
+    },
+    {
+      "sessionId": "session_1790838126640_rb1ox",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+      "itemName": "RJ01058687_en",
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "RUNTIME VERIFIED",
+      "hashes": {
+        "beforeTotal": 4977,
+        "afterTotal": 4977,
+        "restoredTotal": 4977,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838126640_rb1ox"
+    },
+    {
+      "sessionId": "session_1790838158477_xriad",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221",
+      "itemName": "RJ01618221",
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 2248,
+        "afterTotal": 2248,
+        "restoredTotal": 2248,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838158477_xriad"
+    },
+    {
+      "sessionId": "session_1790838185467_wfanf",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\save",
+      "itemName": "save",
+      "classification": "SAVE",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838185467_wfanf"
+    },
+    {
+      "sessionId": "session_1790838186910_p6bfx",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Starmaker 1.8E",
+      "itemName": "Starmaker 1.8E",
+      "classification": "AUXILIARY",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838186910_p6bfx"
+    },
+    {
+      "sessionId": "session_1790838188343_tpluk",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win",
+      "itemName": "summertime_saga_realistic_remake-0.3.0-win",
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "RUNTIME VERIFIED",
+      "hashes": {
+        "beforeTotal": 3084,
+        "afterTotal": 3088,
+        "restoredTotal": 3084,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838188343_tpluk"
+    },
+    {
+      "sessionId": "session_1790838216592_7brem",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "itemName": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 1583,
+        "afterTotal": 1587,
+        "restoredTotal": 1583,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838216592_7brem"
+    },
+    {
+      "sessionId": "session_1790838972710_365hq",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)",
+      "itemName": "Toki kan Yuusha (gitgud)",
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 7479,
+        "afterTotal": 7479,
+        "restoredTotal": 7479,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838972710_365hq"
+    },
+    {
+      "sessionId": "session_1790838306995_c82bo",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] RJ01541990 v1.01 64bit",
+      "itemName": "[Kimochi] RJ01541990 v1.01 64bit",
+      "classification": "GAME",
+      "engineFamily": "Electron",
+      "engine": "electron",
+      "engineVersion": "Chromium / ASAR",
+      "engineVersionType": "RUNTIME_VERSION",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838306995_c82bo"
+    },
+    {
+      "sessionId": "session_1790838308516_pbp0l",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "itemName": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "classification": "GAME",
+      "engineFamily": "Cocos2d-x",
+      "engine": "cocos2dx",
+      "engineVersion": "Cocos2d-x (SpiderMonkey 33)",
+      "engineVersionType": "BASELINE",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838308516_pbp0l"
+    },
+    {
+      "sessionId": "session_1790852942395_u341p",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "itemName": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "rgss",
+      "engineVersion": "VX Ace (RGSS3 v3.0.1)",
+      "engineVersionType": "EXACT",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 9648,
+        "afterTotal": 9853,
+        "restoredTotal": 9648,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852942395_u341p"
+    },
+    {
+      "sessionId": "session_1790853431992_7abcx",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+      "itemName": "ロリっ子健康診断2_1.0",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "status": "FULLY VERIFIED",
+      "hashes": {
+        "beforeTotal": 43,
+        "afterTotal": 43,
+        "restoredTotal": 43,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853431992_7abcx"
+    },
+    {
+      "sessionId": "session_1790838313471_u2puc",
+      "itemPath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\女体狂乱プリンセス inプリズン(DL版)",
+      "itemName": "女体狂乱プリンセス inプリズン(DL版)",
+      "classification": "EMPTY",
+      "engineFamily": "N/A",
+      "engine": "N/A",
+      "engineVersion": "N/A",
+      "engineVersionType": "N/A",
+      "status": "UNSUPPORTED_SAFE_REJECT",
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838313471_u2puc"
+    }
+  ],
+  "sessions": [
+    {
+      "sessionId": "session_1790852986817_6eak1",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\An Obedient Childhood Friend Is Easily Cucked",
+      "gameName": "An Obedient Childhood Friend Is Easily Cucked",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Wolf RPG",
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG Editor 2.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.92,
+      "engineVersionEvidence": {
+        "file": "Data/BasicData/CDataBase.dat",
+        "signature": "Magic bytes \\x00W\\x00\\x00OLF em offset 0x00 + WOLF_FileReadText em Game.exe",
+        "detectedValue": "Wolf RPG Editor 2.x format",
+        "interpretation": "Versão maior 2.x do formato binário Wolf RPG"
+      },
+      "ENGINE_FAMILY": "Wolf RPG",
+      "ENGINE_VERSION": "Wolf RPG Editor 2.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.92,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "Data/BasicData/CDataBase.dat",
+        "signature": "Magic bytes \\x00W\\x00\\x00OLF em offset 0x00 + WOLF_FileReadText em Game.exe",
+        "detectedValue": "Wolf RPG Editor 2.x format",
+        "interpretation": "Versão maior 2.x do formato binário Wolf RPG"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "Data/BasicData/CDataBase.dat",
+          "signature": "Magic bytes \\x00W\\x00\\x00OLF em offset 0x00 + WOLF_FileReadText em Game.exe",
+          "detectedValue": "Wolf RPG Editor 2.x format",
+          "interpretation": "Versão maior 2.x do formato binário Wolf RPG"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 1122,
+        "afterTotal": 1124,
+        "restoredTotal": 1122,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852986817_6eak1"
+    },
+    {
+      "sessionId": "session_1790839053373_lljca",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ArmoredSuitSolganteRenpy0.3-pc\\ArmoredSuitSolganteRenpy-pc",
+      "gameName": "ArmoredSuitSolganteRenpy-pc",
+      "parentContainer": "ArmoredSuitSolganteRenpy0.3-pc",
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.9",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "ENGINE_FAMILY": "Ren'Py",
+      "ENGINE_VERSION": "8.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.9",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+          "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+        ],
+        "gameplayDetails": "Janela visível, tela de título e menu principal renderizados",
+        "saveLoadDetails": "Automação em slots não executada",
+        "versionEvidence": {
+          "file": "lib/py3-windows-x86_64",
+          "signature": "lib/py3-windows-x86_64 + python3.9",
+          "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+          "interpretation": "Versão maior 8.x do motor Ren'Py"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 3502,
+        "afterTotal": 3506,
+        "restoredTotal": 3502,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790839053373_lljca"
+    },
+    {
+      "sessionId": "session_1790855287840_j2ekt",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\BLACK SOULS",
+      "gameName": "BLACK SOULS",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "rgss",
+      "engineVersion": "VX Ace (RGSS3 v3.0.1)",
+      "engineVersionType": "EXACT",
+      "engineVersionConfidence": 0.99,
+      "engineVersionEvidence": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "VX Ace (RGSS3 v3.0.1)",
+      "ENGINE_VERSION_TYPE": "EXACT",
+      "ENGINE_VERSION_CONFIDENCE": 0.99,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "System/RGSS301.dll",
+          "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+          "detectedValue": "RGSS3 versão exata 3.0.1",
+          "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 1597,
+        "afterTotal": 1763,
+        "restoredTotal": 1597,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855287840_j2ekt"
+    },
+    {
+      "sessionId": "session_1790853016814_dd8lw",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Dane",
+      "gameName": "Dane",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "IL2CPP (Native x64)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "GameAssembly.dll",
+        "signature": "GameAssembly.dll + UnityPlayer.dll (sem MonoBleedingEdge)",
+        "detectedValue": "Unity IL2CPP x64 native compilation",
+        "interpretation": "Arquitetura de runtime Unity IL2CPP compilado"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "IL2CPP (Native x64)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "GameAssembly.dll",
+        "signature": "GameAssembly.dll + UnityPlayer.dll (sem MonoBleedingEdge)",
+        "detectedValue": "Unity IL2CPP x64 native compilation",
+        "interpretation": "Arquitetura de runtime Unity IL2CPP compilado"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "GameAssembly.dll",
+          "signature": "GameAssembly.dll + UnityPlayer.dll (sem MonoBleedingEdge)",
+          "detectedValue": "Unity IL2CPP x64 native compilation",
+          "interpretation": "Arquitetura de runtime Unity IL2CPP compilado"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 59,
+        "afterTotal": 61,
+        "restoredTotal": 59,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853016814_dd8lw"
+    },
+    {
+      "sessionId": "session_1790852906443_453ev",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\harem-heaven-03.5-alpha2-pc-plus",
+      "gameName": "harem-heaven-03.5-alpha2-pc-plus",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Godot",
+      "engine": "godot",
+      "engineVersion": "Godot PCK v3 (Format 4.x/3.x)",
+      "engineVersionType": "BASELINE",
+      "engineVersionConfidence": 0.85,
+      "engineVersionEvidence": {
+        "file": "Harem Heaven.pck",
+        "signature": "Offset 0x00: magic GDPC; Offset 0x04: PCK format version 3",
+        "detectedValue": "PCK Format Version 3 (Godot 4.x / 3.x baseline)",
+        "interpretation": "Baseline de formato de pacote binário do motor Godot"
+      },
+      "ENGINE_FAMILY": "Godot",
+      "ENGINE_VERSION": "Godot PCK v3 (Format 4.x/3.x)",
+      "ENGINE_VERSION_TYPE": "BASELINE",
+      "ENGINE_VERSION_CONFIDENCE": 0.85,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "Harem Heaven.pck",
+        "signature": "Offset 0x00: magic GDPC; Offset 0x04: PCK format version 3",
+        "detectedValue": "PCK Format Version 3 (Godot 4.x / 3.x baseline)",
+        "interpretation": "Baseline de formato de pacote binário do motor Godot"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "Harem Heaven.pck",
+          "signature": "Offset 0x00: magic GDPC; Offset 0x04: PCK format version 3",
+          "detectedValue": "PCK Format Version 3 (Godot 4.x / 3.x baseline)",
+          "interpretation": "Baseline de formato de pacote binário do motor Godot"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 6,
+        "afterTotal": 9,
+        "restoredTotal": 6,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852906443_453ev"
+    },
+    {
+      "sessionId": "session_1790838095324_045ij",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Marge Mania v0.1",
+      "gameName": "Marge Mania v0.1",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + package.json (Chromium NW.js)",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MZ 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + package.json (Chromium NW.js)",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Scene_Map ativa, mapId: 8, posição jogador X: 7, Y: 5",
+        "saveLoadDetails": "Ciclo completo Save Slot 1 -> Close -> Reopen -> Load Slot 1 -> Continue comprovado",
+        "versionEvidence": {
+          "file": "js/rmmz_core.js",
+          "signature": "rmmz_core.js + package.json (Chromium NW.js)",
+          "detectedValue": "RPG Maker MZ 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MZ"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 689,
+        "afterTotal": 689,
+        "restoredTotal": 689,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838095324_045ij"
+    },
+    {
+      "sessionId": "session_1790855051042_n9aax",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\MiniGamePackVol1_v1.0_demo\\MiniGamePackVol1_v1.0_forWin_demo",
+      "gameName": "MiniGamePackVol1_v1.0_forWin_demo",
+      "parentContainer": "MiniGamePackVol1_v1.0_demo",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + globalgamemanagers (Unity 6000.3.14f1)",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + globalgamemanagers (Unity 6000.3.14f1)",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + globalgamemanagers (Unity 6000.3.14f1)",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 193,
+        "afterTotal": 193,
+        "restoredTotal": 193,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855051042_n9aax"
+    },
+    {
+      "sessionId": "session_1790855338774_1539l",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta",
+      "gameName": "BunnyQuotaStruggles",
+      "parentContainer": "Nova pasta",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + BunnyQuotaStruggles_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + BunnyQuotaStruggles_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "N/A",
+        "TRANSLATE": "N/A",
+        "APPLY": "N/A",
+        "LAUNCH": "N/A",
+        "TITLE_MENU": "N/A",
+        "GAMEPLAY": "N/A",
+        "RUNTIME": "N/A",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "N/A",
+        "ROLLBACK": "N/A"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": false,
+        "RUNTIME_VERIFIED": false,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "EXTERNAL_TOOL_REQUIRED",
+      "status": "EXTERNAL TOOL REQUIRED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + BunnyQuotaStruggles_Data/Managed",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790855338774_1539l"
+    },
+    {
+      "sessionId": "session_1790855082984_23uwh",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Nova pasta (2)\\Starmaker 1.8E",
+      "gameName": "Starmaker 1.8E",
+      "parentContainer": "Nova pasta (2)",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + Starmaker Story_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + Starmaker Story_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + Starmaker Story_Data/Managed",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 251,
+        "afterTotal": 251,
+        "restoredTotal": 251,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855082984_23uwh"
+    },
+    {
+      "sessionId": "session_1790853222224_z5smr",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR Legend Unofficial Fan Remake 0.9.0 MTL\\NL",
+      "gameName": "NL",
+      "parentContainer": "NTR Legend Unofficial Fan Remake 0.9.0 MTL",
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + NTR_Data/Managed/Assembly-CSharp.dll",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + NTR_Data/Managed/Assembly-CSharp.dll",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + NTR_Data/Managed/Assembly-CSharp.dll",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 492,
+        "afterTotal": 492,
+        "restoredTotal": 492,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853222224_z5smr"
+    },
+    {
+      "sessionId": "session_1790855119497_dk20c",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\NTR伝説 FInal_Ver.1.0.2_64bit",
+      "gameName": "NTR伝説 FInal_Ver.1.0.2_64bit",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + NTR Legend_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + NTR Legend_Data/Managed",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + NTR Legend_Data/Managed",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 130,
+        "afterTotal": 130,
+        "restoredTotal": 130,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790855119497_dk20c"
+    },
+    {
+      "sessionId": "session_1790852875545_dth28",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Rabbit Hood English 2026-06-30",
+      "gameName": "Rabbit Hood English 2026-06-30",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Wolf RPG",
+      "engine": "wolf",
+      "engineVersion": "Wolf RPG Editor 2.24Z",
+      "engineVersionType": "EXACT",
+      "engineVersionConfidence": 0.99,
+      "engineVersionEvidence": {
+        "file": "Editor 2.24Z.exe",
+        "signature": "Editor 2.24Z.exe na raiz + CDataBase.dat magic \\x00W\\x00\\x00OLF",
+        "detectedValue": "Wolf RPG Editor v2.24Z",
+        "interpretation": "Versão exata 2.24Z do Wolf RPG Editor"
+      },
+      "ENGINE_FAMILY": "Wolf RPG",
+      "ENGINE_VERSION": "Wolf RPG Editor 2.24Z",
+      "ENGINE_VERSION_TYPE": "EXACT",
+      "ENGINE_VERSION_CONFIDENCE": 0.99,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "Editor 2.24Z.exe",
+        "signature": "Editor 2.24Z.exe na raiz + CDataBase.dat magic \\x00W\\x00\\x00OLF",
+        "detectedValue": "Wolf RPG Editor v2.24Z",
+        "interpretation": "Versão exata 2.24Z do Wolf RPG Editor"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "Editor 2.24Z.exe",
+          "signature": "Editor 2.24Z.exe na raiz + CDataBase.dat magic \\x00W\\x00\\x00OLF",
+          "detectedValue": "Wolf RPG Editor v2.24Z",
+          "interpretation": "Versão exata 2.24Z do Wolf RPG Editor"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 774,
+        "afterTotal": 776,
+        "restoredTotal": 774,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852875545_dth28"
+    },
+    {
+      "sessionId": "session_1790838126640_rb1ox",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01058687_en",
+      "gameName": "RJ01058687_en",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MV 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Janela visível, tela de título e menus renderizados",
+        "saveLoadDetails": "Automação em slots não executada",
+        "versionEvidence": {
+          "file": "www/js/rpg_core.js",
+          "signature": "rpg_core.js + package.json (main: www/index.html)",
+          "detectedValue": "RPG Maker MV 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MV"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 4977,
+        "afterTotal": 4977,
+        "restoredTotal": 4977,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838126640_rb1ox"
+    },
+    {
+      "sessionId": "session_1790838158477_xriad",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\RJ01618221",
+      "gameName": "RJ01618221",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mz",
+      "engineVersion": "MZ 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + System.json MZ + package.json",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MZ 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "js/rmmz_core.js",
+        "signature": "rmmz_core.js + System.json MZ + package.json",
+        "detectedValue": "RPG Maker MZ 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MZ"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MZ localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Scene_Map ativa, mapId: 1, posição jogador X: 4, Y: 4",
+        "saveLoadDetails": "Ciclo completo Save Slot 1 -> Close -> Reopen -> Load Slot 1 -> Continue comprovado",
+        "versionEvidence": {
+          "file": "js/rmmz_core.js",
+          "signature": "rmmz_core.js + System.json MZ + package.json",
+          "detectedValue": "RPG Maker MZ 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MZ"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 2248,
+        "afterTotal": 2248,
+        "restoredTotal": 2248,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838158477_xriad"
+    },
+    {
+      "sessionId": "session_1790838188343_tpluk",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-0.3.0-win",
+      "gameName": "summertime_saga_realistic_remake-0.3.0-win",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "ENGINE_FAMILY": "Ren'Py",
+      "ENGINE_VERSION": "8.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+          "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+        ],
+        "gameplayDetails": "Janela visível, tela de título e menu principal renderizados",
+        "saveLoadDetails": "Automação em slots não executada",
+        "versionEvidence": {
+          "file": "lib/py3-windows-x86_64",
+          "signature": "lib/py3-windows-x86_64 + python3.12",
+          "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+          "interpretation": "Versão maior 8.x do motor Ren'Py"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 3084,
+        "afterTotal": 3088,
+        "restoredTotal": 3084,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838188343_tpluk"
+    },
+    {
+      "sessionId": "session_1790838216592_7brem",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "gameName": "summertime_saga_realistic_remake-21.0.0-RB.1-win",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Ren'Py",
+      "engine": "renpy",
+      "engineVersion": "8.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "ENGINE_FAMILY": "Ren'Py",
+      "ENGINE_VERSION": "8.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "lib/py3-windows-x86_64",
+        "signature": "lib/py3-windows-x86_64 + python3.12",
+        "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+        "interpretation": "Versão maior 8.x do motor Ren'Py"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)",
+          "Runtime moderno Ren'Py 8 detectado (Python 3 (64-bit))"
+        ],
+        "gameplayDetails": "Cena de prólogo jogável renderizada com avanço de script",
+        "saveLoadDetails": "Ciclo completo Save Slot ot_test_slot_1 -> Close -> Reopen -> Load -> Continue comprovado",
+        "versionEvidence": {
+          "file": "lib/py3-windows-x86_64",
+          "signature": "lib/py3-windows-x86_64 + python3.12",
+          "detectedValue": "Ren'Py 8.x (Python 3 64-bit runtime)",
+          "interpretation": "Versão maior 8.x do motor Ren'Py"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 1583,
+        "afterTotal": 1587,
+        "restoredTotal": 1583,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838216592_7brem"
+    },
+    {
+      "sessionId": "session_1790838972710_365hq",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\Toki kan Yuusha (gitgud)",
+      "gameName": "Toki kan Yuusha (gitgud)",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "mv",
+      "engineVersion": "MV 1.x",
+      "engineVersionType": "MAJOR_VERSION",
+      "engineVersionConfidence": 0.98,
+      "engineVersionEvidence": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "MV 1.x",
+      "ENGINE_VERSION_TYPE": "MAJOR_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.98,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "www/js/rpg_core.js",
+        "signature": "rpg_core.js + package.json (main: www/index.html)",
+        "detectedValue": "RPG Maker MV 1.x runtime",
+        "interpretation": "Versão maior 1.x do RPG Maker MV"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "GAMEPLAY_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "PASS",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": true,
+        "SAVE_LOAD_VERIFIED": true,
+        "FULLY_VERIFIED": true
+      },
+      "highestTier": "FULLY_VERIFIED",
+      "status": "FULLY VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura de dados do RPG Maker MV localizada (System.json / plugins.js)"
+        ],
+        "gameplayDetails": "Scene_Map ativa, mapId: 261, posição jogador X: 7, Y: 4",
+        "saveLoadDetails": "Ciclo completo Save Slot 1 -> Close -> Reopen -> Load Slot 1 -> Scene_Map (mapId: 261, X: 7, Y: 4) comprovado",
+        "versionEvidence": {
+          "file": "www/js/rpg_core.js",
+          "signature": "rpg_core.js + package.json (main: www/index.html)",
+          "detectedValue": "RPG Maker MV 1.x runtime",
+          "interpretation": "Versão maior 1.x do RPG Maker MV"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 7479,
+        "afterTotal": 7479,
+        "restoredTotal": 7479,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790838972710_365hq"
+    },
+    {
+      "sessionId": "session_1790838306995_c82bo",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] RJ01541990 v1.01 64bit",
+      "gameName": "[Kimochi] RJ01541990 v1.01 64bit",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Electron",
+      "engine": "electron",
+      "engineVersion": "Chromium / ASAR",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.9,
+      "engineVersionEvidence": {
+        "file": "resources/app.asar",
+        "signature": "resources/app.asar + framework Chromium (icudtl.dat, d3dcompiler_47.dll)",
+        "detectedValue": "Electron Chromium ASAR bundle",
+        "interpretation": "Runtime Electron empacotado com ASAR"
+      },
+      "ENGINE_FAMILY": "Electron",
+      "ENGINE_VERSION": "Chromium / ASAR",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.9,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "resources/app.asar",
+        "signature": "resources/app.asar + framework Chromium (icudtl.dat, d3dcompiler_47.dll)",
+        "detectedValue": "Electron Chromium ASAR bundle",
+        "interpretation": "Runtime Electron empacotado com ASAR"
+      },
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "N/A",
+        "TRANSLATE": "N/A",
+        "APPLY": "N/A",
+        "LAUNCH": "N/A",
+        "TITLE_MENU": "N/A",
+        "GAMEPLAY": "N/A",
+        "RUNTIME": "N/A",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "N/A",
+        "ROLLBACK": "N/A"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": false,
+        "RUNTIME_VERIFIED": false,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "UNSUPPORTED_SAFE_REJECT",
+      "status": "UNSUPPORTED SAFE REJECT",
+      "evidence": {
+        "engineSignatures": [
+          "Pacote Electron 'resources/app.asar' encontrado",
+          "Assinaturas do runtime Electron/Chromium encontradas (v8_context_snapshot, resources.pak)"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "resources/app.asar",
+          "signature": "resources/app.asar + framework Chromium (icudtl.dat, d3dcompiler_47.dll)",
+          "detectedValue": "Electron Chromium ASAR bundle",
+          "interpretation": "Runtime Electron empacotado com ASAR"
+        }
+      },
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838306995_c82bo"
+    },
+    {
+      "sessionId": "session_1790838308516_pbp0l",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "gameName": "[Kimochi] [RJ01156735] 刻印館からの脱出",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Cocos2d-x",
+      "engine": "cocos2dx",
+      "engineVersion": "Cocos2d-x (SpiderMonkey 33)",
+      "engineVersionType": "BASELINE",
+      "engineVersionConfidence": 0.85,
+      "engineVersionEvidence": {
+        "file": "mozjs-33.dll",
+        "signature": "mozjs-33.dll + libcocos2d.dll",
+        "detectedValue": "Cocos2d-x SpiderMonkey 33 runtime",
+        "interpretation": "Baseline de runtime Cocos2d-x associado ao SpiderMonkey 33"
+      },
+      "ENGINE_FAMILY": "Cocos2d-x",
+      "ENGINE_VERSION": "Cocos2d-x (SpiderMonkey 33)",
+      "ENGINE_VERSION_TYPE": "BASELINE",
+      "ENGINE_VERSION_CONFIDENCE": 0.85,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "mozjs-33.dll",
+        "signature": "mozjs-33.dll + libcocos2d.dll",
+        "detectedValue": "Cocos2d-x SpiderMonkey 33 runtime",
+        "interpretation": "Baseline de runtime Cocos2d-x associado ao SpiderMonkey 33"
+      },
+      "supportStatus": "EXTERNAL_TOOL_REQUIRED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "N/A",
+        "TRANSLATE": "N/A",
+        "APPLY": "N/A",
+        "LAUNCH": "N/A",
+        "TITLE_MENU": "N/A",
+        "GAMEPLAY": "N/A",
+        "RUNTIME": "N/A",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "N/A",
+        "ROLLBACK": "N/A"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": false,
+        "RUNTIME_VERIFIED": false,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "UNSUPPORTED_SAFE_REJECT",
+      "status": "UNSUPPORTED SAFE REJECT",
+      "evidence": {
+        "engineSignatures": [
+          "Estrutura do Cocos identificada (Cocos2d-x)"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "mozjs-33.dll",
+          "signature": "mozjs-33.dll + libcocos2d.dll",
+          "detectedValue": "Cocos2d-x SpiderMonkey 33 runtime",
+          "interpretation": "Baseline de runtime Cocos2d-x associado ao SpiderMonkey 33"
+        }
+      },
+      "hashes": null,
+      "sessionDir": "_open_translator_audit/sessions/session_1790838308516_pbp0l"
+    },
+    {
+      "sessionId": "session_1790852942395_u341p",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "gameName": "[RPG] [happypink] +EXORCIST+ Chris and the Cursed Town Ver.1.04 2",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "RPG Maker",
+      "engine": "rgss",
+      "engineVersion": "VX Ace (RGSS3 v3.0.1)",
+      "engineVersionType": "EXACT",
+      "engineVersionConfidence": 0.99,
+      "engineVersionEvidence": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "ENGINE_FAMILY": "RPG Maker",
+      "ENGINE_VERSION": "VX Ace (RGSS3 v3.0.1)",
+      "ENGINE_VERSION_TYPE": "EXACT",
+      "ENGINE_VERSION_CONFIDENCE": 0.99,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "System/RGSS301.dll",
+        "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+        "detectedValue": "RGSS3 versão exata 3.0.1",
+        "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "System/RGSS301.dll",
+          "signature": "Game.ini (Library=System\\RGSS301.dll, Scripts=Data\\Scripts.rvdata2)",
+          "detectedValue": "RGSS3 versão exata 3.0.1",
+          "interpretation": "Versão exata 3.0.1 do runtime RGSS3 (RPG Maker VX Ace)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 9648,
+        "afterTotal": 9853,
+        "restoredTotal": 9648,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790852942395_u341p"
+    },
+    {
+      "sessionId": "session_1790853431992_7abcx",
+      "gamePath": "C:\\Users\\Teste\\Desktop\\Nova pasta\\ロリっ子健康診断2_1.0",
+      "gameName": "ロリっ子健康診断2_1.0",
+      "parentContainer": null,
+      "classification": "GAME",
+      "engineFamily": "Unity",
+      "engine": "unity",
+      "engineVersion": "Mono (.NET Framework)",
+      "engineVersionType": "RUNTIME_VERSION",
+      "engineVersionConfidence": 0.95,
+      "engineVersionEvidence": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + AutoTranslator/ReiPatcher",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "ENGINE_FAMILY": "Unity",
+      "ENGINE_VERSION": "Mono (.NET Framework)",
+      "ENGINE_VERSION_TYPE": "RUNTIME_VERSION",
+      "ENGINE_VERSION_CONFIDENCE": 0.95,
+      "ENGINE_VERSION_EVIDENCE": {
+        "file": "MonoBleedingEdge",
+        "signature": "MonoBleedingEdge + UnityPlayer.dll + AutoTranslator/ReiPatcher",
+        "detectedValue": "Unity Mono BleedingEdge runtime",
+        "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+      },
+      "supportStatus": "SUPPORTED",
+      "metrics": {
+        "DETECT": "PASS",
+        "INSPECT": "PASS",
+        "EXTRACT": "PASS",
+        "TRANSLATE": "PASS",
+        "APPLY": "PASS",
+        "LAUNCH": "PASS",
+        "TITLE_MENU": "TITLE_MENU_VERIFIED",
+        "GAMEPLAY": "TITLE_MENU_VERIFIED",
+        "RUNTIME": "PASS",
+        "SAVE_LOAD": "NOT_TESTED",
+        "REOPEN": "PASS",
+        "ROLLBACK": "PASS"
+      },
+      "tiers": {
+        "PIPELINE_VERIFIED": true,
+        "RUNTIME_VERIFIED": true,
+        "GAMEPLAY_VERIFIED": false,
+        "SAVE_LOAD_VERIFIED": false,
+        "FULLY_VERIFIED": false
+      },
+      "highestTier": "RUNTIME_VERIFIED",
+      "status": "RUNTIME VERIFIED",
+      "evidence": {
+        "engineSignatures": [
+          "Jogo identificado e catalogado estruturalmente"
+        ],
+        "gameplayDetails": null,
+        "saveLoadDetails": null,
+        "versionEvidence": {
+          "file": "MonoBleedingEdge",
+          "signature": "MonoBleedingEdge + UnityPlayer.dll + AutoTranslator/ReiPatcher",
+          "detectedValue": "Unity Mono BleedingEdge runtime",
+          "interpretation": "Arquitetura de runtime Unity Mono (.NET)"
+        }
+      },
+      "hashes": {
+        "beforeTotal": 43,
+        "afterTotal": 43,
+        "restoredTotal": 43,
+        "isPerfectRestore": true,
+        "unrestoredCount": 0
+      },
+      "sessionDir": "_open_translator_audit/sessions/session_1790853431992_7abcx"
+    }
+  ]
+}
