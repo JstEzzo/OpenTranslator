@@ -10,6 +10,7 @@ if hasattr(sys.stderr, 'reconfigure'):
 TOOL_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 RPATOOL_DIRS = [
     os.path.join(TOOL_ROOT, 'resources', 'renpy', 'rpatool'),
+    os.path.join(TOOL_ROOT, 'resources', 'renpy', 'unren_tools'),
     os.path.join(TOOL_ROOT, 'unren_tools')
 ]
 for d in RPATOOL_DIRS:

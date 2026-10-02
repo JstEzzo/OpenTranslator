@@ -483,8 +483,12 @@ const handlers = {
               fs.writeFileSync(htmlPath, html, "utf8");
             }
             const cheatScriptPath = path.join(wwwDir, "CheatOverlay.js");
-            const templatePath = path.join(global.ROOT, "templates", "CheatOverlayTemplate.js");
-            if (fs.existsSync(templatePath)) {
+            const templateCandidates = [
+              path.join(global.ROOT, "resources", "templates", "CheatOverlayTemplate.js"),
+              path.join(global.ROOT, "templates", "CheatOverlayTemplate.js")
+            ];
+            const templatePath = templateCandidates.find(p => fs.existsSync(p));
+            if (templatePath) {
               fs.copyFileSync(templatePath, cheatScriptPath);
               global.log("success", "CheatOverlay injetado com sucesso no jogo.");
             }
@@ -1121,12 +1125,12 @@ const handlers = {
           "utf8"
         );
       }
-      const pluginSrc = path.join(
-        global.ROOT,
-        "xunity_plugin",
-        "UltraBatchEndpoint.dll"
-      );
-      if (fs.existsSync(pluginSrc)) {
+      const pluginCandidates = [
+        path.join(global.ROOT, "resources", "unity", "xunity_plugin", "UltraBatchEndpoint.dll"),
+        path.join(global.ROOT, "xunity_plugin", "UltraBatchEndpoint.dll")
+      ];
+      const pluginSrc = pluginCandidates.find(p => fs.existsSync(p));
+      if (pluginSrc) {
         const pluginDst = path.join(
           bepDir,
           "plugins",
@@ -1161,8 +1165,13 @@ const handlers = {
       return { ok: false, error: "RPA file not found" };
     const safeOutDir = sanitizePath(outputDir) ||
       path.join(path.dirname(safeRpa), path.basename(safeRpa) + "_extracted");
-    const script = path.join(global.ROOT, "unren_tools", "rpatool.py");
-    if (!fs.existsSync(script))
+    const scriptCandidates = [
+      path.join(global.ROOT, "resources", "renpy", "unren_tools", "rpatool.py"),
+      path.join(global.ROOT, "resources", "renpy", "rpatool", "rpatool.py"),
+      path.join(global.ROOT, "unren_tools", "rpatool.py")
+    ];
+    const script = scriptCandidates.find(p => fs.existsSync(p));
+    if (!script)
       return { ok: false, error: "rpatool.py not found" };
     return runPythonScript(script, ["-x", safeRpa, "-o", safeOutDir]);
   },
@@ -1171,8 +1180,13 @@ const handlers = {
     if (!safeIn || !fs.existsSync(safeIn))
       return { ok: false, error: "Input directory not found" };
     const safeOut = sanitizePath(outputPath) || (safeIn + ".rpa");
-    const script = path.join(global.ROOT, "unren_tools", "rpatool.py");
-    if (!fs.existsSync(script))
+    const scriptCandidates = [
+      path.join(global.ROOT, "resources", "renpy", "unren_tools", "rpatool.py"),
+      path.join(global.ROOT, "resources", "renpy", "rpatool", "rpatool.py"),
+      path.join(global.ROOT, "unren_tools", "rpatool.py")
+    ];
+    const script = scriptCandidates.find(p => fs.existsSync(p));
+    if (!script)
       return { ok: false, error: "rpatool.py not found" };
     return runPythonScript(script, [
       "-c",
@@ -1184,8 +1198,13 @@ const handlers = {
     const safeFile = sanitizePath(filePath);
     if (!safeFile || !fs.existsSync(safeFile))
       return { ok: false, error: "File not found" };
-    const script = path.join(global.ROOT, "unren_tools", "unrpyc.py");
-    if (!fs.existsSync(script))
+    const scriptCandidates = [
+      path.join(global.ROOT, "resources", "renpy", "unren_tools", "unrpyc.py"),
+      path.join(global.ROOT, "resources", "renpy", "unrpyc_v2", "unrpyc.py"),
+      path.join(global.ROOT, "unren_tools", "unrpyc.py")
+    ];
+    const script = scriptCandidates.find(p => fs.existsSync(p));
+    if (!script)
       return { ok: false, error: "unrpyc.py not found" };
     const args = ["--utf-8", safeFile];
     const safeOut = sanitizePath(outputDir);

@@ -113,9 +113,6 @@ const canonicalDirs = [
   'tools',
   'loaders',
   'resources',
-  'templates',
-  'unren_tools',
-  'xunity_plugin',
   'config'
 ];
 

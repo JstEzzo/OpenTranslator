@@ -22,9 +22,10 @@ const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const MATRIX_FILE = [
+  path.join(rootDir, 'docs', 'reports', 'OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json'),
   path.join(rootDir, 'reports', 'OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json'),
   path.join(rootDir, 'OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json')
-].find(f => fs.existsSync(f)) || path.join(rootDir, 'reports', 'OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json');
+].find(f => fs.existsSync(f)) || path.join(rootDir, 'docs', 'reports', 'OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.json');
 const AUDIT_BASE = [
   path.join(rootDir, 'archives', 'audits', '_open_translator_audit'),
   path.join(rootDir, '_open_translator_audit')

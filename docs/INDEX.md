@@ -4,9 +4,9 @@ Guia unificado e índice navegável de toda a documentação técnica, operacion
 
 ---
 
-## 📦 Governança e Distribuição
+## 📦 Governança e Arquitetura
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) — Topologia e governança de diretórios consolidada (separação Produto, Laboratório, Histórico).
 - [PRODUCTION_MANIFEST.md](PRODUCTION_MANIFEST.md) — Manifesto estrito de dependências de produção para máquinas limpas.
-- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) — Separação arquitetural entre Produto (~454 MB), Laboratório (~5.89 GB) e Arquivo.
 
 ---
 
@@ -50,27 +50,11 @@ Guia unificado e índice navegável de toda a documentação técnica, operacion
 
 ---
 
-## 📊 6. Relatórios Técnicos e Auditorias Atuais (`docs/reports/` & `docs/audits/`)
-- [AUDIT.md](audits/AUDIT.md) — Auditoria arquitetural inicial do projeto.
-- [multi-ia-analysis.md](audits/multi-ia-analysis.md) — Análise técnica comparativa multi-IA.
-- [LAB_REPORT.md](reports/LAB_REPORT.md) — Resultados empíricos de extração no laboratório real (23 jogos).
-- [CLEAN_INSTALL_REPORT.md](reports/CLEAN_INSTALL_REPORT.md) — Relatório de instalação limpa e dependências de ambiente.
-- [GUI_VALIDATION_REPORT.md](reports/GUI_VALIDATION_REPORT.md) — Validação consolidada de interface, WebSockets, UX e controles operacionais.
-- [E2E_REAL_RESULTS.md](reports/E2E_REAL_RESULTS.md) / [E2E_TRANSLATION_RESULTS.md](reports/E2E_TRANSLATION_RESULTS.md) — Resultados de testes ponta a ponta em jogos reais.
-- [SECURITY_AUDIT.md](reports/SECURITY_AUDIT.md) — Auditoria de segurança de processos e caminhos do sistema.
-- [PERFORMANCE_AUDIT.md](reports/PERFORMANCE_AUDIT.md) — Auditoria de performance e gargalos.
-- [GAME_COMPATIBILITY_REPORT.md](reports/GAME_COMPATIBILITY_REPORT.md) — Compatibilidade geral por engine.
-- [Dossiês Forenses Individuais](reports/forensics/) — Análise forense específica por jogo.
-
----
-
-## 📜 7. Histórico e Relatórios de Fases Passadas (`docs/history/`)
-Documentos de fases de desenvolvimento e auditorias anteriores mantidos para preservação histórica:
-- `PHASE2_AUDIT.md`, `PHASE2_RESULTS.md`
-- `PHASE3_REALITY_AUDIT.md`, `PHASE3_RESULTS.md`
-- `PHASE4A_REALITY_AUDIT.md`, `PHASE4A_RESULTS.md`, `PHASE4A_MIGRATION_MAP.md`
-- `PHASE5B_RESULTS.md`, `PHASE5C_REALITY_AUDIT.md`
-- `PHASE6_RESULTS.md`
-- `PHASE7_RESULTS.md`, `PHASE7_REALITY_MATRIX.md`
-- `PHASE8A_REAL_TRANSLATION_AUDIT.md`, `PHASE8B_RESULTS.md`
-- `GUI_VALIDATION.md`
+## 📊 6. Relatórios Técnicos e Auditorias Consolidadas (`docs/reports/`)
+- [OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.md](reports/OPEN_TRANSLATOR_REAL_UI_CERTIFICATION.md) — Certificação forense da matriz de 21 jogos reais.
+- [OPEN_TRANSLATOR_REAL_GAME_AUDIT.md](reports/OPEN_TRANSLATOR_REAL_GAME_AUDIT.md) — Auditoria profunda por jogo da biblioteca real.
+- [OPEN_TRANSLATOR_HARDENING_FINAL_REPORT.md](reports/OPEN_TRANSLATOR_HARDENING_FINAL_REPORT.md) — Relatório de hardening de segurança, isolamento e paths.
+- [REN_PY_INTEGRATION_REPORT.md](reports/REN_PY_INTEGRATION_REPORT.md) — Relatório completo de integração e certificação de Ren'Py.
+- [RPG_MAKER_MZ_COMPARISON.md](reports/RPG_MAKER_MZ_COMPARISON.md) — Comparativo técnico de RPG Maker MZ.
+- [RPG_MAKER_MV_COMPARISON.md](reports/RPG_MAKER_MV_COMPARISON.md) — Comparativo técnico de RPG Maker MV.
+- [OPEN_TRANSLATOR_EVIDENCE_INDEX.md](reports/OPEN_TRANSLATOR_EVIDENCE_INDEX.md) — Índice de evidências de testes em jogos reais.

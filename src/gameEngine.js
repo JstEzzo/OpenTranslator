@@ -1769,8 +1769,12 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
           fs.writeFileSync(htmlPath, html, "utf8");
         }
         const cheatScriptPath = path.join(wwwDir, "CheatOverlay.js");
-        const templatePath = path.join(global.ROOT, "templates", "CheatOverlayTemplate.js");
-        if (fs.existsSync(templatePath)) {
+        const templateCandidates = [
+          path.join(global.ROOT, "resources", "templates", "CheatOverlayTemplate.js"),
+          path.join(global.ROOT, "templates", "CheatOverlayTemplate.js")
+        ];
+        const templatePath = templateCandidates.find(p => fs.existsSync(p));
+        if (templatePath) {
           fs.copyFileSync(templatePath, cheatScriptPath);
           global.log("success", "CheatOverlay injetado com sucesso no jogo.");
         }

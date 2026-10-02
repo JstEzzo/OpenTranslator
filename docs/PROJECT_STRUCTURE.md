@@ -4,58 +4,68 @@ Este documento define a separação física e lógica entre os quatro domínios 
 
 ---
 
-## 1. Visão Geral da Topologia
+## 1. Visão Geral da Topologia Canônica
+
+A raiz do repositório foi compactada e consolidada para eliminar fragmentação, agrupando responsabilidades relacionadas sob domínios claros:
 
 ```text
-OpenTranslator/                  [DOMÍNIO DE PRODUTO & ARQUITETURA PROFISSIONAL FÍSICA]
+OpenTranslator/                  [DOMÍNIO DE PRODUTO & ARQUITETURA CONSOLIDADA]
 ├── OpenTranslator.exe           # Launcher executável portátil (C# / WinForms)
 ├── package.json                 # Manifesto npm unificado do projeto
-├── package-lock.json            # Bloqueio de versões exatas de dependências
 ├── server.js                    # Ponto de entrada oficial do backend HTTP/WebSocket
 ├── README.md                    # Apresentação oficial e guia de início
 ├── CHANGELOG.md                 # Histórico de versões
 ├── LICENSE                      # Licença MIT
 ├── .agents/                     # Regras e habilidades do agente (rules/ e skills/)
 ├── .github/                     # Workflows e automações GitHub
-├── bin/                         # Runtime Node.js LTS portátil (independência de sistema)
-├── config/                      # Configurações e perfis do sistema
-├── data/                        # Dados de runtime (SQLite global_cache.db, memórias, logs)
-├── docs/                        # Documentação técnica e manuais atualizados
-│   ├── architecture/            # Especificações de arquitetura do pipeline
+├── bin/                         # Runtime Node.js LTS portátil (independência de sistema, gitignored)
+├── config/                      # Configurações e perfis de regras de sintaxe
+├── data/                        # Dados de persistência (SQLite, memórias de tradução, glossários)
+├── docs/                        # Documentação técnica e relatórios consolidados
+│   ├── architecture/            # Especificações de arquitetura do pipeline e memória
 │   ├── engines/                 # Matrizes de compatibilidade e suporte por engine
-│   ├── runtime/                 # Guias de Dual Hook e injeção
+│   ├── reports/                 # Relatórios consolidados de certificação e auditoria
 │   ├── user/                    # Guia do Usuário e Resolução de Problemas
 │   └── INDEX.md                 # Catálogo mestre da documentação
-├── gameLib/                     # Biblioteca de jogos registrados e metadados
 ├── launcher/                    # Código-fonte oficial do launcher em C#
-├── loaders/                     # Injetores nativos, DLLs Dual Hook e fontes
-├── logs/                        # Logs de execução do sistema
-├── node_modules/                # Dependências instaladas (better-sqlite3, ws, exceljs)
-├── reports/                     # Relatórios de auditoria, certificação e evidências visuais
-│   └── evidence/                # Evidências forenses e capturas de tela comprovadas
-├── resources/                   # Sidecars por engine (Python 3.12, UnityPy, etc.)
-├── scripts/                     # Scripts de automação, auditoria e tarefas de manutenção
-├── src/                         # [FÍSICO REAL] Código-fonte canônico do backend
+├── loaders/                     # Injetores nativos, DLLs Dual Hook e fontes (endpoint /loaders/)
+├── resources/                   # Recursos consolidados de engines, plugins e templates
+│   ├── bakin/                   # Recursos de engine Bakin
+│   ├── cheats/                  # Scripts e overlays de cheats
+│   ├── evb/                     # Utilitários de empacotamento EVB
+│   ├── renpy/                   # Runtimes, rpatool e unren_tools integrados
+│   ├── rpgmaker/                # LatinNameInput e ponte Ruby Marshal
+│   ├── srpgstudio/              # Recursos de SRPG Studio
+│   ├── templates/               # Modelos CheatOverlayTemplate.js e anti-crash RPY
+│   ├── unity/                   # Mono.Cecil e xunity_plugin (UltraBatchEndpoint)
+│   └── unreal/                  # Recursos de engine Unreal
+├── src/                         # Código-fonte canônico do backend
 │   ├── core/                    # Pipeline, cache SQLite, circuit breaker, filas
 │   ├── engines/                 # Adaptadores isolados por motor (Ren'Py, RPG Maker, Unity, etc.)
+│   ├── extractors/              # Extratores especializados de texto
+│   ├── injectors/               # Injetores e patchers de assets
 │   ├── providers/               # Provedores de tradução com rate limiting
+│   ├── services/                # Serviços de suporte de aplicação
+│   ├── translation/             # Orquestrador de jobs e contabilidade de tradução
 │   └── utils/                   # Utilitários e helpers de baixo nível
-├── templates/                   # Modelos de scripts e injeção
-├── tests/                       # [FÍSICO REAL] Suíte de testes de certificação e validação
-├── tools/                       # [FÍSICO REAL] Utilitários de desenvolvimento e linters
-├── ui/                          # [FÍSICO REAL] Interface web frontend (HTML, CSS, JS)
-├── unren_tools/                 # Ferramentas Ren'Py portáteis (unrpyc, rpatool)
-├── xunity_plugin/               # Plugin e bridge para XUnity Auto Translator
-└── archives/                    # [DOMÍNIO DE ARQUIVO HISTÓRICO]
-    ├── audits/                  # Inventários forenses e evidências físicas auditadas
-    └── backups/                 # Backups históricos pré-migração
+├── tests/                       # Suíte unificada de testes
+│   ├── fixtures/                # Fixtures determinísticas leves
+│   ├── integration/             # Testes de integração de adaptadores e provedores
+│   ├── regression/              # Suíte mestre de 121 testes de regressão (Fases 1 a 9)
+│   ├── unit/                    # Testes unitários
+│   ├── validate_real_ui_certification.js  # Validador forense da matriz real
+│   ├── validate_renpy_certification.js    # Certificação forense Ren'Py
+│   └── validate_mz_certification.js       # Certificação forense RPG Maker MZ
+├── third-party/                 # Dependências e componentes de terceiros com licenças
+├── tools/                       # Ferramentas unificadas de CLI, manutenção, build e lint
+├── ui/                          # Interface web frontend (HTML, CSS, JS)
+└── archives/                    # [HISTÓRICO] Auditorias históricas, migrações e snapshots
 
-OpenTranslator-Lab/              [DOMÍNIO DE LABORATÓRIO] (Externo, ~5.89 GB)
+OpenTranslator-Lab/              [DOMÍNIO DE LABORATÓRIO] (Externo ao Git)
 ├── fixtures/                    # Jogos e assets completos de teste (Ren'Py, Unity, etc.)
 ├── staging/                     # Pastas temporárias de descompactação de testes
 ├── benchmarks/                  # Resultados de testes de performance
-├── forensic/                    # Dossiês individuais de análise reversa
-├── archive/                     # Artefatos pesados arquivados
+├── forensic/                    # Dossiês individuais e evidências forenses
 └── LAB_README.md                # Catálogo de fixtures e variáveis de ambiente
 ```
 
@@ -63,18 +73,17 @@ OpenTranslator-Lab/              [DOMÍNIO DE LABORATÓRIO] (Externo, ~5.89 GB)
 
 ## 2. Regras de Governança por Diretório
 
-### 🚀 PRODUTO (`OpenTranslator/Tool/`, `OpenTranslator.exe`)
+### 🚀 PRODUTO (`src/`, `ui/`, `launcher/`, `resources/`, `loaders/`)
 - **Regra**: Apenas código e binários indispensáveis para o funcionamento autônomo da aplicação final.
-- **Proibição**: Nunca comitar jogos completos, arquivos `.rpa` gigantes, `.unity3d` ou dumps temporários dentro da pasta do produto.
+- **Proibição**: Nunca versionar jogos completos, arquivos `.rpa`, `.pak`, `.unity3d`, saves de jogos ou capturas de tela de gameplay dentro do repositório de produto.
 
 ### 🧪 LABORATÓRIO (`OpenTranslator-Lab/`)
-- **Regra**: Fica localizado externamente ao produto principal.
-- **Acesso**: Testes acessam este diretório através do módulo unificado `Tool/src/tests/testPaths.js` e respeitam as variáveis `OPENTRANSLATOR_LAB` ou `LAB_ROOT`.
-- **Degradação Elegante**: Se um jogo pesado de laboratório não estiver presente na máquina de teste, o teste reporta `LAB_FIXTURE_NOT_INSTALLED` de forma limpa, sem falhar a suíte do produto.
+- **Regra**: Localizado externamente ao repositório principal (`../OpenTranslator-Lab`).
+- **Acesso**: Testes acessam este diretório respeitando as variáveis `OPENTRANSLATOR_LAB` ou caminhos relativos ao diretório pai.
+- **Degradação Elegante**: Se um jogo pesado de laboratório não estiver presente na máquina de teste, o teste reporta de forma limpa, preservando o status determinístico da suíte de produto.
 
-### 📦 ARQUIVO (`OpenTranslator/archive/`)
-- **Regra**: Evidências de auditorias, snapshots de banco de dados antigos e saídas estáticas de ferramentas de análise que não devem poluir a raiz do projeto nem ser distribuídas no pacote final.
+### 📦 ARQUIVO (`archives/`)
+- **Regra**: Evidências de auditorias históricas, scripts de migrações anteriores e logs de análises que não pertencem ao produto ativo.
 
-### 💾 DADOS (`Tool/data/`)
-- **Regra**: Contém o banco de produção `global_cache.db` (66.720 pares), `translation_memory.sqlite` (2.818 entradas), `capability-matrix.json` e o log de execução ativa `openT.log`.
-- **Higiene**: Transações commitadas de testes e logs transitórios são arquivados ou limpos automaticamente pelo script de manutenção.
+### 💾 DADOS (`data/`, `config/`)
+- **Regra**: Contém glossários, dicionários e regras de sintaxe necessários para o funcionamento das engines. Dados efêmeros (sessões de runtime, caches temporários, locks de processos) são estritamente ignorados pelo `.gitignore`.

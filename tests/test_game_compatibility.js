@@ -78,7 +78,7 @@ label start:
     result
   };
 
-  const proofPath = path.resolve(__dirname, '../reports/GAME_COMPATIBILITY_PROOF.json');
+  const proofPath = path.resolve(__dirname, '../docs/reports/GAME_COMPATIBILITY_PROOF.json');
   fs.writeFileSync(proofPath, JSON.stringify(proofPayload, null, 2), 'utf8');
   console.log(`✓ GAME_COMPATIBILITY_PROOF.json salvo em: ${proofPath}\n`);
 

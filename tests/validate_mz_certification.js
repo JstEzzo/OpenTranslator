@@ -61,7 +61,9 @@ function auditGameMz(targetName, gameDir) {
     status: 'UNVERIFIED'
   };
 
+  const labRoot = process.env.OPENTRANSLATOR_LAB || path.resolve(__dirname, '../../OpenTranslator-Lab');
   const auditCandidates = [
+    path.resolve(labRoot, 'forensic/games', targetName),
     path.resolve('archives/audits/_open_translator_audit/games', targetName),
     path.resolve('_open_translator_audit/games', targetName)
   ];

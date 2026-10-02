@@ -1,59 +1,84 @@
-# Pasta de documentacao e scripts locais — apenas local
+# ==============================================================================
+# OpenTranslator - Official .gitignore
+# Canonical Git Exclusion Rules for Clean Product Repository
+# ==============================================================================
+
+# --- AI & IDE Configuration ---
+.agents/
 skills_whitepaper/
 
-# Arquivos de biblioteca de jogo gerados em runtime
-gameLib/*.gljson
-gameLib/*_pic
-Tool/gameLib/*.gljson
-Tool/gameLib/*_pic
-
-# Configuracoes do agente de IA — apenas local
-.agents/
-
-# Dependencias NPM — restauradas via npm install
+# --- Dependencies & Binaries ---
 node_modules/
 **/node_modules/
-
-# Binarios portateis — baixados automaticamente pelo launcher
 bin/
-Tool/bin/
+*.pdb
 
-# Logs e dados de runtime — nao pertencem ao repositorio
-*.log
-data/openT.log
-data/server.pid
-Tool/data/openT.log
-Tool/data/server.pid
-
-# Banco de dados local — gerado em runtime
-data/global_cache.db*
-Tool/data/global_cache.db*
-*.db*
-*.sqlite*
-
-# Binarios pesados (acima do limite do GitHub)
+# --- Heavy / Portable Binaries (> 100MB / GitHub limits) ---
 loaders/inject.exe
 resources/godot/gdre_tools.exe
 resources/godot/GodotMonoDecompNativeAOT.dll
-Tool/loaders/inject.exe
-Tool/resources/godot/gdre_tools.exe
-Tool/resources/godot/GodotMonoDecompNativeAOT.dll
 
-scratch/
-Tool/scratch/
+# --- Python / C# Build Caches & Ephemeral Files ---
 **/__pycache__/
+*.pyc
+*.pyo
+*.obj
+*.suo
+*.user
+
+# --- Runtime Logs & Process Locks ---
+*.log
+logs/
+data/logs/
+data/openT.log
+data/server.pid
+data/temp_chrome_profile/
+
+# --- Local Databases & Persistent Caches ---
+*.db*
+*.sqlite*
+data/global_cache.db*
+data/cache/
+
+# --- Runtime Sessions, Staging, Transactions & Jobs ---
 data/staging/
 data/transactions/
-data/temp_chrome_profile/
 data/sessions/
-data/cache/
 data/jobs/
-data/logs/
 data/evidence/
 data/qa_artifacts/
-Tool/data/staging/
-Tool/data/transactions/
-Tool/data/temp_chrome_profile/
+scratch/
+
+# --- User Game Library Runtime Metadata ---
+gameLib/*.gljson
+gameLib/*_pic
+
+# --- Game Executables, Archives & Raw Game Data ---
+# (Product contains translation engine only; games belong in OpenTranslator-Lab)
+*.rpa
+*.pak
+*.unity3d
+*.assets
+*.bundle
+*.rgss3a
+*.rgss2a
+*.rgssad
+*.rpyc
+
+# --- Game Saves & State Dumps ---
+*.save
+*.sav
+*.rpgsave
+*.qsave
+*.asave
+
+# --- Gameplay Captures & Media Artifacts ---
+*.mp4
+*.webm
+*.avi
+*.mkv
+
+# --- Laboratory & Historical Bloat ---
 _open_translator_audit/
 archives/audits/_open_translator_audit/
 archives/analysis/graphify-out/cache/
