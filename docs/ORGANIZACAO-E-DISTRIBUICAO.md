@@ -43,7 +43,7 @@ A comparação com o pacote antigo é uma estimativa calculada sobre os arquivos
 
 ## Regras de distribuição
 
-`tools/package_release.js` usa uma lista explícita de áreas de runtime e registra exclusões no manifesto. O perfil `standard` é o padrão. Ele preserva o addon compilado `better_sqlite3.node` e licenças, mas omite os fontes C/C++ de rebuild de better-sqlite3, o bundle de browser de ExcelJS, definições de tipos, source maps, caches e dados locais.
+O destino do pacote é recusado quando fica dentro da origem, inclusive com variação de maiúsculas/minúsculas no Windows. `tools/package_release.js` usa uma lista explícita de áreas de runtime e registra exclusões no manifesto. O perfil `standard` é o padrão. Ele preserva o addon compilado `better_sqlite3.node` e licenças, mas omite os fontes C/C++ de rebuild de better-sqlite3, o bundle de browser de ExcelJS, definições de tipos, source maps, caches e dados locais.
 
 `loaders/inject.exe` ocupa aproximadamente 184 MiB descompactado e não é necessário para iniciar a aplicação. Foi mantido na origem e separado em um complemento local. Funcionalidades que realmente dependem desse injetor exigem o complemento. O perfil `complete` inclui componentes opcionais existentes na origem. Nenhum dos perfis certifica todas as versões de jogos; o manifesto indica o que foi encontrado e incluído. A ferramenta opcional Godot não estava disponível nesta origem.
 

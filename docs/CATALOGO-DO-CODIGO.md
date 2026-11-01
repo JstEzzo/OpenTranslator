@@ -4214,9 +4214,9 @@ Teste ou roteiro portablePackage.test.js: Consultar as assinaturas, comandos e a
 
 - Categoria: Teste / laboratório.
 - Base da descrição: Cabeçalho de teste / estrutura.
-- Tamanho: 5266 bytes; linhas: 65.
+- Tamanho: 5411 bytes; linhas: 66.
 - Leitura: texto completo decodificado.
-- SHA-256: `aec7118fedd7527853cfd8028c4bc3a662b1dd035737e7116795c7a43eb1f303`.
+- SHA-256: `07fd0f217d5f7a1e741b0ade491784d0f8bce136241e010f9eeb69ef6cb5aa7c`.
 - Assinaturas localizadas (nome:linha): `write:10`, `fixture:11`, `build:19`, `test:22`.
 - Imports literais: `assert`, `fs`, `path`, `crypto`, `../../tools/package_release`.
 
@@ -4671,9 +4671,9 @@ Monta o portable Windows com runtime, launcher, dependências e manifesto; verif
 
 - Categoria: Produto / ferramenta.
 - Base da descrição: Explicação editorial do módulo.
-- Tamanho: 10338 bytes; linhas: 131.
+- Tamanho: 10516 bytes; linhas: 133.
 - Leitura: texto completo decodificado.
-- SHA-256: `b1e7854eef70fdd5085e410a2576c224708c3d47c204c5bef087e953c0ca04ff`.
+- SHA-256: `982d9c742166d3a63689652532bbc6ee9584f2b45f86a238a89ce9603a368031`.
 - Assinaturas localizadas (nome:linha): `hashFile:6`, `listFiles:15`, `copyTree:24`, `compileLauncher:33`, `probeRuntime:40`, `verifyBundle:49`, `packageDecision:58`, `buildRelease:74`, `skip:89`.
 - Imports literais: `fs`, `path`, `crypto`, `child_process`, `better-sqlite3`, `ws`, `exceljs`.
 - Referenciado estaticamente por: `tests/unit/portablePackage.test.js`.

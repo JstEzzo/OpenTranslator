@@ -50,6 +50,7 @@ try {
     const root = fixture(); const existing = path.join(temp, 'existing'); write(existing, 'keep.txt', 'KEEP');
     assert.throws(() => build(root, existing), /ja existe/); assert.strictEqual(fs.readFileSync(path.join(existing, 'keep.txt'), 'utf8'), 'KEEP');
     assert.throws(() => build(root, temp), /fora da arvore/);
+    if (process.platform === 'win32') assert.throws(() => build(root, path.join(root.toUpperCase(), 'src', 'nested-output')), /fora da arvore/);
   });
   test('missing dependency prevents release manifest', () => {
     const root = fixture(); fs.unlinkSync(path.join(root, 'node_modules/ws/package.json')); const out = path.join(temp, 'incomplete');

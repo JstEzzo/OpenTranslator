@@ -77,7 +77,9 @@ function buildRelease(options = {}) {
   if (!['standard', 'complete'].includes(profile)) throw new Error('Perfil invalido: ' + profile);
   const excluded = [];
   const outputDir = path.resolve(options.outputDir || path.join(root, '..', 'OpenTranslator-release'));
-  if (outputDir === root || root.startsWith(outputDir + path.sep) || outputDir.startsWith(root + path.sep)) {
+  const comparable = value => process.platform === 'win32' ? value.toLowerCase() : value;
+  const sourceKey = comparable(root), outputKey = comparable(outputDir);
+  if (outputKey === sourceKey || sourceKey.startsWith(outputKey + path.sep) || outputKey.startsWith(sourceKey + path.sep)) {
     throw new Error('Destino deve ficar fora da arvore de origem');
   }
   // Never recursively delete a previous release or an arbitrary user-selected folder.
