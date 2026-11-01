@@ -106,6 +106,7 @@
 - `docs/audit/UNREAL_REAL_GAME_TEST_2026-10-31.md`
 - `docs/audits/AUDIT.md`
 - `docs/audits/multi-ia-analysis.md`
+- `docs/CATALOGO-DO-CODIGO.md`
 - `docs/development/PLUGIN_API.md`
 - `docs/development/PLUGIN_SDK.md`
 - `docs/development/RECOVERY.md`
@@ -118,6 +119,7 @@
 - `docs/engines/TRANSLATION_METHOD_MATRIX.md`
 - `docs/engines/UNITY_SUPPORT_MATRIX.json`
 - `docs/engines/WOLF_SUPPORT_MATRIX.json`
+- `docs/GUIA-DETALHADO.md`
 - `docs/history/GUI_VALIDATION.md`
 - `docs/history/PHASE2_AUDIT.md`
 - `docs/history/PHASE2_RESULTS.md`
@@ -137,6 +139,7 @@
 - `docs/PRODUCTION_MANIFEST.md`
 - `docs/PROJECT-STRUCTURE.md`
 - `docs/PROJECT_STRUCTURE.md`
+- `docs/REFERENCIA-RPC.md`
 - `docs/RELATORIO_FINAL.md`
 - `docs/reports/CLEAN_INSTALL_REPORT.md`
 - `docs/reports/DUPLICATE_FILE_REPORT.md`
@@ -562,6 +565,7 @@
 - `tools/check_map.js`
 - `tools/cleanup_project.js`
 - `tools/cli-compat.js`
+- `tools/document_project.py`
 - `tools/interact_game.js`
 - `tools/inventory.js`
 - `tools/maintenance/cleanup_project.js`

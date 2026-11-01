@@ -1,5 +1,12 @@
 # OpenTranslator — Catálogo Geral de Documentação
 
+## Guia atualizado e catálogo do código
+
+- [Guia detalhado do projeto](GUIA-DETALHADO.md) — arquitetura, fluxos, dados, adapters e manutenção.
+- [Catálogo arquivo por arquivo](CATALOGO-DO-CODIGO.md) — funções, assinaturas e relações estáticas.
+- [Referência RPC](REFERENCIA-RPC.md) — operações e parâmetros localizados na fonte.
+
+
 Guia unificado e índice navegável de toda a documentação técnica, operacional e histórica do **OpenTranslator**.
 
 ---
