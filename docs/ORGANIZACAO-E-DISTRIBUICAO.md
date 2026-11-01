@@ -51,7 +51,7 @@ Não se apagou código de uma engine apenas porque uma busca não encontrou refe
 
 ## Projeto de desenvolvimento e pacote de uso
 
-Preferências, glossário, textos de runtime e outros seis arquivos de estado que ainda estavam versionados em `data/` foram retirados somente do índice de distribuição/Git, preservando os arquivos locais. A pasta `data/` é criada e preenchida pelo aplicativo conforme o uso.
+Seis arquivos de estado que ainda estavam versionados em `data/`, incluindo preferências, glossário e textos de runtime, foram retirados somente do índice de distribuição/Git, preservando os arquivos locais. A pasta `data/` é criada e preenchida pelo aplicativo conforme o uso.
 
 O ZIP de **Code → Download ZIP** do GitHub continua sendo código-fonte de desenvolvimento. O download para executar o programa é o artefato **OpenTranslator-Win64-Portable** do workflow de build. O workflow foi ajustado para gerar o artefato em pushes para main, além de pull requests, tags e execução manual. Releases de tags mantêm o comportamento de rascunho.
 
