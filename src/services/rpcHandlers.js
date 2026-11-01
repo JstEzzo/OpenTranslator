@@ -1202,13 +1202,14 @@ const handlers = {
    *   queued -> enfileirado (jogo ainda vai consumir quando reconectar)
    *   Sem nenhum dos dois => ok:false com status NOT_CONNECTED.
    */
-  sendCheatCommand(params) {
+  sendCheatCommand(params = {}) {
     const code = params.code || params.command || "";
     if (!code) return R.invalidInput("sendCheatCommand exige params.code ou params.command");
     if (typeof code !== "string") {
       return R.invalidInput("params.code deve ser string");
     }
 
+    params = { ...params, code };
     const socketOpen = Boolean(
       global.activeCheatSocket && global.activeCheatSocket.readyState === 1,
     );
@@ -1222,6 +1223,7 @@ const handlers = {
         return R.ok({ delivery: "sent", transport: "websocket" });
       } catch (e) {
         // Socket caiu no meio do envio: cai para a fila.
+        if (global.pendingCheatCommands.length >= 200) return R.blocked("Fila de comandos cheia", "QUEUE_FULL");
         global.pendingCheatCommands.push(params);
         return R.ok({
           delivery: "queued",
@@ -1254,7 +1256,7 @@ const handlers = {
   getGameState() {
     const isRecentPoll = Date.now() - global.lastCheatPollTime < 8000;
     const isSocketOpen = global.activeCheatSocket !== null && global.activeCheatSocket.readyState === 1;
-    const connected = (isRecentPoll || isSocketOpen) && global.lastGameState !== null;
+    const connected = (isRecentPoll || isSocketOpen) && global.lastGameState !== null && global.lastGameState.runtimeReady !== false;
     return { connected, state: global.lastGameState };
   },
   async translate({ text, sl, tl }) {
@@ -2297,6 +2299,7 @@ const handlers = {
     return {
       ok: true,
       matrix: EngineCapabilityMatrix.getDeclarations(),
+      compatibility: structuredClone(require("../../config/engineCompatibility.json")),
       summary: EngineCapabilityMatrix.getMatrixSummary()
     };
   },

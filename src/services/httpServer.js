@@ -354,7 +354,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, {
       'Content-Type': resolved.contentType,
       'X-Content-Type-Options': 'nosniff',
-      'Cache-Control': cleanPath === '/' || cleanPath === '/index.html'
+      'Cache-Control': cleanPath === '/' || /\.(?:html?|[cm]?js|css)$/i.test(cleanPath)
         ? 'no-store'
         : 'public, max-age=300',
     });

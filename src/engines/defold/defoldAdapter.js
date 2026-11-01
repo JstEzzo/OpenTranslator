@@ -115,7 +115,7 @@ class DefoldAdapter extends BaseEngineAdapter {
                 if (typeof v === "string" && v.trim().length > 0) {
                   const { protectedText, tokens } = this.codeProtector.protect(v.trim(), "defold");
                   allTexts.push({
-                    id: `defold_${ent.name}_${k}`,
+                    id: `defold_${rel}_${k}`,
                     file: rel,
                     key: k,
                     original: v.trim(),

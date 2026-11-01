@@ -92,7 +92,7 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
                   if (typeof v === "string" && v.trim().length > 0) {
                     const { protectedText, tokens } = this.codeProtector.protect(v.trim(), "cocos");
                     allTexts.push({
-                      id: `cocos_${f}_${k}`,
+                      id: `cocos_${relP}_${k}`,
                       file: relP,
                       key: k,
                       original: v.trim(),

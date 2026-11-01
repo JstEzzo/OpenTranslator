@@ -296,7 +296,9 @@
     const theme = S.cfg.theme || {};
     const accent = theme.accent || "#3b8ef0";
     const safeAccent = /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#3b8ef0";
-    const css = `:root { --accent: ${safeAccent}; --accent2: ${adjustColorBrightness(safeAccent, -15)}; --accent3: ${adjustColorBrightness(safeAccent, -30)}; }`;
+    document.documentElement.classList.toggle("reduce-motion", S.cfg.reduceMotion === true);
+    const fontSize = [14, 16, 18, 20].includes(Number(S.cfg.uiFontSize)) ? Number(S.cfg.uiFontSize) : 16;
+    const css = `:root { --ui-size: ${fontSize}px; --accent: ${safeAccent}; --accent2: ${adjustColorBrightness(safeAccent, -15)}; --accent3: ${adjustColorBrightness(safeAccent, -30)}; }`;
     let styleEl = $("custom-theme-style");
     if (!styleEl) {
       styleEl = document.createElement("style");
@@ -346,6 +348,10 @@
 
     // Apply custom theme settings if loaded
     applyTheme();
+    if ($("cfgUiFontSize")) $("cfgUiFontSize").value = String(S.cfg.uiFontSize || 16);
+    if ($("cfgLibrarySort")) $("cfgLibrarySort").value = S.cfg.librarySort || "title";
+    if ($("cfgShowPaths")) $("cfgShowPaths").checked = S.cfg.showGamePaths === true;
+    if ($("cfgReduceMotion")) $("cfgReduceMotion").checked = S.cfg.reduceMotion === true;
     if ($("themeAccent"))
       $("themeAccent").value = S.cfg.theme?.accent || "#3b8ef0";
     if ($("themeBgImage")) $("themeBgImage").value = S.cfg.theme?.bgImage || "";
@@ -380,7 +386,14 @@
     if ($("themeGlass"))
       S.cfg.theme.glassOpacity = parseInt($("themeGlass").value, 10);
 
-    await rpc("saveCfg", S.cfg);
+    if ($("cfgUiFontSize")) S.cfg.uiFontSize = Number($("cfgUiFontSize").value);
+    if ($("cfgLibrarySort")) S.cfg.librarySort = $("cfgLibrarySort").value;
+    if ($("cfgShowPaths")) S.cfg.showGamePaths = $("cfgShowPaths").checked;
+    if ($("cfgReduceMotion")) S.cfg.reduceMotion = $("cfgReduceMotion").checked;
+    const result = await rpc("saveCfg", S.cfg);
+    if (result?.ok === false) throw new Error(result.reason || "Não foi possível salvar as configurações");
+    if ($("settings-save-status")) $("settings-save-status").textContent = "Configurações salvas";
+    renderGames();
     applyTheme();
     log("success", t("configSaved"));
   }
@@ -575,7 +588,7 @@
       uiTitle: "OpenTranslator v1.0",
       uiGames: "Games",
       uiSaves: "Saves",
-      cfgEngine: "Engine",
+      cfgEngine: "Translation service",
       cfgEngineOff: "Google",
       cfgEngineGoogle: "Google 🌐",
       cfgEngineBing: "Bing 🔍",
@@ -748,7 +761,7 @@
       uiTitle: "OpenTranslator v1.0",
       uiGames: "Jogos",
       uiSaves: "Salvamentos",
-      cfgEngine: "Engine",
+      cfgEngine: "Serviço de tradução",
       cfgEngineOff: "Google",
       cfgEngineGoogle: "Google 🌐",
       cfgEngineBing: "Bing 🔍",
@@ -1128,11 +1141,11 @@
       const styles = document.createElement("link");
       styles.id = "application-styles";
       styles.rel = "stylesheet";
-      styles.href = "styles/base.css";
+      styles.href = "styles/base.css?v=20261101-r2";
       document.head.appendChild(styles);
       const layout = document.createElement("link");
       layout.rel = "stylesheet";
-      layout.href = "styles/layout.css";
+      layout.href = "styles/layout.css?v=20261101-r2";
       document.head.appendChild(layout);
     }
     applyTheme();
@@ -1228,49 +1241,14 @@
       </div>
 
       <!-- CONFIG -->
-      <div id="tb-cf" class="tb">
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-          <label style="font-size:10px;color:var(--txt2);white-space:nowrap">${t("langLabel")}:</label>
-          <select id="cfgAppLang" style="flex:1">
-            <option value="pt" ${_lang === "pt" ? "selected" : ""}>Portugu\u00eas</option>
-            <option value="en" ${_lang === "en" ? "selected" : ""}>English</option>
-          </select>
-        </div>
-        <div class="cg">
-          <h4>${t("visualCustomizer")}</h4>
-          <div class="cg-body">
-            <div class="ci">
-              <label>${t("accentColor")}</label>
-              <input id="themeAccent" type="color" style="width:50px;height:22px;padding:0;cursor:pointer;border:none;background:transparent">
-            </div>
-            <div class="ci">
-              <label>${t("bgImage")}</label>
-              <input id="themeBgImage" type="text" placeholder="Ex: C:\Imagens\wallpaper.jpg" style="width:180px">
-            </div>
-            <div class="ci">
-              <label>${t("glassEffect")}</label>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input id="themeGlass" type="range" min="0" max="100" style="width:80px">
-                <span id="themeGlassVal" style="font-size:10px;color:var(--txt2);width:30px;text-align:right">45%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Provider Health Panel -->
-        <div class="cg" id="provider-health-card" style="border:1px solid var(--bd); background:rgba(15,15,25,0.4)">
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-bottom:1px solid var(--bd)">
-            <h4 style="margin:0; font-size:11px">🛡️ Provider Health & Circuit Breaker</h4>
-            <button id="btnRefreshProviderHealth" class="btn xs" style="font-size:9px">Atualizar</button>
-          </div>
-          <div class="cg-body" style="padding:8px 10px; display:flex; flex-direction:column; gap:6px">
-            <div id="provider-health-notice" style="display:none; padding:6px 8px; border-radius:4px; font-size:10px; font-weight:600"></div>
-            <div id="provider-health-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
-              <!-- Renderizado via refreshProviderHealth -->
-            </div>
-          </div>
-        </div>
-
-        <div class="cg">
+      <div id="tb-cf" class="tb"><header class="page-heading"><div><h1>Configurações</h1><p>Tradução, leitura e ferramentas organizadas por finalidade.</p></div><span id="settings-save-status" role="status">Alterações salvas automaticamente</span></header><div class="settings-grid"><section class="cg"><h2>Leitura e biblioteca</h2><p class="section-description">Ajuste a interface ao seu conforto. As mudanças são salvas automaticamente.</p><div class="settings-fields">
+<label for="cfgAppLang">Idioma do programa</label><select id="cfgAppLang"><option value="pt">Português</option><option value="en">English</option></select>
+<label for="cfgUiFontSize">Tamanho dos textos</label><select id="cfgUiFontSize"><option value="14">Padrão · 14 px</option><option value="16">Confortável · 16 px</option><option value="18">Grande · 18 px</option><option value="20">Muito grande · 20 px</option></select>
+<label for="themeAccent">Cor de destaque</label><input id="themeAccent" type="color">
+<label for="cfgLibrarySort">Ordenar jogos por</label><select id="cfgLibrarySort"><option value="title">Nome · A–Z</option><option value="recent">Mais recentes</option></select>
+<label for="cfgShowPaths">Mostrar caminho dos jogos</label><input id="cfgShowPaths" type="checkbox">
+<label for="cfgReduceMotion">Reduzir animações</label><input id="cfgReduceMotion" type="checkbox">
+</div></section><div class="cg">
           <h4>${t("cfgTrans")}</h4>
           <div class="cg-body">
             <div class="ci"><label>${t("cfgSrc")}</label><select id="cfgSL">${langOpts}</select></div>
@@ -1307,8 +1285,7 @@
               <input id="cfgWordWrapLimit" type="number" min="0" max="100" style="width:60px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px">
             </div>
           </div>
-        </div>
-        <div class="cg">
+        </div><div class="cg">
           <h4>${t("glossary")}</h4>
           <div class="cg-body">
             <div class="ci" style="flex-direction:column;align-items:stretch;gap:4px">
@@ -1323,24 +1300,20 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="cg">
+        </div></div><details class="settings-advanced"><summary>Ferramentas por engine e arquivos</summary><p>Escolha o jogo ao usar cada ferramenta. Estas opções não alteram jogos automaticamente.</p><div class="settings-grid"><div class="cg">
           <h4>${t("toolsUnity")}</h4>
           <span class="help-tip">${t("descUnity")}</span>
           <div class="tools-grid">
             <button class="btn sm unity-install">${t("btnInstallUnity")}</button>
           </div>
-        </div>
-        <div class="cg">
+        </div><div class="cg">
           <h4>${t("toolsWolf")}</h4>
           <span class="help-tip">${t("descWolf")}</span>
           <div class="tools-grid">
             <button class="btn sm wolf-extract">${t("btnExtractWolf")}</button>
             <button class="btn sm wolf-pack">${t("btnPackWolf")}</button>
           </div>
-        </div>
-        <div class="cg">
+        </div><div class="cg">
           <h4>${t("toolsRpgm")}</h4>
           <span class="help-tip">${t("descRpgm")}</span>
           <div class="tools-grid">
@@ -1348,15 +1321,13 @@
             <button class="btn sm excel-export">${t("btnExportExcel")}</button>
             <button class="btn sm excel-import">${t("btnImportExcel")}</button>
           </div>
-        </div>
-        <div class="cg">
+        </div><div class="cg">
           <h4>${t("toolsEvb")}</h4>
           <span class="help-tip">${t("descEvb")}</span>
           <div class="tools-grid">
             <button class="btn sm evb-extract">${t("btnUnpackEvb")}</button>
           </div>
-        </div>
-        <div class="cg">
+        </div></div></details><details class="settings-advanced"><summary>Conexão, diagnóstico e histórico</summary><div class="settings-grid"><div class="cg">
           <h4>${t("cfgDiagnostics")}</h4>
           <div class="cg-body">
             <div class="ci"><label>${t("cfgTest")}</label><button id="testTr" class="btn sm">${t("cfgTest")}</button></div>
@@ -1374,8 +1345,18 @@
               <button id="btnEvidenceMatrix" class="btn sm">Ver Evidências 📊</button>
             </div>
           </div>
-        </div>
-        <div class="cg">
+        </div><div class="cg" id="provider-health-card" style="border:1px solid var(--bd); background:rgba(15,15,25,0.4)">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-bottom:1px solid var(--bd)">
+            <h4 style="margin:0; font-size:11px">🛡️ Provider Health & Circuit Breaker</h4>
+            <button id="btnRefreshProviderHealth" class="btn xs" style="font-size:9px">Atualizar</button>
+          </div>
+          <div class="cg-body" style="padding:8px 10px; display:flex; flex-direction:column; gap:6px">
+            <div id="provider-health-notice" style="display:none; padding:6px 8px; border-radius:4px; font-size:10px; font-weight:600"></div>
+            <div id="provider-health-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+              <!-- Renderizado via refreshProviderHealth -->
+            </div>
+          </div>
+        </div><div class="cg">
           <h4>${t("cfgCache")}</h4>
           <div class="cg-body">
             <div class="ci">
@@ -1383,8 +1364,7 @@
               <button id="clearGlobalCache" class="btn sm" style="background:#e03131;color:#fff;border-color:#c92a2a">${t("btnClearHistory")}</button>
             </div>
           </div>
-        </div>
-      </div>
+        </div></div></details></div>
 
       <!-- CHEATS -->
       <!-- CHEATS -->
@@ -1428,7 +1408,7 @@
                </div>
              </div>
 
-             <div class="cg" style="margin-bottom:0">
+             <div id="cheat-rpg-general" class="cg" style="margin-bottom:0">
                <h4>${t("cheatGeneralMods")}</h4>
               <div class="cg-body" style="display:flex;flex-direction:column;gap:8px">
                 <div class="ci" style="display:flex;justify-content:space-between;align-items:center">
@@ -1449,7 +1429,7 @@
               </div>
             </div>
             
-            <div class="cg" style="margin-bottom:0">
+            <div id="cheat-rpg-battle" class="cg" style="margin-bottom:0">
               <h4>${t("cheatBattleGodMode")}</h4>
               <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px">
                 <button id="cheatGodHP" class="btn sm">${t("cheatInfiniteHPLabel")} [OFF]</button>
@@ -1459,7 +1439,7 @@
               </div>
             </div>
             
-            <div class="cg" style="margin-bottom:0">
+            <div id="cheat-rpg-tools" class="cg" style="margin-bottom:0">
               <h4>${t("cheatTools")}</h4>
               <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px">
                 <button id="cheatOpenDevTools" class="btn sm">${t("cheatDevTools")}</button>
@@ -1587,139 +1567,13 @@
         <div id="lb"></div>
       </div>
 
-      <!-- PERFORMANCE & ENGINES MATRIX -->
-      <div id="tb-pf" class="tb" style="padding:16px; overflow-y:auto; height:calc(100vh - 65px)">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px">
-          <div>
-            <h2 style="font-size:18px; font-weight:700; color:var(--txt); margin:0 0 4px 0">Plataforma Universal de Engines &amp; Performance</h2>
-            <p style="font-size:12px; color:var(--txt2); margin:0">Matriz estrita de 14 engines suportadas, benchmark de concorrência e telemetria de throughput.</p>
-          </div>
-          <div style="display:flex; gap:8px">
-            <button id="btnRunBenchmark" class="btn sm pri" style="display:flex; align-items:center; gap:6px">
-              <span>⚡</span> <span>Executar Benchmark Real</span>
-            </button>
-            <button id="btnRefreshMatrix" class="btn sm">Atualizar Matriz</button>
-          </div>
-        </div>
-
-        <!-- Important Methodological Notices -->
-        <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap">
-          <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; color:#f87171">
-            ⚠️ PEAK BURST ≠ RECOMMENDED SPEED (Picos em janelas curtas não são recomendados para traduções longas)
-          </div>
-          <div style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; color:#60a5fa">
-            ℹ️ CACHE SPEED ≠ TRANSLATION SPEED (Resolução em memória local não representa transporte via internet)
-          </div>
-        </div>
-
-        <!-- Real HTTP Speed & Saturation Dashboard -->
-        <div style="font-size:12px; font-weight:700; color:var(--txt); margin-bottom:8px">1. NETWORK TRANSLATION THROUGHPUT — BENCHMARK HTTP REAL (Google GTX)</div>
-        <div id="pf-dashboard-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px">
-          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
-            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">VELOCIDADE SEGURA (SAFE)</div>
-            <div id="pf-safe-val" style="font-size:22px; font-weight:700; color:var(--green)">100.7 txt/s</div>
-            <div style="font-size:10px; color:var(--txt3)">2.136 chars/s | P95: 279ms | 2 workers</div>
-          </div>
-          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
-            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">MÁXIMA SUSTENTADA</div>
-            <div id="pf-sustained-val" style="font-size:22px; font-weight:700; color:var(--accent)">149.3 txt/s</div>
-            <div style="font-size:10px; color:var(--txt3)">3.165 chars/s | P95: 236ms | 4 workers</div>
-          </div>
-          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
-            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">PICO MÁXIMO (BURST)</div>
-            <div id="pf-peak-val" style="font-size:22px; font-weight:700; color:var(--accent2)">238.1 txt/s</div>
-            <div style="font-size:10px; color:var(--txt3)">5.050 chars/s | 8 workers (janela curta)</div>
-          </div>
-          <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
-            <div style="font-size:11px; color:var(--txt2); margin-bottom:4px">EXECUÇÃO HISTÓRICA REAL</div>
-            <div id="pf-hist-val" style="font-size:20px; font-weight:700; color:var(--yellow)">~131 txt/s</div>
-            <div style="font-size:10px; color:var(--txt3)">Summertime Saga: 2.834 textos em 21.6s</div>
-          </div>
-        </div>
-
-        <!-- Real HTTP Benchmark Table -->
-        <div id="pf-bench-details" style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px; margin-bottom:20px">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-            <h3 style="font-size:13px; font-weight:700; color:var(--txt); margin:0">Resultados HTTP Reais por Concorrência (Google GTX — 100 Textos Reais)</h3>
-            <span style="font-size:10px; padding:2px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:var(--green)">HTTP Real Validado</span>
-          </div>
-          <div style="overflow-x:auto">
-            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left">
-              <thead>
-                <tr style="border-bottom:1px solid var(--bd); color:var(--txt2)">
-                  <th style="padding:6px">Workers</th>
-                  <th style="padding:6px">Batch</th>
-                  <th style="padding:6px">Vazão (txt/s)</th>
-                  <th style="padding:6px">Vazão (chars/s)</th>
-                  <th style="padding:6px">Req/s</th>
-                  <th style="padding:6px">P50</th>
-                  <th style="padding:6px">P95</th>
-                  <th style="padding:6px">429 Rate</th>
-                  <th style="padding:6px">Status</th>
-                </tr>
-              </thead>
-              <tbody id="pf-bench-rows">
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">1 worker</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--txt)">45.6 txt/s</td><td style="padding:6px">968 chars/s</td><td style="padding:6px">4.6</td><td style="padding:6px">213ms</td><td style="padding:6px">436ms</td><td style="padding:6px">0%</td><td style="padding:6px">OK</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">2 workers</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--green); font-weight:700">100.7 txt/s</td><td style="padding:6px">2.136 chars/s</td><td style="padding:6px">10.1</td><td style="padding:6px">199ms</td><td style="padding:6px">279ms</td><td style="padding:6px">0%</td><td style="padding:6px; color:var(--green)">SAFE SPEED</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">4 workers</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--accent); font-weight:700">149.3 txt/s</td><td style="padding:6px">3.165 chars/s</td><td style="padding:6px">14.9</td><td style="padding:6px">186ms</td><td style="padding:6px">236ms</td><td style="padding:6px">0%</td><td style="padding:6px; color:var(--accent)">MAX SUSTAINED</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">8 workers</td><td style="padding:6px">10</td><td style="padding:6px; color:var(--accent2); font-weight:700">238.1 txt/s</td><td style="padding:6px">5.050 chars/s</td><td style="padding:6px">23.8</td><td style="padding:6px">175ms</td><td style="padding:6px">232ms</td><td style="padding:6px">0%</td><td style="padding:6px; color:var(--accent2)">PEAK BURST</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Synthetic Internal Queue Benchmark -->
-        <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px; margin-bottom:20px">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-            <div>
-              <h3 style="font-size:13px; font-weight:700; color:var(--txt); margin:0">2. CACHE RESOLUTION & SYNTHETIC QUEUE THROUGHPUT (Local / SQLite / RAM)</h3>
-              <p style="font-size:10px; color:var(--txt2); margin:2px 0 0 0">Mede exclusivamente a capacidade de leitura local do armazenamento/memória. Não representa velocidade de rede.</p>
-            </div>
-            <span style="font-size:10px; padding:2px 8px; border-radius:4px; background:rgba(234,179,8,0.15); color:var(--yellow)">Fila / Memória Local</span>
-          </div>
-          <div style="overflow-x:auto">
-            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left">
-              <thead>
-                <tr style="border-bottom:1px solid var(--bd); color:var(--txt2)">
-                  <th style="padding:6px">Concorrência</th>
-                  <th style="padding:6px">Vazão Fila Interna</th>
-                  <th style="padding:6px">Latência Local P95</th>
-                  <th style="padding:6px">Saturação da Fila</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">1 worker</td><td style="padding:6px">180 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Sem contenção</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">2 workers</td><td style="padding:6px">360 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Sem contenção</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">4 workers</td><td style="padding:6px">720 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Sem contenção</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">8 workers</td><td style="padding:6px">1.440 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Ótimo</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">12 workers</td><td style="padding:6px">2.160 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Contenção de deserialização</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)"><td style="padding:6px">16 workers</td><td style="padding:6px">2.880 txt/s</td><td style="padding:6px">25ms</td><td style="padding:6px">Pico sintético de CPU</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Strict Capability Matrix -->
-        <div style="background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:14px">
-          <h3 style="font-size:13px; font-weight:700; color:var(--txt); margin:0 0 10px 0">Matriz Estrita de Capacidades Técnicas (14 Engines)</h3>
-          <div style="overflow-x:auto">
-            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left">
-              <thead>
-                <tr style="border-bottom:1px solid var(--bd); color:var(--txt2)">
-                  <th style="padding:6px">Engine</th>
-                  <th style="padding:6px">Versões</th>
-                  <th style="padding:6px">Status</th>
-                  <th style="padding:6px">Estática</th>
-                  <th style="padding:6px">Runtime</th>
-                  <th style="padding:6px">Empacotados</th>
-                  <th style="padding:6px">Tokens/Placeholders</th>
-                  <th style="padding:6px">Pluralização</th>
-                </tr>
-              </thead>
-              <tbody id="pf-matrix-rows"></tbody>
-            </table>
-          </div>
-        </div>
+      <div id="tb-pf" class="tb">
+        <header class="page-heading"><div><h1>Compatibilidade</h1><p>Veja o que cada engine permite, os problemas conhecidos e o que ainda falta.</p></div><button id="btnRefreshMatrix" class="btn">Atualizar</button></header>
+        <div class="compat-summary" id="compat-summary">Carregando informações…</div>
+        <label class="search-label" for="compat-search">Buscar engine, versão ou problema</label>
+        <input id="compat-search" type="search" placeholder="Ex.: Unity, fontes, Python 2, cheats…">
+        <div id="pf-matrix-rows" class="compat-grid" aria-live="polite"></div>
+        <details class="diagnostic-details"><summary>Teste de velocidade da tradução</summary><p>Executa requisições de teste ao provedor. A velocidade varia por conexão e limites do serviço.</p><button id="btnRunBenchmark" class="btn">Medir velocidade agora</button><div id="pf-bench-details"></div><table><tbody id="pf-bench-rows"></tbody></table></details>
       </div>
     </div>
   </div>
@@ -1916,7 +1770,9 @@
       return;
     }
     let html = "";
-    for (const k of [...S.gameKeys].sort((a, b) => (S.games[a]?.libConf?.title || a).localeCompare(S.games[b]?.libConf?.title || b, "pt-BR", { numeric: true, sensitivity: "base" }))) {
+    for (const k of [...S.gameKeys].sort((a, b) => S.cfg.librarySort === "recent"
+      ? (S.games[b]?.libConf?.lastLaunch || S.games[b]?.libConf?.added || 0) - (S.games[a]?.libConf?.lastLaunch || S.games[a]?.libConf?.added || 0)
+      : (S.games[a]?.libConf?.title || a).localeCompare(S.games[b]?.libConf?.title || b, "pt-BR", { numeric: true, sensitivity: "base" }))) {
       const d = S.games[k];
       if (!d) {
         html +=
@@ -1950,7 +1806,7 @@
         " " +
         esc(engLabel) +
         ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "full" ? "✓" : engStatus.s === "planned" ? "⚙" : engStatus.s === "fantasma" ? "❌" : "?"}</span>` +
-        '</div></div><div class="ga">' +
+        '</div>' + (S.cfg.showGamePaths ? '<div class="game-path">' + esc(exe) + '</div>' : '') + '</div><div class="ga">' +
         playBtn +
         '<button class="btn xs glEdit" title="Editar jogo">Editar</button><button class="btn xs dgr glDel" title="Remover da biblioteca">Remover</button></div></div>';
     }
@@ -3250,6 +3106,12 @@
   $("cfgDeeplApiKey")?.addEventListener("change", saveCfg);
   $("cfgDeeplUseFree")?.addEventListener("change", saveCfg);
   $("cfgWordWrapLimit")?.addEventListener("change", saveCfg);
+  for (const id of ["cfgUiFontSize", "cfgLibrarySort", "cfgShowPaths", "cfgReduceMotion"]) {
+    $(id)?.addEventListener("change", () => saveCfg().catch(error => {
+      if ($("settings-save-status")) $("settings-save-status").textContent = "Não foi possível salvar";
+      showToast(error.message, "error");
+    }));
+  }
   $("themeAccent")?.addEventListener("change", saveCfg);
   $("themeBgImage")?.addEventListener("change", saveCfg);
   $("themeGlass")?.addEventListener("input", function () {
@@ -3959,9 +3821,14 @@
       if (tabGrupo) tabGrupo.style.display = isRenPy ? "none" : "inline-block";
       if (tabInv) tabInv.style.display = isRenPy ? "none" : "inline-block";
 
-      const battleGroup = document.querySelector("#cheat-sec-geral .cg:nth-child(2)");
+      const battleGroup = $("cheat-rpg-battle");
       if (battleGroup) battleGroup.style.display = isRenPy ? "none" : "block";
 
+      for (const id of ["cheat-rpg-general", "cheat-rpg-tools"]) {
+        if ($(id)) $(id).style.display = isRenPy ? "none" : "block";
+      }
+      if (typeof state.godHP === "boolean") godHPActive = state.godHP;
+      if (typeof state.godMP === "boolean") godMPActive = state.godMP;
       const noclipRow = document.querySelector("#cheatThrough")?.closest(".ci");
       if (noclipRow) noclipRow.style.display = isRenPy ? "none" : "flex";
 
@@ -4431,41 +4298,33 @@
 
 
 
+  let compatibilityProfiles = [];
+  function renderCompatibilityCards() {
+    const query = ($("compat-search")?.value || "").toLocaleLowerCase("pt-BR");
+    const visible = compatibilityProfiles.filter(profile => JSON.stringify(profile).toLocaleLowerCase("pt-BR").includes(query));
+    const container = $("pf-matrix-rows");
+    if (!container) return;
+    container.innerHTML = visible.length ? visible.map(profile => `
+      <article class="compat-card">
+        <header><h2>${esc(profile.name)}</h2><span class="compat-badge">${profile.status === "PARTIAL" ? "Suporte parcial" : "Integração pendente"}</span></header>
+        <p class="compat-version">${esc(profile.versions)}</p>
+        <dl><dt>Disponível no programa</dt><dd>${esc(profile.coverage)}</dd><dt>Cheats</dt><dd>${esc(profile.cheats)}</dd><dt>Atenção neste tipo de jogo</dt><dd>${esc(profile.commonIssue)}</dd></dl>
+        <details><summary>O que falta e como conferir</summary><ul>${profile.missing.map(item => `<li>${esc(item)}</li>`).join("")}</ul>
+        <div class="compat-sources">${profile.sources.filter(url => /^https:\/\//.test(url)).map((url, index) => `<a href="${attr(url)}" target="_blank" rel="noopener noreferrer">Fonte ${index + 1} ↗</a>`).join(" ")}</div></details>
+      </article>`).join("") : '<p class="empty-state">Nenhuma engine corresponde à busca.</p>';
+    if ($("compat-summary")) $("compat-summary").textContent = `${visible.length} de ${compatibilityProfiles.length} perfis • Revisão de 01/11/2026 • A compatibilidade final depende do jogo e da versão.`;
+  }
   async function renderPerformance() {
     try {
-      const res = await rpc("getCapabilityMatrix");
-      if (res && res.matrix) {
-        const tbody = $("pf-matrix-rows");
-        if (tbody) {
-          const getStatusBadge = (status) => {
-            if (status === 'FULLY VALIDATED') return '<span style="background:rgba(34,197,94,0.15); color:var(--green); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700">✅ FULLY VALIDATED</span>';
-            if (status === 'PARTIAL') return '<span style="background:rgba(234,179,8,0.15); color:var(--yellow); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700">⚠️ PARTIAL</span>';
-            if (status === 'EXTERNAL TOOL REQUIRED') return '<span style="background:rgba(168,85,247,0.15); color:#c084fc; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700">🔧 EXTERNAL TOOL</span>';
-            if (status === 'EXPERIMENTAL') return '<span style="background:rgba(59,130,246,0.15); color:#60a5fa; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700">🧪 EXPERIMENTAL</span>';
-            return '<span style="background:rgba(107,114,128,0.15); color:#9ca3af; padding:2px 6px; border-radius:4px; font-size:10px">🔍 DETECTION ONLY</span>';
-          };
-
-          tbody.innerHTML = res.matrix.map(m => `
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.03)">
-              <td style="padding:6px"><strong>${esc(m.name)}</strong></td>
-              <td style="padding:6px; color:var(--txt2)">
-                <span style="color:var(--txt)">${esc(m.versions.join(", ") || "-")}</span>
-                ${m.unverifiedVersions && m.unverifiedVersions.length ? `<br><span style="font-size:9.5px; color:#eab308">⚠️ Não comprovado: ${esc(m.unverifiedVersions.join(", "))}</span>` : ""}
-              </td>
-              <td style="padding:6px">${getStatusBadge(m.status)}</td>
-              <td style="padding:6px">${m.staticTranslation ? '✅' : '❌'}</td>
-              <td style="padding:6px">${m.runtimeTranslation ? '✅' : '❌'}</td>
-              <td style="padding:6px">${m.packagedResources ? '✅' : '❌'}</td>
-              <td style="padding:6px">${m.placeholders ? '✅' : '❌'}</td>
-              <td style="padding:6px">${m.pluralization ? '✅' : '❌'}</td>
-            </tr>
-          `).join("");
-        }
-      }
-    } catch (e) {
-      console.warn("renderPerformance:", e.message);
+      const result = await rpc("getCapabilityMatrix");
+      compatibilityProfiles = result?.compatibility?.profiles || [];
+      renderCompatibilityCards();
+    } catch (error) {
+      if ($("compat-summary")) $("compat-summary").textContent = "Não foi possível carregar. Clique em Atualizar para tentar novamente.";
+      console.warn("renderPerformance:", error.message);
     }
   }
+  $("compat-search")?.addEventListener("input", renderCompatibilityCards);
 
   $("btnRunBenchmark")?.addEventListener("click", async () => {
     const btn = $("btnRunBenchmark");

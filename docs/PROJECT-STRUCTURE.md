@@ -1,7 +1,8 @@
 # Estrutura do projeto
 
-Índice alfabético dos arquivos de configuração, documentação, código, testes e ferramentas. Dados pessoais e arquivos gerados ficam fora deste índice.
+Índice alfabético de configuração, documentação, código, testes e ferramentas. Dados pessoais e arquivos gerados ficam fora deste índice.
 
+- `config/engineCompatibility.json`
 - `config/restore_config.json`
 - `config/syntax_rules.json`
 - `docs/analysis/graphify/.graphify_analysis.json`
@@ -96,7 +97,9 @@
 - `docs/architecture/TRANSLATION_MEMORY.md`
 - `docs/audit/COMPATIBILITY-MTOOL-2026-11-01.md`
 - `docs/audit/dependencies-2026-10-31.json`
+- `docs/audit/ENGINE-BY-ENGINE-2026-11-01.md`
 - `docs/audit/FOLLOWUP-2026-10-31.md`
+- `docs/audit/mtool-switch-program-inventory-2026-11-01.json`
 - `docs/audit/relative-imports-2026-10-31.json`
 - `docs/audit/REVIEW-2026-10-31.md`
 - `docs/audit/UNREAL_REAL_GAME_TEST_2026-10-31.md`
@@ -131,6 +134,7 @@
 - `docs/history/PHASE8B_RESULTS.md`
 - `docs/INDEX.md`
 - `docs/PRODUCTION_MANIFEST.md`
+- `docs/PROJECT-STRUCTURE.md`
 - `docs/PROJECT_STRUCTURE.md`
 - `docs/RELATORIO_FINAL.md`
 - `docs/reports/CLEAN_INSTALL_REPORT.md`
@@ -504,6 +508,7 @@
 - `tests/test_text_chunking_and_provider_resilience.test.js`
 - `tests/test_toki_gameplay.js`
 - `tests/test_translation_completeness_and_certificates.test.js`
+- `tests/unit/adapterReview.test.js`
 - `tests/unit/adapterRuntimeContract.test.js`
 - `tests/unit/applyContract.test.js`
 - `tests/unit/applyPathContainment.test.js`
@@ -513,6 +518,7 @@
 - `tests/unit/backgroundJobLifecycle.test.js`
 - `tests/unit/cacheDurability.test.js`
 - `tests/unit/certificateCoherence.test.js`
+- `tests/unit/cheatRoundTrip.test.js`
 - `tests/unit/cheatServerContract.test.js`
 - `tests/unit/coverageTruth.test.js`
 - `tests/unit/displayTextClassification.test.js`

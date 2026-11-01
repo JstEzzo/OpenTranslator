@@ -1,119 +1,56 @@
-/**
- * OpenTranslator — AsarUtil
- * Leitor e extrator nativo de pacotes Electron (.asar) sem dependências externas.
- * Implementa a especificação oficial do Chromium/Electron ASAR Archive.
- */
-
+"use strict";
 const fs = require("fs");
 const path = require("path");
-
 class AsarUtil {
-  /**
-   * Lê o diretório e metadados de um arquivo .asar.
-   * @param {string} asarPath
-   * @returns {{ headerSize: number, dataOffset: number, filesTree: object }}
-   */
-  static readHeader(asarPath) {
-    const fd = fs.openSync(asarPath, "r");
-    const bufSize = 16;
-    const headerBuf = Buffer.alloc(bufSize);
-    fs.readSync(fd, headerBuf, 0, bufSize, 0);
-
-    // Formato Pickle do Chromium:
-    // [0-3]: tamanho do pickle (geralmente 4)
-    // [4-7]: tamanho do payload do header
-    // [8-11]: tamanho do cabeçalho pickle de dados
-    // [12-15]: tamanho da string JSON do cabeçalho
-    const jsonLen = headerBuf.readUInt32LE(12);
-    const jsonBuf = Buffer.alloc(jsonLen);
-    fs.readSync(fd, jsonBuf, 0, jsonLen, 16);
-    fs.closeSync(fd);
-
-    const jsonStr = jsonBuf.toString("utf8");
-    const filesTree = JSON.parse(jsonStr);
-    const dataOffset = 16 + jsonLen;
-
-    return {
-      headerSize: 16 + jsonLen,
-      dataOffset,
-      filesTree: filesTree.files || {}
-    };
+  static readHeader(file) {
+    const fd = fs.openSync(file, "r");
+    try {
+      const size = fs.fstatSync(fd).size;
+      const prefix = Buffer.alloc(16);
+      if (fs.readSync(fd, prefix, 0, 16, 0) !== 16 || prefix.readUInt32LE(0) !== 4) throw new Error("ASAR: cabeçalho inválido");
+      const headerSize = prefix.readUInt32LE(4);
+      const jsonSize = prefix.readUInt32LE(12);
+      if (headerSize < 8 || headerSize % 4 !== 0 || headerSize > 64 * 1024 * 1024 || jsonSize > headerSize - 8 || 8 + headerSize > size) throw new Error("ASAR: tamanho de cabeçalho inválido");
+      const json = Buffer.alloc(jsonSize);
+      if (fs.readSync(fd, json, 0, jsonSize, 16) !== jsonSize) throw new Error("ASAR: cabeçalho truncado");
+      const header = JSON.parse(json.toString("utf8"));
+      if (!header.files || typeof header.files !== "object") throw new Error("ASAR: diretório ausente");
+      return { headerSize: 8 + headerSize, dataOffset: 8 + headerSize, filesTree: header.files };
+    } finally { fs.closeSync(fd); }
   }
-
-  /**
-   * Extrai arquivos de texto (.json, .js, .html) do arquivo .asar para um diretório de destino.
-   * @param {string} asarPath
-   * @param {string} destDir
-   * @param {Array<string>} textExtensions
-   */
-  static extractTextFiles(asarPath, destDir, textExtensions = [".json", ".js", ".html", ".csv", ".txt", ".ts"]) {
-    const { dataOffset, filesTree } = AsarUtil.readHeader(asarPath);
-    const fd = fs.openSync(asarPath, "r");
-    const extractedFiles = [];
-
-    function traverse(node, curPath) {
-      for (const [name, info] of Object.entries(node)) {
-        const fullRel = curPath ? `${curPath}/${name}` : name;
-        if (info.files) {
-          traverse(info.files, fullRel);
-        } else if (info.size !== undefined && info.offset !== undefined) {
-          const ext = path.extname(name).toLowerCase();
-          if (textExtensions.includes(ext)) {
-            const fileOffset = dataOffset + parseInt(info.offset, 10);
-            const fileSize = info.size;
-            const fileBuf = Buffer.alloc(fileSize);
-            fs.readSync(fd, fileBuf, 0, fileSize, fileOffset);
-
-            const destFile = path.join(destDir, fullRel);
-            const targetDir = path.dirname(destFile);
-            if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-            fs.writeFileSync(destFile, fileBuf);
-            extractedFiles.push(destFile);
-          }
-        }
-      }
-    }
-
-    traverse(filesTree, "");
-    fs.closeSync(fd);
-    return extractedFiles;
+  static extractTextFiles(file, destination, extensions = [".json", ".js", ".html", ".csv", ".txt", ".ts"]) {
+    return AsarUtil._extract(file, destination, extensions);
   }
-
-  /**
-   * Extrai TODOS os arquivos de um pacote .asar (essencial para reconstrução/repack fiel).
-   * @param {string} asarPath
-   * @param {string} destDir
-   * @returns {Array<string>} Lista de caminhos completos dos arquivos extraídos
-   */
-  static extractAll(asarPath, destDir) {
-    const { dataOffset, filesTree } = AsarUtil.readHeader(asarPath);
-    const fd = fs.openSync(asarPath, "r");
-    const extractedFiles = [];
-
-    function traverse(node, curPath) {
-      for (const [name, info] of Object.entries(node)) {
-        const fullRel = curPath ? `${curPath}/${name}` : name;
-        if (info.files) {
-          traverse(info.files, fullRel);
-        } else if (info.size !== undefined && info.offset !== undefined) {
-          const fileOffset = dataOffset + parseInt(info.offset, 10);
-          const fileSize = info.size;
-          const fileBuf = Buffer.alloc(fileSize);
-          fs.readSync(fd, fileBuf, 0, fileSize, fileOffset);
-
-          const destFile = path.join(destDir, fullRel);
-          const targetDir = path.dirname(destFile);
-          if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-          fs.writeFileSync(destFile, fileBuf);
-          extractedFiles.push(destFile);
+  static extractAll(file, destination) { return AsarUtil._extract(file, destination, null); }
+  static _extract(file, destination, extensions) {
+    const { dataOffset, filesTree } = AsarUtil.readHeader(file);
+    const root = path.resolve(destination);
+    const fd = fs.openSync(file, "r");
+    const extracted = [];
+    try {
+      const archiveSize = fs.fstatSync(fd).size;
+      const walk = (tree, parent = "") => {
+        for (const [name, info] of Object.entries(tree)) {
+          if (!name || name === "." || name === ".." || /[\\/:]/.test(name)) throw new Error("ASAR: nome de arquivo inválido");
+          const relative = path.join(parent, name);
+          if (info.files) { walk(info.files, relative); continue; }
+          if (extensions && !extensions.includes(path.extname(name).toLowerCase())) continue;
+          if (info.link || info.unpacked || (!extensions && info.integrity)) throw new Error("ASAR: links, arquivos externos ou integridade assinada requerem um perfil específico");
+          const size = info.size;
+          const offset = Number(info.offset);
+          if (!Number.isSafeInteger(size) || size < 0 || !Number.isSafeInteger(offset) || offset < 0 || size > archiveSize - dataOffset - offset) throw new Error("ASAR: arquivo fora dos limites do pacote");
+          const target = path.resolve(root, relative);
+          if (!target.startsWith(root + path.sep)) throw new Error("ASAR: caminho fora do destino");
+          const bytes = Buffer.alloc(size);
+          if (fs.readSync(fd, bytes, 0, size, dataOffset + offset) !== size) throw new Error("ASAR: conteúdo truncado");
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, bytes);
+          extracted.push(target);
         }
-      }
-    }
-
-    traverse(filesTree, "");
-    fs.closeSync(fd);
-    return extractedFiles;
+      };
+      walk(filesTree);
+      return extracted;
+    } finally { fs.closeSync(fd); }
   }
 }
-
 module.exports = AsarUtil;

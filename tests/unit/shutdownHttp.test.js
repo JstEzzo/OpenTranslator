@@ -11,7 +11,7 @@ let pass = 0, fail = 0, child;
 function request(port, route, method = 'GET', token) {
   return new Promise((resolve, reject) => {
     const req = http.request({ hostname: '127.0.0.1', port, path: route, method, headers: token ? { 'X-OpenTranslator-Token': token } : {} }, res => {
-      let body = ''; res.on('data', c => { body += c; }); res.on('end', () => resolve({ status: res.statusCode, body }));
+      let body = ''; res.on('data', c => { body += c; }); res.on('end', () => resolve({ status: res.statusCode, body, headers: res.headers }));
     }); req.setTimeout(10000, () => req.destroy(new Error('timeout'))); req.on('error', reject); req.end();
   });
 }
@@ -28,6 +28,13 @@ async function test(name, fn) { try { await fn(); pass++; console.log('ok ' + na
     child.once('message', m => { clearTimeout(timer); resolve(m); }); child.once('error', reject);
   });
   const ping = JSON.parse((await request(ready.port, '/api/ping')).body);
+  await test('updated UI scripts and styles are not cached across launches', async () => {
+    for (const route of ['/app.js', '/styles/layout.css']) {
+      const response = await request(ready.port, route);
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(response.headers['cache-control'], 'no-store');
+    }
+  });
   await test('shutdown requires POST', async () => assert.strictEqual((await request(ready.port, '/api/shutdown', 'GET', ping.token)).status, 405));
   await test('shutdown rejects missing token', async () => assert.strictEqual((await request(ready.port, '/api/shutdown', 'POST')).status, 403));
   await test('explicit shutdown survives a fresh heartbeat and completes job plus pending restore', async () => {

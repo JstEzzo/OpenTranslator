@@ -48,6 +48,7 @@
   function pollCheat() {
     try {
       var state = {
+        engine: 'rpgmaker', runtimeReady: false,
         scene: (typeof SceneManager !== 'undefined' && SceneManager._scene) ? SceneManager._scene.constructor.name : 'Unknown'
       };
       if (window.$gameParty && window.$gamePlayer && window.$gameSystem && window.$gameMap) {
@@ -81,6 +82,7 @@
           var scanned = scanVariablesAndSwitches();
 
           state = {
+            engine: "rpgmaker", runtimeReady: true, godHP: !!window.godHP, godMP: !!window.godMP,
             scene: state.scene,
             gold: typeof $gameParty.gold === 'function' ? $gameParty.gold() : 0,
             mapId: typeof $gameMap.mapId === 'function' ? $gameMap.mapId() : 0,

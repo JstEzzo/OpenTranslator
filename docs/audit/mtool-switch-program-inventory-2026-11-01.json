@@ -1,0 +1,236 @@
+{
+  "scope": "Arquivos de programa; sem bibliotecas pessoais, saves, contas ou arquivos de jogos",
+  "files": [
+    {
+      "file": "loaders/0Harmony.dll",
+      "bytes": 921704,
+      "sha256": "298ba5d8616ed696092829af8b63eb7ddaaf7b06b3d7ab89380708439a3f30d0"
+    },
+    {
+      "file": "loaders/AgtkHook.dll",
+      "bytes": 576112,
+      "sha256": "1bbae0eb89b55d50a9de09589cddb382a9732340091aec9570fc03e23387336d"
+    },
+    {
+      "file": "loaders/BakinLauncher.exe",
+      "bytes": 20072,
+      "sha256": "1685b99b79c58a6f306a2b828e4e2e4ae121b59271827007b1b7bf791f3d6116"
+    },
+    {
+      "file": "loaders/BakinPlayerWrapper.exe",
+      "bytes": 378480,
+      "sha256": "19d66757252d36c21a7a2999620e31b25704db388369fc91edea0eacefe94612"
+    },
+    {
+      "file": "loaders/Client.js.arm64",
+      "bytes": 255464,
+      "sha256": "6ca3af834ba78bc98bf3a394d128436ca0ea6b21258fea7aa38e5ff5c834107a"
+    },
+    {
+      "file": "loaders/CPUInstructionCheck.exe",
+      "bytes": 210032,
+      "sha256": "e75629cb5343cc0195e743fdc656cbfe14d62fc5ecba8a69112486070bec8fa6"
+    },
+    {
+      "file": "loaders/editbin/editbin.exe",
+      "bytes": 21920,
+      "sha256": "8ca965bbbb557a37216ce6b1abbdb9c81b286b1c596464c086aecd0b954f54fc"
+    },
+    {
+      "file": "loaders/editbin/link.exe",
+      "bytes": 1710000,
+      "sha256": "cd28ed788f5c417427aa628ad7b6cb6a6917ade43e16a15bf809012fed542c5f"
+    },
+    {
+      "file": "loaders/ele64.exe",
+      "bytes": 44160,
+      "sha256": "d331ba11a02a8e4f7d61a90cf7536c5b609e95e68d3c04bad59a9868003351d4"
+    },
+    {
+      "file": "loaders/fontSetting.exe",
+      "bytes": 347248,
+      "sha256": "fd7810960b2bcabf7b3fe273a225efa04c6bd89021b31d0f0d71deeaf92b7a73"
+    },
+    {
+      "file": "loaders/GetPEFileInfo.exe",
+      "bytes": 222832,
+      "sha256": "8dd9bcbcd90ec812b32ec94197ca7d949e3476c1eddafc06f0e48636883b900c"
+    },
+    {
+      "file": "loaders/inject.exe",
+      "bytes": 192770048,
+      "sha256": "3390c3222db27aeea01a858303f7d67771779168cce976a523286f375e2bc649"
+    },
+    {
+      "file": "loaders/JoyCon2Mapper.exe",
+      "bytes": 884096,
+      "sha256": "5fbd1620eef70e540e45264eccf172c07481a25382a4597693f15ca503c8effd"
+    },
+    {
+      "file": "loaders/kmyHook.exe",
+      "bytes": 116336,
+      "sha256": "c2c38e1878ec66870420d1a8a4042953f3bf341c18b384b276aa9ce8551f454c"
+    },
+    {
+      "file": "loaders/kmyHookUnity.dll",
+      "bytes": 328808,
+      "sha256": "6a988d4d62b088d1b857cd8e74871c00fd8eb8edb6a7975adc62fa49bddb41b3"
+    },
+    {
+      "file": "loaders/krkr2Hook.dll",
+      "bytes": 611712,
+      "sha256": "39b148382df8357b0c992e5239580246635c1bc4fbe61f3e5f193d23711cd38a"
+    },
+    {
+      "file": "loaders/krkrzHook32.dll",
+      "bytes": 614272,
+      "sha256": "15c7c069913c0de5a63f519c03a1a6785a1fc078d47b4bd5889b5c8ce98bfbc3"
+    },
+    {
+      "file": "loaders/krkrzHook64.dll",
+      "bytes": 674688,
+      "sha256": "495ac704ff877fae2bf2c28cd572bc0d0bacbe35618f0d9812c8e595751c1d41"
+    },
+    {
+      "file": "loaders/mini_chcp.exe",
+      "bytes": 1072,
+      "sha256": "fd5139d17144a9b89b30d8d9e81da7ed793fdd80c09dd9f220296ad0a8690778"
+    },
+    {
+      "file": "loaders/MonoJunkiex64.dll",
+      "bytes": 772200,
+      "sha256": "b70413f100b619203b79aceb0b615839ce4223a65385df63776b9c500b4cc114"
+    },
+    {
+      "file": "loaders/MonoJunkiex86.dll",
+      "bytes": 630384,
+      "sha256": "a5d739914d1822131d3fa15958268e891b06400ca4cc22f8c5cde56fce47ddb2"
+    },
+    {
+      "file": "loaders/mzHook.dll",
+      "bytes": 1519728,
+      "sha256": "75c68e1e4e6eb1d83c7372ef327265b6bbfe7f7815343af559a451e87179ea4a"
+    },
+    {
+      "file": "loaders/mzHook32.dll",
+      "bytes": 1267304,
+      "sha256": "1bdc72910479c975f5af03c41f5625fb9b60573d85c0cd68f2bbb8629df455d7"
+    },
+    {
+      "file": "loaders/PIDDLLInject64.exe",
+      "bytes": 34408,
+      "sha256": "562e4e73f6b3071686fb72ec652ed00b72cfb8914811a410a95c7b9cda5230da"
+    },
+    {
+      "file": "loaders/PidFinder.exe",
+      "bytes": 172656,
+      "sha256": "cd0dd1bb0c60f21190b373cbcc0549b42532058ecb21cdb81656b7321468610d"
+    },
+    {
+      "file": "loaders/PythonHook.dll",
+      "bytes": 421480,
+      "sha256": "0e13fea418877d61dc9ee846a0e879c397ea55bb68e670bc142ff99ddb06024a"
+    },
+    {
+      "file": "loaders/PythonHook64.dll",
+      "bytes": 488552,
+      "sha256": "64608ec3ac3f13aad32441d61736a453e3314646cdeb4237d69ad99665b33a5e"
+    },
+    {
+      "file": "loaders/remoteOps.dll",
+      "bytes": 172544,
+      "sha256": "09f60ccc6d3caad2f31a0b2a7988cdbd871f142c59236e0894703b1c62ea6ff9"
+    },
+    {
+      "file": "loaders/RGSSHook.dll",
+      "bytes": 531840,
+      "sha256": "b9ec8ad2dea5da77ae004ad5b0a55961d1b7ebc49ce7aa202d33ca3f2ead2a4d"
+    },
+    {
+      "file": "loaders/RGSSHook64.dll",
+      "bytes": 640384,
+      "sha256": "a9562e77c2de48411d138e2418f5c10d38926e8d7b78649982d89cc50764e869"
+    },
+    {
+      "file": "loaders/Server.js.arm64",
+      "bytes": 264672,
+      "sha256": "a3601115a55ad20ae14b3f3c8a6d19ba84629722e43f8ac8345457ec922ef9e9"
+    },
+    {
+      "file": "loaders/SRPGHook.dll",
+      "bytes": 618096,
+      "sha256": "3f2b2112b1b1b34dbbf045c1ca640dda5c9de933a4492c31e648287ce28ae290"
+    },
+    {
+      "file": "loaders/tjsjson32.dll",
+      "bytes": 172648,
+      "sha256": "8858d86f25a0e8593b9c4971363311bfaa6ee4f6963294ccdab080a4ab17ec06"
+    },
+    {
+      "file": "loaders/tjsjson64.dll",
+      "bytes": 207472,
+      "sha256": "bf3de1c0193802da6c0d82bf45e5dfd7d6a2dcfdb27ddcd14ea5dcfb2e2895c0"
+    },
+    {
+      "file": "loaders/wolfHook.dll",
+      "bytes": 1024624,
+      "sha256": "8685a5863566279ae23149aa2f5361a0222401a028cd596bba76b2331240c3ff"
+    },
+    {
+      "file": "loaders/wolfHook3.dll",
+      "bytes": 1294720,
+      "sha256": "8aea65afb65bcfa7e21b597cc17129178658eda0b87e8b15b7f84e76e640c65f"
+    },
+    {
+      "file": "www/credits.html",
+      "bytes": 6511,
+      "sha256": "6a1fca513856bafe49893127489b3f42b64a9d4f372298526e53f84bde75e63e"
+    },
+    {
+      "file": "www/imageSimilarityWorker.js",
+      "bytes": 32783,
+      "sha256": "48875c57299d1ded913acfce33e005e1ee19b11986ccbd630bfee3bd86607852"
+    },
+    {
+      "file": "www/index.html",
+      "bytes": 7659,
+      "sha256": "8a413b698d81c2831e5806a99bff759be3429f2c6fc2764d4e544ae173bab66b"
+    },
+    {
+      "file": "www/loader.bin.0.52.0",
+      "bytes": 15182648,
+      "sha256": "d8e6a1471580b70660a2e378bc4151e57cca343efb9c2574a2433c2fb1d410f4"
+    },
+    {
+      "file": "www/loader.bin.0.67.1",
+      "bytes": 14617144,
+      "sha256": "9c8fab471dc02726f7e58a3b09ceafd82d34820044903021ee86ef488795ed9d"
+    },
+    {
+      "file": "www/loader.bin.ff",
+      "bytes": 19178700,
+      "sha256": "cba0e4ff9800c4d03919d522bc51d87bd6da36f3a6b69f325e526f5642a5269e"
+    },
+    {
+      "file": "www/loader.js",
+      "bytes": 1529,
+      "sha256": "9d6b5394d668cb4679c950a99474d6ec5ec5b4edcc1e8841a9eb2c90e28c4a94"
+    },
+    {
+      "file": "www/rawres/LangTL.json",
+      "bytes": 3510401,
+      "sha256": "a416042a811e910f23133d90690fd1f44d953d3982223807c3266dcd396adaf9"
+    }
+  ],
+  "directories": [
+    "JoyCon2Maps",
+    "gameLib",
+    "gameSaveBackup",
+    "loaders",
+    "locales",
+    "node_modules",
+    "pnacl",
+    "swiftshader",
+    "www"
+  ]
+}

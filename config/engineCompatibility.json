@@ -1,0 +1,357 @@
+{
+  "reviewedAt": "2026-11-01",
+  "notice": "Descrição do código e pesquisa; não certifica todas as versões ou jogos.",
+  "profiles": [
+    {
+      "id": "generic",
+      "name": "Arquivos genéricos",
+      "versions": "Formato do arquivo determina a cobertura",
+      "coverage": "Texto estruturado reconhecido",
+      "cheats": "Não implementado",
+      "commonIssue": "Não reconhece automaticamente a lógica de motores proprietários.",
+      "missing": [
+        "Adicionar parser específico por formato necessário",
+        "Comprovar round-trip e excluir código/configuração de máquina"
+      ],
+      "sources": [],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "choicescript",
+      "name": "ChoiceScript",
+      "versions": "Não implementado como parser dedicado",
+      "coverage": "Texto de cenas precisa preservar comandos",
+      "cheats": "Não implementado",
+      "commonIssue": "Comandos e indentação controlam escolhas e fluxo.",
+      "missing": [
+        "Parser de cenas que preserve comandos e variáveis",
+        "Testar escolhas após tradução"
+      ],
+      "sources": [
+        "https://www.choiceofgames.com/make-your-own-games/choicescript-intro/"
+      ],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "cocos",
+      "name": "Cocos Creator / Cocos2d-x",
+      "versions": "Creator 2/3 e Cocos2d-x separados",
+      "coverage": "Recursos legíveis JSON/JS/Lua",
+      "cheats": "Não implementado",
+      "commonIssue": "Scripts podem ser compilados ou distribuídos em .jsc.",
+      "missing": [
+        "Validar versões e referências de recursos",
+        "Não declarar cobertura de scripts cifrados sem extração comprovada"
+      ],
+      "sources": [
+        "https://docs.cocos.com/creator/3.8/manual/en/editor/publish/native-options"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "construct",
+      "name": "Construct",
+      "versions": "2 e 3; projeto e exportação diferem",
+      "coverage": "Extrai dados legíveis; gera arquivo de tradução adicional",
+      "cheats": "Não implementado",
+      "commonIssue": "Criar um JSON adicional não garante que o jogo o carregue.",
+      "missing": [
+        "Integrar carregamento real do arquivo gerado",
+        "Validar exportações e plugin de internacionalização"
+      ],
+      "sources": [
+        "https://www.construct.net/en/make-games/manuals/construct-3/plugin-reference/internationalization"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "defold",
+      "name": "Defold",
+      "versions": "Arquivos abertos e exportações compiladas diferem",
+      "coverage": "JSON/Lua de localização acessíveis",
+      "cheats": "Não implementado",
+      "commonIssue": "Fontes precisam conter os glifos usados; dados compilados exigem tratamento próprio.",
+      "missing": [
+        "Cobrir arquivos compilados e coleções",
+        "Validar placeholders e fontes no runtime"
+      ],
+      "sources": [
+        "https://defold.com/examples/gui/localization/",
+        "https://forum.defold.com/t/how-does-one-use-non-latin-characters-in-text-solved/70987"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "electron",
+      "name": "Electron / HTML5",
+      "versions": "Versão e configuração do aplicativo importam",
+      "coverage": "Arquivos acessíveis e ponte de runtime",
+      "cheats": "Depende da ponte do jogo; sem editor universal",
+      "commonIssue": "Context isolation e ausência de Node no renderer impedem hooks antigos.",
+      "missing": [
+        "Testar ASAR, preload e DOM sem alterar isolamento global",
+        "Validar versões atuais além das antigas listadas"
+      ],
+      "sources": [
+        "https://www.electronjs.org/docs/latest/tutorial/context-isolation"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "gamemaker",
+      "name": "GameMaker",
+      "versions": "Studio e versões recentes exigem ferramentas compatíveis",
+      "coverage": "Textos externos; data.win exige integração específica",
+      "cheats": "Sem editor universal implementado",
+      "commonIssue": "Bytecode e YYC não são formatos intercambiáveis.",
+      "missing": [
+        "Integrar e verificar ferramenta para data.win de cada versão",
+        "Testar retorno ao formato original e runtime YYC"
+      ],
+      "sources": [
+        "https://github.com/UnderminersTeam/UndertaleModTool/issues",
+        "https://underminersteam.github.io/usage/getting-started/"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "gdevelop",
+      "name": "GDevelop",
+      "versions": "Estruturas de projeto/exportação variam",
+      "coverage": "Objetos TextObject em JSON",
+      "cheats": "Não implementado",
+      "commonIssue": "Textos definidos em eventos/extensões podem ficar fora dos objetos da cena.",
+      "missing": [
+        "Cobrir eventos, objetos globais e recursos externos",
+        "Testar exportações que não trazem game.json"
+      ],
+      "sources": [
+        "https://forum.gdevelop.io/t/translate-extension/72249"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "godot",
+      "name": "Godot",
+      "versions": "3 e 4; formatos de importação variam",
+      "coverage": "Ponte de recursos, CSV/PO e pacotes compatíveis",
+      "cheats": "Sem cheats genéricos implementados",
+      "commonIssue": "Uma tradução precisa ser carregada/registrada; fonte e cultura afetam exibição.",
+      "missing": [
+        "Testar PCK normal e recursos importados por versão",
+        "Comprovar carregamento de PO/plurais e fallback de fontes"
+      ],
+      "sources": [
+        "https://docs.godotengine.org/en/stable/tutorials/i18n/internationalizing_games.html"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "krkr",
+      "name": "Kirikiri 2 / Z",
+      "versions": "Kirikiri 2, Z e x86/x64 separados",
+      "coverage": "Seleção de hook nativo; parser dedicado incompleto",
+      "cheats": "Depende de hook compatível, não validado nesta revisão",
+      "commonIssue": "UTF-8/Shift-JIS e variantes do script exigem leitura correta.",
+      "missing": [
+        "Parser KAG/TJS e pacotes XP3 por variante",
+        "Teste de fontes e variáveis no jogo real"
+      ],
+      "sources": [
+        "https://wamsoft.github.io/krkrz_dev/en/guide/CommandLine/"
+      ],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "agtk",
+      "name": "Pixel Game Maker MV",
+      "versions": "Sem matriz de versões comprovada",
+      "coverage": "Hook específico; integração incompleta",
+      "cheats": "Não comprovado",
+      "commonIssue": "Não deve usar o pipeline RPG Maker MV só pelo nome MV.",
+      "missing": [
+        "Adapter específico para dados e runtime",
+        "Validação de versão e arquitetura do componente"
+      ],
+      "sources": [],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "renpy",
+      "name": "Ren’Py",
+      "versions": "6/7 com Python 2; 8 com Python 3",
+      "coverage": "Scripts e camada de tradução",
+      "cheats": "Variáveis dependem da ponte RenPy; não usa comandos RPG Maker",
+      "commonIssue": "Atualizações podem mudar identificadores, compilação, GUI e API Python.",
+      "missing": [
+        "Validar extração de RPYC/RPA por versão",
+        "Testar interpolação, tags, fontes e persistência de variáveis"
+      ],
+      "sources": [
+        "https://www.renpy.org/doc/html/translation.html",
+        "https://www.renpy.org/doc/html/incompatible.html"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "bakin",
+      "name": "RPG Developer Bakin",
+      "versions": "Não implementado como adapter dedicado",
+      "coverage": "Referência do MTool; sem cobertura própria comprovada",
+      "cheats": "Não implementado",
+      "commonIssue": "O loader observado em outro produto não pode ser tratado como suporte deste programa.",
+      "missing": [
+        "Implementar detecção e formatos com licença/procedência",
+        "Testar fontes e recursos por versão"
+      ],
+      "sources": [
+        "https://mtool.app/"
+      ],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "rpgmaker",
+      "name": "RPG Maker MV / MZ",
+      "versions": "MV e MZ; plugins precisam de teste próprio",
+      "coverage": "JSON e overlay JavaScript",
+      "cheats": "Dinheiro, grupo, itens, variáveis e atalhos pelo overlay MV/MZ",
+      "commonIssue": "Plugins de diálogo, códigos de controle e fontes podem alterar o resultado.",
+      "missing": [
+        "Validar a versão do núcleo e a ordem dos plugins",
+        "Testar save/load, diálogo e atalhos em cada jogo"
+      ],
+      "sources": [
+        "https://rpgmakerofficial.com/product/MZ_help-en/01_10_01.html",
+        "https://www.caspergaming.com/cgmz/"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "rgss",
+      "name": "RPG Maker XP / VX / VX Ace",
+      "versions": "RGSS1, RGSS2 e RGSS3",
+      "coverage": "Dados Ruby e arquivos RGSS",
+      "cheats": "Hooks nativos dependem da arquitetura; não equivalem ao overlay MV/MZ",
+      "commonIssue": "RTP, DLL e encoding devem corresponder ao motor do jogo.",
+      "missing": [
+        "Validar Marshal e arquivos por geração",
+        "Verificar dependências RTP e fontes sem substituir DLL arbitrariamente"
+      ],
+      "sources": [
+        "https://rpgmakerofficial.com/support/rtp/"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "smile",
+      "name": "SMILE GAME BUILDER",
+      "versions": "Não implementado como adapter dedicado",
+      "coverage": "Sem cobertura própria comprovada",
+      "cheats": "Não implementado",
+      "commonIssue": "A listagem do MTool não equivale a suporte do OpenTranslator.",
+      "missing": [
+        "Implementar detector e parser próprios",
+        "Validar recursos, tradução e saves"
+      ],
+      "sources": [
+        "https://mtool.app/"
+      ],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "srpg",
+      "name": "SRPG Studio",
+      "versions": "Sem matriz de versões comprovada",
+      "coverage": "Hook nativo específico; sem pipeline dedicado completo",
+      "cheats": "Não comprovado",
+      "commonIssue": "Detectar o motor não comprova tradução nem edição de atributos.",
+      "missing": [
+        "Adapter específico e fixtures autorizadas",
+        "Validar fontes, save/load e hooks por arquitetura"
+      ],
+      "sources": [],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "tyrano",
+      "name": "TyranoBuilder / TyranoScript",
+      "versions": "Versão e exportação precisam ser identificadas",
+      "coverage": "Detecção disponível; fluxo dedicado ainda incompleto",
+      "cheats": "Não comprovado",
+      "commonIssue": "Tags de cenário e fontes não devem ser tratadas como texto simples.",
+      "missing": [
+        "Parser de cenário que preserve tags",
+        "Teste de exportação e exibição multilíngue"
+      ],
+      "sources": [
+        "https://tyranobuilder.com/faq/"
+      ],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "unity",
+      "name": "Unity",
+      "versions": "Mono e IL2CPP são perfis diferentes",
+      "coverage": "Recursos e integração XUnity dependente do loader",
+      "cheats": "Sem editor universal de atributos comprovado",
+      "commonIssue": "IL2CPP, TMP e fontes exigem combinação compatível de loader e plugin.",
+      "missing": [
+        "Verificar BepInEx/IL2CPP e arquitetura antes de instalar",
+        "Testar TMP, rich text e textos criados após carregar cenas"
+      ],
+      "sources": [
+        "https://github.com/bbepis/XUnity.AutoTranslator/blob/master/README.md",
+        "https://github.com/bbepis/XUnity.AutoTranslator/issues/856"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "unreal",
+      "name": "Unreal Engine",
+      "versions": "LocRes 0–3; Pak/IoStore tratados separadamente",
+      "coverage": "LocRes com preservação de hashes; pacote depende de ferramenta",
+      "cheats": "Sem cheats universais de gameplay",
+      "commonIssue": "Idioma carregado, hashes e prioridade dos pacotes influenciam a tradução.",
+      "missing": [
+        "Testar IoStore e novas versões de pacotes",
+        "Validar fontes, textos em imagens e strings fora do LocRes"
+      ],
+      "sources": [
+        "https://dev.epicgames.com/documentation/en-us/unreal-engine/localization-overview?application_version=4.27"
+      ],
+      "status": "PARTIAL"
+    },
+    {
+      "id": "vnmaker",
+      "name": "Visual Novel Maker",
+      "versions": "Não implementado como adapter dedicado",
+      "coverage": "Sem cobertura própria comprovada",
+      "cheats": "Não implementado",
+      "commonIssue": "Ausência de integração própria; não confundir com RenPy ou Tyrano.",
+      "missing": [
+        "Mapear formato e versões",
+        "Criar fixtures de extração/aplicação e teste em runtime"
+      ],
+      "sources": [
+        "https://mtool.app/"
+      ],
+      "status": "INCOMPLETE"
+    },
+    {
+      "id": "wolf",
+      "name": "Wolf RPG Editor",
+      "versions": "1, 2 e 3 exigem perfis separados",
+      "coverage": "Ponte Python e ferramentas de arquivo",
+      "cheats": "Hook automático suspenso sem assinatura confiável de versão",
+      "commonIssue": "Codificação antiga e formatos de arquivo diferentes podem causar texto corrompido.",
+      "missing": [
+        "Detectar versão/encoding do arquivo real",
+        "Testar reempacotamento e fontes sem trocar DLL por tamanho do EXE"
+      ],
+      "sources": [
+        "https://dreamsavior.net/translator-ver-5-10-31-automatic-character-encoding-for-wolf-rpg-engine/"
+      ],
+      "status": "PARTIAL"
+    }
+  ]
+}

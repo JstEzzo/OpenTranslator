@@ -1,0 +1,192 @@
+[
+  {
+    "file": "src/engines/cocos/cocos2dxAdapter.js",
+    "lines": 322,
+    "sha256": "52e29ea0a58b58fceaada6ae89843766a5959fdf8c1ae6cf76c717f736629084",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/cocos/cocosCreatorAdapter.js",
+    "lines": 204,
+    "sha256": "efb5f94ea8cecd26d1733dd4438e2f7061302b9c0137adc16bb55eb30b242bb1",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/construct/constructAdapter.js",
+    "lines": 169,
+    "sha256": "5bafcdf81aacdc613c7dd5022b297dfdc8c68ebc0c52f14d521b99c494a3f79f",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/defold/defoldAdapter.js",
+    "lines": 234,
+    "sha256": "3605c8ede8efc24effacaee9c8412a2cf97763dd8f375176f47e6fcd30c13b61",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/electron/electronAdapter.js",
+    "lines": 285,
+    "sha256": "42fd0e8c928d1c6d3f18d0dcd133ff59ac0889129a1d67c499e8fe891c4531ad",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/gamemaker/gameMakerAdapter.js",
+    "lines": 266,
+    "sha256": "b0338b1c6fe89424c4a501e534504717cbd698673d7995400b22842807f25297",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/gdevelop/gdevelopAdapter.js",
+    "lines": 207,
+    "sha256": "ba28ca8376efa089776ab2432bb7bdfc454eeb010555e7fa1b5a806a6cb8803a",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/generic/genericAdapter.js",
+    "lines": 325,
+    "sha256": "2dd3ee3b6abc2cc68818d90231e5c8b070e445e63d09650f40eb8943a4c70a6c",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/godot/godotAdapter.js",
+    "lines": 552,
+    "sha256": "5610ebf87f51d44a66bb3826b1f57d41bf150083e6a4258ce01f88c60cb78c29",
+    "entryPoints": [
+      "apply",
+      "detect",
+      "extract",
+      "inspect",
+      "launch",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/renpy/adapter/renpyAdapter.js",
+    "lines": 204,
+    "sha256": "97a4d90a9b6185db91dee89f3879c4348962da61baec69db53b254ee7e3347c5",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/renpy/renpyAdapter.js",
+    "lines": 8,
+    "sha256": "ba9b529fae049ecfc7662eda4985a1c785b606a654c795f29b6ecf1b53a72173",
+    "entryPoints": [],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/rpgmaker/rgssAdapter.js",
+    "lines": 189,
+    "sha256": "75c7d79e424045ba47182e92528fdb553a9ccbc4dca5989f650ccbd5f78c53b3",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/rpgmaker/rpgMakerAdapter.js",
+    "lines": 248,
+    "sha256": "400281618389d6ba55db48f601a8c10401f53f0f845df32e3e6a9043d1033e55",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/unity/unityAdapter.js",
+    "lines": 373,
+    "sha256": "9773f5fc246b66d552573f7de74b0c8e8a3309112e3e5dd35619eabd4b197076",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/unreal/unrealAdapter.js",
+    "lines": 205,
+    "sha256": "53b3498ca95395d1501754395ffe266c30fba66278bdec20f75baa3070d8e5f4",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  },
+  {
+    "file": "src/engines/wolf/wolfAdapter.js",
+    "lines": 218,
+    "sha256": "8f96eeb517870c284388f3ab9419954815194c2925cb4d748a19cd1d1f709e83",
+    "entryPoints": [
+      "apply",
+      "extract",
+      "rollback",
+      "validate"
+    ],
+    "scope": "Inspeção dirigida de entradas de extração/aplicação; não certificação de todas as linhas ou jogos"
+  }
+]

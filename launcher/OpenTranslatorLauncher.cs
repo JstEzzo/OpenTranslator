@@ -29,7 +29,7 @@ namespace OpenTranslatorLauncher
             foreach (var arg in args)
             {
                 if (arg.Equals("--smoke-test", StringComparison.OrdinalIgnoreCase)) smokeTest = true;
-                if (arg.Equals("--safe", StringComparison.OrdinalIgnoreCase)) safeMode = true;
+                if (arg.Equals("--safe", StringComparison.OrdinalIgnoreCase) || arg.Equals("--software-rendering", StringComparison.OrdinalIgnoreCase)) safeMode = true;
                 if (arg.Equals("--debug", StringComparison.OrdinalIgnoreCase) || arg.Equals("--diag", StringComparison.OrdinalIgnoreCase)) debugMode = true;
             }
 
@@ -1433,10 +1433,42 @@ namespace OpenTranslatorLauncher
                 engine.ServerPort, engine.ServerPid);
 
             OpenWebInterface();
+            if (webInterfaceOpened && !isDebugMode && trayIcon != null && trayIcon.Visible)
+            {
+                // Keep diagnostics available in the tray, with only the app window visible.
+                this.Hide();
+                WatchBackendLifetime();
+            }
         }
+
+        private Process watchedBackend;
+        private void WatchBackendLifetime()
+        {
+            var backend = engine.ActiveServerProcess;
+            if (backend == null || object.ReferenceEquals(backend, watchedBackend)) return;
+            watchedBackend = backend;
+            EventHandler finished = (sender, args) =>
+            {
+                if (this.IsDisposed || !this.IsHandleCreated) return;
+                this.BeginInvoke(new Action(() =>
+                {
+                    if (this.IsDisposed || !object.ReferenceEquals(engine.ActiveServerProcess, backend)) return;
+                    if (backend.ExitCode == 0) { this.Close(); return; }
+                    this.Show();
+                    this.WindowState = FormWindowState.Normal;
+                    ShowFailureUI("backend", "O programa encerrou com pendências",
+                        "Consulte os registros antes de abrir novamente.", engine.GetRecentLogSnippet());
+                }));
+            };
+            backend.Exited += finished;
+            if (backend.HasExited) finished(backend, EventArgs.Empty);
+        }
+
+        private bool webInterfaceOpened;
 
         private void OpenWebInterface()
         {
+            if (webInterfaceOpened) return;
             string url = "http://localhost:" + engine.ServerPort;
             try
             {
@@ -1461,34 +1493,29 @@ namespace OpenTranslatorLauncher
                         string profileDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenTranslatorProfile");
                         if (!Directory.Exists(profileDir)) Directory.CreateDirectory(profileDir);
 
-                        // Clear any orphaned lockfile if no browser window is running
-                        string lockFile = Path.Combine(profileDir, "lockfile");
-                        if (File.Exists(lockFile))
-                        {
-                            try { File.Delete(lockFile); } catch { }
-                        }
-
                         string debugArg = isDebugMode ? " --remote-debugging-port=9222" : "";
+                        string graphicsArg = isSafeMode ? " --disable-gpu" : "";
                         var psi = new ProcessStartInfo
                         {
                             FileName = browserApp,
-                            Arguments = "--app=" + url + debugArg + " --user-data-dir=\"" + profileDir + "\" --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --window-size=1200,800",
+                            Arguments = "--app=" + url + debugArg + graphicsArg + " --user-data-dir=\"" + profileDir + "\" --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --window-size=1200,800",
                             UseShellExecute = false
                         };
                         var proc = Process.Start(psi);
                         if (proc != null)
                         {
-                            Thread.Sleep(800);
-                            if (!proc.HasExited)
-                            {
-                                return;
-                            }
+                            // Chromium may exit after handing the request to its existing process.
+                            // A successful start must not also launch a default-browser tab.
+                            webInterfaceOpened = true;
+                            proc.Dispose();
+                            return;
                         }
                     }
                     catch { }
                 }
 
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                webInterfaceOpened = true;
             }
             catch (Exception ex)
             {

@@ -66,97 +66,52 @@ class ElectronAdapter extends BaseEngineAdapter {
   async extract(gameDir, options = {}) {
     const asarPath = this.findAsarPath(gameDir);
     const unpackedDir = this.findUnpackedAppDir(gameDir);
-
-    if (!asarPath && !unpackedDir) {
-      return { success: false, error: "Nenhum arquivo app.asar ou pasta resources/app encontrada.", texts: [], count: 0 };
-    }
-
+    if (!asarPath && !unpackedDir) return { success: false, error: "Nenhum app.asar ou diretório app encontrado.", texts: [], count: 0 };
+    const report = new PartialReport();
+    let sourceDir = unpackedDir;
     let filesToScan = [];
-    let isStaging = false;
-
     if (asarPath) {
-      const stagingDir = path.join(gameDir, ".opent_asar_staging");
-      if (!fs.existsSync(stagingDir)) {
-        fs.mkdirSync(stagingDir, { recursive: true });
-      }
-      if (global.log) global.log("info", "Electron: Inspecionando e extraindo arquivos de localização do app.asar...");
-      filesToScan = AsarUtil.extractTextFiles(asarPath, stagingDir, [".json", ".csv", ".txt"]);
-      sourceDir = stagingDir;
-      isStaging = true;
-    } else if (unpackedDir) {
-      const scanFiles = (dir) => {
+      sourceDir = path.join(gameDir, ".opent_asar_staging");
+      try {
+        fs.mkdirSync(sourceDir, { recursive: true });
+        filesToScan = AsarUtil.extractTextFiles(asarPath, sourceDir, [".json"]);
+      } catch (error) { report.fail(asarPath, error); }
+    } else {
+      const scan = dir => {
         try {
-          const entries = fs.readdirSync(dir, { withFileTypes: true });
-          for (const ent of entries) {
-    // FASE 9 / PASSO 59 — o relatorio decide o `success`.
-    const accApply = new PartialReport();
-            const p = path.join(dir, ent.name);
-            if (ent.isDirectory() && ent.name !== "node_modules" && !ent.name.startsWith(".")) scanFiles(p);
-            else if (ent.isFile() && (ent.name.endsWith(".json") || ent.name.endsWith(".csv") || ent.name.endsWith(".txt"))) filesToScan.push(p);
+          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const file = path.join(dir, entry.name);
+            if (entry.isDirectory() && entry.name !== "node_modules" && !entry.name.startsWith(".")) scan(file);
+            else if (entry.isFile() && /\.json$/i.test(entry.name)) filesToScan.push(file);
           }
-        } catch (e) {
-          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
-          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
-          accApply.fail(f, e);
-        }
+        } catch (error) { report.fail(dir, error); }
       };
-      scanFiles(unpackedDir);
-      sourceDir = unpackedDir;
+      scan(sourceDir);
     }
-
-    const allTexts = [];
-    const seen = new Set();
-
-    for (const filePath of filesToScan) {
-      const ext = path.extname(filePath).toLowerCase();
-      if (ext === ".json") {
-        try {
-          const content = JSON.parse(fs.readFileSync(filePath, "utf8"));
-          const relPath = path.relative(sourceDir, filePath).replace(/\\/g, "/");
-
-          const traverse = (obj, keyPath = []) => {
-            if (!obj || typeof obj !== "object") return;
-            for (const [k, v] of Object.entries(obj)) {
-              const curKey = [...keyPath, k];
-              if (typeof v === "string") {
-                const clean = v.trim();
-                if (clean.length > 1 && !seen.has(clean)) {
-                  // Filtra caminhos, URLs e chaves técnicas
-                  if (!clean.startsWith("http") && !clean.includes("/") && !/^[a-zA-Z0-9_]+$/.test(clean)) {
-                    seen.add(clean);
-                    const { protectedText, tokens } = this.codeProtector.protect(clean, "electron");
-                    allTexts.push({
-                      id: allTexts.length,
-                      file: relPath,
-                      keyPath: curKey.join("."),
-                      original: clean,
-                      clean,
-                      protectedText,
-                      tokens,
-                      engine: "electron"
-                    });
-                  }
-                }
-              } else if (typeof v === "object") {
-                traverse(v, curKey);
+    const texts = [];
+    for (const file of filesToScan.sort()) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+        const relative = path.relative(sourceDir, file).replace(/\\/g, "/");
+        const walk = (object, keys = []) => {
+          if (!object || typeof object !== "object") return;
+          for (const [key, value] of Object.entries(object)) {
+            const segments = [...keys, key];
+            if (typeof value === "string") {
+              const clean = value.trim();
+              if (clean.length > 1 && !/^https?:/.test(clean) && !clean.includes("/") && !/^[a-zA-Z0-9_]+$/.test(clean)) {
+                const { protectedText, tokens } = this.codeProtector.protect(clean, "electron");
+                texts.push({ id: texts.length, file: relative, keyPath: segments.join("."), keySegments: segments,
+                  original: value, clean, protectedText, tokens, engine: "electron" });
               }
-            }
-          };
-
-          traverse(content);
-        } catch (e) {
-          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
-          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
-          accApply.fail(targetFile, e);
-        }
-      }
+            } else walk(value, segments);
+          }
+        };
+        walk(parsed);
+        report.ok();
+      } catch (error) { report.fail(file, error); }
     }
-
-    return accApply.report({
-      texts: allTexts,
-      count: allTexts.length,
-      extractedFilesCount: filesToScan.length
-});
+    return report.report({ texts, count: texts.length, extractedFilesCount: filesToScan.length });
   }
 
   /**
@@ -194,7 +149,7 @@ class ElectronAdapter extends BaseEngineAdapter {
             const raw = fs.readFileSync(targetFile, "utf8");
             const parsed = JSON.parse(raw);
             if (t.keyPath) {
-              const keys = t.keyPath.split(".");
+              const keys = Array.isArray(t.keySegments) ? t.keySegments : t.keyPath.split(".");
               let cur = parsed;
               for (let i = 0; i < keys.length - 1; i++) {
                 if (cur[keys[i]]) cur = cur[keys[i]];
@@ -236,6 +191,7 @@ class ElectronAdapter extends BaseEngineAdapter {
     }
 
     // Caso 2: Aplicação com desempacotamento e repack de app.asar
+    const accApply = new PartialReport();
     const origBackup = asarPath + ".orig";
     if (!fs.existsSync(origBackup)) {
       fs.copyFileSync(asarPath, origBackup);
@@ -258,11 +214,11 @@ class ElectronAdapter extends BaseEngineAdapter {
             const raw = fs.readFileSync(targetFile, "utf8");
             const parsed = JSON.parse(raw);
             if (t.keyPath) {
-              const keys = t.keyPath.split(".");
+              const keys = Array.isArray(t.keySegments) ? t.keySegments : t.keyPath.split(".");
               let cur = parsed;
               for (let i = 0; i < keys.length - 1; i++) {
     // FASE 9 / PASSO 59 — o relatorio decide o `success`.
-    const accApply = new PartialReport();
+
                 if (cur[keys[i]]) cur = cur[keys[i]];
               }
               const restored = this.codeProtector.restore(tr, t.tokens || []);
@@ -276,6 +232,11 @@ class ElectronAdapter extends BaseEngineAdapter {
             accApply.fail(asarPath, e);
           }
         }
+      }
+
+      if (accApply.failed) {
+        fs.rmSync(stagingDir, { recursive: true, force: true });
+        return accApply.report({ modifiedFiles: [], count: 0 });
       }
 
       // Re-empacota via AsarRepacker

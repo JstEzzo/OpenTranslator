@@ -135,6 +135,7 @@ class UnityAdapter extends BaseEngineAdapter {
 
     try {
       let rawTexts = [];
+      let assetBridgeError = null;
       try {
         const stdout = execFileSync(
           pyBin,
@@ -145,7 +146,8 @@ class UnityAdapter extends BaseEngineAdapter {
         const bridgeResult = JSON.parse(stdout);
         rawTexts = bridgeResult.texts || [];
       } catch (assetErr) {
-        // Asset bridge failed or found no serialized assets
+        assetBridgeError = assetErr;
+        // Keep the failure unless the managed-assembly fallback actually succeeds.
       }
 
       // If no serialized TextAssets found and engine is Mono, extract managed assembly literals
@@ -179,6 +181,8 @@ class UnityAdapter extends BaseEngineAdapter {
           }
         }
       }
+
+      if (!rawTexts.length && assetBridgeError) throw new Error("Falha ao extrair recursos Unity: " + assetBridgeError.message);
 
       const protectedTexts = [];
       for (const t of rawTexts) {
