@@ -110,3 +110,8 @@ archives/transactions/
 /src/data/
 /src/Tool/
 /Tool/
+
+# User state is created at first start and must never be distributed from a developer machine.
+/data/
+/gameLib/
+/logs/
