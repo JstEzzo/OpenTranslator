@@ -5,7 +5,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const RenpyRuntime = require('../../src/engines/renpy/runtime/renpyRuntime');
+const RenpyRuntime = require('../../../src/engines/renpy/runtime/renpyRuntime');
 
 async function run() {
   console.log('--- [TEST] RenpyRuntime Unit Tests ---');

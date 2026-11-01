@@ -19,7 +19,7 @@
 
 const fs = require("fs");
 const path = require("path");
-if (!global.ROOT) global.ROOT = path.resolve(__dirname, '..');
+if (!global.ROOT) global.ROOT = path.resolve(__dirname, '..', '..');
 if (!global.DATA_DIR) global.DATA_DIR = path.join(global.ROOT, "data");
 
 // ==================== FILTERING CONSTANTS ====================
@@ -116,7 +116,7 @@ function isTranslatableText(clean) {
 }
 
 function loadSyntaxRules() {
-  const cfgPath = path.join(global.ROOT || path.join(__dirname, ".."), "config", "syntax_rules.json");
+  const cfgPath = path.join(global.ROOT || path.join(__dirname, "..", ".."), "config", "syntax_rules.json");
   try {
     if (fs.existsSync(cfgPath)) {
       return JSON.parse(fs.readFileSync(cfgPath, "utf8"));

@@ -22,13 +22,13 @@ const {
   restoreEscapeCodes,
   extractGameTexts,
   getLastRealKey
-} = require("./extractor");
+} = require("../extractors/extractor");
 
 let unrealEngineHandler = null;
 function getUnrealEngineHandler() {
   if (!unrealEngineHandler) {
     try {
-      const Handler = require("./engines/unreal/unrealHandler");
+      const Handler = require("../engines/unreal/unrealHandler");
       unrealEngineHandler = new Handler();
     } catch (e) {
       unrealEngineHandler = null;
@@ -44,16 +44,16 @@ const {
   getCommonTranslation,
   loadGlossary,
   loadCfg
-} = require("./cache");
+} = require("../services/cache");
 
-const { translateBatch, clearEngineBans } = require("./translator");
-const { isTranslatableText, findDataDir, isCodeOrFormulaKey, isAudioParamKey } = require("./utils");
+const { translateBatch, clearEngineBans } = require("../translation/translator");
+const { isTranslatableText, findDataDir, isCodeOrFormulaKey, isAudioParamKey } = require("../utils/utils");
 
 let renpyCommon = null;
 function getRenpyCommon() {
   if (!renpyCommon) {
     try {
-      renpyCommon = require("./engines/renpy/renpyCommon");
+      renpyCommon = require("../engines/renpy/renpyCommon");
     } catch (e) {
       renpyCommon = null;
     }
@@ -500,7 +500,7 @@ function patchGameData(gameDir, texts, translations) {
       const pluginFilePath = path.join(wwwDir, file);
       if (fs.existsSync(pluginFilePath)) {
         try {
-          const PluginSafePatcher = require("./core/pluginSafePatcher");
+          const PluginSafePatcher = require("./pluginSafePatcher");
           const patcher = new PluginSafePatcher();
           const transMap = new Map();
           for (const [keyStr, entry] of fileTrans) {
@@ -911,96 +911,21 @@ function patchGameData(gameDir, texts, translations) {
 
 function backupGameData(gameDir) {
   const dataDir = findDataDir(gameDir);
-  if (!dataDir) return "";
-  const bakDir = dataDir + "_bak_" + Date.now();
-  try {
-    fs.cpSync(dataDir, bakDir, { recursive: true, force: true });
-    const wwwDir = path.dirname(dataDir);
-    const htmlPath = path.join(wwwDir, "index.html");
-    if (fs.existsSync(htmlPath)) {
-      try {
-        fs.copyFileSync(htmlPath, path.join(bakDir, "index.html"));
-      } catch (e) {}
-    }
-    const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
-    if (fs.existsSync(pluginsJsPath)) {
-      try {
-        fs.copyFileSync(pluginsJsPath, path.join(bakDir, "plugins.js_bak"));
-      } catch (e) {}
-    }
-    const pluginsDir = path.join(wwwDir, "js", "plugins");
-    if (fs.existsSync(pluginsDir)) {
-      try {
-        const pluginsBakDir = path.join(bakDir, "js_plugins_bak");
-        fs.mkdirSync(pluginsBakDir, { recursive: true });
-        const pluginFiles = fs.readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
-        for (const f of pluginFiles) {
-          fs.copyFileSync(path.join(pluginsDir, f), path.join(pluginsBakDir, f));
-        }
-      } catch (e) {}
-    }
-    global.log("info", "Backup: " + path.basename(bakDir));
-    return bakDir;
-  } catch (e) {
-    global.log("error", "Backup failed: " + e.message);
-    return "";
+  if (!dataDir) return '';
+  try { return require('./legacyGameRestore').backupGameData(dataDir); }
+  catch (err) {
+    if (typeof global.log === 'function') global.log('error', 'Backup nao confirmado: ' + err.message);
+    return '';
   }
 }
 
 function restoreGameData(bakDir) {
-  if (!bakDir || !fs.existsSync(bakDir)) return false;
-  const parentDir = path.dirname(bakDir);
-  const baseName = path.basename(bakDir).replace(/_bak_\d+$/, "");
-  const origDir = path.join(parentDir, baseName);
-  try {
-    if (fs.existsSync(origDir))
-      fs.rmSync(origDir, { recursive: true, force: true });
-    fs.cpSync(bakDir, origDir, { recursive: true, force: true });
-    const bakHtml = path.join(bakDir, "index.html");
-    const wwwDir = path.dirname(origDir);
-    if (fs.existsSync(bakHtml)) {
-      try {
-        const htmlPath = path.join(wwwDir, "index.html");
-        if (fs.existsSync(htmlPath)) fs.unlinkSync(htmlPath);
-        fs.copyFileSync(bakHtml, htmlPath);
-      } catch (e) {}
-    }
-    const bakPlugins = path.join(bakDir, "plugins.js_bak");
-    const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
-    if (fs.existsSync(bakPlugins)) {
-      try {
-        if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
-        fs.copyFileSync(bakPlugins, pluginsJsPath);
-      } catch (e) {}
-    }
-    const bakPluginsDir = path.join(bakDir, "js_plugins_bak");
-    const pluginsDir = path.join(wwwDir, "js", "plugins");
-    if (fs.existsSync(bakPluginsDir) && fs.existsSync(pluginsDir)) {
-      try {
-        const files = fs.readdirSync(bakPluginsDir);
-        for (const f of files) {
-          fs.copyFileSync(path.join(bakPluginsDir, f), path.join(pluginsDir, f));
-        }
-      } catch (e) {}
-    }
-    const cheatScript = path.join(wwwDir, "CheatOverlay.js");
-    if (fs.existsSync(cheatScript)) {
-      try {
-        fs.unlinkSync(cheatScript);
-      } catch (e) {}
-    }
-    fs.rmSync(bakDir, { recursive: true, force: true });
-    global.log("info", "Restored original data from backup");
-    return true;
-  } catch (e) {
-    global.log("error", "Restore failed: " + e.message);
-    return false;
-  }
+  return require('./legacyGameRestore').restoreGameData(bakDir);
 }
 
 function restoreOldestBackup(gameDir, sessionRef = {}) {
   try {
-    const BackupManager = require("./core/backupManager");
+    const BackupManager = require("./backupManager");
     const bm = new BackupManager();
     const res = bm.restoreSessionBackup(gameDir, sessionRef);
     if (res.success) {
@@ -1039,44 +964,12 @@ function restoreOldestBackup(gameDir, sessionRef = {}) {
           path.basename(oldestBak)
       );
 
-      if (fs.existsSync(dataDir)) {
-        fs.rmSync(dataDir, { recursive: true, force: true });
+      const restored = restoreGameData(oldestBak);
+      if (!restored.ok) {
+        global.log('error', 'Auto-restauracao incompleta: ' + restored.error);
+        return false;
       }
-
-      fs.cpSync(oldestBak, dataDir, { recursive: true, force: true });
-
-      const wwwDir = path.dirname(dataDir);
-      const bakPlugins = path.join(oldestBak, "plugins.js_bak");
-      const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
-      if (fs.existsSync(bakPlugins)) {
-        try {
-          if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
-          fs.copyFileSync(bakPlugins, pluginsJsPath);
-        } catch (e) {}
-      }
-
-      const pluginsBakDir = path.join(oldestBak, "js_plugins_bak");
-      const pluginsDir = path.join(wwwDir, "js", "plugins");
-      if (fs.existsSync(pluginsBakDir) && fs.existsSync(pluginsDir)) {
-        try {
-          const bakPlugins = fs.readdirSync(pluginsBakDir).filter(f => f.endsWith(".js"));
-          for (const f of bakPlugins) {
-            const dest = path.join(pluginsDir, f);
-            if (fs.existsSync(dest)) fs.unlinkSync(dest);
-            fs.copyFileSync(path.join(pluginsBakDir, f), dest);
-          }
-        } catch (e) {}
-      }
-
-      for (const bak of backups) {
-        if (fs.existsSync(bak.path)) {
-          fs.rmSync(bak.path, { recursive: true, force: true });
-        }
-      }
-      global.log(
-        "info",
-        "Self-Healing: Backup restaurado e arquivos temporários limpos com sucesso."
-      );
+      return true;
     }
   } catch (e) {
     global.log("warn", "Falha ao processar auto-restauração de backup: " + e.message);
@@ -1122,7 +1015,19 @@ async function findGameOnDisk(fileName) {
                 results.push({
                   name: e.name,
                   exePath: target,
-                  engine: "mz",
+                  // FASE 7 / PASSO 32 — SEM default de engine.
+                  //
+                  // Este campo era `engine: "mz"` para todo jogo encontrado,
+                  // sem nenhuma verificação. A UI exibe o valor, e o adapter,
+                  // o extractor e a estratégia de tradução partem dele: um
+                  // jogo RenPy aparecia como "MZ" e todo o fluxo seguinte era
+                  // escolhido a partir de um motor inventado.
+                  //
+                  // O motor é preenchido pela detecção real, depois do
+                  // scan. Aqui não há campo `engine` — e o enrich, abaixo,
+                  // sempre o define, inclusive para `unknown`.
+                  engine: null,
+                  engineDetected: false,
                   size: st.size,
                   mtime: st.mtimeMs,
                 });
@@ -1143,11 +1048,61 @@ async function findGameOnDisk(fileName) {
     }
   }
   const seen = new Set();
-  return results.filter((r) => {
+  const unique = results.filter((r) => {
     if (seen.has(r.exePath)) return false;
     seen.add(r.exePath);
     return true;
   });
+
+  // ------------------------------------------------------------------
+  // FASE 7 / PASSO 32 — A BUSCA NO DISCO DETECTA O MOTOR DE VERDADE
+  //
+  // Cada jogo encontrado era rotulado `engine: "mz"` sem qualquer verificação:
+  //
+  //     results.push({ name: e.name, exePath: target, engine: "mz", ... });
+  //
+  // A UI exibe esse campo. O usuário abria um jogo RenPy e via "MZ" no cartão,
+  // e tudo a partir daí — adapter escolhido, extractor, estratégia de
+  // tradução — partia de um motor inventado. Não era um default visual: era um
+  // default que decidia o fluxo.
+  //
+  // Agora cada jogo passa pelo `EngineDetector` real. Quando a detecção não
+  // tem confiança suficiente, o campo diz `unknown` e a confiança é
+  // propagada, para que a UI possa dizer "não identificado" em vez de mentir.
+  // ------------------------------------------------------------------
+  const EngineDetector = require('./engineDetector');
+  const MIN_CONFIDENCE_TO_LABEL = 0.5;
+
+  const enriched = [];
+  for (const r of unique) {
+    let engine = 'unknown';
+    let confidence = 0;
+    let engineVersion = 'unknown';
+    let evidence = null;
+    try {
+      const det = await EngineDetector.detect(r.exePath);
+      engine = det && det.engine ? det.engine : 'unknown';
+      confidence = det && typeof det.confidence === 'number' ? det.confidence : 0;
+      engineVersion = (det && det.engineVersion) || 'unknown';
+      evidence = (det && det.evidence) || null;
+      if (confidence < MIN_CONFIDENCE_TO_LABEL) {
+        engine = 'unknown';
+      }
+    } catch (e) {
+      logWarn(`[findGameOnDisk] Detecção falhou para ${r.exePath}: ${e.message}`);
+      engine = 'unknown';
+      confidence = 0;
+    }
+    enriched.push({
+      ...r,
+      engine,
+      engineVersion,
+      engineConfidence: confidence,
+      engineEvidence: evidence,
+      engineDetected: engine !== 'unknown',
+    });
+  }
+  return enriched;
 }
 
 async function runPythonScript(scriptPath, args) {

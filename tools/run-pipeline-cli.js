@@ -9,10 +9,10 @@ global.CFG_PATH = path.join(global.DATA_DIR, "openT.json");
 global.LOG_PATH = path.join(global.DATA_DIR, "openT.log");
 global.PORT = 3000;
 
-require("./src/logger");
-require("./src/cache");
+require("../src/utils/logger");
+require("../src/services/cache");
 
-const { executeTranslationPipeline, detectEngine } = require("./src/gameEngine");
+const { executeTranslationPipeline, detectEngine } = require("../src/core/gameEngine");
 
 const gameDir = process.argv[2];
 if (!gameDir || !fs.existsSync(gameDir)) {

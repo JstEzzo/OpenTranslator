@@ -19,6 +19,7 @@ const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
 const GodotLocalizationProvider = require('./godotLocalizationProvider');
+const { PartialReport } = require('../../core/partialApply');
 
 class GodotAdapter extends BaseEngineAdapter {
   constructor() {
@@ -123,6 +124,9 @@ class GodotAdapter extends BaseEngineAdapter {
   async extractTexts(gameDir, options = {}) {
     const findings = GodotLocalizationProvider.discover(gameDir);
     const allTexts = [];
+    // FASE 9 / PASSO 60 — escopo do METODO. O `return` do fim do metodo le
+    // esta instancia, e ela precisa receber as falhas dos blocos internos.
+    const accExtract = new PartialReport();
 
     // 1. Arquivos CSV nativos de localização soltos
     for (const csvPath of findings.csvFiles) {
@@ -215,21 +219,34 @@ class GodotAdapter extends BaseEngineAdapter {
                 allTexts.push(item);
               }
             }
-            try { fs.unlinkSync(tmpOut); } catch (_) {}
+    // FASE 9 / PASSO 60 — o .tmp da extração não removido é registrado.
+    //
+    // `try { fs.unlinkSync(tmpOut); } catch (_) {}` e um caso a mao: o conversor
+    // em lote recusa de proposito catch vazio que divide linha com o `try`,
+    // porque casar so a cauda derruba o `try` e deixa `} catch` solto. Ver
+    // tools/conv59.js.
+    if (fs.existsSync(tmpOut)) {
+      try { fs.unlinkSync(tmpOut); } catch (e) { accExtract.fail(tmpOut, e); }
+    }
           }
         } catch (e) {
           if (global.log) global.log('warn', `[Godot] Falha na extração de ${pckName}: ${e.message}`);
+          // FASE 9 / PASSO 60 — a extração deste .pck FALHOU. Era engolida e o
+          // adapter devolvia `success: true`: o conteudo inteiro daquele .pck
+          // sumia do UNIVERSO, e a cobertura (FASE 4) era calculada sobre o que
+          // sobrou — um numero menor, e pareceria legitimo.
+          accExtract.fail(pckName, e);
           if (fs.existsSync(tmpOut)) { try { fs.unlinkSync(tmpOut); } catch (_) {} }
         }
       }
     }
 
-    return {
-      success: true,
+    // FASE 9 / PASSO 60 — quem decide o `success` e o relatorio.
+    return accExtract.report({
       texts: allTexts,
       count: allTexts.length,
       nativeFilesCount: findings.csvFiles.length + findings.poFiles.length
-    };
+    });
   }
 
   async extractResources(gameDir, options = {}) {
@@ -469,6 +486,7 @@ class GodotAdapter extends BaseEngineAdapter {
   async rollback(gameDir, options = {}) {
     const py = this._findPython();
     const bridgeScript = path.join(__dirname, "godot_bridge.py");
+      const accApply = new PartialReport();
     const restoredFiles = [];
 
     // 1. Rollback de PCKs via meta_json salvos nas sessões de backup
@@ -507,12 +525,15 @@ class GodotAdapter extends BaseEngineAdapter {
       if (fs.existsSync(backupBase)) {
         fs.rmSync(backupBase, { recursive: true, force: true });
       }
-    } catch (_) {}
+    } catch (e) {
+      // FASE 9 / PASSO 57 — a falha deixou de ser silenciosa.
+      // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+      accApply.fail(backupBase, e);
+    }
 
-    return {
-      success: true,
+    return accApply.report({
       restoredFiles: Array.from(new Set(restoredFiles))
-    };
+});
   }
 
   async diagnose(gameDir) {

@@ -8,7 +8,7 @@
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
 [![Node.js](https://img.shields.io/badge/Node.js-Port%C3%A1til%20Integrado-green?logo=node.js)](#)
-[![Status](https://img.shields.io/badge/Status-Produ%C3%A7%C3%A3o%20Est%C3%A1vel-success)](#)
+[![Status](https://img.shields.io/badge/Status-Em%20valida%C3%A7%C3%A3o-yellow)](#)
 [![Launcher](https://img.shields.io/badge/Launcher-Nativo%20EXE-orange)](#)
 
 </div>
@@ -22,11 +22,29 @@
 - **Tela de Recuperação & Safe Start**: Em caso de portas ocupadas ou processos travados, o launcher oferece modos guiados de correção e recuperação.
 - **Rollback Atômico com SHA-256**: Os arquivos originais dos jogos contam com backup automático e validação criptográfica byte-a-byte.
 - **Dual Hook em Tempo Real (Porta 16005)**: Suporte a overlay e cheats em tempo real durante a execução do jogo.
-- **Zero Configuração Manual**: Runtime integrado e caminhos 100% dinâmicos (funciona em qualquer diretório).
+- **Runtime principal integrado**: o pacote portátil inclui Node.js e dependências nativas. Ferramentas adicionais de alguns motores podem exigir instalação separada; consulte o manifesto do pacote.
 
 ---
 
+## Estado de validação
+
+A revisão de 31/10/2026 está registrada em [docs/audit/REVIEW-2026-10-31.md](docs/audit/REVIEW-2026-10-31.md). Os testes automatizados não certificam todos os motores nem substituem testes de tradução e restauração em jogos reais. O inventário de arquivos não representa leitura semântica integral.
+
+Para validar o código em desenvolvimento, instale as dependências com `npm ci` e execute `npm run verify`. A nova verificação no GitHub usa Node 24 em Windows. O empacotamento portátil foi refeito para compilar o launcher C# e incluir Node 24 e dependências nativas. O workflow gera um artefato de teste; releases por tag ficam como rascunho. Isso ainda não certifica todos os motores em máquina limpa.
+
+### Gerar pacote portátil (Windows x64)
+
+Com Node 24 e dependências instaladas por `npm ci`, execute:
+
+```powershell
+node tools/package_release.js --output ..\OpenTranslator-portable
+```
+
+A pasta de destino deve ser nova e ficar fora da árvore do código. O gerador compila o launcher da fonte, inclui `bin/node.exe` e `node_modules`, valida SQLite/WS/ExcelJS com o próprio runtime empacotado e gera `RELEASE_MANIFEST.json` com hashes e ferramentas opcionais presentes/ausentes. Dados pessoais e scripts avulsos de manutenção ficam fora da distribuição.
+
 ## 🎮 Motores de Jogos Suportados
+
+A tabela abaixo descreve as capacidades anunciadas pelo projeto; a compatibilidade deve ser confirmada por versão do motor e por jogo.
 
 | Motor de Jogo | Tradução Estática | Hook em Tempo Real | Recursos Especiais |
 |---|:---:|:---:|---|

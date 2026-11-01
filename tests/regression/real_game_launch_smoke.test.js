@@ -20,8 +20,8 @@ const path = require("path");
 const crypto = require("crypto");
 const { spawn, spawnSync } = require("child_process");
 
-const { extractGameTexts } = require("../extractor");
-const { patchGameData, backupGameData, restoreGameData } = require("../../src/gameEngine");
+const { extractGameTexts } = require("../../src/extractors/extractor");
+const { patchGameData, backupGameData, restoreGameData } = require("../../src/core/gameEngine");
 const PluginSafePatcher = require("../../src/core/pluginSafePatcher");
 const ownedProcessRegistry = require("../../src/core/ownedProcessRegistry");
 

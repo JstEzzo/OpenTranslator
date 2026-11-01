@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { formatRenpyStringLiteral, healRenpyVariables, RENPY_COMMON_STRINGS } = require('../renpyCommon');
+const { PartialReport } = require('../../../core/partialApply');
 
 class RenpyInjector {
   constructor(options = {}) {
@@ -108,7 +109,10 @@ class RenpyInjector {
     initContent += `# Arquivo gerado de forma puramente aditiva em game/tl/pt_BR/\n`;
     initContent += `# Preserva 100% dos scripts originais sem modificar script.rpy, screens.rpy ou gui.rpy.\n\n`;
     initContent += `init -999 python:\n`;
-    initContent += `    config.default_language = "pt_BR"\n\n`;
+    initContent += `    # OpenTranslator Universal Safety Net: previne NameError se [PT] for avaliado no store\n`;
+    initContent += `    PT = ""\n`;
+    initContent += `    config.default_language = "pt_BR"\n`;
+    initContent += `    config.language = "pt_BR"\n\n`;
     initContent += `init python:\n`;
     initContent += `    def _ot_ensure_language():\n`;
     initContent += `        if getattr(_preferences, "language", None) not in ("pt_BR",):\n`;
@@ -154,7 +158,7 @@ class RenpyInjector {
 
     // Incorpora strings comuns canônicas de engine Ren'Py (telas comuns, botões, confirmações)
     const existingOriginals = new Set(translations.map(t => t.original));
-    if (RENPY_COMMON_STRINGS) {
+    if (options.includeCommonStrings !== false && RENPY_COMMON_STRINGS) {
       for (const cs of RENPY_COMMON_STRINGS) {
         if (!existingOriginals.has(cs.original)) {
           stringsList.push({
@@ -181,7 +185,10 @@ class RenpyInjector {
         blockCount++;
 
         const fOld = formatRenpyStringLiteral(entry.original);
-        const healedTrans = healRenpyVariables(entry.original, entry.translated);
+        let healedTrans = healRenpyVariables(entry.original, entry.translated);
+        if (healedTrans.startsWith('[PT] ') && !entry.original.includes('[PT]')) {
+          healedTrans = healedTrans.slice(5);
+        }
         const fNew = formatRenpyStringLiteral(healedTrans);
         entriesContent += `    # ${entry.file || 'source'}:${entry.line || 0}\n`;
         entriesContent += `    old ${fOld}\n`;
@@ -215,20 +222,47 @@ class RenpyInjector {
     modifiedFiles.push(screensPath);
 
     // Remove eventuais arquivos .rpyc antigos da tradução para forçar compilação limpa
+    //
+    // FASE 9 / PASSO 61 — o `.rpyc` obsoleto nao removido e o pior dos
+    // "best-effort" deste arquivo.
+    //
+    // O Ren'Py da PREFERENCIA ao .rpyc compilado sobre o .rpy. Se o unlink
+    // falhasse e o `.rpyc` antigo sobrevivesse, o jogo continuaria usando a
+    // traducao ANTERIOR — e o `return { success: true }` de baixo confirmaria
+    // uma geracao de traducao que o jogo nunca vai mostrar. O usuario
+    // retraduz, o status diz que deu certo, e a tela nao muda.
+    //
+    // Por isso aqui a falha e registrada, e o retorno carrega os .rpyc que
+    // sobraram: quem chamou precisa poder avisar "feche e reabra o jogo".
+    const staleRpyc = [];
     for (const baseName of ['000_opentranslator_init', 'strings', 'dialogues', 'screens', '000_opentranslator']) {
       const rpyc = path.join(tlDir, `${baseName}.rpyc`);
       if (fs.existsSync(rpyc)) {
-        try { fs.unlinkSync(rpyc); } catch (e) {}
+        try {
+          fs.unlinkSync(rpyc);
+        } catch (e) {
+          staleRpyc.push({ file: rpyc, error: e.message });
+        }
       }
     }
 
     const totalStrings = stringsData.count + dialoguesData.count + screensData.count;
 
+    // FASE 9 / PASSO 61 — `success` falso quando sobrou .rpyc antigo, porque
+    // nesse estado a traducao gerada aqui NAO e a que o jogo vai exibir.
     return {
-      success: true,
+      success: staleRpyc.length === 0,
+      status: staleRpyc.length === 0 ? 'INJECTED' : 'STALE_RPYC_REMAINED',
       tlDir,
       filesGenerated: modifiedFiles,
-      stringsCount: totalStrings
+      stringsCount: totalStrings,
+      staleRpyc,
+      warning: staleRpyc.length
+        ? `${staleRpyc.length} arquivo(s) .rpyc antigo(s) nao puderam ser `
+          + 'removidos. O Ren' + "'" + 'Py prefere o .rpyc compilado, entao o jogo '
+          + 'pode continuar exibindo a traducao ANTERIOR. Feche o jogo '
+          + 'completamente e traduza de novo.'
+        : null,
     };
   }
 
@@ -238,6 +272,9 @@ class RenpyInjector {
   async rollback(gameDir) {
     const gameSubDir = this.resolveGameSubDir(gameDir);
     const tlDir = path.join(gameSubDir, 'tl', 'pt_BR');
+    // FASE 9 / PASSO 59 — escopo do METODO. A declaração anterior vivia dentro
+    // de um `try`, e o `return` do fim do metodo precisa desta instância.
+    const accApply = new PartialReport();
 
     let removedCount = 0;
     if (fs.existsSync(tlDir)) {
@@ -247,7 +284,10 @@ class RenpyInjector {
         try {
           fs.unlinkSync(full);
           removedCount++;
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+          accApply.fail(full, e);
+        }
       }
       try {
         fs.rmdirSync(tlDir);
@@ -272,15 +312,18 @@ class RenpyInjector {
         try {
           fs.unlinkSync(f);
           removedCount++;
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+          accApply.fail(f, e);
+        }
       }
     }
 
-    return {
-      success: true,
+    return accApply.report({
       removedFiles: removedCount,
       tlDirCleaned: !fs.existsSync(tlDir)
-    };
+});
   }
 }
 

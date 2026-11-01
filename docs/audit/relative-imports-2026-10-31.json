@@ -1,0 +1,22 @@
+[
+  {
+    "file": "tools/adopt.js",
+    "module": "../../core/applyContract",
+    "triage": "String, comentario ou fallback; nao e import de producao confirmado"
+  },
+  {
+    "file": "tests/regression/run-phase4a-tests.js",
+    "module": "../tools/repoLint",
+    "triage": "String, comentario ou fallback; nao e import de producao confirmado"
+  },
+  {
+    "file": "tests/unit/adapterRuntimeContract.test.js",
+    "module": "../../core/partialApply",
+    "triage": "String, comentario ou fallback; nao e import de producao confirmado"
+  },
+  {
+    "file": "tests/unit/applyVerification.test.js",
+    "module": "./applyVerifier",
+    "triage": "String, comentario ou fallback; nao e import de producao confirmado"
+  }
+]

@@ -12,10 +12,24 @@ const path = require('path');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
+const { rollbackResult } = require('../rollbackResult.js');
+const { PartialReport } = require('../../core/partialApply');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
 
 class CocosCreatorAdapter extends BaseEngineAdapter {
   constructor() {
     super("cocos_creator", "Cocos Creator");
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "todo arquivo que eu toco está no backup que
+    // a transação vai fazer". `ac.finish` verifica a cada apply e devolve
+    // `transactional: false` se a afirmação deixar de valer — e aí o pipeline
+    // volta ao fallback com `verifyApplied`.
+    //
+    // `this` só existe DEPOIS de `super()`: numa classe derivada, tocar `this`
+    // antes disso lança em tempo de construção.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "cocos" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_cocos_backup" });
   }
@@ -55,6 +69,8 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const allTexts = [];
+    // FASE 9 / PASSO 52 — o relatório decide o `success`.
+    const acc = new PartialReport();
     const candidateDirs = [
       path.join(gameDir, "assets", "resources", "i18n"),
       path.join(gameDir, "resources", "i18n")
@@ -66,6 +82,7 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
           const files = fs.readdirSync(i18nDir);
           for (const f of files) {
             if (f.endsWith(".json")) {
+              acc.ok();
               try {
                 const fullP = path.join(i18nDir, f);
                 const data = JSON.parse(fs.readFileSync(fullP, 'utf8'));
@@ -86,14 +103,28 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
                     });
                   }
                 }
-              } catch (e) {}
+              } catch (e) {
+                // FASE 9 / PASSO 52 — catch interno: um JSON de i18n
+                // malformado. Ver src/core/partialApply.js.
+                acc.fail(path.relative(gameDir, fullP).replace(/\\/g, "/"), e);
+              }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 52 — catch externo: a PASTA de i18n não pôde ser
+          // lida. Este é o pior dos dois: a pasta inteira some do universo,
+          // e o adapter dizia `success: true` como se nada tivesse faltado.
+          acc.fail(path.relative(gameDir, i18nDir).replace(/\\/g, "/"), e);
+        }
+      } else {
+        // FASE 9: diretório ausente não é erro, mas também não é "nada a
+        // fazer" — é um layout que o adapter não reconheceu. Registrado.
+        acc.skip(path.relative(gameDir, i18nDir).replace(/\\/g, "/"), 'diretório i18n ausente');
       }
     }
 
-    return { success: true, texts: allTexts, count: allTexts.length };
+    // FASE 9 / PASSO 52 — quem decide o `success` é o relatório.
+    return acc.report({ texts: allTexts, count: allTexts.length });
   }
 
   async validate(gameDir, texts, translations) {
@@ -101,6 +132,11 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    // FASE 10 / D1 — o contrato de apply. O plano de arquivos vem dos textos:
+    // um texto traduzível veio de um arquivo, e aplicar escreve nele.
+    const ac = startApplyContract(gameDir, texts);
+    // Escopo do METODO, e nao do `for` — mesmo bug de cocos2dx.
+    const accApply = new PartialReport();
     const byFile = new Map();
     for (const t of texts) {
       if (!t.file) continue;
@@ -134,23 +170,34 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
         }
 
         if (fileModified) {
-          fs.writeFileSync(fullPath, JSON.stringify(parsed, null, 2), "utf8");
+          // FASE 10 / D1 — o hash declarado vem do CONTEÚDO EM MEMÓRIA.
+          // Hashear o arquivo depois de escrever compararia o número com ele
+          // mesmo, e a verificação não verificaria nada.
+          const saida = JSON.stringify(parsed, null, 2);
+          fs.writeFileSync(fullPath, saida, "utf8");
+          ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), saida);
           modifiedFiles.add(fullPath);
         }
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 57 — a falha deixou de ser silenciosa.
+        // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+        accApply.fail(fullPath, e);
+      }
     }
 
-    return {
-      success: true,
+    // FASE 10 / D1 — `PartialReport` decide a partialidade; `ac.finish`
+    // acrescenta `transactional`, `filesToBackup` e `fileHashes`. Os campos
+    // que o adapter já devolvia são preservados.
+    return ac.finish(accApply.report({
       modifiedFiles: Array.from(modifiedFiles),
       count: appliedCount,
       message: `Tradução Cocos Creator aplicada com sucesso (${appliedCount} textos em ${modifiedFiles.size} arquivos).`
-    };
+    }));
   }
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return { success: res.success, restoredFiles: res.restoredFiles || [gameDir] };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

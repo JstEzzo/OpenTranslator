@@ -112,7 +112,7 @@ function supportsEngine(engineId) {
 
 function resolveGameAppDataDir(gameSubDir, gameTitle, options = {}) {
     if (options && options.engine && options.engine.toLowerCase() !== "renpy") {
-        const EngineRoutingGuard = require("./core/engineRoutingGuard");
+        const EngineRoutingGuard = require("../core/engineRoutingGuard");
         const check = EngineRoutingGuard.check("resolveGameAppDataDir", options.engine, "renpy");
         return { success: false, blocked: true, error: check.error, message: check.message };
     }
@@ -160,7 +160,7 @@ function resolveGameAppDataDir(gameSubDir, gameTitle, options = {}) {
 /**
  * Logs a detailed diagnostic error report when AppData directory resolution fails.
  */
-const loggerManager = require("./loggerManager");
+const loggerManager = require("../utils/loggerManager");
 
 function logAppDataError(gameTitle, searchedPaths, reason) {
     const report = [

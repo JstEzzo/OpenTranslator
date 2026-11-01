@@ -1,270 +1,115 @@
-/**
- * OpenTranslator — UnrealLocResProvider
- * 
- * Parser e gerador binário para arquivos .locres (Unreal Engine Compiled Localization Resource).
- * Suporta:
- * - Leitura e gravação binária de .locres (Magic GUID: 0x7574140E, 0xFC034A67, 0x9D90155E, 0xD4BEFE85)
- * - LocRes Version 1 (Legacy), Version 2 (Compact) e Version 3 (Optimized)
- * - Tabela de strings localizadas por Namespace e Key
- * - Geração de arquivos .locmeta e sincronização com arquivos gettext PO
- */
-
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-
-// Unreal Engine LocRes Magic GUID
-const LOCRES_MAGIC = Buffer.from([
-  0x0E, 0x14, 0x74, 0x75,
-  0x67, 0x4A, 0x03, 0xFC,
-  0x5E, 0x15, 0x90, 0x9D,
-  0x85, 0xFE, 0xBE, 0xD4
-]);
-
+'use strict';
+// Unreal LocRes: Compact (1), Optimized CRC32 (2), CityHash UTF16 (3), and legacy (0).
+// Reference layouts: CUE4Parse FTextLocalizationResource / FTextKey / ELocResVersion.
+const MAGIC = Buffer.from('0e147475674a03fc4a15909dc3377f1b', 'hex');
+class Reader {
+  constructor(buffer, offset = 0) { this.buffer = buffer; this.offset = offset; }
+  require(size) { if (!Number.isSafeInteger(size) || size < 0 || this.offset + size > this.buffer.length) throw new Error('LocRes truncado ou offset invalido'); }
+  u32() { this.require(4); const n = this.buffer.readUInt32LE(this.offset); this.offset += 4; return n; }
+  i32() { this.require(4); const n = this.buffer.readInt32LE(this.offset); this.offset += 4; return n; }
+  fstring() {
+    const length = this.i32(); if (length === 0) return '';
+    const bytes = length > 0 ? length : -length * 2; this.require(bytes);
+    const start = this.offset; this.offset += bytes;
+    const terminator = length > 0 ? 1 : 2;
+    if (this.buffer[this.offset - 1] !== 0 || (length < 0 && this.buffer[this.offset - 2] !== 0)) throw new Error('LocRes FString sem terminador');
+    return this.buffer.toString(length > 0 ? 'utf8' : 'utf16le', start, this.offset - terminator);
+  }
+  count() { const n = this.u32(); if (n > 1000000 || n > this.buffer.length) throw new Error('Contagem LocRes invalida'); return n; }
+}
+function uint(value) { const b = Buffer.alloc(4); b.writeUInt32LE(value >>> 0); return b; }
 class UnrealLocResProvider {
-  /**
-   * Lê uma string terminada em null ou com comprimento em int32 (formato Unreal FString)
-   * Se length > 0: UTF-8 (ou ASCII). Se length < 0: UTF-16LE (-length caracteres).
-   */
-  static _readFString(buffer, offset) {
-    if (offset + 4 > buffer.length) return { str: '', nextOffset: offset };
-
-    const len = buffer.readInt32LE(offset);
-    let nextOffset = offset + 4;
-
-    if (len === 0) {
-      return { str: '', nextOffset };
-    }
-
-    if (len > 0) {
-      // UTF-8 com null terminator
-      const byteLen = len - 1; // ignora null terminator
-      const str = buffer.toString('utf8', nextOffset, nextOffset + byteLen);
-      nextOffset += len;
-      return { str, nextOffset };
-    } else {
-      // UTF-16LE (-len * 2 bytes)
-      const charCount = -len;
-      const byteLen = (charCount - 1) * 2;
-      const str = buffer.toString('utf16le', nextOffset, nextOffset + byteLen);
-      nextOffset += charCount * 2;
-      return { str, nextOffset };
-    }
+  static _readFString(buffer, offset) { const r = new Reader(buffer, offset); const str = r.fstring(); return { str, nextOffset: r.offset }; }
+  static _writeFString(str, forceUtf16 = false) {
+    if (typeof str !== 'string') throw new Error('LocRes exige texto');
+    if (!str) return Buffer.alloc(4);
+    if (str.includes('\0')) throw new Error('LocRes texto contem NUL');
+    const utf16 = forceUtf16 || /[^\x00-\x7f]/.test(str);
+    const body = Buffer.from(str + '\0', utf16 ? 'utf16le' : 'utf8');
+    const size = Buffer.alloc(4); size.writeInt32LE(utf16 ? -body.length / 2 : body.length);
+    return Buffer.concat([size, body]);
   }
-
-  /**
-   * Grava uma string em formato Unreal FString (int32 length + null terminator)
-   */
-  static _writeFString(str, isUtf16 = false) {
-    if (!str || str.length === 0) {
-      const buf = Buffer.alloc(4);
-      buf.writeInt32LE(0, 0);
-      return buf;
-    }
-
-    if (isUtf16 || /[^\u0000-\u007F]/.test(str)) {
-      // UTF-16LE
-      const encoded = Buffer.from(str + '\0', 'utf16le');
-      const charCount = (encoded.length / 2);
-      const lenBuf = Buffer.alloc(4);
-      lenBuf.writeInt32LE(-charCount, 0);
-      return Buffer.concat([lenBuf, encoded]);
-    } else {
-      // UTF-8
-      const encoded = Buffer.from(str + '\0', 'utf8');
-      const lenBuf = Buffer.alloc(4);
-      lenBuf.writeInt32LE(encoded.length, 0);
-      return Buffer.concat([lenBuf, encoded]);
-    }
-  }
-
-  /**
-   * Descompacta um arquivo binário .locres em um dicionário estruturado por namespace e chave
-   * @param {Buffer} buffer
-   * @returns {{ version: number, namespaces: object, count: number }}
-   */
   static parseLocRes(buffer) {
-    if (!buffer || buffer.length < 17) {
-      throw new Error('LocRes inválido: buffer muito pequeno');
-    }
-
-    // Verifica Magic GUID
-    const magic = buffer.subarray(0, 16);
-    if (!magic.equals(LOCRES_MAGIC)) {
-      throw new Error('LocRes inválido: Magic GUID não corresponde ao Unreal LocRes');
-    }
-
-    const version = buffer.readUInt8(16);
-    let offset = 17;
-
-    const namespaces = {};
-    let totalStrings = 0;
-
+    if (!Buffer.isBuffer(buffer) || buffer.length < 4) throw new Error('LocRes invalido');
+    const header = buffer.length >= 17 && buffer.subarray(0, 16).equals(MAGIC);
+    const version = header ? buffer[16] : 0;
+    if (version > 3) throw new Error('Versao LocRes nao suportada: ' + version);
+    const r = new Reader(buffer, header ? 17 : 0);
+    let stringTableOffset = null, stringTableEnd = null;
+    const stringTable = [];
     if (version >= 1) {
-      // Version 1 (Legacy) e Version 2 (Compact)
-      // Em Version 2/3 pode haver um offset para a tabela de strings localizadas
-      let localizedStringsOffset = -1;
-      if (version >= 2) {
-        if (offset + 8 <= buffer.length) {
-          localizedStringsOffset = Number(buffer.readBigInt64LE(offset));
-          offset += 8;
-        }
-      }
-
-      // Lê localized string array se disponível no compact mode
-      const localizedStringsTable = [];
-      if (localizedStringsOffset > 0 && localizedStringsOffset < buffer.length) {
-        let strTableOffset = localizedStringsOffset;
-        if (strTableOffset + 4 <= buffer.length) {
-          const strCount = buffer.readUInt32LE(strTableOffset);
-          strTableOffset += 4;
-          for (let s = 0; s < strCount && strTableOffset < buffer.length; s++) {
-            const { str, nextOffset } = UnrealLocResProvider._readFString(buffer, strTableOffset);
-            strTableOffset = nextOffset;
-            if (version >= 3 && strTableOffset + 4 <= buffer.length) {
-              strTableOffset += 4; // Ref count uint32 em version 3
-            }
-            localizedStringsTable.push(str);
-          }
-        }
-      }
-
-      // Lê Namespace count
-      if (offset + 4 <= buffer.length) {
-        const namespaceCount = buffer.readUInt32LE(offset);
-        offset += 4;
-
-        for (let n = 0; n < namespaceCount && offset < buffer.length; n++) {
-          const { str: nsKey, nextOffset: nsOff } = UnrealLocResProvider._readFString(buffer, offset);
-          offset = nsOff;
-
-          if (offset + 4 > buffer.length) break;
-          const keyCount = buffer.readUInt32LE(offset);
-          offset += 4;
-
-          namespaces[nsKey] = {};
-
-          for (let k = 0; k < keyCount && offset < buffer.length; k++) {
-            const { str: entryKey, nextOffset: keyOff } = UnrealLocResProvider._readFString(buffer, offset);
-            offset = keyOff;
-
-            if (offset + 4 > buffer.length) break;
-            const sourceHash = buffer.readUInt32LE(offset);
-            offset += 4;
-
-            let val = '';
-            if (localizedStringsTable.length > 0) {
-              const strIdx = buffer.readInt32LE(offset);
-              offset += 4;
-              val = localizedStringsTable[strIdx] || '';
-            } else {
-              const { str: strVal, nextOffset: valOff } = UnrealLocResProvider._readFString(buffer, offset);
-              offset = valOff;
-              val = strVal;
-            }
-
-            namespaces[nsKey][entryKey] = {
-              sourceHash,
-              value: val
-            };
-            totalStrings++;
-          }
-        }
+      r.require(8); const offset = buffer.readBigInt64LE(r.offset); r.offset += 8;
+      if (offset !== -1n) {
+        if (offset < BigInt(r.offset) || offset > BigInt(buffer.length - 4)) throw new Error('Tabela LocRes fora do arquivo');
+        stringTableOffset = Number(offset); const table = new Reader(buffer, stringTableOffset);
+        const count = table.count();
+        for (let i = 0; i < count; i++) stringTable.push({ value: table.fstring(), refCount: version >= 2 ? table.i32() : -1 });
+        stringTableEnd = table.offset;
       }
     }
-
-    return {
-      version,
-      namespaces,
-      count: totalStrings
-    };
+    const expectedCount = version >= 2 ? r.count() : null;
+    const namespaceCount = r.count(); const namespaces = Object.create(null); let count = 0;
+    for (let n = 0; n < namespaceCount; n++) {
+      const namespaceHash = version >= 2 ? r.u32() : null; const name = r.fstring();
+      if (Object.hasOwn(namespaces, name)) throw new Error('Namespace LocRes duplicado');
+      const keyCount = r.count(); const keys = Object.create(null); namespaces[name] = keys;
+      for (let i = 0; i < keyCount; i++) {
+        const keyHash = version >= 2 ? r.u32() : null; const key = r.fstring(); const sourceHash = r.u32();
+        let value, stringIndex = null;
+        if (version >= 1) {
+          stringIndex = r.i32(); if (stringIndex < 0 || stringIndex >= stringTable.length) throw new Error('Indice de string LocRes invalido');
+          value = stringTable[stringIndex].value;
+        } else value = r.fstring();
+        if (Object.hasOwn(keys, key)) throw new Error('Chave LocRes duplicada');
+        keys[key] = { sourceHash, value, keyHash, namespaceHash, stringIndex }; count++;
+      }
+    }
+    if (expectedCount !== null && count !== expectedCount) throw new Error('Contagem de entradas LocRes divergente');
+    if (stringTableOffset !== null && r.offset !== stringTableOffset) throw new Error('Bloco LocRes possui tamanho inesperado');
+    return { version, namespaces, count, stringTable, stringTableOffset, stringTableEnd };
   }
-
-  /**
-   * Compila um dicionário de namespaces e chaves de volta em um arquivo binário .locres compatível (Version 2 Compact)
-   * @param {object} namespaces - Estrutura { "Namespace": { "Key": "Texto Traduzido" } }
-   * @returns {Buffer} Buffer binário .locres pronto para gravação em Content/Localization/Game/
-   */
-  static buildLocRes(namespaces = {}) {
-    // Coleta todas as strings únicas para a tabela compacta
-    const stringList = [];
-    const stringMap = new Map();
-
-    for (const ns of Object.keys(namespaces)) {
-      const keys = namespaces[ns];
-      for (const k of Object.keys(keys)) {
-        const item = keys[k];
-        const val = typeof item === 'object' && item.value !== undefined ? item.value : String(item);
-        if (!stringMap.has(val)) {
-          stringMap.set(val, stringList.length);
-          stringList.push(val);
+  static buildLocRes(namespaces = {}, options = {}) {
+    const version = options.version || 1;
+    if (![1, 2, 3].includes(version)) throw new Error('Versao de escrita LocRes invalida');
+    const list = [], indices = new Map(), refs = [];
+    const total = Object.values(namespaces).reduce((n, keys) => n + Object.keys(keys).length, 0);
+    const body = version >= 2 ? [uint(total), uint(Object.keys(namespaces).length)] : [uint(Object.keys(namespaces).length)];
+    for (const [ns, keys] of Object.entries(namespaces)) {
+      if (version >= 2) {
+        const nsHash = Object.values(keys)[0]?.namespaceHash;
+        if (!Number.isInteger(nsHash)) throw new Error('Hash original do namespace ausente');
+        body.push(uint(nsHash));
+      }
+      body.push(this._writeFString(ns), uint(Object.keys(keys).length));
+      for (const [key, item] of Object.entries(keys)) {
+        const value = typeof item === 'object' && item !== null ? item.value : String(item);
+        if (!indices.has(value)) { indices.set(value, list.length); list.push(value); refs.push(0); }
+        const index = indices.get(value); refs[index]++;
+        if (version >= 2) {
+          if (!Number.isInteger(item.keyHash)) throw new Error('Hash original da chave ausente');
+          body.push(uint(item.keyHash));
         }
+        body.push(this._writeFString(key), uint(item && typeof item === 'object' ? item.sourceHash || 0 : 0), uint(index));
       }
     }
-
-    // Monta o cabeçalho (Magic 16 bytes + Version 1 byte)
-    const headerBuf = Buffer.alloc(17);
-    LOCRES_MAGIC.copy(headerBuf, 0);
-    headerBuf.writeUInt8(2, 16); // Version 2 (Compact)
-
-    // Offset para a tabela de strings localizadas (será preenchido após montar a tabela de namespaces)
-    const locStrOffsetPlaceholder = Buffer.alloc(8);
-
-    // Monta o corpo dos namespaces
-    const nsBuffers = [];
-    const nsKeys = Object.keys(namespaces);
-    const nsCountBuf = Buffer.alloc(4);
-    nsCountBuf.writeUInt32LE(nsKeys.length, 0);
-    nsBuffers.push(nsCountBuf);
-
-    for (const ns of nsKeys) {
-      nsBuffers.push(UnrealLocResProvider._writeFString(ns));
-      const entryKeys = Object.keys(namespaces[ns]);
-      const keyCountBuf = Buffer.alloc(4);
-      keyCountBuf.writeUInt32LE(entryKeys.length, 0);
-      nsBuffers.push(keyCountBuf);
-
-      for (const k of entryKeys) {
-        nsBuffers.push(UnrealLocResProvider._writeFString(k));
-
-        const item = namespaces[ns][k];
-        const sourceHash = (typeof item === 'object' && item.sourceHash !== undefined) ? item.sourceHash : 0;
-        const hashBuf = Buffer.alloc(4);
-        hashBuf.writeUInt32LE(sourceHash, 0);
-        nsBuffers.push(hashBuf);
-
-        const val = typeof item === 'object' && item.value !== undefined ? item.value : String(item);
-        const strIdx = stringMap.get(val);
-        const idxBuf = Buffer.alloc(4);
-        idxBuf.writeInt32LE(strIdx !== undefined ? strIdx : 0, 0);
-        nsBuffers.push(idxBuf);
-      }
+    const namespaceBlock = Buffer.concat(body); const offset = Buffer.alloc(8); offset.writeBigInt64LE(BigInt(25 + namespaceBlock.length));
+    const table = [uint(list.length)];
+    list.forEach((str, i) => { table.push(this._writeFString(str)); if (version >= 2) table.push(uint(refs[i])); });
+    return Buffer.concat([MAGIC, Buffer.from([version]), offset, namespaceBlock, ...table]);
+  }
+  static patchLocRes(buffer, translate) {
+    const parsed = this.parseLocRes(buffer);
+    if (parsed.version < 1 || parsed.stringTableOffset === null) {
+      for (const [ns, keys] of Object.entries(parsed.namespaces)) for (const [key, item] of Object.entries(keys)) item.value = translate(item.value, { ns, key });
+      return this.buildLocRes(parsed.namespaces);
     }
-
-    const namespaceBlock = Buffer.concat(nsBuffers);
-
-    // O offset da tabela de strings é: 17 (header) + 8 (offset buffer) + namespaceBlock.length
-    const strTableOffset = BigInt(17 + 8 + namespaceBlock.length);
-    locStrOffsetPlaceholder.writeBigInt64LE(strTableOffset, 0);
-
-    // Monta a tabela de strings localizadas
-    const strTableBuffers = [];
-    const strCountBuf = Buffer.alloc(4);
-    strCountBuf.writeUInt32LE(stringList.length, 0);
-    strTableBuffers.push(strCountBuf);
-
-    for (const str of stringList) {
-      strTableBuffers.push(UnrealLocResProvider._writeFString(str));
-    }
-    const strTableBlock = Buffer.concat(strTableBuffers);
-
-    return Buffer.concat([
-      headerBuf,
-      locStrOffsetPlaceholder,
-      namespaceBlock,
-      strTableBlock
-    ]);
+    const table = [uint(parsed.stringTable.length)];
+    parsed.stringTable.forEach((item, index) => {
+      const value = translate(item.value, { index });
+      table.push(this._writeFString(value)); if (parsed.version >= 2) table.push(uint(item.refCount));
+    });
+    // Keep every namespace/key hash, source hash, LUT index and reference count unchanged.
+    return Buffer.concat([buffer.subarray(0, parsed.stringTableOffset), ...table, buffer.subarray(parsed.stringTableEnd)]);
   }
 }
-
 module.exports = UnrealLocResProvider;

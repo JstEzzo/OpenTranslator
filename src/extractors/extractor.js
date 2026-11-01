@@ -143,7 +143,7 @@ const {
   isTranslatableText,
   isCodeOrFormulaKey,
   isAudioParamKey,
-} = require("./utils");
+} = require("../utils/utils");
 
 const HTML_TAG_RE = /<\/?(div|span|body|head|html|video|script|style|iframe|canvas|img|a|font|br|hr|p|title|meta|link|table|tr|td|th|ul|ol|li|h[1-6])\b/i;
 

@@ -4,12 +4,44 @@
  * NÃO utiliza mock ou simulação local.
  * Mede: latência real, P50, P90, P95, P99, vazão real (textos/s, chars/s),
  * HTTP 2xx, 429, timeouts, retries, headers Retry-After e detecção de saturação.
+ *
+ * ---------------------------------------------------------------------------
+ * EXCEÇÃO DOCUMENTADA À REGRA DO GATEWAY
+ *
+ * Este arquivo NÃO usa `ProviderGateway`, e isso é deliberado.
+ *
+ * A regra do gateway ("nenhum socket de provedor sem passar pelo Circuit
+ * Breaker") existe para que as chamadas de TRADUÇÃO sejam contidas quando um
+ * provedor começa a limitar. Um benchmark mede justamente o comportamento que
+ * a contenção tentaria esconder: quantas requisições até o primeiro 429, como
+ * o Retry-After evolui, quanto tempo leva para dar timeout.
+ *
+ * Se este arquivo passasse pelo gateway, o breaker abriria depois das poucas
+ * requisições e o benchmark reportaria "circuit blocked" onde Reality é
+ * "429 rate limited". A ferramenta mediria a si mesma, não o provedor.
+ *
+ * Por isso o benchmark:
+ *   1. usa seu próprio cliente HTTP cru, com timeout próprio;
+ *   2. usa uma chave de breaker DEDICADA, para não contaminar as métricas de
+ *      produção com o tráfego sintético do benchmark;
+ *   3. é a única exceção, e ela está registrada em
+ *      `tests/unit/providerGatewayEnforcement.test.js`, que falha se surgir
+ *      qualquer outra chamada direta não justificada.
+ *
+ * `GATEWAY_EXEMPT: benchmark precisa de HTTP cru` — marcador consultado pelo
+ * teste. Se este arquivo deixar de medir comportamento real, o teste falha.
  */
 
 const https = require('https');
 const http = require('http');
-const { loadCfg } = require('../cache');
+const { loadCfg } = require('../services/cache');
 const StructuredLogger = require('./structuredLogger');
+
+/** Marcador lido pelo teste de enforceimento do gateway. */
+const GATEWAY_EXEMPT = 'benchmark precisa de HTTP cru';
+
+/** Chave de breaker isolada: tráfego sintético não polui produção. */
+const BENCHMARK_BREAKER_KEY = 'benchmark:google:gtx';
 
 class RealProviderBenchmark {
   /**
@@ -316,3 +348,5 @@ class RealProviderBenchmark {
 }
 
 module.exports = RealProviderBenchmark;
+module.exports.GATEWAY_EXEMPT = GATEWAY_EXEMPT;
+module.exports.BENCHMARK_BREAKER_KEY = BENCHMARK_BREAKER_KEY;

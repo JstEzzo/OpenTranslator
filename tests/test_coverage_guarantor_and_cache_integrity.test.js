@@ -68,7 +68,7 @@ async function runTests() {
     }
     const translations = new Map();
 
-    const translator = require("../src/translator");
+    const translator = require("../src/translation/translator");
     const origTranslateBatch = translator.translateBatch;
     translator.translateBatch = async () => new Map();
 

@@ -12,6 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { PartialReport } = require('../core/partialApply');
 
 class BackupManager {
   constructor(options = {}) {
@@ -306,10 +307,16 @@ class BackupManager {
                 (sessionRef.backupId && meta.backupId === sessionRef.backupId) ||
                 (sessionRef.transactionId && meta.transactionId === sessionRef.transactionId)
               ) {
+    // FASE 9 / PASSO 59 — o relatorio decide o `success`.
+    const accApply = new PartialReport();
                 targetSessionDir = sDir;
                 break;
               }
-            } catch (e) {}
+            } catch (e) {
+              // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+              // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+              accApply.fail(sessionRef, e);
+            }
           }
         }
       }
@@ -365,22 +372,29 @@ class BackupManager {
           fs.rmSync(originalFilesDir, { recursive: true, force: true });
           fs.unlinkSync(metaPath);
         }
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+        // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+        accApply.fail(metaPath, e);
+      }
 
       // Se não há mais sessões em .opent_backup/sessions, limpa pasta .opent_backup
       try {
         if (fs.existsSync(sessionsDir) && fs.readdirSync(sessionsDir).length === 0) {
           fs.rmSync(rootBackupDir, { recursive: true, force: true });
         }
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+        // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+        accApply.fail(rootBackupDir, e);
+      }
 
-      return {
-        success: true,
+      return accApply.report({
         sessionId: metadata.sessionId,
         backupId: metadata.backupId,
         restoredCount,
         restoredFiles: metadata.files ? metadata.files.map(f => f.relPath) : []
-      };
+});
     } catch (e) {
       return {
         success: false,

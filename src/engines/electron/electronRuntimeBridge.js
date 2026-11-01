@@ -117,7 +117,15 @@ class ElectronRuntimeBridge {
 
   async stop() {
     if (this.session) return this.session.stop('ElectronRuntimeBridge Finish');
-    return { success: true };
+    // FASE 9 / PASSO 36 — ver renpyRuntimeBridge.stop(): `success: true`
+    // sem sessão anunciava um encerramento inexistente.
+    return {
+      success: false,
+      status: 'NO_SESSION',
+      error: 'Não há sessão de runtime ativa para encerrar.',
+      stopped: false,
+      wasRunning: false,
+    };
   }
 }
 

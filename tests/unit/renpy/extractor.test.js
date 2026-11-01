@@ -5,7 +5,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const RenpyExtractor = require('../../src/engines/renpy/extractor/renpyExtractor');
+const RenpyExtractor = require('../../../src/engines/renpy/extractor/renpyExtractor');
 
 async function run() {
   console.log('--- [TEST] RenpyExtractor Unit Tests ---');

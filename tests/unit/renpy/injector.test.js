@@ -6,7 +6,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const RenpyInjector = require('../../src/engines/renpy/injector/renpyInjector');
+const RenpyInjector = require('../../../src/engines/renpy/injector/renpyInjector');
 
 function sha256(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
@@ -39,7 +39,7 @@ async function run() {
 
   try {
     // Test 1: Injection
-    const res = await injector.inject(tempDir, sampleTranslations);
+    const res = await injector.inject(tempDir, sampleTranslations, { includeCommonStrings: false });
     assert.strictEqual(res.success, true, 'Injeção deve ser bem sucedida');
     assert.strictEqual(res.stringsCount, 3, 'Deve conter 3 strings injetadas');
 

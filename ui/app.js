@@ -10,7 +10,7 @@
       const notice = $("provider-health-notice");
       if (!grid) return;
 
-      const gtx = h["google:gtx"] || { state: "AVAILABLE", inFlight: 0, requestsBlocked: 0, requestsSuccess: 0, requests429: 0 };
+      const gtx = h["google:gtx"] || { state: "UNKNOWN", inFlight: 0, requestsBlocked: 0, requestsSuccess: 0, requests429: 0 };
       const isLimited = gtx.state === "RATE_LIMITED" || gtx.state === "COOLDOWN";
 
       if (notice) {
@@ -19,7 +19,7 @@
           notice.style.background = "rgba(220,53,69,0.2)";
           notice.style.border = "1px solid #dc3545";
           notice.style.color = "#ff6b6b";
-          notice.innerHTML = `⚠️ Google GTX foi limitado. Novos requests foram bloqueados automaticamente.<br>⏸ Tradução pausada para evitar prolongar o bloqueio.`;
+          notice.innerHTML = `⚠️ Google GTX está em espera temporária.<br>Novas solicitações a esse provedor aguardam o fim do intervalo.`;
         } else {
           notice.style.display = "none";
         }
@@ -28,24 +28,24 @@
       grid.innerHTML = `
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">Google GTX</strong><br>
-          STATUS: <span style="color:${isLimited ? '#ff4d4f' : '#52c41a'}; font-weight:bold">${gtx.state}</span><br>
-          COOLDOWN: ${gtx.cooldownUntil ? new Date(gtx.cooldownUntil).toLocaleTimeString() : 'N/A'}<br>
-          IN FLIGHT: ${gtx.inFlight || 0}<br>
-          BLOCKED REQUESTS: ${gtx.requestsBlocked || 0}<br>
-          SUCCESS: ${gtx.requestsSuccess || 0}<br>
-          429: ${gtx.requests429 || 0}
+          STATUS: <span style="color:${isLimited ? '#ff4d4f' : '#52c41a'}; font-weight:bold">${esc(gtx.state)}</span><br>
+          COOLDOWN: ${gtx.cooldownUntil ? esc(new Date(gtx.cooldownUntil).toLocaleTimeString()) : 'N/A'}<br>
+          IN FLIGHT: ${num(gtx.inFlight)}<br>
+          BLOCKED REQUESTS: ${num(gtx.requestsBlocked)}<br>
+          SUCCESS: ${num(gtx.requestsSuccess)}<br>
+          429: ${num(gtx.requests429)}
         </div>
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">Gemini</strong><br>
-          STATUS: <span style="color:var(--txt3)">NOT CONFIGURED</span>
+          STATUS: <span style="color:var(--txt3)">Configuração não verificada</span>
         </div>
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">Google Cloud</strong><br>
-          STATUS: <span style="color:var(--txt3)">NOT CONFIGURED</span>
+          STATUS: <span style="color:var(--txt3)">Configuração não verificada</span>
         </div>
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">DeepL</strong><br>
-          STATUS: <span style="color:var(--txt3)">NOT CONFIGURED</span>
+          STATUS: <span style="color:var(--txt3)">Configuração não verificada</span>
         </div>
       `;
     } catch (e) {}
@@ -53,10 +53,11 @@
 
   let SESSION_TOKEN = "";
 
-  // Heartbeat para manter o servidor ativo enquanto a UI estiver aberta
+  // Heartbeat para manter o servidor ativo enquanto a UI estiver aberta.
+  // Tambem e' o canal de bootstrap do X-OpenTranslator-Token exigido pelo RPC.
   async function pingServer() {
     try {
-      const r = await fetch("/api/ping", { method: "GET" });
+      const r = await fetch("/api/ping", { method: "GET", cache: "no-store" });
       const j = await r.json();
       if (j && j.token) SESSION_TOKEN = j.token;
     } catch (e) { console.warn(`app.js: ${e.message}`); }
@@ -64,14 +65,44 @@
   setInterval(pingServer, 2500);
   pingServer();
 
+  /**
+   * Transporte RPC.
+   *
+   * FASE 1 / PASSO 18: o header X-OpenTranslator-Token passou a ser OBRIGATORIO.
+   * Antes o servidor gerava um token que nunca era exigido. Agora ele e' exigido,
+   * e a UI o obtem por /api/ping (somenteacessivel com Host loopback).
+   *
+   * Se o token ainda nao chegou (primeira chamada antes do ping resolver),
+   * esperamos o ping em vez de enviar uma requisicao que seria rejeitada.
+   */
+  async function waitForToken(maxWaitMs) {
+    const deadline = Date.now() + (maxWaitMs || 5000);
+    while (!SESSION_TOKEN && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 50));
+      if (!SESSION_TOKEN) await pingServer();
+    }
+    return SESSION_TOKEN;
+  }
+
   async function rpc(method, params) {
+    if (!SESSION_TOKEN) await waitForToken(5000);
     const r = await fetch("/api/rpc", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-OpenTranslator-Token": SESSION_TOKEN || "",
+      },
+      cache: "no-store",
       body: JSON.stringify({ method, params }),
     });
     const j = await r.json();
-    if (!j.ok) throw new Error(j.error);
+    if (!j.ok) {
+      const e = new Error(j.error || "RPC falhou");
+      e.requestId = j.requestId;
+      e.rpcStatus = j.status;
+      e.reason = j.reason;
+      throw e;
+    }
     return j.data;
   }
   window.rpc = rpc;
@@ -141,10 +172,32 @@
   }
   connectDualHook();
 
+  /**
+   * Helpers de escape — FASE 1 / PASSO 19.
+   *
+   * Antes existia apenas esc() (usada inconsistentemente). Agora a cadeia
+   * completa vive em xssGuard.js e TODOS os sinks de dados dinamicos passam
+   * por ela:
+   *   esc(s)        -> texto/HTML escapado
+   *   attr(s)       -> valor de atributo entre aspas
+   *   num(v, fb)    -> numero finito coercionado
+   *   html(s)       -> HTML sanitizado por allowlist de tags
+   *   txt(el, s)    -> textContent (preferir sempre que HTML nao for necessario)
+   */
   function esc(s) {
-    const d = document.createElement("div");
-    d.textContent = s;
-    return d.innerHTML;
+    return XSSGuard.escapeHtml(s);
+  }
+  function attr(s) {
+    return XSSGuard.escapeAttr(s);
+  }
+  function num(v, fb) {
+    return XSSGuard.safeNum(v, fb);
+  }
+  function html(s) {
+    return XSSGuard.sanitizeHtml(s);
+  }
+  function txt(el, s) {
+    XSSGuard.setText(el, s);
   }
   function qs(s) {
     return document.querySelector(s);
@@ -176,7 +229,10 @@
     }
     const toast = document.createElement("div");
     toast.className = `toast-card ${type}`;
-    toast.innerHTML = msg;
+    // FASE 1 / PASSO 19: msg pode conter texto de erro devolvido por um
+    // handler RPC (que por sua vez pode conter dados de provider/jogo).
+    // Antes era innerHTML cru -> XSS. Agora passa pelo sanitizador allowlist.
+    toast.innerHTML = html(msg);
     toast.style.padding = "12px 18px";
     toast.style.borderRadius = "6px";
     toast.style.fontSize = "10px";
@@ -2261,15 +2317,15 @@ select option {
       html +=
         '<div class="gc' +
         (launched ? " launched" : "") +
-        '" data-key="' +
-        k +
+'" data-key="' +
+        attr(k) +
         '"><div class="gi"><div class="gt">' +
         esc(title) +
         '</div><div class="gs">' +
-        engIcon +
+        esc(engIcon) +
         " " +
-        engLabel +
-        ` <span class="${engStatus.cls}" title="${engStatus.text}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "full" ? "✓" : engStatus.s === "planned" ? "⚙" : engStatus.s === "fantasma" ? "❌" : "?"}</span>` +
+        esc(engLabel) +
+        ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "full" ? "✓" : engStatus.s === "planned" ? "⚙" : engStatus.s === "fantasma" ? "❌" : "?"}</span>` +
         '</div></div><div class="ga">' +
         playBtn +
         '<button class="btn xs glEdit">\u270e</button><button class="btn xs dgr glDel">\u2715</button></div></div>';
@@ -2353,7 +2409,7 @@ select option {
     <div class="mc2">
       <div class="f"><label>${t("tags")}</label><input id="mTags" value="${esc(tags)}" placeholder="Separated by comma"></div>
       <div class="f"><label>${t("note")}</label><textarea id="mNote" rows="2" style="resize:vertical;padding:3px 5px;background:var(--bg2);border:1px solid var(--bd);color:var(--txt);border-radius:3px;font-size:10px;font-family:var(--font)">${esc(lc.note || "")}</textarea></div>
-      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${ei.icon || ""} ${ei.label || curEng} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(✅ Fully Verified)" : "(Nativo)")}</span></div>
+      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${esc(ei.icon || "")} ${esc(ei.label || curEng)} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(✅ Fully Verified)" : "(Nativo)")}</span></div>
       ${(curEng === "python" || curEng === "renpy") ? `
       <div style="background:rgba(108,92,231,0.12);padding:8px 10px;border-radius:6px;border:1px solid rgba(108,92,231,0.3);margin:5px 0">
         <div style="font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:6px">🎭 Ren'Py Visual Novel Engine <span style="background:rgba(0,184,148,0.2);color:var(--green2);padding:2px 6px;border-radius:4px;font-size:10px">✅ Fully Verified</span></div>
@@ -2376,8 +2432,17 @@ select option {
       <button id="mDiagGame" class="btn sm" title="Diagnóstico de engine, confiança e capacidades">Diagnóstico 🔍</button>
       <button id="mRollbackGame" class="btn sm" title="Restaura os arquivos originais de fábrica com verificação criptográfica SHA-256">Restaurar Original (Rollback) 🛡️</button>
       <button id="mUntranslatedGame" class="btn sm" style="background:#0984e3;color:#fff" title="Detectar textos não traduzidos e pendências por script/idioma">Não Traduzidos 🔎</button>
+      <button id="mTranslateJob" class="btn sm pri" style="background:var(--accent);color:#fff" title="Iniciar um job de tradução com checkpoints em disco, retomável se a aplicação for interrompida">Traduzir (Job) 🛠️</button>
+      <button id="mResumeJob" class="btn sm" style="background:var(--accent2);color:#fff" title="Listar jobs salvos e retomar um job interrompido">Retomar Job ♻️</button>
       <button id="mVisualQAGame" class="btn sm" style="background:#6c5ce7;color:#fff" title="Executar QA Visual automatizado (overflow, telas pretas, conformidade de UI)">QA Visual 👁️</button>
       <button id="mRuntimeTextsGame" class="btn sm" style="background:#e17055;color:#fff" title="Gerenciar textos capturados em runtime e promover para tradução">Textos Runtime ⚡</button>
+      <button id="mRuntimeStart" class="btn sm" style="background:#00b894;color:#fff" title="Iniciar uma sessão de runtime com staging isolado, para capturar textos enquanto o jogo roda">Iniciar Sessão Runtime ▶</button>
+      <button id="mRuntimeStop" class="btn sm dgr" style="display:none" title="Encerrar a sessão de runtime ativa, confirmando com o servidor">Encerrar Sessão ⏹</button>
+      <button id="mRuntimeProbe" class="btn sm" style="background:#636e72;color:#fff" title="Verificar se o processo da sessão ainda está vivo">Sondar Processo 🔌</button>
+      <button id="mRuntimeShot" class="btn sm" style="background:#636e72;color:#fff" title="Capturar a tela do processo da sessão">Capturar Tela 📷</button>
+      <button id="mRuntimeTriad" class="btn sm" style="background:#636e72;color:#fff" title="Ver engine, runtime, hook e staging resolvedos para este jogo">Triade 🧭</button>
+      <span id="rtSessaoBadge" style="font-size:10px;color:var(--txt3);align-self:center">Nenhuma sessão ativa</span>
+      <span id="rtSessaoInfo" style="font-size:9px;color:var(--txt3);align-self:center"></span>
       <button id="mGlossaryGame" class="btn sm" style="background:#00b894;color:#fff" title="Visualizar glossário hierárquico (Project -> Plugin -> Game -> Engine -> Global)">Glossário Hierárquico 📚</button>
       <button id="mDecryptImages" class="btn sm">${t("extractImages") || "Extract Images 📷"}</button>
       <button id="mDecryptAudio" class="btn sm">${t("extractAudio") || "Extract Audio 🎵"}</button>
@@ -2596,6 +2661,403 @@ select option {
       } finally {
         btn.disabled = false;
         btn.textContent = "Textos Runtime ⚡";
+      }
+    });
+
+    // ======================================================================
+    // FASE 8 / PASSO 34 — CICLO DE VIDA DE SESSÃO RUNTIME
+    //
+    // O servidor tinha o subsistema inteiro — `runtimeStartSession`,
+    // `runtimeStopSession`, `runtimeProbe`, `runtimeCaptureScreen`,
+    // `stagingPrepare`, `stagingCleanup`, `routerRecommend`, `getTriadInfo` —
+    // e a UI não chamava NENHUM deles. O painel de runtime lia textos
+    // capturados, mas não havia como iniciar a sessão que os captura: o
+    // usuário via "Nenhum texto runtime capturado" e não havia caminho para
+    // desfazê-lo. Capacidade real, inalcançável.
+    //
+    // Aqui a sessão é iniciada pelo jogo já selecionado, com o estado real
+    // da sessão exposto e honesta: o botão de parada só aparece quando há
+    // sessão, e o encerramento só é declarado quando o servidor confirma.
+    // ======================================================================
+    let runtimeSessaoAtual = null;
+
+    async function atualizarSessaoRuntime() {
+      const badge = $("rtSessaoBadge");
+      const btnStop = $("mRuntimeStop");
+      const info = $("rtSessaoInfo");
+      if (!runtimeSessaoAtual) {
+        if (badge) {
+          badge.textContent = "Nenhuma sessão ativa";
+          badge.style.color = "var(--txt3)";
+        }
+        if (btnStop) btnStop.style.display = "none";
+        if (info) info.textContent = "";
+        return;
+      }
+      if (badge) {
+        badge.textContent = `Sessão ${runtimeSessaoAtual.sessionId}`;
+        badge.style.color = "var(--green2)";
+      }
+      if (btnStop) btnStop.style.display = "";
+      if (info) {
+        info.textContent = `PID ${runtimeSessaoAtual.pid || '—'}`
+          + ` | strategy=${runtimeSessaoAtual.strategy || 'auto'}`
+          + ` | staging=${runtimeSessaoAtual.stagingDir ? 'pronto' : 'não'}`;
+      }
+    }
+
+    $("mRuntimeStart")?.addEventListener("click", async () => {
+      const btn = $("mRuntimeStart");
+      btn.disabled = true;
+      const label = btn.textContent;
+      btn.textContent = "Iniciando sessão... ⏳";
+      log("info", `Iniciando sessão de runtime para ${key}...`);
+      try {
+        // O roteador recomenda a estratégia; o log mostra a recomendação e a
+        // sessão é iniciada com ela, em vez de deixar o servidor decidir
+        // sozinho sem o usuário saber.
+        let recomendado = null;
+        try {
+          const rec = await rpc("routerRecommend", { engine: curEng, gameId: key });
+          if (rec && rec.ok && rec.recommendation) recomendado = rec.recommendation;
+        } catch (e) {
+          log("debug", `routerRecommend indisponível: ${e.message}`);
+        }
+
+        const res = await rpc("runtimeStartSession", {
+          gameId: key,
+          gameDir: exePath ? (exePath.replace(/[\\/][^\\/]+$/, "") || exePath) : undefined,
+          engine: curEng,
+          stagingDir: undefined,
+        });
+
+        if (res && res.ok && res.sessionId) {
+          runtimeSessaoAtual = {
+            sessionId: res.sessionId,
+            pid: res.pid,
+            strategy: (recomendado && (recomendado.strategy || recomendado.recommended))
+              || undefined,
+            stagingDir: null,
+          };
+          log("success", `Sessão runtime ${res.sessionId} iniciada (PID ${res.pid}).`);
+          showToast(`Sessão runtime iniciada (PID ${res.pid || '?'}).`, "success");
+
+          // Staging: cópia isolada para que o jogo original não seja tocado.
+          try {
+            const st = await rpc("stagingPrepare", { gameDir: exePath.replace(/[\\/][^\\/]+$/, ""), sessionId: res.sessionId });
+            if (st && st.ok && st.res && st.res.success && st.res.stagingDir) {
+              runtimeSessaoAtual.stagingDir = st.res.stagingDir;
+              log("success", `Staging pronto em ${st.res.stagingDir}.`);
+            } else {
+              log("warn", `Staging não foi preparado: ${st?.res?.error || st?.error || 'sem retorno'}`);
+            }
+          } catch (e) {
+            log("warn", "Staging falhou: " + e.message);
+          }
+
+          await atualizarSessaoRuntime();
+        } else {
+          // FASE 8 — sem sessionId não há sessão. Dizer isso é obrigatório:
+          // o botão voltaria ao normal e o usuário acharia que o jogo abriu.
+          const motivo = res?.error || res?.reason || "resposta sem sessionId";
+          log("error", "Sessão runtime NÃO iniciada: " + motivo);
+          showToast("Sessão runtime não iniciada: " + motivo, "error");
+        }
+      } catch (e) {
+        log("error", "Falha ao iniciar sessão runtime: " + e.message);
+        showToast("Falha ao iniciar sessão runtime: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = label;
+      }
+    });
+
+    $("mRuntimeStop")?.addEventListener("click", async () => {
+      if (!runtimeSessaoAtual) {
+        showToast("Nenhuma sessão ativa para encerrar.", "info");
+        return;
+      }
+      const btn = $("mRuntimeStop");
+      btn.disabled = true;
+      const alvo = runtimeSessaoAtual;
+      try {
+        const res = await rpc("runtimeStopSession", {
+          sessionId: alvo.sessionId,
+          reason: "Encerrado pela UI",
+        });
+        // FASE 8 — só chamamos de encerrado quando o servidor confirma.
+        if (res && res.ok && res.res && res.res.success) {
+          log("success", `Sessão ${alvo.sessionId} encerrada.`);
+          showToast("Sessão runtime encerrada.", "success");
+          runtimeSessaoAtual = null;
+
+        // ----------------------------------------------------------------
+        // FASE 10 / D3 — O STAGING TEM ROTINA DE LIMPEZA
+        // ----------------------------------------------------------------
+        //
+        // A FASE 8 ligou `stagingPrepare` e deixou `stagingCleanup` sem
+        // consumidor. Cada sessao de runtime copia o jogo INTEIRO para um
+        // staging isolado, e sem cleanup essa copia acumula: o usuario inicia
+        // sessao, fecha o jogo, e o disco enche de copias do jogo inteiro das
+        // sessoes passadas.
+        //
+        // A limpeza e tentada DEPOIS do encerramento confirmado, nunca no
+        // `else`: se a sessao nao foi encerrada, o staging pode estar em uso
+        // e apaga-lo derrubaria a captura em andamento.
+        //
+        // E falha de cleanup nao pode virar erro de encerramento: a sessao JA
+        // foi encerrada com sucesso pelo servidor. E aviso, nao falha.
+        const stagingDir = alvo.stagingDir;
+        if (stagingDir) {
+          try {
+            const st = await rpc("stagingCleanup", {
+              gameDir: alvo.gameDir || exePath.replace(/[\\/][^\\/]+$/, ""),
+              stagingDir,
+              sessionId: alvo.sessionId,
+            });
+            if (st && st.ok && st.res && st.res.success) {
+              log("success", `Staging removido: ${stagingDir}`);
+            } else {
+              const m = st?.res?.error || st?.error || "sem confirmacao";
+              log("warn", `Staging NAO removido (${stagingDir}): ${m}`);
+              log("warn", "A copia isolada do jogo permanece no disco. Ela "
+                + "pode ser removida com seguranca depois que o jogo estiver fechado.");
+            }
+          } catch (stgErr) {
+            log("warn", `Falha ao limpar staging: ${stgErr.message}`);
+          }
+        }
+        } else {
+          const motivo = res?.res?.error || res?.error || "sem confirmação";
+          log("error", `Encerramento NÃO confirmado: ${motivo}`);
+          showToast("Encerramento não confirmado: " + motivo, "error");
+        }
+      } catch (e) {
+        log("error", "Falha ao encerrar sessão: " + e.message);
+        showToast("Falha ao encerrar sessão: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        await atualizarSessaoRuntime();
+      }
+    });
+
+    $("mRuntimeProbe")?.addEventListener("click", async () => {
+      if (!runtimeSessaoAtual) {
+        showToast("Inicie uma sessão antes de sondar o processo.", "info");
+        return;
+      }
+      try {
+        const res = await rpc("runtimeProbe", { pid: runtimeSessaoAtual.pid });
+        if (res && res.ok) {
+          const p = res.probe || {};
+          log("info", `Probe PID ${runtimeSessaoAtual.pid}: vivo=${p.alive} `
+            + `nome=${p.name || '—'} threads=${p.threads ?? '—'}`);
+          showToast(`Processo vivo=${p.alive ? 'sim' : 'não'}.`, p.alive ? "info" : "warn");
+          if (!p.alive) {
+            // O processo morreu sozinho: a sessão deixou de existir.
+            log("warn", "O processo da sessão não está mais vivo; limpando estado local.");
+            runtimeSessaoAtual = null;
+    // Estado inicial da sessão: sem sessão ativa, botão de parar oculto.
+    atualizarSessaoRuntime();
+          }
+        } else {
+          showToast("Sonda falhou: " + (res?.error || "erro"), "error");
+        }
+      } catch (e) {
+        showToast("Falha na sonda: " + e.message, "error");
+      }
+    });
+
+    $("mRuntimeShot")?.addEventListener("click", async () => {
+      if (!runtimeSessaoAtual || !runtimeSessaoAtual.pid) {
+        showToast("Não há processo ativo para capturar.", "info");
+        return;
+      }
+      try {
+        const res = await rpc("runtimeCaptureScreen", { pid: runtimeSessaoAtual.pid });
+        if (res && res.ok && res.capture && res.capture.success) {
+          const c = res.capture;
+          log("success", `Captura salva: ${c.outputPath || c.path || 'arquivo'}`);
+          showToast("Captura de tela salva.", "success");
+        } else {
+          const motivo = res?.capture?.error || res?.error || "captura não confirmada";
+          log("warn", "Captura falhou: " + motivo);
+          showToast("Captura falhou: " + motivo, "error");
+        }
+      } catch (e) {
+        showToast("Falha na captura: " + e.message, "error");
+      }
+    });
+
+    $("mRuntimeTriad")?.addEventListener("click", async () => {
+      try {
+        const res = await rpc("getTriadInfo", { gameKey: key });
+        if (!res) {
+          showToast("Triade não retornou informação.", "warn");
+          return;
+        }
+        const linhas = [
+          `engine=${res.engine || '—'}`,
+          `runtime=${res.runtime || res.strategy || '—'}`,
+          `hook=${res.hookPath ? 'disponível' : 'ausente'}`,
+          `staging=${res.stagingDir || '—'}`,
+        ];
+        log("info", "Triade: " + linhas.join(' | '));
+        showToast(linhas.join("\n"), "info");
+      } catch (e) {
+        showToast("Falha ao ler a triade: " + e.message, "error");
+      }
+    });
+
+    // Estado inicial da sessão: sem sessão ativa, botão de parar oculto.
+    atualizarSessaoRuntime();
+
+    // ======================================================================
+    // FASE 8 / PASSO 35 — JOB DE TRADUÇÃO COM CHECKPOINT
+    //
+    // O servidor tinha `startTranslationJob`, `getJobStatus`,
+    // `listTranslationJobs` e `resumeTranslationJob`, com checkpoint em
+    // disco — e a UI não chamava nenhum deles. Um job interrompido no meio
+    // (servidor caiu, usuário fechou o app) deixava traduções já feitas sem
+    // forma de retomá-las: havia retrabalho, mas não perda.
+    //
+    // Aqui o job é iniciado pelo jogo selecionado e acompanhado por
+    // polling. O progresso só é declarado concluído quando o servidor
+    // responde `completed`; qualquer outro estado final é reportado como o
+    // que é.
+    // ======================================================================
+    let jobPollTimer = null;
+
+    async function pollJob(jobId, btn) {
+      clearInterval(jobPollTimer);
+      return new Promise((resolve) => {
+        let tentativas = 0;
+        const MAX = 3600; // 1h de polling a 1s
+        jobPollTimer = setInterval(async () => {
+          tentativas++;
+          if (tentativas > MAX) {
+            clearInterval(jobPollTimer);
+            resolve({ status: 'timeout', jobId });
+            return;
+          }
+          try {
+            const res = await rpc("getJobStatus", { jobId });
+            const job = res && res.ok ? res.job : null;
+            if (!job) {
+              if (tentativas > 3) {
+                clearInterval(jobPollTimer);
+                resolve({ status: 'notfound', jobId });
+              }
+              return;
+            }
+            const pct = job.total ? Math.round(((job.current || 0) / job.total) * 100) : 0;
+            if (btn) {
+              btn.textContent = `${job.stage || 'processando'} ${pct}%`;
+            }
+            if (job.status === 'completed') {
+              clearInterval(jobPollTimer);
+              resolve({ status: 'completed', job });
+            } else if (job.status === 'failed') {
+              clearInterval(jobPollTimer);
+              resolve({ status: 'failed', job });
+            }
+          } catch (e) {
+            // Falha de polling não é o job falhando: só para de acompanhar.
+            if (tentativas > 5) {
+              clearInterval(jobPollTimer);
+              resolve({ status: 'pollError', jobId, error: e.message });
+            }
+          }
+        }, 1000);
+      });
+    }
+
+    $("mTranslateJob")?.addEventListener("click", async () => {
+      const btn = $("mTranslateJob");
+      const label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Iniciando job... ⏳";
+      log("info", `Iniciando job de tradução para ${key}...`);
+      try {
+        const res = await rpc("startTranslationJob", { gameKey: key });
+        // FASE 8 — `ok:true` sem `jobId` não é um job iniciado.
+        if (res && res.ok && res.jobId) {
+          log("success", `Job ${res.jobId} criado; acompanhando progresso.`);
+          const fim = await pollJob(res.jobId, btn);
+
+          if (fim.status === 'completed') {
+            const j = fim.job;
+            log("success", `Job concluído: ${j.current ?? '?'} de ${j.total ?? '?'}.`);
+            showToast(`Job concluído (${j.current ?? '?'}/${j.total ?? '?'}). `
+              + 'Verifique o certificado de tradução para o status real.', "success");
+          } else if (fim.status === 'failed') {
+            const motivo = fim.job?.error || fim.job?.state || 'erro não informado';
+            log("error", `Job falhou: ${motivo}`);
+            showToast("Job falhou: " + motivo, "error");
+          } else if (fim.status === 'timeout') {
+            log("warn", `Job ${res.jobId} continua rodando; parei de acompanhar. `
+              + 'Use "Retomar Job" para ver o estado salvo.');
+            showToast("Acompanhamento interrompido por tempo. O job segue salvo em disco.", "warn");
+          } else if (fim.status === 'notfound') {
+            log("warn", `Job ${res.jobId} não foi encontrado pelo servidor.`);
+            showToast("O job não foi encontrado pelo servidor.", "error");
+          } else {
+            log("warn", `Acompanhamento interrompido: ${fim.error || fim.status}`);
+            showToast("Acompanhamento interrompido: " + (fim.error || fim.status), "warn");
+          }
+        } else {
+          const motivo = res?.error || "resposta sem jobId";
+          log("error", "Job NÃO iniciado: " + motivo);
+          showToast("Job não iniciado: " + motivo, "error");
+        }
+      } catch (e) {
+        log("error", "Falha ao iniciar job: " + e.message);
+        showToast("Falha ao iniciar job: " + e.message, "error");
+      } finally {
+        clearInterval(jobPollTimer);
+        btn.disabled = false;
+        btn.textContent = label;
+      }
+    });
+
+    $("mResumeJob")?.addEventListener("click", async () => {
+      try {
+        const res = await rpc("listTranslationJobs");
+        const jobs = res && res.ok && Array.isArray(res.jobs) ? res.jobs : [];
+        if (jobs.length === 0) {
+          showToast("Nenhum job salvo encontrado.", "info");
+          return;
+        }
+        const linhas = jobs.slice(0, 20).map((j, i) => {
+          const quando = j.createdAt ? new Date(j.createdAt).toLocaleString() : '?';
+          return `${i + 1}. ${j.id || j.jobId} — ${j.state || j.status || '?'} `
+            + `(${j.current ?? 0}/${j.total ?? 0}) — ${quando}`;
+        });
+        const escolha = prompt(
+          `Jobs salvos (${jobs.length}):\n\n${linhas.join('\n')}\n\n`
+          + 'Digite o NÚMERO do job para retomar (ou cancele):',
+          '1',
+        );
+        if (escolha === null) return;
+        const idx = parseInt(escolha, 10) - 1;
+        if (Number.isNaN(idx) || idx < 0 || idx >= jobs.length) {
+          showToast("Número inválido.", "error");
+          return;
+        }
+        const alvo = jobs[idx];
+        const jobId = alvo.id || alvo.jobId;
+        const rr = await rpc("resumeTranslationJob", { jobId });
+        // FASE 8 — retomar precisa devolver o job; sem isso, nada retomou.
+        if (rr && rr.ok && rr.job) {
+          log("success", `Job ${jobId} retomado.`);
+          showToast(`Job ${jobId} retomado.`, "success");
+        } else {
+          const motivo = rr?.error || "resposta sem job";
+          log("error", `Job ${jobId} NÃO retomado: ${motivo}`);
+          showToast("Job não retomado: " + motivo, "error");
+        }
+      } catch (e) {
+        showToast("Falha ao listar jobs: " + e.message, "error");
       }
     });
 
@@ -3705,14 +4167,16 @@ select option {
           const originText = l.origin ? ` [${l.origin}]` : "";
           const singleLineMsg = (l.message || "").replace(/\r?\n/g, " ");
           const e = document.createElement("div");
-          e.className = "le l" + (l.level ? l.level[0] : "i");
+          e.className = "le l" + (l.level ? String(l.level)[0] : "i");
+          // FASE 1 / PASSO 19: l.ts e l.origin vinham do backend sem escape.
+          // l.origin pode carregar texto de provider ou do jogo.
           e.innerHTML =
             '<span class="lt">[' +
-            l.ts +
+            esc(l.ts) +
             ']</span> <span class="ll">[' +
-            lvlText +
+            esc(lvlText) +
             ']</span><span class="lo">' +
-            originText +
+            esc(originText) +
             '</span> <span class="lm">' +
             esc(singleLineMsg) +
             "</span>";
@@ -3902,26 +4366,36 @@ select option {
       if (list && state.actors) {
         let html = "";
         state.actors.forEach((a) => {
-          const hpPct = Math.round((a.hp / a.mhp) * 100) || 0;
-          const mpPct = Math.round((a.mp / a.mmp) * 100) || 0;
+          // FASE 1 / PASSO 19: hp/mhp/mp/mmp/level/idx eram interpolados crus.
+          // idx vinha para dentro de data-idx="..." — um id malicioso
+          // (ex.: 1" onmouseover="...) abria um vetor XSS via atributo.
+          const aName = esc(a.name);
+          const aHp = num(a.hp);
+          const aMhp = num(a.mhp);
+          const aMp = num(a.mp);
+          const aMmp = num(a.mmp);
+          const aLevel = num(a.level);
+          const aIdx = attr(a.idx);
+          const hpPct = Math.round((aHp / aMhp) * 100) || 0;
+          const mpPct = Math.round((aMp / aMmp) * 100) || 0;
           html += `
             <div style="background:var(--bg4);border:1px solid var(--bd);padding:10px;border-radius:4px;font-size:10px;margin-bottom:4px">
-              <div style="font-weight:600;color:var(--accent);margin-bottom:6px;font-size:11px">${esc(a.name)} (${t("level")} ${a.level})</div>
+              <div style="font-weight:600;color:var(--accent);margin-bottom:6px;font-size:11px">${aName} (${t("level")} ${aLevel})</div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <!-- HP Row -->
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-                  <span style="font-weight:bold;color:var(--txt2);flex:1">HP: ${a.hp} / ${a.mhp} (${hpPct}%)</span>
+                  <span style="font-weight:bold;color:var(--txt2);flex:1">HP: ${aHp} / ${aMhp} (${hpPct}%)</span>
                   <div style="display:flex;gap:4px;align-items:center">
-                    <input class="actor-hp-input" data-idx="${a.idx}" type="number" style="width:60px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${a.hp}">
-                    <button class="actor-hp-btn btn sm" data-idx="${a.idx}" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
+                    <input class="actor-hp-input" data-idx="${aIdx}" type="number" style="width:60px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${aHp}">
+                    <button class="actor-hp-btn btn sm" data-idx="${aIdx}" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
                   </div>
                 </div>
                 <!-- MP Row -->
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-                  <span style="font-weight:bold;color:var(--txt2);flex:1">MP: ${a.mp} / ${a.mmp} (${mpPct}%)</span>
+                  <span style="font-weight:bold;color:var(--txt2);flex:1">MP: ${aMp} / ${aMmp} (${mpPct}%)</span>
                   <div style="display:flex;gap:4px;align-items:center">
-                    <input class="actor-mp-input" data-idx="${a.idx}" type="number" style="width:60px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${a.mp}">
-                    <button class="actor-mp-btn btn sm" data-idx="${a.idx}" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
+                    <input class="actor-mp-input" data-idx="${aIdx}" type="number" style="width:60px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${aMp}">
+                    <button class="actor-mp-btn btn sm" data-idx="${aIdx}" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
                   </div>
                 </div>
               </div>
@@ -3933,13 +4407,18 @@ select option {
 
       const sel = $("cheatInvItemSelect");
       if (sel && state.allDbItems && sel.options.length <= 1) {
-        let optionsHtml =
-          '<option value="">' + t("cheatSelectItemPlaceholder") + "</option>";
+        // FASE 1 / PASSO 19: item.type e item.id entravam em value="" crus.
+        // Substituido por construcao via DOM (sem innerHTML).
+        const opts = [XSSGuard.makeOption(document, "", t("cheatSelectItemPlaceholder"))];
         state.allDbItems.forEach((item) => {
           const typeStr = t(item.type);
-          optionsHtml += `<option value="${item.type}:${item.id}">[${typeStr}] ${esc(item.name)}</option>`;
+          opts.push(XSSGuard.makeOption(
+            document,
+            `${item.type}:${item.id}`,
+            `[${typeStr}] ${item.name}`,
+          ));
         });
-        sel.innerHTML = optionsHtml;
+        XSSGuard.replaceChildren(sel, opts);
       }
 
       const invList = $("cheat-inventory-list");
@@ -3949,17 +4428,22 @@ select option {
         state.ownedItems.forEach((item) => {
           if (query && !item.name.toLowerCase().includes(query)) return;
           const typeStr = t(item.type);
+          // FASE 1 / PASSO 19: item.type/item.id/item.count interpolados
+          // em atributos sem escape.
+          const iType = attr(item.type);
+          const iId = attr(item.id);
+          const iCount = num(item.count);
           html += `
             <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
               <div>
-                <span style="font-weight:600;color:var(--accent)">[${typeStr}]</span>
+                <span style="font-weight:600;color:var(--accent)">[${esc(typeStr)}]</span>
                 <span style="color:var(--txt2);margin-left:4px">${esc(item.name)}</span>
               </div>
               <div style="display:flex;gap:4px;align-items:center">
-                <span style="font-weight:bold;margin-right:6px">Qtd: ${item.count}</span>
-                <button class="inv-adjust-btn btn sm" data-type="${item.type}" data-id="${item.id}" data-amount="-1" style="padding:1px 5px;font-size:9px">-1</button>
-                <button class="inv-adjust-btn btn sm" data-type="${item.type}" data-id="${item.id}" data-amount="1" style="padding:1px 5px;font-size:9px">+1</button>
-                <button class="inv-remove-btn btn sm dgr" data-type="${item.type}" data-id="${item.id}" data-count="${item.count}" style="padding:1px 5px;font-size:9px">X</button>
+                <span style="font-weight:bold;margin-right:6px">Qtd: ${iCount}</span>
+                <button class="inv-adjust-btn btn sm" data-type="${iType}" data-id="${iId}" data-amount="-1" style="padding:1px 5px;font-size:9px">-1</button>
+                <button class="inv-adjust-btn btn sm" data-type="${iType}" data-id="${iId}" data-amount="1" style="padding:1px 5px;font-size:9px">+1</button>
+                <button class="inv-remove-btn btn sm dgr" data-type="${iType}" data-id="${iId}" data-count="${iCount}" style="padding:1px 5px;font-size:9px">X</button>
               </div>
             </div>
           `;
@@ -4022,11 +4506,13 @@ select option {
           </div>
         `;
       } else if (vType === 'number' || typeof v.value === 'number') {
+        // FASE 1 / PASSO 19: v.value interpolado cru em texto e em value="".
+        const vNum = num(v.value);
         html += `
           <div style="background:var(--bg4);border:1px solid var(--bd);padding:6px 10px;border-radius:4px;font-size:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(stat = ${v.value})</span></span>
+            <span style="font-weight:600;color:var(--accent)">${vKey} <span style="color:var(--txt3);font-weight:normal">(stat = ${vNum})</span></span>
             <div style="display:flex;gap:4px;align-items:center">
-              <input class="renpy-var-input" data-key="${vKey}" type="number" style="width:80px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${v.value}">
+              <input class="renpy-var-input" data-key="${vKey}" type="number" style="width:80px;padding:2px 4px;font-size:9px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px" value="${vNum}">
               <button class="renpy-var-btn btn sm" data-key="${vKey}" data-type="number" style="padding:2px 6px;font-size:9px">${t("cheatSetBtn")}</button>
             </div>
           </div>
@@ -4302,7 +4788,11 @@ select option {
   window.addEventListener("beforeunload", function () {
     if (!window.isReloading) {
       try {
-        navigator.sendBeacon("/api/close_app", JSON.stringify({ close: true }));
+        fetch('/api/close_app', {
+          method: 'POST', keepalive: true,
+          headers: { 'Content-Type': 'application/json', 'X-OpenTranslator-Token': SESSION_TOKEN },
+          body: JSON.stringify({ close: true }),
+        }).catch(() => {});
       } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
   });
@@ -4355,27 +4845,40 @@ select option {
       const res = await rpc("runSpeedBenchmark", { options: { stages: [1, 2, 4, 8, 12, 16], roundsPerStage: 2 } });
       if (res && res.result) {
         const r = res.result;
-        if ($("pf-safe-val")) $("pf-safe-val").textContent = `${r.safeSpeed.speed} txt/s`;
-        if ($("pf-sustained-val")) $("pf-sustained-val").textContent = `${r.maxSustainedSpeed.speed} txt/s`;
-        if ($("pf-peak-val")) $("pf-peak-val").textContent = `${r.peakSpeed.speed} txt/s`;
-        if ($("pf-saturation-val")) $("pf-saturation-val").textContent = `${r.saturationPoint.concurrency} Workers`;
+        // FASE 8 — todos os valores do benchmark passam por `num()`. São
+        // medidas, mas vêm do servidor como parte de um objeto que o
+        // SpeedBenchmark também usa para_relatar erros; interpolar cru num
+        // innerHTML transformaria uma mensagem de falha em HTML.
+        if ($("pf-safe-val")) $("pf-safe-val").textContent = `${num(r.safeSpeed.speed)} txt/s`;
+        if ($("pf-sustained-val")) $("pf-sustained-val").textContent = `${num(r.maxSustainedSpeed.speed)} txt/s`;
+        if ($("pf-peak-val")) $("pf-peak-val").textContent = `${num(r.peakSpeed.speed)} txt/s`;
+        if ($("pf-saturation-val")) $("pf-saturation-val").textContent = `${num(r.saturationPoint.concurrency)} Workers`;
 
         const rows = $("pf-bench-rows");
-        if (rows && r.stages) {
+        if (rows && Array.isArray(r.stages)) {
           rows.innerHTML = r.stages.map(st => `
             <tr style="border-bottom:1px solid rgba(255,255,255,0.03)">
-              <td style="padding:6px">${st.concurrency} worker${st.concurrency > 1 ? 's' : ''}</td>
-              <td style="padding:6px; color:var(--accent)">${st.meanThroughputTextsSec} txt/s</td>
-              <td style="padding:6px">${st.medianThroughputTextsSec} txt/s</td>
-              <td style="padding:6px">${st.minThroughputTextsSec} txt/s</td>
-              <td style="padding:6px">${st.maxThroughputTextsSec} txt/s</td>
-              <td style="padding:6px">${st.stdDev}</td>
-              <td style="padding:6px">${st.avgP95LatencyMs}ms</td>
-              <td style="padding:6px">${st.rateLimitErrors}</td>
+              <td style="padding:6px">${num(st.concurrency)} worker${Number(st.concurrency) > 1 ? 's' : ''}</td>
+              <td style="padding:6px; color:var(--accent)">${num(st.meanThroughputTextsSec)} txt/s</td>
+              <td style="padding:6px">${num(st.medianThroughputTextsSec)} txt/s</td>
+              <td style="padding:6px">${num(st.minThroughputTextsSec)} txt/s</td>
+              <td style="padding:6px">${num(st.maxThroughputTextsSec)} txt/s</td>
+              <td style="padding:6px">${num(st.stdDev)}</td>
+              <td style="padding:6px">${num(st.avgP95LatencyMs)}ms</td>
+              <td style="padding:6px">${num(st.rateLimitErrors)}</td>
             </tr>
           `).join("");
+        } else if (rows) {
+          // Sem estágios, não se escreve uma tabela vazia que parece medida.
+          rows.innerHTML = '<tr><td colspan="8" style="padding:8px;color:var(--txt3)">'
+            + 'O benchmark não retornou estágios para exibir.</td></tr>';
         }
         showToast("Benchmark concluído com sucesso!", "success");
+      } else {
+        // FASE 8 — a ausência de resultado não é sucesso. Antes, um retorno
+        // sem `result` caía fora do `if` e não mostrava NADA: o botão voltava
+        // ao normal e o usuário ficava sem saber se rodou.
+        showToast("O benchmark não retornou resultados: " + (res?.error || "resposta vazia"), "error");
       }
     } catch (err) {
       showToast("Falha no benchmark: " + err.message, "error");

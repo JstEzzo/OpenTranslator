@@ -9,10 +9,24 @@ const path = require('path');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
+const { rollbackResult } = require('../rollbackResult.js');
+const { PartialReport } = require('../../core/partialApply');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
 
 class Cocos2dxAdapter extends BaseEngineAdapter {
   constructor() {
     super("cocos2dx", "Cocos2d-x");
+
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "todo arquivo que eu toco está no backup
+    // que a transação vai fazer". `ac.finish` verifica a cada apply e
+    // devolve `transactional: false` se a afirmação deixar de valer.
+    //
+    // `this` só existe DEPOIS de `super()`: numa classe derivada, tocar
+    // `this` antes disso lança em tempo de construção.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "cocos" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_cocos2dx_backup" });
   }
@@ -50,6 +64,8 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const allTexts = [];
+    // FASE 9 / PASSO 53 — o relatório decide o `success`.
+    const acc = new PartialReport();
     const scanDirs = [
       path.join(gameDir, "Resources"),
       path.join(gameDir, "res"),
@@ -75,6 +91,7 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
               const relP = path.relative(gameDir, fullP).replace(/\\/g, "/");
 
               if (ext === ".plist" || ext === ".xml") {
+                acc.ok();
                 try {
                   const content = fs.readFileSync(fullP, 'utf8');
                   const regex = /<key>([^<]+)<\/key>\s*<string>([^<]+)<\/string>/g;
@@ -97,8 +114,13 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
                       });
                     }
                   }
-                } catch (e) {}
+                } catch (e) {
+                  // FASE 9 / PASSO 53 — .plist/.xml ilegível.
+                  // Ver src/core/partialApply.js.
+                  acc.fail(`${relP} (plist)`, e);
+                }
               } else if (ext === ".strings") {
+                acc.ok();
                 try {
                   const content = fs.readFileSync(fullP, 'utf8');
                   const regex = /"([^"\\]*(?:\\.[^"\\]*)*)"\s*=\s*"([^"\\]*(?:\\.[^"\\]*)*)";/g;
@@ -121,8 +143,12 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
                       });
                     }
                   }
-                } catch (e) {}
+                } catch (e) {
+                  // FASE 9 / PASSO 53 — .strings ilegível.
+                  acc.fail(`${relP} (strings)`, e);
+                }
               } else if (ext === ".json" && (relP.toLowerCase().includes("lang") || relP.toLowerCase().includes("string") || relP.toLowerCase().includes("i18n"))) {
+                acc.ok();
                 try {
                   const content = fs.readFileSync(fullP, 'utf8');
                   const parsed = JSON.parse(content);
@@ -142,16 +168,25 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
                       });
                     }
                   }
-                } catch (e) {}
+                } catch (e) {
+                  // FASE 9 / PASSO 53 — JSON de i18n malformado.
+                  acc.fail(`${relP} (json)`, e);
+                }
               }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 53 — a VARREDURA do diretório falhou. Todo o
+          // conteúdo abaixo de `dir` some do universo, e o adapter original
+          // dizia `success: true` como se a pasta estivesse vazia.
+          acc.fail(path.relative(gameDir, dir).replace(/\\/g, "/"), e);
+        }
       };
       walk(sDir);
     }
 
-    return { success: true, texts: allTexts, count: allTexts.length };
+    // FASE 9 / PASSO 53 — quem decide o `success` é o relatório.
+    return acc.report({ texts: allTexts, count: allTexts.length });
   }
 
   async validate(gameDir, texts, translations) {
@@ -159,6 +194,16 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+  // FASE 10 / D1 — o contrato de apply. O plano de arquivos vem dos
+  // textos: um texto traduzível veio de um arquivo, e aplicar escreve
+  // nesse arquivo. Se este adapter passar a escrever fora do plano,
+  // `ac.finish` devolve `transactional: false` e o pipeline volta ao
+  // fallback com verifyApplied — que é o comportamento correto.
+  const ac = startApplyContract(gameDir, texts);
+    // Escopo do METODO, e nao do `for`. A declaracao vivia dentro do laco e o
+    // `ac.finish(accApply.report(...))` do fim vivia no escopo do metodo:
+    // ReferenceError em TODO apply. Coerente com defold/gamemaker/unity.
+    const accApply = new PartialReport();
     const byFile = new Map();
     for (const t of texts) {
       if (!t.file) continue;
@@ -193,7 +238,12 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
             }
           }
           if (modified) {
-            fs.writeFileSync(fullPath, JSON.stringify(parsed, null, 2), "utf8");
+            const _saida_fullPath = JSON.stringify(parsed, null, 2);
+            fs.writeFileSync(fullPath, _saida_fullPath, "utf8");
+            // FASE 10 / D1 — o hash declarado vem do CONTEÚDO EM MEMÓRIA.
+            // Hashear o arquivo depois de escrever compararia o número com ele
+            // mesmo, e a verificação não verificaria nada.
+            ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), _saida_fullPath);
             modifiedFiles.add(fullPath);
           }
         } else if (fmt === "plist") {
@@ -214,7 +264,12 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
             }
           }
           if (modified) {
-            fs.writeFileSync(fullPath, content, "utf8");
+            const _saida_fullPath = content;
+            fs.writeFileSync(fullPath, _saida_fullPath, "utf8");
+            // FASE 10 / D1 — o hash declarado vem do CONTEÚDO EM MEMÓRIA.
+            // Hashear o arquivo depois de escrever compararia o número com ele
+            // mesmo, e a verificação não verificaria nada.
+            ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), _saida_fullPath);
             modifiedFiles.add(fullPath);
           }
         } else if (fmt === "strings") {
@@ -235,24 +290,32 @@ class Cocos2dxAdapter extends BaseEngineAdapter {
             }
           }
           if (modified) {
-            fs.writeFileSync(fullPath, content, "utf8");
+            const _saida_fullPath = content;
+            fs.writeFileSync(fullPath, _saida_fullPath, "utf8");
+            // FASE 10 / D1 — o hash declarado vem do CONTEÚDO EM MEMÓRIA.
+            // Hashear o arquivo depois de escrever compararia o número com ele
+            // mesmo, e a verificação não verificaria nada.
+            ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), _saida_fullPath);
             modifiedFiles.add(fullPath);
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 57 — a falha deixou de ser silenciosa.
+        // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+        accApply.fail(fullPath, e);
+      }
     }
 
-    return {
-      success: true,
+    return ac.finish(accApply.report({
       modifiedFiles: Array.from(modifiedFiles),
       count: appliedCount,
       message: `Tradução Cocos2d-x aplicada com sucesso (${appliedCount} textos em ${modifiedFiles.size} arquivos).`
-    };
+    }));
   }
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return { success: res.success, restoredFiles: res.restoredFiles || [gameDir] };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

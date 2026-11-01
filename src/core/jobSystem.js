@@ -36,7 +36,7 @@ const JobState = {
 
 class JobSystem {
   constructor(options = {}) {
-    const root = global.ROOT || path.resolve(__dirname, "../../..");
+    const root = global.ROOT || path.resolve(__dirname, "../..");
     this.jobsDir = options.jobsDir || path.join(root, "data", "jobs");
     if (!fs.existsSync(this.jobsDir)) {
       fs.mkdirSync(this.jobsDir, { recursive: true });
@@ -125,6 +125,16 @@ class JobSystem {
     job.updatedAt = new Date().toISOString();
     this.persist(job);
     return job;
+  }
+
+  updateProgress(jobId, stage, current, total, extra = {}) {
+    const states = { analyzing: 'INSPECTING', extracting: 'EXTRACTING', translating: 'TRANSLATING',
+      applying: 'APPLYING', validating: 'VALIDATING', completed: 'COMPLETED', failed: 'FAILED' };
+    const progress = Number.isFinite(current) && Number.isFinite(total) && total > 0
+      ? Math.max(0, Math.min(100, Math.round(current * 100 / total))) : 0;
+    return this.updateJobState(jobId, states[stage] || String(stage).toUpperCase(), {
+      ...extra, progress: stage === 'completed' ? 100 : progress,
+    });
   }
 
   /**

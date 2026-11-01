@@ -209,17 +209,68 @@ class CsvAdapter extends BaseFormatAdapter {
   }
 }
 
+/**
+ * FASE 9 / PASSO 38 — O FALLBACK PAROU DE REIVINDICAR TUDO
+ *
+ * A linha anterior era:
+ *
+ *     detect() { return true; } // Fallback para qualquer formato textual não suportado
+ *
+ * Isso é o MESMO antipadrão que a FASE 7 removesu de `findGameOnDisk`, que
+ * devolvia `mz` para qualquer executável: uma detecção que nunca falha não é
+ * detecção, é-default. E aqui o dano é concreto — `getAdapter` usa o
+ * primeiro `detect()` verdadeiro, e o fallback é o último:
+ *
+ *   - um `.rpy` do Ren'Py cuja detecção estruturada falhasse cairia aqui e
+ *     receberia substituição por `String.split`/`join`, que atravessa
+ *     strings, comentários e blocos;
+ *   - um `.json` corrompido receberia o mesmo tratamento;
+ *   - e o resultado seria `{ modified: true }` — um arquivo alterado, com
+ *     a confiança de uma operação estrutural.
+ *
+ * O fallback agora só reivindica o que ele de fato sabe fazer: texto puro,
+ * legível, sem estrutura. Binários e formatos estruturados passam a ser
+ * recusados, e a recusa é explícita.
+ */
 class TextAdapter extends BaseFormatAdapter {
   constructor() { super('TextAdapter'); }
 
-  detect() { return true; } // Fallback para qualquer formato textual não suportado
+  detect(filePath, content = '') {
+    const ALLOWED_EXT = new Set(['.txt', '.md', '.csv', '.log', '.ini', '.cfg', '.dialog', '.story']);
+    const ext = String(filePath || '').toLowerCase();
+    const ponto = ext.lastIndexOf('.');
+    const extLimpa = ponto >= 0 ? ext.slice(ponto) : '';
+
+    // FASE 9: conteúdo precisa ser realmente texto. Um buffer com byte NUL
+    // ou substituição inválida não é "texto não suportado", é um formato que
+    // este adapter não entende — e dizer o contrário é o defeito que corrigimos.
+    const buf = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8');
+    if (buf.length > 0 && buf.includes(0)) return false;
+    if (buf.length > 0 && buf.toString('utf8').includes('�') && buf.length > 512) return false;
+
+    if (!ALLOWED_EXT.has(extLimpa)) return false;
+
+    // Um arquivo que não parece ter texto (proporção de bytes de controle
+    // alta) não entra por aqui.
+    if (buf.length > 0) {
+      let controle = 0;
+      for (const b of buf) if (b < 9 || (b > 13 && b < 32)) controle++;
+      if (controle / buf.length > 0.05) return false;
+    }
+    return true;
+  }
 
   capabilities() {
     return {
       structured: false,
       selectorSupport: false,
       status: 'EXPERIMENTAL',
-      warning: 'GENERIC_TEXT_FALLBACK: Formato não possui adapter estruturado. Substituição ingênua utilizada com cautela.'
+      scope: 'plain-text-only',
+      warning: 'GENERIC_TEXT_FALLBACK: aceita apenas texto puro legível '
+        + '(.txt/.md/.csv/.log/.ini/.cfg/.dialog/.story). Substituição por '
+        + 'substring, sem análise de estrutura. Formatos estruturados e '
+        + 'binários são recusados de propósito, para não serem alterados por '
+        + 'um método que não os entende.',
     };
   }
 
@@ -253,7 +304,15 @@ class FormatAdapterRegistry {
         return adapter;
       }
     }
-    return this.fallbackAdapter;
+    // FASE 9: quando nenhum adapter estrutural reivindica o arquivo, o
+    // fallback só entra se ele próprio aceitar. Se recusar, devolvemos `null`
+    // — e o chamador tem de tratar isso como "formato não suportado", em vez
+    // de receber um adapter que vai alterá-lo por substring.
+    const fb = this.fallbackAdapter;
+    if (fb && typeof fb.detect === 'function' && fb.detect(filePath, content)) {
+      return fb;
+    }
+    return null;
   }
 }
 

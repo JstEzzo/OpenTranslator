@@ -5,7 +5,7 @@
  */
 
 const assert = require("assert");
-const RenPyAppDataResolver = require("../renpyAppDataResolver");
+const RenPyAppDataResolver = require("../../src/discovery/renpyAppDataResolver");
 const EngineRoutingGuard = require("../../src/core/engineRoutingGuard");
 
 async function run() {

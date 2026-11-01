@@ -17,7 +17,7 @@ const translationMemory = require('./translationMemory');
 
 class RuntimeTextManager {
   constructor(options = {}) {
-    this.root = global.ROOT || path.resolve(__dirname, '../../..');
+    this.root = global.ROOT || path.resolve(__dirname, '../..');
     this.storagePath = options.storagePath || path.join(this.root, 'data', 'runtime_texts.json');
     this.runtimeCache = new Map(); // hash -> { original, translated, timestamp, hits }
     this.runtimeRegistry = new Map(); // hash -> record

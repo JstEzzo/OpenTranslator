@@ -177,6 +177,7 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
       }
 
       let stats = { count: 0 };
+      const injectErrors = [];
       let injectedFiles = [];
       const sortedKeys = Object.keys(translationMap || {}).sort((a, b) => b.length - a.length);
 
@@ -222,15 +223,31 @@ class RpgMakerMvMzHandler extends BaseEngineHandler {
             }
           }
         } catch (fileErr) {
-          // Continue processing remaining files cleanly
+          // FASE 9 / PASSO 43 — o comentário original dizia "Continue
+          // processing remaining files cleanly", e continuava: o catch estava
+          // vazio. Continuar é certo; descartar o motivo não é. Um arquivo do
+          // RPG Maker que falha ao ser escrito pode ser o `data/` inteiro, e
+          // o jogador receberia um jogo que abre sem nenhuma das traduções
+          // aplicadas — com `success: true` dizendo o contrário.
+          injectErrors.push({
+            file: path.relative(gameDir, filePath).replace(/\\/g, '/'),
+            error: fileErr.message,
+          });
         }
       }
 
+      const partial = injectErrors.length > 0;
       return {
-        success: true,
+        success: !partial,
+        status: partial ? 'PARTIAL' : 'COMPLETE',
         engine: 'RPG_MAKER_MV_MZ',
         injectedFiles,
-        count: stats.count
+        injectErrors,
+        count: stats.count,
+        warning: partial
+          ? `${injectErrors.length} arquivo(s) do RPG Maker não puderam ser `
+            + 'escritos. O jogo vai abrir com parte do texto sem tradução.'
+          : null,
       };
     } catch (err) {
       return {

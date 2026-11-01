@@ -15,10 +15,23 @@ const path = require('path');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
+const { rollbackResult } = require('../rollbackResult.js');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
+const { PartialReport } = require('../../core/partialApply');
 
 class GameMakerAdapter extends BaseEngineAdapter {
   constructor() {
     super("gamemaker", "GameMaker");
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "todo arquivo que eu toco está no backup que
+    // a transação vai fazer". `ac.finish` verifica a cada apply e devolve
+    // `transactional: false` se a afirmação deixar de valer.
+    //
+    // `this` só existe DEPOIS de `super()`: numa classe derivada, tocar `this`
+    // antes disso lança em tempo de construção.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "gamemaker" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_gamemaker_backup" });
   }
@@ -60,6 +73,9 @@ class GameMakerAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const allTexts = [];
+    // FASE 9 / PASSO 59 — escopo do METODO: os `catch` de dentro dos lacoes
+    // registram nela e o `return` do fim do metodo le-a.
+    const accApply = new PartialReport();
     if (!fs.existsSync(gameDir)) return { success: false, texts: [], count: 0 };
 
     const files = fs.readdirSync(gameDir);
@@ -116,17 +132,24 @@ class GameMakerAdapter extends BaseEngineAdapter {
                 }
               };
               walk(parsed);
-            } catch (e) {}
+            } catch (e) {
+              // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+              // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+              accApply.fail(f, e);
+            }
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+          accApply.fail(relDir, e);
+        }
       }
     }
 
-    return {
-      success: true,
+    return accApply.report({
       texts: allTexts,
       count: allTexts.length
-    };
+});
   }
 
   async validate(gameDir, texts, translations) {
@@ -134,6 +157,13 @@ class GameMakerAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    // FASE 10 / D1 — o contrato de apply. Este adapter tem DOIS sítios de
+    // escrita (JSON e TXT); ambos declaram o hash, porque os dois arquivos
+    // precisam estar no backup para o rollback alcançar ambos.
+    const ac = startApplyContract(gameDir, texts);
+    // Escopo do METODO, e nao do `for`: os `catch` por arquivo e o
+    // `ac.finish(accApply.report(...))` do fim precisam desta mesma instancia.
+    const accApply = new PartialReport();
     const byFile = new Map();
     for (const t of texts) {
       if (!byFile.has(t.file)) byFile.set(t.file, []);
@@ -169,7 +199,12 @@ class GameMakerAdapter extends BaseEngineAdapter {
               }
             }
           }
-          fs.writeFileSync(fullPath, lines.join('\n'), 'utf8');
+          // FASE 10 / D1 — hash declarado a partir do CONTEÚDO EM MEMÓRIA.
+          // Hashear o arquivo depois de escrever compararia o número com ele
+          // mesmo, e a verificação não verificaria nada.
+          const saidaTxt = lines.join('\n');
+          fs.writeFileSync(fullPath, saidaTxt, 'utf8');
+          ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), saidaTxt);
           modifiedFiles.add(fullPath);
         } catch (e) {}
       } else if (fmt === "json") {
@@ -200,26 +235,31 @@ class GameMakerAdapter extends BaseEngineAdapter {
           }
 
           if (fileModified) {
-            fs.writeFileSync(fullPath, JSON.stringify(parsed, null, 2), 'utf8');
+            // FASE 10 / D1 — mesmo motivo do sítio TXT acima.
+            const saidaJson = JSON.stringify(parsed, null, 2);
+            fs.writeFileSync(fullPath, saidaJson, 'utf8');
+            ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), saidaJson);
             modifiedFiles.add(fullPath);
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 57 — a falha deixou de ser silenciosa.
+          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+          accApply.fail(filePath, e);
+        }
       }
     }
 
-    return {
-      success: true,
+    // FASE 10 / D1 — `PartialReport` decide a partialidade; `ac.finish`
+    // acrescenta `transactional`, `filesToBackup` e `fileHashes`.
+    return ac.finish(accApply.report({
       modifiedFiles: Array.from(modifiedFiles),
       count: appliedCount
-    };
+    }));
   }
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return {
-      success: res.success,
-      restoredFiles: res.restoredFiles || [gameDir]
-    };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

@@ -68,9 +68,8 @@ namespace OpenTranslatorLauncher
                     }
                     else if (res == DialogResult.Retry)
                     {
-                        KillProcessOnPort(8080);
-                        KillProcessOnPort(16005);
-                        Thread.Sleep(800);
+                        MessageBox.Show("Feche a instancia anterior pelo proprio OpenTranslator e tente novamente. Nenhum processo sera encerrado apenas por ocupar uma porta.", "OpenTranslator", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
                     }
                     else
                     {
@@ -95,22 +94,6 @@ namespace OpenTranslatorLauncher
             }
             catch { }
             return false;
-        }
-
-        static void KillProcessOnPort(int port)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = string.Format("/c for /f \"tokens=5\" %a in ('netstat -ano ^| findstr \":{0} \" ^| findstr \"LISTENING\"') do taskkill /F /PID %a", port),
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                using (var p = Process.Start(psi)) { p.WaitForExit(3000); }
-            }
-            catch { }
         }
 
         static int RunSmokeTest()
@@ -241,6 +224,52 @@ namespace OpenTranslatorLauncher
         public event Action<string> OnLog;
         public event Action<DiagnosticStep> OnStepUpdate;
 
+        /// <summary>
+        /// Token de sessao do processo do backend.
+        ///
+        /// A FASE 1 passou a exigir o header X-OpenTranslator-Token em /api/rpc.
+        /// O token e por-processo (memoria) e so e devolvido pelo bootstrap
+        /// /api/ping, e apenas para requisicao cujo Host/Origin seja loopback
+        /// (src/security/sessionGuard.js). O launcher precisa do mesmo token
+        /// que a UI web usa, entao busca no mesmo endpoint em vez de burlar a
+        /// exigencia.
+        ///
+        /// O token muda quando o backend reinicia, por isso e buscado em cada
+        /// uso e nunca cacheado entre diagnosticos.
+        /// </summary>
+        public string FetchSessionToken()
+        {
+            try
+            {
+                var req = (HttpWebRequest)WebRequest.Create(
+                    string.Format("http://127.0.0.1:{0}/api/ping", ServerPort));
+                req.Timeout = 3000;
+                req.Method = "GET";
+                using (var res = (HttpWebResponse)req.GetResponse())
+                using (var reader = new StreamReader(res.GetResponseStream()))
+                {
+                    string json = reader.ReadToEnd();
+                    if (string.IsNullOrEmpty(json)) return null;
+                    // Extrai o campo "token" sem depender de biblioteca JSON.
+                    int i = json.IndexOf("\"token\"", StringComparison.Ordinal);
+                    if (i < 0) return null;
+                    int colon = json.IndexOf(':', i);
+                    if (colon < 0) return null;
+                    int q1 = json.IndexOf('"', colon + 1);
+                    if (q1 < 0) return null;
+                    int q2 = json.IndexOf('"', q1 + 1);
+                    if (q2 < 0) return null;
+                    string token = json.Substring(q1 + 1, q2 - q1 - 1).Trim();
+                    return string.IsNullOrEmpty(token) ? null : token;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("  [WARN] Falha ao obter token de sessao em /api/ping: " + ex.Message);
+                return null;
+            }
+        }
+
         public DiagnosticEngine()
         {
             LogBuffer = new StringBuilder();
@@ -335,8 +364,11 @@ namespace OpenTranslatorLauncher
             UpdateStep("files", "RUNNING", "Validando integridade dos arquivos...");
             Log("[1/10] Verificando arquivos essenciais...");
             string serverJs = ResolveExistingPath(Path.Combine(BaseDir, "server.js"), Path.Combine(ToolDir, "server.js"));
-            string httpServerJs = ResolveExistingPath(Path.Combine(BaseDir, "src", "httpServer.js"), Path.Combine(ToolDir, "src", "httpServer.js"));
-            string rpcHandlersJs = ResolveExistingPath(Path.Combine(BaseDir, "src", "rpcHandlers.js"), Path.Combine(ToolDir, "src", "rpcHandlers.js"));
+            // FASE 5.5 — `httpServer.js` e `rpcHandlers.js` foram movidos para
+            // `src/services/` (responsabilidade: serviços). O layout antigo
+            // continua como fallback para compatibilidade com builds anteriores.
+            string httpServerJs = ResolveExistingPath(Path.Combine(BaseDir, "src", "services", "httpServer.js"), Path.Combine(BaseDir, "src", "httpServer.js"), Path.Combine(ToolDir, "src", "services", "httpServer.js"), Path.Combine(ToolDir, "src", "httpServer.js"));
+            string rpcHandlersJs = ResolveExistingPath(Path.Combine(BaseDir, "src", "services", "rpcHandlers.js"), Path.Combine(BaseDir, "src", "rpcHandlers.js"), Path.Combine(ToolDir, "src", "services", "rpcHandlers.js"), Path.Combine(ToolDir, "src", "rpcHandlers.js"));
             string indexHtml = ResolveExistingPath(Path.Combine(BaseDir, "ui", "index.html"), Path.Combine(ToolDir, "ui", "index.html"), Path.Combine(ToolDir, "www", "index.html"));
             string appJs = ResolveExistingPath(Path.Combine(BaseDir, "ui", "app.js"), Path.Combine(ToolDir, "ui", "app.js"), Path.Combine(ToolDir, "www", "app.js"));
 
@@ -375,6 +407,8 @@ namespace OpenTranslatorLauncher
             Log("[2/10] Verificando runtime Node.js...");
 
             string nodePortable = ResolveExistingPath(
+                Path.Combine(BaseDir, "bin", "node.exe"),
+                Path.Combine(ToolDir, "bin", "node.exe"),
                 Path.Combine(BaseDir, "bin", "node-v20.18.3-win-x64", "node.exe"),
                 Path.Combine(ToolDir, "bin", "node-v20.18.3-win-x64", "node.exe")
             );
@@ -474,14 +508,11 @@ namespace OpenTranslatorLauncher
                 }
                 else
                 {
-                    Log("  Porta ocupada por processo sem resposta. Liberando...");
-                    KillPortProcess(8080);
-                    KillPortProcess(16005);
-                    Thread.Sleep(600);
+                    Log("  Porta ocupada. O processo nao sera encerrado sem comprovacao de propriedade.");
                     if (IsPortInUse(8080))
                     {
                         sw.Stop();
-                        string cause = "Porta 8080 permanece ocupada e não pôde ser liberada automaticamente.";
+                        string cause = "Porta 8080 ocupada. Feche o programa responsavel e tente novamente.";
                         string det = "Verifique processos conflitantes na porta 8080 no Gerenciador de Tarefas.";
                         SetError("ports", "Porta 8080 indisponível", cause, det);
                         UpdateStep("ports", "ERROR", cause, sw.ElapsedMilliseconds);
@@ -608,10 +639,23 @@ namespace OpenTranslatorLauncher
             Log("[10/10] Realizando teste de chamada RPC...");
             try
             {
+                // FASE 1 tornou X-OpenTranslator-Token OBRIGATORIO em /api/rpc
+                // (src/services/httpServer.js, guardRequest com requireToken:true).
+                // O bootstrap e' /api/ping, que so devolve o token para
+                // requisicao cujo Host/Origin e loopback. A UI web faz
+                // exatamente isto (ui/app.js: pingServer() -> SESSION_TOKEN).
+                // O launcher NAO fazia: criava o HttpWebRequest sem o header,
+                // e /api/rpc respondia 403 {"reason":"TOKEN_MISSING"},
+                // reprovando o_step [10/10] com WebException.
+                string sessionToken = FetchSessionToken();
+                if (string.IsNullOrEmpty(sessionToken))
+                    throw new Exception("Token de sessao nao obtido em /api/ping (resposta sem campo 'token').");
+
                 var rpcReq = (HttpWebRequest)WebRequest.Create("http://127.0.0.1:8080/api/rpc");
                 rpcReq.Method = "POST";
                 rpcReq.ContentType = "application/json";
                 rpcReq.Timeout = 5000;
+                rpcReq.Headers.Add("X-OpenTranslator-Token", sessionToken);
                 byte[] bodyBytes = Encoding.UTF8.GetBytes("{\"method\":\"ping\",\"params\":{}}");
                 using (var st = rpcReq.GetRequestStream())
                 {
@@ -733,25 +777,6 @@ namespace OpenTranslatorLauncher
             return false;
         }
 
-        public void KillPortProcess(int port)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = string.Format("/c for /f \"tokens=5\" %a in ('netstat -ano ^| findstr \":{0} \" ^| findstr \"LISTENING\"') do taskkill /F /PID %a", port),
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                using (var p = Process.Start(psi))
-                {
-                    p.WaitForExit(3000);
-                }
-            }
-            catch { }
-        }
-
         public bool CheckHttpHealthy(int port, int timeoutMs)
         {
             try
@@ -821,20 +846,38 @@ namespace OpenTranslatorLauncher
             return false;
         }
 
-        public void StopServer()
+        public bool StopServer()
         {
-            if (ActiveServerProcess != null && !ActiveServerProcess.HasExited)
+            if (ActiveServerProcess == null) return true;
+            try
             {
-                try
+                if (ActiveServerProcess.HasExited) { ActiveServerProcess = null; return true; }
+                string token = FetchSessionToken();
+                if (string.IsNullOrEmpty(token)) throw new Exception("Token de encerramento indisponivel.");
+                var req = (HttpWebRequest)WebRequest.Create(string.Format("http://127.0.0.1:{0}/api/shutdown", ServerPort));
+                req.Method = "POST";
+                req.Timeout = 5000;
+                req.ContentLength = 0;
+                req.Headers.Add("X-OpenTranslator-Token", token);
+                using (var response = (HttpWebResponse)req.GetResponse())
                 {
-                    ActiveServerProcess.Kill();
-                    ActiveServerProcess.WaitForExit(2000);
+                    if (response.StatusCode != HttpStatusCode.OK) throw new Exception("Encerramento recusado.");
                 }
-                catch { }
+                if (!ActiveServerProcess.WaitForExit(35000))
+                {
+                    Log("Encerramento ainda em andamento. O backend foi preservado para concluir a restauracao.");
+                    return false;
+                }
+                bool clean = ActiveServerProcess.ExitCode == 0;
                 ActiveServerProcess = null;
+                if (!clean) Log("Backend encerrou com pendencias. Consulte o log e os backups preservados.");
+                return true;
             }
-            KillPortProcess(8080);
-            KillPortProcess(16005);
+            catch (Exception ex)
+            {
+                Log("Nao foi possivel concluir o encerramento: " + ex.Message);
+                return false;
+            }
         }
 
         public string GetRecentLogSnippet()
@@ -855,7 +898,7 @@ namespace OpenTranslatorLauncher
             Log("=== Executando Rotina de Auto-Correção ===");
             try
             {
-                StopServer();
+                if (!StopServer()) return;
                 Thread.Sleep(500);
 
                 string dataDir = Path.Combine(ToolDir, "data");
@@ -1168,15 +1211,13 @@ namespace OpenTranslatorLauncher
             btnRestart = CreateButton("Reiniciar", new Point(410, 130), new Size(120, 40), Color.FromArgb(39, 41, 46));
             btnRestart.Click += (s, e) =>
             {
-                engine.StopServer();
-                StartDiagnosis(true);
+                if (engine.StopServer()) StartDiagnosis(true);
             };
 
             btnExitApp = CreateButton("Encerrar OpenTranslator", new Point(540, 130), new Size(150, 40), Color.FromArgb(185, 28, 28));
             btnExitApp.Click += (s, e) =>
             {
-                engine.StopServer();
-                Application.Exit();
+                if (engine.StopServer()) Application.Exit();
             };
 
             runningPanel.Controls.Add(lblRunningTitle);
@@ -1225,12 +1266,12 @@ namespace OpenTranslatorLauncher
 
             this.FormClosing += (s, e) =>
             {
+                if (!engine.StopServer()) { e.Cancel = true; return; }
                 if (trayIcon != null)
                 {
                     trayIcon.Visible = false;
                     trayIcon.Dispose();
                 }
-                engine.StopServer();
             };
 
             this.Load += (s, e) =>
@@ -1248,7 +1289,7 @@ namespace OpenTranslatorLauncher
                 trayMenu.Items.Add("Abrir Interface", null, (s, e) => OpenWebInterface());
                 trayMenu.Items.Add("Exibir Painel", null, (s, e) => { this.Show(); this.WindowState = FormWindowState.Normal; this.BringToFront(); });
                 trayMenu.Items.Add(new ToolStripSeparator());
-                trayMenu.Items.Add("Encerrar OpenTranslator", null, (s, e) => { engine.StopServer(); Application.Exit(); });
+                trayMenu.Items.Add("Encerrar OpenTranslator", null, (s, e) => { if (engine.StopServer()) Application.Exit(); });
 
                 trayIcon = new NotifyIcon
                 {

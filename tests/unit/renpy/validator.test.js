@@ -5,7 +5,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const RenpyValidator = require('../../src/engines/renpy/validator/renpyValidator');
+const RenpyValidator = require('../../../src/engines/renpy/validator/renpyValidator');
 
 async function run() {
   console.log('--- [TEST] RenpyValidator Unit Tests ---');

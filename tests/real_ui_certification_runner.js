@@ -376,7 +376,7 @@ class RealUiCertificationRunner {
         }
       } catch (e) {}
 
-      const gameService = require('./src/core/gameService');
+      const gameService = require('../src/core/gameService');
       const applyRes = await gameService.applyTranslation(gamePath, {
         ...sessionRef,
         texts: sampleTexts,

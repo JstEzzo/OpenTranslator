@@ -15,6 +15,8 @@ const { execFileSync } = require("child_process");
 const BaseEngineAdapter = require("../../core/baseEngineAdapter");
 const CodeProtector = require("../../core/codeProtector");
 const BackupManager = require("../../core/backupManager");
+const { rollbackResult } = require('../rollbackResult.js');
+const { PartialReport } = require('../../core/partialApply');
 
 class UnityAdapter extends BaseEngineAdapter {
   constructor() {
@@ -216,8 +218,9 @@ class UnityAdapter extends BaseEngineAdapter {
    * Aplicação segura e reversível de traduções para jogos Unity.
    */
   async apply(gameDir, texts, translations, options = {}) {
-    const root = this.resolveUnityRoot(gameDir);
+const root = this.resolveUnityRoot(gameDir);
     const isIl2cpp = this.isIl2cpp(root);
+    const accApply = new PartialReport();
 
     // 1. Identifica arquivos que serão modificados para backup prévio
     const filesToBackupSet = new Set();
@@ -316,18 +319,28 @@ class UnityAdapter extends BaseEngineAdapter {
         }
         totalInjected += (res.count || assetItems.length);
       } finally {
+        // FASE 9 / PASSO 57 — este `try` foi reconstituido. O conversor casou
+        // apenas a cauda `catch (_) {}` da linha e derrubou o `try {` junto,
+        // dejando `} catch` solto. Reparo manual, e por isso o lote SEMPRE
+        // passa por `node --check` antes de ser considerado bom.
         if (fs.existsSync(payloadFile)) {
-          try { fs.unlinkSync(payloadFile); } catch (_) {}
+          try {
+            fs.unlinkSync(payloadFile);
+          } catch (e) {
+            // FASE 9 / PASSO 57 — o payload nao saiu. Ele e um arquivo
+            // temporario injected no jogo; deixar ele para tras e acumulo de
+            // lixo dentro do build, e em alguns casos e lido pelo loader.
+            accApply.fail(payloadFile, e);
+          }
         }
       }
     }
 
-    return {
-      success: true,
+    return accApply.report({
       modifiedFiles: modifiedFiles.length > 0 ? modifiedFiles : filesToBackup,
       count: totalInjected,
       message: `Tradução Unity aplicada com sucesso (${totalInjected} textos).`
-    };
+});
   }
 
   async rollback(gameDir, options = {}) {
@@ -341,15 +354,15 @@ class UnityAdapter extends BaseEngineAdapter {
     } catch (_) {}
     if (!res || !res.success) {
       const oldRes = this.backupManager.restoreOldestBackup(root);
-      return {
-        success: oldRes.success,
-        restoredFiles: oldRes.restoredFiles || [root]
-      };
+      return rollbackResult(oldRes, this.id || this.engineId || "unknown");
     }
-    return {
-      success: true,
-      restoredFiles: res.restoredFiles || [root]
-    };
+    return rollbackResult(res, this.id || this.engineId || "unknown", {
+      // FASE 7 — success:true era literal, mesmo sem saber se algum arquivo
+      // foi restaurado. Um rollback que "deu certo" sem tocar em nada é pior
+      // do que um que falhou: o usuário acredita que o jogo voltou ao original
+      // quando talvez nem tenha sido tocado.
+      source: "sessionBackup",
+    });
   }
 }
 
