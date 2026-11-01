@@ -2,6 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+fs.mkdirSync(path.resolve(__dirname, '../../scratch'), { recursive: true });
 const vm = require('vm');
 const temp = fs.mkdtempSync(path.resolve(__dirname, '../../scratch/job-test-'));
 global.ROOT = temp;

@@ -2,6 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+fs.mkdirSync(path.resolve(__dirname, '../../scratch'), { recursive: true });
 const http = require('http');
 const { spawn } = require('child_process');
 const root = path.resolve(__dirname, '../..');

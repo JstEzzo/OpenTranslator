@@ -2,6 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+fs.mkdirSync(path.resolve(__dirname, '../../scratch'), { recursive: true });
 const vm = require('vm');
 let pass = 0, fail = 0;
 async function test(name, fn) { try { await fn(); pass++; console.log('ok ' + name); } catch (e) { fail++; console.error('FAIL ' + name, e); } }

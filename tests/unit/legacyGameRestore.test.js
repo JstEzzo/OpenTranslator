@@ -2,6 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+fs.mkdirSync(path.resolve(__dirname, '../../scratch'), { recursive: true });
 const { backupGameData, restoreGameData } = require('../../src/core/legacyGameRestore');
 let pass = 0, fail = 0;
 const root = fs.mkdtempSync(path.resolve(__dirname, '../../scratch/restore-test-'));

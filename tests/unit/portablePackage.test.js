@@ -2,6 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+fs.mkdirSync(path.resolve(__dirname, '../../scratch'), { recursive: true });
 const crypto = require('crypto');
 const { buildRelease } = require('../../tools/package_release');
 const temp = fs.mkdtempSync(path.resolve(__dirname, '../../scratch/package-test-'));
