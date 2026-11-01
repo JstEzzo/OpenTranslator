@@ -8,9 +8,9 @@ Workflow de empacotamento/release: monta e verifica o portable e publica artefat
 
 - Categoria: Produto / ferramenta.
 - Base da descrição: Explicação editorial do módulo.
-- Tamanho: 2145 bytes; linhas: 63.
+- Tamanho: 2104 bytes; linhas: 64.
 - Leitura: texto completo decodificado.
-- SHA-256: `77f7f263278870abddd8082134cf9a41cb459b8a3e8c72c7564032a41f391c82`.
+- SHA-256: `46c52b773e23900264ae81227b1e4211d9588e8b8b98f51041255090b7211227`.
 
 ## `.github/workflows/verify.yml`
 
@@ -28,9 +28,9 @@ Lista padrões de arquivos que o Git normalmente não deve versionar; não é um
 
 - Categoria: Produto / ferramenta.
 - Base da descrição: Explicação editorial do módulo.
-- Tamanho: 2334 bytes; linhas: 105.
+- Tamanho: 2503 bytes; linhas: 113.
 - Leitura: texto completo decodificado.
-- SHA-256: `0987f3ac2e05c2d2f439d20662671fff8946df24509ec7f43447c0408cd8c525`.
+- SHA-256: `2d01355fc9bd2de3e0d17b54249946f6c5ecc37c5c8feeb73a03ef1c9ade0496`.
 
 ## `config/engineCompatibility.json`
 
@@ -69,10 +69,10 @@ Fonte C# do launcher: instância única, diagnóstico, abertura do navegador, ba
 
 - Categoria: Produto / ferramenta.
 - Base da descrição: Explicação editorial do módulo.
-- Tamanho: 69161 bytes; linhas: 1562.
+- Tamanho: 67434 bytes; linhas: 1560.
 - Leitura: texto completo decodificado.
-- SHA-256: `89ffaae683842915e95e95fbb8597fe8cb30c1ceb281cfb4966db23a2c500209`.
-- Assinaturas localizadas (nome:linha): `foreach:28`, `using:61`, `using:90`, `using:249`, `foreach:305`, `lock:316`, `foreach:376`, `using:610`, `using:617`, `using:660`, `using:667`, `using:720`, `using:748`, `using:765`, `using:786`, `using:862`, `lock:885`, `foreach:915`, `foreach:1083`, `foreach:1381`, `foreach:1537`.
+- SHA-256: `416161cc9113a392a869f45d53adff1af16c6a78c8db060d6ef43d39cfa442e5`.
+- Assinaturas localizadas (nome:linha): `foreach:28`, `using:61`, `using:90`, `using:249`, `foreach:305`, `lock:316`, `foreach:376`, `using:608`, `using:615`, `using:658`, `using:665`, `using:718`, `using:746`, `using:763`, `using:784`, `using:860`, `lock:883`, `foreach:913`, `foreach:1081`, `foreach:1379`, `foreach:1535`.
 - Imports literais: `ws`, `better-sqlite3`.
 
 ## `LICENSE`
@@ -93,7 +93,7 @@ Launcher Windows compilado; inicia e verifica o backend e abre a interface. A fo
 - Base da descrição: Explicação editorial do módulo.
 - Tamanho: 53248 bytes; linhas: não interpretadas.
 - Leitura: bytes lidos; conteúdo não interpretado.
-- SHA-256: `ecd45afdfd06970c763caacf52f3f07c5882eda73e4a9c1f652f6f961e53d8a7`.
+- SHA-256: `40ec28aef2248dc6348bbb6c200eed06bd23d6a6498e38ffcf13e7e950f35f2a`.
 
 ## `package-lock.json`
 
@@ -118,13 +118,13 @@ Identifica o pacote e define comandos de execução, teste e empacotamento e dep
 
 ## `README.md`
 
-Documento: OpenTranslator. Registro textual; verificar data e evidência antes de tratar afirmações históricas como atuais.
+Documento: OpenTranslator. Registro textual; verificar data e evidência antes de tratar afirmações históricas como atuais.
 
 - Categoria: Produto / ferramenta.
 - Base da descrição: Título do documento.
-- Tamanho: 8361 bytes; linhas: 161.
+- Tamanho: 9629 bytes; linhas: 173.
 - Leitura: texto completo decodificado.
-- SHA-256: `588d8c1d4bb3ec10320606d4ad9dfa5bf3542e655a9160a4aac1eef60deb9b83`.
+- SHA-256: `f7422516b3bc8b4cfa29fa35dafc519d6df56caa511b839505522651a1cc7e2e`.
 
 ## `server.js`
 
@@ -1877,26 +1877,6 @@ Integração específica de formatos e runtimes de jogos. Descrição declarada 
 - Imports literais: `fs`, `path`.
 - Referenciado estaticamente por: `tests/regression/run-phase3-tests.js`.
 
-## `src/engines/godot/__pycache__/godot_bridge.cpython-312.pyc`
-
-Integração específica de formatos e runtimes de jogos. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 15601 bytes; linhas: não interpretadas.
-- Leitura: bytes lidos; conteúdo não interpretado.
-- SHA-256: `86235747fc55924a510bec3dbd1d8393b925f11bac0dbdf719ff9aeb8f1a45cf`.
-
-## `src/engines/godot/__pycache__/godot_pck_parser.cpython-312.pyc`
-
-Integração específica de formatos e runtimes de jogos. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 4233 bytes; linhas: não interpretadas.
-- Leitura: bytes lidos; conteúdo não interpretado.
-- SHA-256: `c900154d2c79fb7943dbe8580d68bbcfc84199baf8b352949922e7a7c2717543`.
-
 ## `src/engines/godot/godot_bridge.py`
 
 Integração específica de formatos e runtimes de jogos. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
@@ -2743,16 +2723,6 @@ Servidor de hooks HTTP/WebSocket: recebe estado de runtime, entrega comandos e a
 - Imports literais: `http`, `ws`, `../translation/translator`, `./cache`, `../core/runtimeTextManager`, `../core/shutdownCoordinator`.
 - Referenciado estaticamente por: `server.js`, `src/core/shutdownCoordinator.js`, `tests/unit/cheatRoundTrip.test.js`, `tests/unit/cheatServerContract.test.js`, `tests/unit/hookLifecycle.test.js`.
 
-## `src/services/cheatServer.js.bak_simplificacao_20261018`
-
-Serviços locais de HTTP/RPC, cheats e persistência. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Cópia de segurança histórica.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 13286 bytes; linhas: não interpretadas.
-- Leitura: bytes lidos; conteúdo não interpretado.
-- SHA-256: `caf2defd1c0f299a1c282fac776ac47489617a2776085f24940085209b43422f`.
-
 ## `src/services/httpServer.js`
 
 Transporte HTTP local: bootstrap da sessão, RPC, heartbeat, encerramento e entrega controlada de arquivos da interface.
@@ -2912,7 +2882,7 @@ Resolução de caminhos, Python, logs e utilidades compartilhadas. Descrição d
 - SHA-256: `d18df84d7e881275452cea1e37319733e6e59464449126741a8308044555cfad`.
 - Assinaturas localizadas (nome:linha): `resolvePythonBinary:15`.
 - Imports literais: `fs`, `path`.
-- Referenciado estaticamente por: `src/engines/godot/godotAdapter.js`, `src/engines/rpgmaker/rpgMakerRubyHandler.js`, `src/engines/unity/unityAdapter.js`, `src/engines/wolf/wolfAdapter.js`.
+- Referenciado estaticamente por: `src/engines/godot/godotAdapter.js`, `src/engines/rpgmaker/rpgMakerRubyHandler.js`, `src/engines/unity/unityAdapter.js`, `src/engines/wolf/wolfAdapter.js`, `tests/unit/projectCleanup.test.js`, `tools/maintenance/cleanup_project.js`.
 
 ## `src/utils/resourceResolver.js`
 
@@ -2979,10 +2949,10 @@ Runner registrado de testes: separa suítes em processos, seleciona grupos e ver
 
 - Categoria: Teste / laboratório.
 - Base da descrição: Explicação editorial do módulo.
-- Tamanho: 12657 bytes; linhas: 335.
+- Tamanho: 12482 bytes; linhas: 336.
 - Leitura: texto completo decodificado.
-- SHA-256: `04c20731f8cf792a5fe87183e2e12fdd554008429cabe7e2cd5b0874d21f2093`.
-- Assinaturas localizadas (nome:linha): `parseArgs:222`, `runSuite:235`, `Number:255`, `main:260`.
+- SHA-256: `74af50c16cc051771e3736b5b07bfdd6389bdb7d2401856429c9eea9a8045016`.
+- Assinaturas localizadas (nome:linha): `parseArgs:223`, `runSuite:236`, `Number:256`, `main:261`.
 - Imports literais: `fs`, `path`, `child_process`.
 - Referenciado estaticamente por: `tests/unit/auditContracts.test.js`.
 
@@ -4244,11 +4214,23 @@ Teste ou roteiro portablePackage.test.js: Consultar as assinaturas, comandos e a
 
 - Categoria: Teste / laboratório.
 - Base da descrição: Cabeçalho de teste / estrutura.
-- Tamanho: 3543 bytes; linhas: 49.
+- Tamanho: 5266 bytes; linhas: 65.
 - Leitura: texto completo decodificado.
-- SHA-256: `255fbb805328d18faa4ea02828361e1f2df4f5611671c2178be760017446799f`.
+- SHA-256: `aec7118fedd7527853cfd8028c4bc3a662b1dd035737e7116795c7a43eb1f303`.
 - Assinaturas localizadas (nome:linha): `write:10`, `fixture:11`, `build:19`, `test:22`.
 - Imports literais: `assert`, `fs`, `path`, `crypto`, `../../tools/package_release`.
+
+## `tests/unit/projectCleanup.test.js`
+
+Teste ou roteiro projectCleanup.test.js: Consultar as assinaturas, comandos e asserções extraídas para identificar o cenário exercitado.
+
+- Categoria: Teste / laboratório.
+- Base da descrição: Cabeçalho de teste / estrutura.
+- Tamanho: 2160 bytes; linhas: 17.
+- Leitura: texto completo decodificado.
+- SHA-256: `9f5c84caf157747432a4ec50402268e4b9e503d864933f9caac27100fcdc6979`.
+- Assinaturas localizadas (nome:linha): `write:6`.
+- Imports literais: `fs`, `path`, `assert`, `child_process`, `../../src/utils/pythonResolver`.
 
 ## `tests/unit/providerContract.test.js`
 
@@ -4567,26 +4549,6 @@ Teste ou roteiro validate_renpy_certification.js: validate_renpy_certification.j
 - Assinaturas localizadas (nome:linha): `checkPng:28`, `auditGameRenpy:37`, `runFullValidation:254`.
 - Imports literais: `fs`, `path`, `crypto`.
 
-## `tools/__pycache__/document_project.cpython-314.pyc`
-
-Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 38382 bytes; linhas: não interpretadas.
-- Leitura: bytes lidos; conteúdo não interpretado.
-- SHA-256: `244b5d1a4a96d05982c94fca37cdfc293c999b179fbdba93e1dbb53c8011e527`.
-
-## `tools/__pycache__/restore_rpgmaker.cpython-314.pyc`
-
-Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 67042 bytes; linhas: não interpretadas.
-- Leitura: bytes lidos; conteúdo não interpretado.
-- SHA-256: `99059277ab3e32b85ea8a4abb0c36a1e482bf3821de44aeedc0817b7cdde06fc`.
-
 ## `tools/capture_game.js`
 
 Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
@@ -4682,16 +4644,26 @@ Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quand
 
 ## `tools/maintenance/cleanup_project.js`
 
-Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Descrição declarada no cabeçalho: cleanup_project.js — Utilitário de Higiene e Manutenção do Repositório Responsabilidades: - Escanear o repositório em busca de diretórios temporários (scratch_*), logs antigos de teste e sessões órfãs
+Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
 
 - Categoria: Produto / ferramenta.
-- Base da descrição: Cabeçalho declarado; não certificação.
-- Tamanho: 6367 bytes; linhas: 170.
+- Base da descrição: Localização / descrição limitada.
+- Tamanho: 581 bytes; linhas: 10.
 - Leitura: texto completo decodificado.
-- SHA-256: `ce8a2861d8af7693cfe799a5b805418923d741cbac00f8e98df15f247a0384ab`.
-- Assinaturas localizadas (nome:linha): `findProjectRoot:19`, `scan:33`, `run:109`.
-- Imports literais: `fs`, `path`.
+- SHA-256: `749ebfc319138d77334e77614893fdc054c27f29fa61ed80192c769117f39cd3`.
+- Imports literais: `path`, `child_process`, `../../src/utils/pythonResolver`.
 - Referenciado estaticamente por: `tools/cleanup_project.js`.
+
+## `tools/maintenance/project_cleanup.py`
+
+Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
+
+- Categoria: Produto / ferramenta.
+- Base da descrição: Localização / descrição limitada.
+- Tamanho: 5505 bytes; linhas: 72.
+- Leitura: texto completo decodificado.
+- SHA-256: `ec0b814f6afa21c962dc62e2404005a40df1c711b32d3e2416af247abed6e960`.
+- Assinaturas localizadas (nome:linha): `sha:7`, `reason:8`, `role:19`, `main:26`.
 
 ## `tools/package_release.js`
 
@@ -4699,10 +4671,10 @@ Monta o portable Windows com runtime, launcher, dependências e manifesto; verif
 
 - Categoria: Produto / ferramenta.
 - Base da descrição: Explicação editorial do módulo.
-- Tamanho: 7329 bytes; linhas: 99.
+- Tamanho: 10338 bytes; linhas: 131.
 - Leitura: texto completo decodificado.
-- SHA-256: `60104201f756d2c555a092bc66434e22e7c67bbfd61c43528fa6fbf52e9fdd7e`.
-- Assinaturas localizadas (nome:linha): `hashFile:6`, `listFiles:15`, `copyTree:24`, `compileLauncher:33`, `probeRuntime:40`, `verifyBundle:48`, `buildRelease:56`.
+- SHA-256: `b1e7854eef70fdd5085e410a2576c224708c3d47c204c5bef087e953c0ca04ff`.
+- Assinaturas localizadas (nome:linha): `hashFile:6`, `listFiles:15`, `copyTree:24`, `compileLauncher:33`, `probeRuntime:40`, `verifyBundle:49`, `packageDecision:58`, `buildRelease:74`, `skip:89`.
 - Imports literais: `fs`, `path`, `crypto`, `child_process`, `better-sqlite3`, `ws`, `exceljs`.
 - Referenciado estaticamente por: `tests/unit/portablePackage.test.js`.
 
@@ -4836,39 +4808,6 @@ Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quand
 - SHA-256: `2536656038bc2f199c5732c45a1171446705675e10204961bc91fb45cfc44f2f`.
 - Assinaturas localizadas (nome:linha): `rpc:17`, `testGame:26`, `setTimeout:69`, `setTimeout:158`.
 - Imports literais: `child_process`, `fs`, `path`.
-
-## `tools/upd2.js`
-
-Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 5377 bytes; linhas: 123.
-- Leitura: texto completo decodificado.
-- SHA-256: `81400aee4f0f240b16ed515213d019772fa087baa28548cfb8030f5a96b54b2f`.
-- Imports literais: `fs`.
-
-## `tools/upd3.js`
-
-Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 5067 bytes; linhas: 96.
-- Leitura: texto completo decodificado.
-- SHA-256: `e8789a41180cb6fc65621f7baae2d3171da43b9df736cb82c8b72ca810963ef6`.
-- Imports literais: `fs`.
-
-## `tools/upd4.js`
-
-Ferramenta de manutenção, empacotamento ou laboratório; executar apenas quando necessário. Não há descrição suficientemente específica extraída; consultar assinaturas e referências.
-
-- Categoria: Produto / ferramenta.
-- Base da descrição: Localização / descrição limitada.
-- Tamanho: 2659 bytes; linhas: 55.
-- Leitura: texto completo decodificado.
-- SHA-256: `34e725a407f5e4ca5c310ad432fc3b556a5148cb683a4eff501dfa02f14e8a7d`.
-- Imports literais: `fs`.
 
 ## `ui/app.js`
 

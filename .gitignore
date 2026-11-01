@@ -78,6 +78,21 @@ gameLib/*_pic
 *.avi
 *.mkv
 
+# --- Tool / Knowledge-Graph Artifacts ---
+# FASE 10: `graphify-out/` na RAIZ nao casava com a regra antiga, que so
+# cobria `archives/analysis/graphify-out/cache/`. Sao 7,72 MB de graph.json
+# gerado, reproduzivel com `graphify update .`, e nada no produto o consome.
+graphify-out/
+archives/analysis/graphify-out/
+*.graph.json
+
+# --- Audit Manifests ---
+# FASE 10: `archives/audits/_open_translator_audit/` ja estava excluido, mas
+# o manifesto de cleanup ao lado (`cleanup_manifest_before.json`, 7,46 MB) nao
+# casava com nenhuma regra. E evidencia de auditoria, nao produto.
+archives/audits/*.json
+archives/audits/**/*.json
+
 # --- Laboratory & Historical Bloat ---
 _open_translator_audit/
 archives/audits/_open_translator_audit/
@@ -87,3 +102,11 @@ archives/logs/
 archives/sessions/
 archives/staging/
 archives/transactions/
+
+# Historical/generated material stays in the external, hash-verified cleanup archive.
+/archives/
+/docs/analysis/
+/UNITY_GAMEPLAY_EVIDENCE/
+/src/data/
+/src/Tool/
+/Tool/

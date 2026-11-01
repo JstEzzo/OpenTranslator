@@ -38,7 +38,8 @@ function compileLauncher(root, destination) {
   if (result.error || result.status !== 0) throw new Error('Falha ao compilar launcher: ' + (result.error && result.error.message || result.stderr || result.stdout));
 }
 function probeRuntime(dir) {
-  const code = `const Database=require('better-sqlite3');const db=new Database(':memory:');db.exec('CREATE TABLE probe(v TEXT)');db.prepare('INSERT INTO probe VALUES (?)').run('ok');if(db.prepare('SELECT v FROM probe').get().v!=='ok')throw Error('SQLite');db.close();require('ws');new (require('exceljs').Workbook)();if(process.platform!=='win32'||process.arch!=='x64'||Number(process.versions.node.split('.')[0])!==24)throw Error('Runtime deve ser Node 24 Windows x64');console.log(JSON.stringify({node:process.version,abi:process.versions.modules,sqlite:true,ws:true,exceljs:true}));`;
+  const code = `(async()=>{const Database=require('better-sqlite3');const db=new Database(':memory:');db.exec('CREATE TABLE probe(v TEXT)');db.prepare('INSERT INTO probe VALUES (?)').run('ok');if(db.prepare('SELECT v FROM probe').get().v!=='ok')throw Error('SQLite');db.close();require('ws');const Excel=require('exceljs');const book=new Excel.Workbook();book.addWorksheet('Probe').getCell('A1').value='ok';const bytes=await book.xlsx.writeBuffer();const readBack=new Excel.Workbook();await readBack.xlsx.load(bytes);if(readBack.getWorksheet('Probe').getCell('A1').value!=='ok')throw Error('Excel round trip');if(process.platform!=='win32'||process.arch!=='x64'||Number(process.versions.node.split('.')[0])!==24)throw Error('Runtime deve ser Node 24 Windows x64');console.log(JSON.stringify({node:process.version,abi:process.versions.modules,sqlite:true,ws:true,exceljs:true,xlsxRoundTrip:true}));})().catch(e=>{console.error(e.message);process.exitCode=1;});`;
+
   const result = spawnSync(path.join(dir, 'bin', 'node.exe'), ['-e', code], {
     cwd: dir, encoding: 'utf8', windowsHide: true, timeout: 30000, env: { ...process.env, NODE_PATH: '' },
   });
@@ -53,8 +54,28 @@ function verifyBundle(dir) {
   if (missing.length) throw new Error('Pacote incompleto: ' + missing.join(', '));
   return required.length;
 }
+// Explicit distribution rules: absence of a static import is not proof that an engine file is disposable.
+function packageDecision(relative, profile = 'standard') {
+  const rel = relative.replace(/\\/g, '/');
+  const parts = rel.split('/');
+  const directories = ['src','ui','config','resources','loaders','third-party','node_modules'];
+  const rootFiles = ['server.js','package.json','package-lock.json','README.md','LICENSE','CHANGELOG.md','OpenTranslator.png','OpenTranslator.exe','bin/node.exe'];
+  if (!directories.includes(parts[0]) && !rootFiles.includes(rel)) return { include: false, reason: 'development-user-data-or-unselected-root' };
+  if (parts.some(name => ['.git', '.agents', '__pycache__', '.cache'].includes(name))) return { include: false, reason: 'development-or-generated-cache' };
+  if (/\.bak(?:_|$)|\.orig$|\.log$|\.py[co]$|\.(?:js|css)\.map$/i.test(rel)) return { include: false, reason: 'backup-log-or-debug-output' };
+  if (/^src\/(?:data|Tool)(?:\/|$)/.test(rel)) return { include: false, reason: 'legacy-user-state' };
+  if (rel === 'loaders/MToolWolfCache') return { include: false, reason: 'local-tool-cache' };
+  if (profile === 'standard' && rel === 'loaders/inject.exe') return { include: false, reason: 'optional-native-injector' };
+  if (/^node_modules\/exceljs\/dist(?:\/|$)/.test(rel)) return { include: false, reason: 'exceljs-browser-build-not-used-by-node-entry' };
+  if (/^node_modules\/better-sqlite3\/(?:deps|src)(?:\/|$)/.test(rel)) return { include: false, reason: 'native-build-sources-runtime-addon-retained' };
+  if (/^node_modules\/@types(?:\/|$)/.test(rel) || (rel.startsWith('node_modules/') && /\.d\.ts$/.test(rel))) return { include: false, reason: 'typescript-development-definitions' };
+  return { include: true, reason: 'runtime-or-preserved-component' };
+}
 function buildRelease(options = {}) {
   const root = path.resolve(options.root || path.join(__dirname, '..'));
+  const profile = options.profile || 'standard';
+  if (!['standard', 'complete'].includes(profile)) throw new Error('Perfil invalido: ' + profile);
+  const excluded = [];
   const outputDir = path.resolve(options.outputDir || path.join(root, '..', 'OpenTranslator-release'));
   if (outputDir === root || root.startsWith(outputDir + path.sep) || outputDir.startsWith(root + path.sep)) {
     throw new Error('Destino deve ficar fora da arvore de origem');
@@ -65,24 +86,31 @@ function buildRelease(options = {}) {
   for (const rel of ['server.js', 'package.json', 'package-lock.json', 'README.md', 'LICENSE', 'CHANGELOG.md', 'OpenTranslator.png']) {
     if (fs.existsSync(path.join(root, rel))) copyTree(path.join(root, rel), path.join(outputDir, rel));
   }
-  const skip = rel => rel.split(path.sep).some(name => ['.git', '.agents', '__pycache__', '.cache'].includes(name)) || /\.bak(?:_|$)|\.log$|\.py[co]$/.test(rel);
-  for (const dir of ['src', 'ui', 'config', 'resources', 'loaders', 'third-party']) {
-    if (fs.existsSync(path.join(root, dir))) copyTree(path.join(root, dir), path.join(outputDir, dir), rel => skip(rel) || (dir === 'src' && (rel === 'data' || rel.startsWith('data' + path.sep))));
+  function skip(relative) {
+    const decision = packageDecision(relative, profile);
+    if (!decision.include) excluded.push({ path: relative.replace(/\\/g, '/'), reason: decision.reason });
+    return !decision.include;
   }
-  // Production dependencies are installed from the lockfile before invoking this builder.
-  copyTree(path.join(root, 'node_modules'), path.join(outputDir, 'node_modules'), skip);
+  for (const dir of ['src', 'ui', 'config', 'resources', 'loaders', 'third-party', 'node_modules']) {
+    if (fs.existsSync(path.join(root, dir))) copyTree(path.join(root, dir), path.join(outputDir, dir), skip, dir);
+  }
   fs.mkdirSync(path.join(outputDir, 'bin'), { recursive: true });
   fs.copyFileSync(options.nodeBinary || process.execPath, path.join(outputDir, 'bin', 'node.exe'));
   if (options.launcherBinary) fs.copyFileSync(options.launcherBinary, path.join(outputDir, 'OpenTranslator.exe'));
   else compileLauncher(root, path.join(outputDir, 'OpenTranslator.exe'));
   for (const rel of ['data/logs', 'data/transactions', 'data/sessions', 'data/staging', 'gameLib']) fs.mkdirSync(path.join(outputDir, rel), { recursive: true });
+  fs.writeFileSync(path.join(outputDir, 'LEIA-ME.txt'),
+    'OpenTranslator — Windows x64\n\nAbra OpenTranslator.exe. Mantenha as subpastas junto do executavel.\n' +
+    'Este pacote nao inclui jogos, saves, preferencias, historicos de traducao nem arquivos de desenvolvimento.\n' +
+    (profile === 'standard' ? 'O injetor nativo e opcional e nao esta incluido. Jogos que dependem desse componente precisam do complemento nativo correspondente.\n' : 'Perfil completo: inclui componentes opcionais encontrados na origem.\n') +
+    'Confira RELEASE_MANIFEST.json para ver os componentes realmente presentes.\n', 'utf8');
   verifyBundle(outputDir);
   const runtime = (options.probeRuntime || probeRuntime)(outputDir);
   const files = listFiles(outputDir).sort().map(rel => ({ path: rel.replace(/\\/g, '/'), size: fs.statSync(path.join(outputDir, rel)).size, sha256: hashFile(path.join(outputDir, rel)) }));
   const optionalTools = ['resources/renpy/python/python.exe', 'loaders/inject.exe', 'resources/godot/gdre_tools.exe']
     .map(rel => ({ path: rel, included: fs.existsSync(path.join(outputDir, rel)) }));
   const manifest = { product: 'OpenTranslator', version: JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version,
-    architecture: 'win-x64', buildTimestamp: new Date().toISOString(), runtime, optionalTools,
+    profile, excluded, architecture: 'win-x64', buildTimestamp: new Date().toISOString(), runtime, optionalTools,
     totalFiles: files.length, totalBytes: files.reduce((sum, f) => sum + f.size, 0), files };
   fs.writeFileSync(path.join(outputDir, 'RELEASE_MANIFEST.json'), JSON.stringify(manifest, null, 2));
   return { outputDir, manifest };
@@ -90,9 +118,13 @@ function buildRelease(options = {}) {
 if (require.main === module) {
   try {
     const args = process.argv.slice(2);
-    if (args.length && (args.length !== 2 || args[0] !== '--output')) throw new Error('Uso: node tools/package_release.js [--output pasta-nova]');
-    const result = buildRelease({ outputDir: args[1] });
+    const options = {};
+    for (let i = 0; i < args.length; i += 2) {
+      if (!args[i + 1] || !['--output', '--profile'].includes(args[i])) throw new Error('Uso: node tools/package_release.js [--output pasta-nova] [--profile standard|complete]');
+      options[args[i] === '--output' ? 'outputDir' : 'profile'] = args[i + 1];
+    }
+    const result = buildRelease(options);
     console.log(JSON.stringify({ outputDir: result.outputDir, files: result.manifest.totalFiles, bytes: result.manifest.totalBytes, runtime: result.manifest.runtime, optionalTools: result.manifest.optionalTools }, null, 2));
   } catch (err) { console.error(err.message); process.exitCode = 1; }
 }
-module.exports = { buildRelease, verifyBundle, probeRuntime };
+module.exports = { buildRelease, verifyBundle, probeRuntime, packageDecision };

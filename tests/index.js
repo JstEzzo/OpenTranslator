@@ -31,6 +31,7 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: "unit", name: "projectCleanup", file: "tests/unit/projectCleanup.test.js", desc: "Arquivamento verificado conserva dados pessoais e fonte atual" },
   { group: "unit", name: "adapterReview", file: "tests/unit/adapterReview.test.js", desc: "Electron aberto/ASAR, campos repetidos e IDs distintos de Defold/Cocos" },
   { group: "unit", name: "cheatRoundTrip", file: "tests/unit/cheatRoundTrip.test.js", desc: "Overlay real, transporte HTTP e comandos de dinheiro/HP/MP/variaveis" },
   { group: "unit", name: "executableCompatibility", file: "tests/unit/executableCompatibility.test.js", desc: "PE validado, ARM64 separado de AMD64 e RenPy sem versao inventada" },

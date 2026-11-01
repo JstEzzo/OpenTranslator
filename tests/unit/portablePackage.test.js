@@ -30,6 +30,22 @@ try {
       assert.strictEqual(actual, entry.sha256);
     }
   });
+  test('standard strips verified development inputs but preserves licenses and the native addon', () => {
+    const root = fixture();
+    for (const rel of ['loaders/inject.exe', 'loaders/MToolWolfCache', 'node_modules/exceljs/dist/exceljs.min.js',
+      'node_modules/better-sqlite3/deps/sqlite3/sqlite3.c', 'node_modules/@types/node/index.d.ts', 'src/Tool/private.json',
+      'node_modules/better-sqlite3/build/Release/better_sqlite3.node', 'node_modules/better-sqlite3/LICENSE', 'resources/game.map']) write(root, rel);
+    const { outputDir, manifest } = build(root, path.join(temp, 'lean'));
+    for (const rel of ['loaders/inject.exe', 'loaders/MToolWolfCache', 'node_modules/exceljs/dist', 'node_modules/better-sqlite3/deps', 'node_modules/@types', 'src/Tool']) assert(!fs.existsSync(path.join(outputDir, rel)), rel);
+    for (const rel of ['node_modules/better-sqlite3/build/Release/better_sqlite3.node', 'node_modules/better-sqlite3/LICENSE', 'resources/game.map']) assert(fs.existsSync(path.join(outputDir, rel)), rel);
+    assert.strictEqual(manifest.profile, 'standard'); assert(manifest.excluded.some(row => row.reason === 'optional-native-injector'));
+  });
+  test('complete profile retains optional injector and rejects unknown profiles', () => {
+    const root = fixture(); write(root, 'loaders/inject.exe');
+    const result = buildRelease({ root, outputDir: path.join(temp, 'complete'), profile: 'complete', nodeBinary: path.join(root, 'node.exe'), launcherBinary: path.join(root, 'launcher.exe'), probeRuntime: () => ({ sqlite: true }) });
+    assert(fs.existsSync(path.join(result.outputDir, 'loaders/inject.exe')));
+    assert.throws(() => buildRelease({ root, outputDir: path.join(temp, 'invalid'), profile: 'invalid' }), /Perfil invalido/);
+  });
   test('existing destination and source ancestors are refused without deletion', () => {
     const root = fixture(); const existing = path.join(temp, 'existing'); write(existing, 'keep.txt', 'KEEP');
     assert.throws(() => build(root, existing), /ja existe/); assert.strictEqual(fs.readFileSync(path.join(existing, 'keep.txt'), 'utf8'), 'KEEP');

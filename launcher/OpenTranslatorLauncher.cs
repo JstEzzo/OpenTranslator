@@ -408,9 +408,7 @@ namespace OpenTranslatorLauncher
 
             string nodePortable = ResolveExistingPath(
                 Path.Combine(BaseDir, "bin", "node.exe"),
-                Path.Combine(ToolDir, "bin", "node.exe"),
-                Path.Combine(BaseDir, "bin", "node-v20.18.3-win-x64", "node.exe"),
-                Path.Combine(ToolDir, "bin", "node-v20.18.3-win-x64", "node.exe")
+                Path.Combine(ToolDir, "bin", "node.exe")
             );
             string selectedNode = null;
             string nodeVer = null;

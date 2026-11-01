@@ -2,6 +2,7 @@
 
 ## Guia atualizado e catálogo do código
 
+- [Organização e distribuição](ORGANIZACAO-E-DISTRIBUICAO.md) — limpeza, componentes opcionais e pacote para uso.
 - [Guia detalhado do projeto](GUIA-DETALHADO.md) — arquitetura, fluxos, dados, adapters e manutenção.
 - [Catálogo arquivo por arquivo](CATALOGO-DO-CODIGO.md) — funções, assinaturas e relações estáticas.
 - [Referência RPC](REFERENCIA-RPC.md) — operações e parâmetros localizados na fonte.

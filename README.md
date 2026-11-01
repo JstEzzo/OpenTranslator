@@ -15,6 +15,18 @@
 
 ---
 
+## Para baixar e usar
+
+O pacote para uso é **OpenTranslator-Win64-Portable.zip**. Extraia a pasta inteira e abra `OpenTranslator.exe`. Mantenha as subpastas junto do executável.
+
+O botão **Code → Download ZIP** do GitHub baixa o projeto de desenvolvimento, incluindo código, testes e documentação. Ele não é o instalador portátil. O workflow **Build portable OpenTranslator** gera o artefato portátil em pushes para `main`, pull requests e execução manual; releases por tag continuam como rascunho.
+
+O perfil padrão `standard` inclui o runtime Node 24, dependências de execução e recursos encontrados na origem. Exclui dados pessoais, jogos, históricos, testes e fontes de compilação de dependências que não são usadas em runtime. O injetor nativo `loaders/inject.exe` é um componente opcional separado. Recursos que dependem dele não ficam disponíveis até instalar o complemento correspondente. Consulte `RELEASE_MANIFEST.json` para os componentes efetivamente presentes.
+
+Para construir com todos os componentes opcionais disponíveis localmente: `node tools/package_release.js --profile complete --output PASTA_NOVA`.
+
+A classificação de arquivos e as decisões de limpeza estão em [docs/ORGANIZACAO-E-DISTRIBUICAO.md](docs/ORGANIZACAO-E-DISTRIBUICAO.md). Históricos retirados da pasta de trabalho foram compactados fora do projeto; não houve remoção de bancos, jogos ou backups pessoais.
+
 ## ✨ Destaques da Aplicação
 
 - **Ponto Único de Entrada**: Inicie diretamente pelo executável nativo `OpenTranslator.exe`.

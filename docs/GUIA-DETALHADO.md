@@ -14,7 +14,7 @@ Há três materiais complementares:
 
 Os textos elegíveis foram lidos integralmente pelo gerador. Binários e dados locais receberam inventário de bytes, tamanho e hash, sem interpretação de seu funcionamento interno. Isso não equivale a uma auditoria humana linha por linha. As descrições do catálogo informam se são editoriais, inferidas da estrutura ou extraídas de cabeçalhos. Um comentário que anuncia suporte não é evidência de que todos os jogos funcionem.
 
-O catálogo representa uma fotografia: arquivos de log, bancos e trabalhos em andamento podem mudar depois da coleta. O histórico interno `.git` fica fora da documentação funcional. Os arquivos da própria documentação gerada não constituem parte do runtime do programa.
+O catálogo representa uma fotografia: arquivos de log, bancos e trabalhos em andamento podem mudar depois da coleta. Após a reorganização, históricos/laboratórios foram retirados da árvore ativa e preservados em arquivo compactado externo. O pacote padrão exclui o injetor nativo opcional; o perfil `complete` o inclui quando disponível. Consulte `ORGANIZACAO-E-DISTRIBUICAO.md`. O histórico interno `.git` fica fora da documentação funcional. Os arquivos da própria documentação gerada não constituem parte do runtime do programa.
 
 ## 2. Visão geral da arquitetura
 
@@ -248,7 +248,7 @@ Versões, arquitetura, licença e procedência devem ser verificados por compone
 | `npm run package:portable -- --output DESTINO` | Monta o portable conforme a interface de argumentos de `package_release.js`; confirmar o uso da versão local antes de executar |
 | `python -X utf8 tools/document_project.py` | Atualiza catálogo local, inventário e catálogo público de código |
 
-Os scripts `legacy:*` e vários arquivos soltos em `tests/` são históricos ou roteiros próprios. Não interpretar a quantidade de arquivos de teste como quantidade de suítes executadas no comando padrão. O runner atualmente registra 40 suítes; a entrega anterior de código passou 610 testes. Esta documentação não executa jogos ou traduz textos para ser gerada.
+Os scripts `legacy:*` e vários arquivos soltos em `tests/` são históricos ou roteiros próprios. Não interpretar a quantidade de arquivos de teste como quantidade de suítes executadas no comando padrão. O runner atualmente registra 41 suítes; a entrega de organização passou 615 testes. Esta documentação não executa jogos ou traduz textos para ser gerada.
 
 Ferramentas em `tools/` têm impactos diferentes. `package_release.js` monta distribuição; `repoLint.js` inspeciona código; `translate-locres.js` traduz recursos de localização; scripts de captura e interação são de laboratório. Consultar conteúdo/argumentos do arquivo antes de tratar todos como utilitários sem efeitos.
 
