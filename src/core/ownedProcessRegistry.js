@@ -35,6 +35,9 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+// Cold Windows CI hosts can need more than 3s to initialize PowerShell.
+// A timeout still leaves the identity unverified and blocks termination.
+const PROCESS_PROBE_TIMEOUT_MS = 10000;
 
 /** Caminho do registro persistido. */
 function registryFile() {
@@ -65,7 +68,7 @@ function readProcessStartTime(pid) {
       const r = spawnSync('powershell', [
         '-NoProfile', '-NonInteractive', '-Command',
         `(Get-Process -Id ${Number(pid)} -ErrorAction SilentlyContinue).StartTime.ToUniversalTime().Ticks`,
-      ], { encoding: 'utf8', timeout: 3000, windowsHide: true });
+      ], { encoding: 'utf8', timeout: PROCESS_PROBE_TIMEOUT_MS, windowsHide: true });
       if (r.error || r.status !== 0) return null;
       const v = (r.stdout || '').trim();
       return v || null;
@@ -90,7 +93,7 @@ function readProcessExecutable(pid) {
       const r = spawnSync('powershell', [
         '-NoProfile', '-NonInteractive', '-Command',
         `(Get-Process -Id ${Number(pid)} -ErrorAction SilentlyContinue).Path`,
-      ], { encoding: 'utf8', timeout: 3000, windowsHide: true });
+      ], { encoding: 'utf8', timeout: PROCESS_PROBE_TIMEOUT_MS, windowsHide: true });
       if (r.error || r.status !== 0) return null;
       const v = (r.stdout || '').trim();
       return v || null;
@@ -109,7 +112,7 @@ function readProcessCommandLine(pid) {
       const r = spawnSync('powershell', [
         '-NoProfile', '-NonInteractive', '-Command',
         `(Get-CimInstance Win32_Process -Filter "ProcessId=${Number(pid)}" -ErrorAction SilentlyContinue).CommandLine`,
-      ], { encoding: 'utf8', timeout: 3000, windowsHide: true });
+      ], { encoding: 'utf8', timeout: PROCESS_PROBE_TIMEOUT_MS, windowsHide: true });
       if (r.error || r.status !== 0) return null;
       return (r.stdout || '').trim() || null;
     }
