@@ -559,7 +559,7 @@ async function translateMultiBatch(texts, sl, tl, glossary, onBatchTranslated) {
   return translateBatch(texts, sl, tl, "multi", glossary, onBatchTranslated);
 }
 
-async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated) {
+async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated, options = {}) {
   if (!engine || engine === "auto") engine = "multi";
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
   const results = new Map();
@@ -682,6 +682,9 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     const breaker = GlobalCircuitBreaker.getInstance();
     const initCheck = breaker.canExecute("google:gtx");
     if (!initCheck.allowed) {
+      if (options.allowProviderFallback === false) {
+        const pending = new Map(); pending.rateLimited = true; return pending;
+      }
       if (global.log) global.log("info", `[SmartSwitch] Google GTX em cooldown/limitado (${initCheck.reason}). Ativando fallback automático para Papago...`);
       return translateBatch(texts, sl, tl, "papago", glossary, onBatchTranslated);
     }
@@ -924,7 +927,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
 
     // Fallback transparente: tenta concluir textos pendentes restantes via Papago
     const uncompleted = texts.filter(t => !results.has(t.id));
-    if (uncompleted.length > 0) {
+    if (uncompleted.length > 0 && options.allowProviderFallback !== false) {
       if (global.log) {
         global.log("info", `[SmartSwitch] Ativando fallback automático para Papago (${uncompleted.length} textos restantes)...`);
       }

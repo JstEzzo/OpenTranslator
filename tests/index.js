@@ -31,6 +31,8 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: 'unit', name: 'explicitProviderChoice', file: 'tests/unit/explicitProviderChoice.test.js', desc: 'Traducao com provedor fixo nao envia texto a outro servico em fallback' },
+  { group: 'unit', name: 'unrealLocResFormat', file: 'tests/unit/unrealLocResFormat.test.js', desc: 'LocRes real v3, assinatura oficial, preservacao de hashes e deteccao de pacotes nao extraidos' },
   { group: 'unit', name: 'shutdownHttp', file: 'tests/unit/shutdownHttp.test.js', desc: 'Encerramento HTTP real conclui job e restaura backup antes de sair' },
   { group: 'unit', name: 'portablePackage', file: 'tests/unit/portablePackage.test.js', desc: 'Pacote inclui dependencias, preserva destinos existentes e confere runtime' },
   { group: 'unit', name: 'backgroundJobLifecycle', file: 'tests/unit/backgroundJobLifecycle.test.js', desc: 'Jobs em segundo plano persistem estados e participam do encerramento' },

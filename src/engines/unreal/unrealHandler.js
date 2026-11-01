@@ -54,26 +54,29 @@ class UnrealEngineHandler extends BaseEngineHandler {
     return pakFiles;
   }
 
-  _findLocresFiles(extractDir) {
-    const locresFiles = [];
-    const localesDir = path.join(extractDir, 'Localization');
-
-    if (fs.existsSync(localesDir)) {
-      const scan = (dir) => {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          const full = path.join(dir, entry.name);
-          if (entry.isDirectory()) {
-            scan(full);
-          } else if (entry.name.toLowerCase().endsWith('.locres')) {
-            locresFiles.push(full);
-          }
-        }
-      };
-      scan(localesDir);
-    }
-
-    return locresFiles;
+  _findLocresFiles(gameDir) {
+    const roots = new Set();
+    const discover = (dir, depth) => {
+      for (const rel of ['Localization', path.join('Content', 'Localization')]) {
+        const candidate = path.join(dir, rel); if (fs.existsSync(candidate)) roots.add(candidate);
+      }
+      if (depth >= 2) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory() && !entry.isSymbolicLink() && !['Saved', 'Engine', 'Intermediate', 'node_modules'].includes(entry.name)) discover(path.join(dir, entry.name), depth + 1);
+      }
+    };
+    discover(gameDir, 0);
+    const files = new Set();
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isSymbolicLink()) continue;
+        if (entry.isDirectory()) walk(full);
+        else if (entry.isFile() && entry.name.toLowerCase().endsWith('.locres')) files.add(full);
+      }
+    };
+    for (const dir of roots) walk(dir);
+    return [...files].sort();
   }
 
   async extract({ gameDir, gameExe, title, options = {} }) {

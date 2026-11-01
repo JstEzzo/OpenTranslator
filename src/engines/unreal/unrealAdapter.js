@@ -75,76 +75,29 @@ class UnrealAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const allTexts = [];
-    // FASE 9 / PASSO 56 — o relatorio decide o `success`.
     const acc = new PartialReport();
-    const locDir = path.join(gameDir, 'Content', 'Localization');
-
-    if (fs.existsSync(locDir)) {
-      const locFiles = this.handler._findLocresFiles(gameDir);
-      for (const locFile of locFiles) {
-        try {
-          const buf = fs.readFileSync(locFile);
-          const relFile = path.relative(gameDir, locFile).replace(/\\/g, "/");
-
-          // Tenta parse binário estruturado do .locres
-          try {
-            const parsed = UnrealLocResProvider.parseLocRes(buf);
-            if (parsed && parsed.namespaces) {
-              for (const [ns, keys] of Object.entries(parsed.namespaces)) {
-                for (const [k, item] of Object.entries(keys)) {
-                  const val = typeof item === 'object' && item.value !== undefined ? item.value : String(item);
-                  if (val && val.trim().length > 0) {
-                    const { protectedText, tokens } = this.codeProtector.protect(val.trim(), "unreal");
-                    allTexts.push({
-                      id: `ue_locres_${path.basename(locFile)}_${ns}_${k}`,
-                      file: relFile,
-                      namespace: ns,
-                      key: k,
-                      original: val.trim(),
-                      clean: val.trim(),
-                      protectedText,
-                      tokens,
-                      engine: "unreal",
-                      format: "locres"
-                    });
-                  }
-                }
-              }
-            }
-          } catch (binaryErr) {
-            // Fallback de strings caso seja versão customizada de locres
-            let str = buf.toString('utf8');
-            const lines = str.match(/[A-ZÀ-Ú][a-zA-Z0-9à-úÀ-Ú ,.!?:'\"-]{4,}/g) || [];
-            for (let i = 0; i < Math.min(lines.length, 500); i++) {
-              const clean = lines[i].trim();
-              if (clean.length > 3) {
-                const { protectedText, tokens } = this.codeProtector.protect(clean, "unreal");
-                allTexts.push({
-                  id: `ue_locres_${path.basename(locFile)}_${i}`,
-                  file: relFile,
-                  original: clean,
-                  clean,
-                  protectedText,
-                  tokens,
-                  engine: "unreal",
-                  format: "locres_text"
-                });
-              }
-            }
-          }
-        } catch (e) {
-          // FASE 9 / PASSO 56 — o .locres nao pode ser lido. O catch
-          // externo engolia a falha e o adapter devolvia `success: true`:
-          // o arquivo inteiro sumia do UNIVERSO sem deixar sinal, e a
-          // cobertura (FASE 4) passava a ser calculada sobre o que
-          // sobrou. Um numero menor, e parece legitimo.
-          // Ver src/core/partialApply.js.
-          acc.fail(relFile || '<locres>', e);
-        }
-      }
+    const locFiles = this.handler._findLocresFiles(gameDir);
+    if (!locFiles.length) {
+      return { success: false, texts: [], count: 0, universeComplete: false,
+        code: this.handler._findPakFiles(gameDir).length ? 'UNREAL_PAK_REQUIRES_EXTRACTION' : 'UNREAL_LOCALIZATION_NOT_FOUND',
+        error: 'Localizacao Unreal nao extraida. Pacotes .pak nao podem ser tratados como jogo sem texto.' };
     }
-
-    // FASE 9 / PASSO 56 — quem decide o `success` e o relatorio.
+    for (const locFile of locFiles) {
+      const relFile = path.relative(gameDir, locFile).replace(/\\/g, '/');
+      try {
+        const parsed = UnrealLocResProvider.parseLocRes(fs.readFileSync(locFile));
+        for (const [ns, keys] of Object.entries(parsed.namespaces)) {
+          for (const [key, item] of Object.entries(keys)) {
+            const value = item.value;
+            if (!value || !value.trim()) continue;
+            const { protectedText, tokens } = this.codeProtector.protect(value, 'unreal');
+            allTexts.push({ id: `ue_locres_${relFile}_${ns}_${key}`, file: relFile,
+              namespace: ns, key, original: value, clean: value, protectedText, tokens,
+              engine: 'unreal', format: 'locres' });
+          }
+        }
+      } catch (err) { acc.fail(relFile, err); }
+    }
     return acc.report({ texts: allTexts, count: allTexts.length });
   }
 
