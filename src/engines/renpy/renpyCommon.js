@@ -31,7 +31,7 @@ function ensureTlDirectory(gameDir, lang = "pt_BR") {
  * Unescape Python/Ren'Py string escape sequences into actual characters.
  * Processes \\n, \\t, \\r, \\\\, \\", \\', \\0 left-to-right so that \\\\n
  * (literal backslash + n) is not mistaken for a newline.
- * @param {string} text 
+ * @param {string} text
  * @returns {string} Unescaped text
  */
 function unescapeRenpyString(text) {
@@ -61,15 +61,38 @@ function unescapeRenpyString(text) {
 
 /**
  * Format string into strict Ren'Py string literal (converting physical newlines to \n and escaping quotes).
- * @param {string} text 
+ * @param {string} text
  * @returns {string} Formatted string literal
+ */
+/**
+ * FASE 5.5 / INJ-%% — o Ren'Py casa a chave de tradução LITERALMENTE.
+ *
+ * Este gerador recebe o valor DECODIFICADO (o mesmo que o extrator entrega,
+ * depois de `unescapeRenpyString`) e produz o literal do arquivo. A regra do
+ * `%` é simetria de ida e volta:
+ *
+ *   - o jogo tem `75% OFF`   -> o arquivo precisa ter `old "75% OFF"`
+ *   - o jogo tem `100%%`     -> o arquivo precisa ter `old "100%%"`
+ *
+ * A versão anterior fazia `%` -> `%%` incondicionalmente. Isso quebrava os
+ * dois casos: `75% OFF` virava `75%% OFF` (chave que não existe no jogo, a
+ * tradução nunca aparece) e `100%%` virava `100%%%%` (mesma falha, com um
+ * nível a mais). Medido em um jogo real: 3 entradas com `%%` foram geradas
+ * com quatro sinais e nunca seriam encontradas pelo Ren'Py.
+ *
+ * Como o bloco `translate <lang> strings:` NÃO faz %-formatting (o
+ * %-formatting pertence ao `old % (args)` do lado do jogo), não há motivo
+ * para escapar `%` aqui. O `%` só precisa ser preservado como está — e
+ * qualquer sequência de interrogação/substituição (`%s`, `%d`, `%(nome)s`)
+ * também, porque é código do jogo, não texto.
  */
 function formatRenpyStringLiteral(text) {
   if (text === null || text === undefined) return '""';
   let str = String(text);
   str = str.replace(/\r\n/g, "\n");
   str = str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  str = str.replace(/%/g, "%%");
+  // % NÃO é escapado: Ren'Py compara a chave literalmente e um escape aqui
+  // produz uma chave que não existe no jogo. Ver o comentário acima.
   str = str.replace(/\n/g, "\\n");
   return `"${str}"`;
 }
@@ -130,17 +153,31 @@ const RENPY_COMMON_STRINGS = [
   { original: "Auto", translated: "Auto" },
   { original: "Yes", translated: "Sim" },
   { original: "No", translated: "Não" },
-  { original: "Empty Slot", translated: "Espaço Vazio" },
-  { original: "Empty Slot.", translated: "Espaço Vazio." },
-  { original: "Empty", translated: "Vazio" }
+  { original: "Empty", translated: "Vazio" },
+
+  // Exception Screen & System Strings
+  { original: "Open", translated: "Abrir" },
+  { original: "Copy", translated: "Copiar" },
+  { original: "Close", translated: "Fechar" },
+  { original: "Cancel", translated: "Cancelar" },
+  { original: "Ignore", translated: "Ignorar" },
+  { original: "Retry", translated: "Tentar Novamente" },
+  { original: "Rollback", translated: "Voltar Atrás" },
+  { original: "Console", translated: "Console" },
+  { original: "Reload", translated: "Recarregar" },
+  { original: "File", translated: "Arquivo" },
+  { original: "Directory", translated: "Diretório" },
+  { original: "Delete", translated: "Excluir" },
+  { original: "Select", translated: "Selecionar" },
+  { original: "Continue", translated: "Continuar" }
 ];
 
 /**
  * Formats translation entries into standard Ren'Py string translation blocks.
  * Generates dual translate blocks (pt_BR and pt) for maximum game engine compatibility.
  * Automatically incorporates canonical engine strings for Ren'Py common screens.
- * @param {Array<{ oldText: string, newText: string, location?: string }>} entries 
- * @param {string} lang 
+ * @param {Array<{ oldText: string, newText: string, location?: string }>} entries
+ * @param {string} lang
  * @returns {string} Generated .rpy content
  */
 function buildRenpyStringTlContent(entries, lang = "pt_BR") {
@@ -183,8 +220,8 @@ function buildRenpyStringTlContent(entries, lang = "pt_BR") {
 
 /**
  * Injects font configuration into Ren'Py gui.rpy or options.rpy if found.
- * @param {string} gameDir 
- * @param {string} fontFileName 
+ * @param {string} gameDir
+ * @param {string} fontFileName
  * @returns {boolean} Whether font patch was injected
  */
 function injectRenpyFontConfig(gameDir, fontFileName) {
@@ -218,8 +255,8 @@ function injectRenpyFontConfig(gameDir, fontFileName) {
  * Comprehensive Ren'Py .rpy script text extractor.
  * Captures 100% of dialogues, _("..."), __("..."), multiline strings with \\n,
  * implicit string concatenation _("line1 " "line2 "), screen UI elements, and python blocks.
- * @param {string} rpyContent 
- * @param {string} filePath 
+ * @param {string} rpyContent
+ * @param {string} filePath
  * @returns {Array<{ file: string, original: string, clean: string }>}
  */
 function extractRenpyRpyTexts(rpyContent, filePath) {
@@ -405,7 +442,7 @@ function extractRenpyRpyTexts(rpyContent, filePath) {
 
 /**
  * Purges translation cache markers and compiled runtime files to force a clean scan.
- * @param {string} gameDir 
+ * @param {string} gameDir
  */
 function purgeCacheFiles(gameDir) {
   const gameSubDir = fs.existsSync(path.join(gameDir, "game")) ? path.join(gameDir, "game") : gameDir;
@@ -507,10 +544,44 @@ function patchRpyFiles(gameDir, texts, translations) {
 }
 
 /**
+ * Extrai todas as interpolações de variáveis Ren'Py [expression] de uma string,
+ * considerando aninhamentos como [when[1]!l], operadores [saga.time.dow + when],
+ * e ignorando sequências de escape [[ (que representam colchete literal no Ren'Py).
+ *
+ * @param {string} text
+ * @returns {string[]} Lista de interpolações completas com colchetes externos
+ */
+function extractRenpyInterpolations(text) {
+  if (!text || typeof text !== 'string') return [];
+  const placeholder = "\uE000";
+  const temp = text.replace(/\[\[/g, placeholder);
+  const matches = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < temp.length; i++) {
+    if (temp[i] === '[') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (temp[i] === ']') {
+      if (depth > 0) {
+        depth--;
+        if (depth === 0) {
+          const interp = temp.substring(start, i + 1).replace(new RegExp(placeholder, 'g'), '[[');
+          matches.push(interp);
+        }
+      }
+    }
+  }
+  return matches;
+}
+
+/**
  * Auto-cura e protege variáveis [var] e tags {tag} do Ren'Py em textos traduzidos.
  * Previne NameError no interpretador Python do Ren'Py quando tradutores automáticos
- * ou LLMs traduzem os nomes internos das variáveis (ex: [who.age] -> [quem.idade], $[cash] -> $[dinheiro]).
- * 
+ * ou LLMs traduzem os nomes internos das variáveis (ex: [who.age] -> [quem.idade], $[cash] -> $[dinheiro],
+ * [saga.time.dow + when] -> [saga.time.dow + quando], [when[1]!l] -> [quando[1]!l]).
+ * Remove com segurança prefixos de mock '[PT] ' e protege colchetes soltos com [[.
+ *
  * @param {string} original - Texto original no script do jogo
  * @param {string} translated - Texto traduzido recebido
  * @returns {string} Texto traduzido com 100% de paridade das variáveis e tags originais
@@ -522,37 +593,106 @@ function healRenpyVariables(original, translated) {
 
   let healed = translated;
 
-  // 1. Variáveis de interpolação Ren'Py [variable] ou [variable!conversion] ou [expression.attribute]
-  const origVars = original.match(/\[([a-zA-Z0-9_.]+(?:![a-zA-Z]+)?)\]/g);
-  if (origVars && origVars.length > 0) {
-    const transBrackets = healed.match(/\[[^\]]+\]/g) || [];
-    for (let i = 0; i < origVars.length; i++) {
-      const ov = origVars[i];
-      if (healed.includes(ov)) continue; // Já preservada perfeitamente
+  // 0. Remoção de prefixo de mock/teste '[PT] ' se o texto original não possuir '[PT]'
+  // Isso previne que Ren'Py tente avaliar 'py_eval("PT")' e gere NameError fatal
+  if (!original.includes('[PT]')) {
+    if (healed.startsWith('[PT] ')) {
+      healed = healed.slice(5);
+    } else if (healed.startsWith('[PT]')) {
+      healed = healed.slice(4);
+    }
+    healed = healed.replace(/\[PT\]\s*/g, '');
+  }
 
-      // Procura primeiro por colchetes no traduzido que não pertencem às variáveis originais
-      const candidate = transBrackets.find(tb => !origVars.includes(tb));
-      if (candidate) {
-        healed = healed.replace(candidate, ov);
-        const idx = transBrackets.indexOf(candidate);
-        if (idx >= 0) transBrackets.splice(idx, 1);
+  // 1. Variáveis de interpolação Ren'Py (suporta expressões complexas, aninhadas e formatadas)
+  const origInterps = extractRenpyInterpolations(original);
+  if (origInterps && origInterps.length > 0) {
+    const transInterps = extractRenpyInterpolations(healed);
+
+    for (let i = 0; i < origInterps.length; i++) {
+      const oi = origInterps[i];
+      if (healed.includes(oi)) continue; // Já preservada perfeitamente
+
+      // Identifica o melhor candidato entre as interpolações na tradução
+      let candidate = null;
+      const innerOi = oi.slice(1, -1);
+      const oiParts = innerOi.match(/[a-zA-Z0-9_.]+/g) || [];
+
+      // Prioridade 1: candidato que compartilha identificadores (ex: saga.time.dow + quando -> quando substitui when)
+      for (const ti of transInterps) {
+        if (origInterps.includes(ti)) continue;
+        const innerTi = ti.slice(1, -1);
+        const tiParts = innerTi.match(/[a-zA-Z0-9_.]+/g) || [];
+        if (oiParts.some(p => tiParts.includes(p))) {
+          candidate = ti;
+          break;
+        }
       }
+
+      // Prioridade 2: primeiro candidato que não pertence aos originais
+      if (!candidate) {
+        candidate = transInterps.find(ti => !origInterps.includes(ti));
+      }
+
+      if (candidate && healed.includes(candidate)) {
+        healed = healed.replace(candidate, oi);
+        const idx = transInterps.indexOf(candidate);
+        if (idx >= 0) transInterps.splice(idx, 1);
+      }
+    }
+
+    // Escape de segurança: qualquer colchete restante em healed que não corresponda
+    // a uma interpolação válida do original é escapado com [[ para exibição literal
+    const remainingInterps = extractRenpyInterpolations(healed);
+    for (const ri of remainingInterps) {
+      if (!origInterps.includes(ri)) {
+        const escaped = '[[' + ri.slice(1);
+        healed = healed.replace(ri, escaped);
+      }
+    }
+  } else {
+    // Se o original NÃO tinha nenhuma interpolação [var], qualquer colchete solto na tradução
+    // DEVE ser escapado como [[ para evitar NameError no Ren'Py
+    const placeholder = "\uE000";
+    const temp = healed.replace(/\[\[/g, placeholder);
+    if (temp.includes('[')) {
+      healed = temp.replace(/\[/g, '[[').replace(new RegExp(placeholder, 'g'), '[[');
     }
   }
 
-  // 2. Tags Ren'Py {tag} ou {tag=value} ou {/tag}
-  const origTags = original.match(/\{(\/?[a-zA-Z0-9_#=,.:;% -]+)\}/g);
-  if (origTags && origTags.length > 0) {
-    const transTags = healed.match(/\{[^}]+\}/g) || [];
-    for (let i = 0; i < origTags.length; i++) {
-      const ot = origTags[i];
-      if (healed.includes(ot)) continue; // Já preservada
+  // 2. Tags Ren'Py balanceadas ({tag} ou {tag=value} e {/tag})
+  const pairedTags = ['i', 'b', 's', 'u', 'color', 'font', 'size', 'alpha', 'outlinecolor', 'cps'];
+  for (const tag of pairedTags) {
+    const openTag = `{${tag}}`;
+    const closeTag = `{/${tag}}`;
 
-      const candidate = transTags.find(tt => !origTags.includes(tt));
-      if (candidate) {
-        healed = healed.replace(candidate, ot);
-        const idx = transTags.indexOf(candidate);
-        if (idx >= 0) transTags.splice(idx, 1);
+    const cleanText = healed.replace(/\{\{/g, '');
+    const openMatches = cleanText.match(new RegExp(`\\{${tag}(?:=[^}]*)?\\}`, 'g')) || [];
+    const closeMatches = cleanText.match(new RegExp(`\\{/${tag}\\}`, 'g')) || [];
+
+    const openCount = openMatches.length;
+    const closeCount = closeMatches.length;
+
+    if (closeCount > openCount) {
+      // Falta abertura: insere {tag} antes da última palavra relevante antes de {/tag}
+      const diff = closeCount - openCount;
+      for (let d = 0; d < diff; d++) {
+        const closeIdx = healed.indexOf(closeTag);
+        if (closeIdx !== -1) {
+          const prefix = healed.substring(0, closeIdx);
+          const spaceIdx = prefix.lastIndexOf(' ');
+          if (spaceIdx !== -1) {
+            healed = healed.substring(0, spaceIdx + 1) + openTag + healed.substring(spaceIdx + 1);
+          } else {
+            healed = openTag + healed;
+          }
+        }
+      }
+    } else if (openCount > closeCount) {
+      // Falta fechamento: anexa {/tag} no final
+      const diff = openCount - closeCount;
+      for (let d = 0; d < diff; d++) {
+        healed = healed + closeTag;
       }
     }
   }
@@ -585,6 +725,7 @@ module.exports = {
   purgeCacheFiles,
   formatRenpyStringLiteral,
   unescapeRenpyString,
+  extractRenpyInterpolations,
   healRenpyVariables,
   RENPY_COMMON_STRINGS
 };

@@ -9,8 +9,9 @@ const path = require("path");
 const BaseEngineAdapter = require("../../core/baseEngineAdapter");
 const CodeProtector = require("../../core/codeProtector");
 const BackupManager = require("../../core/backupManager");
-const { extractGameTexts } = require("../../extractor");
-const { patchGameData, backupGameData, restoreOldestBackup } = require("../../gameEngine");
+const { extractGameTexts } = require('../../extractors/extractor');
+const { patchGameData, backupGameData, restoreOldestBackup } = require('../../core/gameEngine');
+const { PartialReport } = require('../../core/partialApply');
 
 class RpgMakerAdapter extends BaseEngineAdapter {
   constructor() {
@@ -35,11 +36,18 @@ class RpgMakerAdapter extends BaseEngineAdapter {
   async extract(gameDir, options = {}) {
     const dataDir = path.join(gameDir, "Data");
     let isRuby = false;
+    // FASE 9 / PASSO 59 — escopo do METODO: o `catch` do `if` e o `return`
+    // do fim do metodo precisam da MESMA instancia.
+    const accApply = new PartialReport();
     if (fs.existsSync(dataDir)) {
       try {
         const dFiles = fs.readdirSync(dataDir).map(f => f.toLowerCase());
         isRuby = dFiles.some(f => f.endsWith(".rvdata2") || f.endsWith(".rvdata") || f.endsWith(".rxdata"));
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+        // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+        accApply.fail(gameDir, e);
+      }
     }
 
     if (isRuby) {
@@ -57,11 +65,10 @@ class RpgMakerAdapter extends BaseEngineAdapter {
           engine: "rgss"
         });
       }
-      return {
-        success: true,
+      return accApply.report({
         texts: allTexts,
         count: allTexts.length
-      };
+});
     }
 
     const rawTexts = extractGameTexts(gameDir);
@@ -77,11 +84,10 @@ class RpgMakerAdapter extends BaseEngineAdapter {
       });
     }
 
-    return {
-      success: true,
+    return accApply.report({
       texts: allTexts,
       count: allTexts.length
-    };
+});
   }
 
   async validate(gameDir, texts, translations) {
@@ -220,12 +226,23 @@ class RpgMakerAdapter extends BaseEngineAdapter {
       }
     } catch (e) {}
 
-    return {
-      success: res.success !== false,
-      restoredFiles: [gameDir],
-      details: res
-    };
+    // FASE 7 / PASSO 33 — dois defeitos na mesma linha:
+    //
+    //   success: res.success !== false,      // undefined !== false => TRUE
+    //   restoredFiles: [gameDir],            // diretório como "arquivo"
+    //
+    // `res.success !== false` trata AUSÊNCIA de informação como sucesso: se
+    // o BackupManager não disse nada (`undefined`), a comparação dava `true`
+    // e o rollback era reportado como concluído sem ter confirmado nada. É a
+    // mesma classe do `{ok:true, ...res}`: o valor padrão do sucesso morando
+    // no lado errado da comparação.
+    return rollbackResult(res, this.id || this.engineId || "rpgmaker", {
+      details: res,
+      cleanupPerformed: true,
+    });
   }
 }
+
+const { rollbackResult } = require('../rollbackResult');
 
 module.exports = RpgMakerAdapter;

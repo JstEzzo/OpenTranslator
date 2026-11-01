@@ -1,6 +1,6 @@
 const assert = require("assert");
 const EngineRoutingGuard = require("../../src/core/engineRoutingGuard");
-const RenPyAppDataResolver = require("../renpyAppDataResolver");
+const RenPyAppDataResolver = require("../../src/discovery/renpyAppDataResolver");
 
 console.log("=== TEST SUITE: Engine Diagnostic Routing & Cross-Engine Protection ===");
 

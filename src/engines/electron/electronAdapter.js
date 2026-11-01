@@ -13,6 +13,7 @@ const BaseEngineAdapter = require("../../core/baseEngineAdapter");
 const CodeProtector = require("../../core/codeProtector");
 const BackupManager = require("../../core/backupManager");
 const AsarUtil = require("./asarUtil");
+const { PartialReport } = require('../../core/partialApply');
 
 class ElectronAdapter extends BaseEngineAdapter {
   constructor() {
@@ -87,11 +88,17 @@ class ElectronAdapter extends BaseEngineAdapter {
         try {
           const entries = fs.readdirSync(dir, { withFileTypes: true });
           for (const ent of entries) {
+    // FASE 9 / PASSO 59 — o relatorio decide o `success`.
+    const accApply = new PartialReport();
             const p = path.join(dir, ent.name);
             if (ent.isDirectory() && ent.name !== "node_modules" && !ent.name.startsWith(".")) scanFiles(p);
             else if (ent.isFile() && (ent.name.endsWith(".json") || ent.name.endsWith(".csv") || ent.name.endsWith(".txt"))) filesToScan.push(p);
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+          accApply.fail(f, e);
+        }
       };
       scanFiles(unpackedDir);
       sourceDir = unpackedDir;
@@ -137,16 +144,19 @@ class ElectronAdapter extends BaseEngineAdapter {
           };
 
           traverse(content);
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+          accApply.fail(targetFile, e);
+        }
       }
     }
 
-    return {
-      success: true,
+    return accApply.report({
       texts: allTexts,
       count: allTexts.length,
       extractedFilesCount: filesToScan.length
-    };
+});
   }
 
   /**
@@ -172,6 +182,7 @@ class ElectronAdapter extends BaseEngineAdapter {
       this.backupManager.createBackup(gameDir, [unpackedDir], { engine: "electron" });
       let patchedCount = 0;
       const modifiedFiles = new Set();
+      const applyErrors = [];
 
       for (const t of texts) {
         const tr = translations.get ? translations.get(t.id) : translations[t.id];
@@ -194,15 +205,33 @@ class ElectronAdapter extends BaseEngineAdapter {
               modifiedFiles.add(targetFile);
               patchedCount++;
             }
-          } catch (e) {}
+          } catch (e) {
+            // FASE 9 / PASSO 43 — ver genericAdapter: patch parcial
+            // reportado como `success: true` esconde arquivos que não foram
+            // escritos. O `count` era honesto; o `success` não.
+            applyErrors.push({
+              file: path.relative(gameDir, targetFile).replace(/\\/g, "/"),
+              error: e.message,
+            });
+          }
         }
       }
 
+      const partial = applyErrors.length > 0;
       return {
-        success: true,
+        success: !partial,
+        status: partial ? 'PARTIAL' : 'COMPLETE',
         modifiedFiles: Array.from(modifiedFiles),
         count: patchedCount,
-        message: `Tradução aplicada diretamente no diretório Electron unpacked (${patchedCount} textos).`
+        applyErrors,
+        message: partial
+          ? `Tradução aplicada PARCIALMENTE (${patchedCount} textos, `
+            + `${applyErrors.length} arquivo(s) falhando).`
+          : `Tradução aplicada diretamente no diretório Electron unpacked (${patchedCount} textos).`,
+        warning: partial
+          ? 'Alguns arquivos do app não puderam ser escritos; o Electron vai '
+            + 'exibir parte do texto sem tradução.'
+          : null,
       };
     }
 
@@ -232,6 +261,8 @@ class ElectronAdapter extends BaseEngineAdapter {
               const keys = t.keyPath.split(".");
               let cur = parsed;
               for (let i = 0; i < keys.length - 1; i++) {
+    // FASE 9 / PASSO 59 — o relatorio decide o `success`.
+    const accApply = new PartialReport();
                 if (cur[keys[i]]) cur = cur[keys[i]];
               }
               const restored = this.codeProtector.restore(tr, t.tokens || []);
@@ -239,7 +270,11 @@ class ElectronAdapter extends BaseEngineAdapter {
               fs.writeFileSync(targetFile, JSON.stringify(parsed, null, 2), "utf8");
               patchedCount++;
             }
-          } catch (e) {}
+          } catch (e) {
+            // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+            // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+            accApply.fail(asarPath, e);
+          }
         }
       }
 
@@ -258,12 +293,11 @@ class ElectronAdapter extends BaseEngineAdapter {
       // Limpa staging
       fs.rmSync(stagingDir, { recursive: true, force: true });
 
-      return {
-        success: true,
+      return accApply.report({
         modifiedFiles: [asarPath],
         count: patchedCount,
         message: "Patch estático de app.asar concluído com integridade verificada."
-      };
+});
     } catch (e) {
       if (fs.existsSync(stagingDir)) fs.rmSync(stagingDir, { recursive: true, force: true });
       return { success: false, error: e.message, modifiedFiles: [], count: 0 };

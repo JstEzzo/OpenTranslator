@@ -6,16 +6,16 @@
 
 const fs = require('fs');
 const path = require('path');
-const EngineDetector = require('./src/core/engineDetector');
-const defaultRegistry = require('./src/core/engineRegistry');
-const TranslationPipeline = require('./src/core/translationPipeline');
+const EngineDetector = require('../src/core/engineDetector');
+const defaultRegistry = require('../src/core/engineRegistry');
+const TranslationPipeline = require('../src/core/translationPipeline');
 
 // Registra adapters
-const RenpyAdapter = require('./src/engines/renpy/renpyAdapter');
-const RpgMakerAdapter = require('./src/engines/rpgmaker/rpgMakerAdapter');
-const ElectronAdapter = require('./src/engines/electron/electronAdapter');
-const UnityAdapter = require('./src/engines/unity/unityAdapter');
-const GenericAdapter = require('./src/engines/generic/genericAdapter');
+const RenpyAdapter = require('../src/engines/renpy/renpyAdapter');
+const RpgMakerAdapter = require('../src/engines/rpgmaker/rpgMakerAdapter');
+const ElectronAdapter = require('../src/engines/electron/electronAdapter');
+const UnityAdapter = require('../src/engines/unity/unityAdapter');
+const GenericAdapter = require('../src/engines/generic/genericAdapter');
 
 defaultRegistry.register(new RenpyAdapter());
 defaultRegistry.register(new RpgMakerAdapter());

@@ -13,10 +13,24 @@ const path = require('path');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
+const { rollbackResult } = require('../rollbackResult.js');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
+const { PartialReport } = require('../../core/partialApply');
 
 class DefoldAdapter extends BaseEngineAdapter {
   constructor() {
     super("defold", "Defold Engine");
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "todo arquivo que eu toco está no backup que
+    // a transação vai fazer". `ac.finish` verifica a cada apply e devolve
+    // `transactional: false` se a afirmação deixar de valer — e aí o pipeline
+    // volta ao fallback com `verifyApplied`.
+    //
+    // `this` só existe DEPOIS de `super()`: numa classe derivada, tocar `this`
+    // antes disso lança em tempo de construção.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "defold" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_defold_backup" });
   }
@@ -53,46 +67,92 @@ class DefoldAdapter extends BaseEngineAdapter {
     };
   }
 
+  /**
+   * FASE 9 / PASSO 42 — EXTRAÇÃO PARCIAL NÃO É EXTRAÇÃO COMPLETA
+   *
+   * Os dois `catch (e) {}` engoliam falha de leitura de diretório e de
+   * parse de JSON, e o método devolvia `success: true` com o que tivesse
+   * conseguido. O `count` era honesto, mas `success` não era — e é o
+   * `success` que o pipeline consulta.
+   *
+   * Por que isso quebra um invariante de outra fase: o `buildUniverse()` (FASE 4)
+   * deriva o total de linhas do adapter. Se a extração engoliu metade dos
+   * arquivos, o universo fica menor, a cobertura exigida cai junto, e o
+   * certificado pode emitir `COMPLETED` sobre um jogo que nunca foi
+   * completamente visto. A falha_some de vista: nenhum log, nenhum status.
+   *
+   * Agora o adapter declara `partial` e entrega `scanErrors`, e o pipeline
+   * pode recusar o certificado em vez de confiar num universo inflado para
+   * baixo.
+   */
   async extract(gameDir, options = {}) {
     const allTexts = [];
+    const scanErrors = [];
+    const filesSeen = [];
+
     const scanDir = (dir, depth = 0) => {
       if (depth > 3) return;
+      let entries;
       try {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const ent of entries) {
-          const full = path.join(dir, ent.name);
-          if (ent.isDirectory() && !ent.name.startsWith(".")) scanDir(full, depth + 1);
-          else if (ent.isFile() && (ent.name.endsWith(".json") || ent.name.endsWith(".lua"))) {
-            if (ent.name.toLowerCase().includes("lang") || ent.name.toLowerCase().includes("string") || ent.name.toLowerCase().includes("loc")) {
-              try {
-                const content = fs.readFileSync(full, 'utf8');
-                if (ent.name.endsWith(".json")) {
-                  const j = JSON.parse(content);
-                  for (const [k, v] of Object.entries(j)) {
-                    if (typeof v === "string" && v.trim().length > 0) {
-                      const { protectedText, tokens } = this.codeProtector.protect(v.trim(), "defold");
-                      allTexts.push({
-                        id: `defold_${ent.name}_${k}`,
-                        file: path.relative(gameDir, full).replace(/\\/g, "/"),
-                        key: k,
-                        original: v.trim(),
-                        clean: v.trim(),
-                        protectedText,
-                        tokens,
-                        engine: "defold"
-                      });
-                    }
-                  }
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch (e) {
+        scanErrors.push({ file: path.relative(gameDir, dir).replace(/\\/g, "/"), stage: 'readdir', error: e.message });
+        return;
+      }
+      for (const ent of entries) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory() && !ent.name.startsWith(".")) scanDir(full, depth + 1);
+        else if (ent.isFile() && (ent.name.endsWith(".json") || ent.name.endsWith(".lua"))) {
+          const nome = ent.name.toLowerCase();
+          if (!nome.includes("lang") && !nome.includes("string") && !nome.includes("loc")) continue;
+          const rel = path.relative(gameDir, full).replace(/\\/g, "/");
+          filesSeen.push(rel);
+          try {
+            const content = fs.readFileSync(full, 'utf8');
+            if (ent.name.endsWith(".json")) {
+              const j = JSON.parse(content);
+              for (const [k, v] of Object.entries(j)) {
+                if (typeof v === "string" && v.trim().length > 0) {
+                  const { protectedText, tokens } = this.codeProtector.protect(v.trim(), "defold");
+                  allTexts.push({
+                    id: `defold_${ent.name}_${k}`,
+                    file: rel,
+                    key: k,
+                    original: v.trim(),
+                    clean: v.trim(),
+                    protectedText,
+                    tokens,
+                    engine: "defold"
+                  });
                 }
-              } catch (e) {}
+              }
             }
+          } catch (e) {
+            // FASE 9: a falha é REGISTRADA, não engolida. O arquivo conta
+            // como visto mas não contribute linhas — é exatamente esse
+            // desalinhamento que o `partial` agora denuncia.
+            scanErrors.push({ file: rel, stage: 'parse', error: e.message });
           }
         }
-      } catch (e) {}
+      }
     };
 
     scanDir(gameDir);
-    return { success: true, texts: allTexts, count: allTexts.length };
+
+    const partial = scanErrors.length > 0;
+    return {
+      success: !partial,
+      status: partial ? 'PARTIAL' : 'COMPLETE',
+      texts: allTexts,
+      count: allTexts.length,
+      filesScanned: filesSeen.length,
+      scanErrors,
+      warning: partial
+        ? `${scanErrors.length} arquivo(s) não puderam ser lidos. O universo `
+          + 'declarado está ABAIXO do real e a cobertura exigida não pode ser '
+          + 'considerada válida sobre esta extração.'
+        : null,
+    };
   }
 
   async validate(gameDir, texts, translations) {
@@ -100,6 +160,12 @@ class DefoldAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    // FASE 10 / D1 — o contrato de apply. O plano de arquivos vem dos textos:
+    // um texto traduzível veio de um arquivo, e aplicar escreve nele.
+    const ac = startApplyContract(gameDir, texts);
+    // Escopo do METODO, e nao do `for`: os `catch` por arquivo e o
+    // `ac.finish(accApply.report(...))` do fim usam esta mesma instancia.
+    const accApply = new PartialReport();
     const byFile = new Map();
     for (const t of texts) {
       if (!t.file) continue;
@@ -134,24 +200,34 @@ class DefoldAdapter extends BaseEngineAdapter {
           }
 
           if (fileModified) {
-            fs.writeFileSync(fullPath, JSON.stringify(parsed, null, 2), "utf8");
+            // FASE 10 / D1 — o hash declarado vem do CONTEÚDO EM MEMÓRIA.
+            // Hashear o arquivo depois de escrever compararia o número com ele
+            // mesmo, e a verificação não verificaria nada.
+            const saida = JSON.stringify(parsed, null, 2);
+            fs.writeFileSync(fullPath, saida, "utf8");
+            ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), saida);
             modifiedFiles.add(fullPath);
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 57 — a falha deixou de ser silenciosa.
+          // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+          accApply.fail(fullPath, e);
+        }
       }
     }
 
-    return {
-      success: true,
+    // FASE 10 / D1 — `PartialReport` decide a partialidade; `ac.finish`
+    // acrescenta `transactional`, `filesToBackup` e `fileHashes`.
+    return ac.finish(accApply.report({
       modifiedFiles: Array.from(modifiedFiles),
       count: appliedCount,
       message: `Tradução Defold aplicada com sucesso (${appliedCount} textos em ${modifiedFiles.size} arquivos).`
-    };
+    }));
   }
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return { success: res.success, restoredFiles: res.restoredFiles || [gameDir] };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

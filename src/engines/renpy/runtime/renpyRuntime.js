@@ -271,37 +271,84 @@ class RenpyRuntime {
     const controllerPath = path.join(gameSubDir, '000_opentranslator_controller.rpy');
     const controllerRpyc = path.join(gameSubDir, '000_opentranslator_controller.rpyc');
 
-    [controllerPath, controllerRpyc].forEach(p => {
-      if (fs.existsSync(p)) {
-        try { fs.unlinkSync(p); } catch(e) {}
-      }
-    });
+      // FASE 9 / PASSO 44 — cleanup de melhor-esforço que não diz o que sobrou
+      //
+      // Os `catch(e) {}` nos unlinks faziam sentido: apagar arquivo temporário
+      // é melhor-esforço, e falhar ali não deve abortar o resto. O defeito
+      // era o `return { success: true }` sem payload: se algum arquivo ficou
+      // para trás, o próximo run encontraria o controller `_ot_*.rpy` velho e
+      // poderia falar com um processo de outra sessão.
+      const naoRemovidos = [];
 
-    ['_ot_cmd.json', '_ot_resp.json', '_ot_status.json'].forEach(f => {
-      const p = path.join(gameSubDir, f);
-      if (fs.existsSync(p)) {
-        try { fs.unlinkSync(p); } catch(e) {}
-      }
-    });
-    return { success: true };
+      [controllerPath, controllerRpyc].forEach(p => {
+        if (fs.existsSync(p)) {
+          try { fs.unlinkSync(p); } catch (e) { naoRemovidos.push({ file: p, error: e.message }); }
+        }
+      });
+
+      ['_ot_cmd.json', '_ot_resp.json', '_ot_status.json'].forEach(f => {
+        const p = path.join(gameSubDir, f);
+        if (fs.existsSync(p)) {
+          try { fs.unlinkSync(p); } catch (e) { naoRemovidos.push({ file: p, error: e.message }); }
+        }
+      });
+
+      const leftover = naoRemovidos;
+      return {
+        success: leftover.length === 0,
+        status: leftover.length === 0 ? 'CLEAN' : 'PARTIAL_CLEAN',
+        cleaned: true,
+        remaining: leftover,
+        warning: leftover.length
+          ? `${leftover.length} arquivo(s) temporário(s) não puderam ser `
+            + 'removidos e continuam no diretório do jogo.'
+          : null,
+      };
   }
 
+  /**
+   * Encerra o processo do jogo que ESTE runtime sparkou.
+   *
+   * FASE 1 / PASSO 20 — correcao de ownership.
+   * Antes: taskkill /F /IM <exeName> — matava TODOS os processos do sistema
+   * com aquele nome. Dois jogos Ren'Py com o mesmo executavel (comum: "Game.exe")
+   * faziam um ser encerrado junto com o outro, inclusive jogo que o usuario
+   * estava Executando por fora do OpenTranslator.
+   *
+   * Agora: encerra SOMENTE o handle que esta classe possui. Se nao ha handle,
+   * nada e encerrado — e isso e' preferivel a matar processos alheios.
+   */
   killGame(gameDir) {
-    if (this.activeProcess) {
+    const report = { killedByHandle: false, killedByTree: false, pid: null };
+
+    if (this.activeProcess && typeof this.activeProcess.pid === 'number' && !this.activeProcess.killed) {
+      const pid = this.activeProcess.pid;
       try {
-        this.activeProcess.kill('SIGKILL');
-      } catch (e) {}
+        if (process.platform === 'win32') {
+          const r = spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], {
+            stdio: 'ignore', timeout: 5000, windowsHide: true,
+          });
+          // So declara sucesso se o taskkill realmente saiu com 0.
+          if (!r.error && r.status === 0) {
+            report.killedByTree = true;
+            report.pid = pid;
+          }
+        } else {
+          process.kill(pid, 'SIGKILL');
+          report.killedByTree = true;
+          report.pid = pid;
+        }
+      } catch (e) {
+        report.error = e.message;
+      }
+      try { this.activeProcess.kill('SIGKILL'); } catch (_) {}
       this.activeProcess = null;
     }
-    if (gameDir) {
-      try {
-        const exePath = this.resolveGameExe(gameDir);
-        if (exePath) {
-          const exeName = path.basename(exePath);
-          spawnSync('taskkill', ['/F', '/IM', exeName], { stdio: 'ignore' });
-        }
-      } catch (e) {}
-    }
+
+    // gameDir e' aceito por compatibilidade de assinatura, mas NAO e' usado
+    // para procurar e matar processos por nome. Matagem por nome e' proibida.
+    void gameDir;
+    return report;
   }
 
   /**

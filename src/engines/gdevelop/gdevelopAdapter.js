@@ -11,10 +11,23 @@ const path = require('path');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
+const { rollbackResult } = require('../rollbackResult.js');
+const { PartialReport } = require('../../core/partialApply');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
 
 class GDevelopAdapter extends BaseEngineAdapter {
   constructor() {
     super("gdevelop", "GDevelop");
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "todo arquivo que eu toco está no backup que
+    // a transação vai fazer". `ac.finish` verifica a cada apply e devolve
+    // `transactional: false` se a afirmação deixar de valer.
+    //
+    // `this` só existe DEPOIS de `super()`: numa classe derivada, tocar `this`
+    // antes disso lança em tempo de construção.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "gdevelop" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_gdevelop_backup" });
   }
@@ -53,9 +66,12 @@ class GDevelopAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const allTexts = [];
+    // FASE 9 / PASSO 50 — o relatório de parcialidade. Ver partialApply.js.
+    const acc = new PartialReport();
     const gameJsonPath = path.join(gameDir, "game.json");
 
     if (fs.existsSync(gameJsonPath)) {
+      acc.ok();
       try {
         const data = JSON.parse(fs.readFileSync(gameJsonPath, 'utf8'));
         // Varredura de objetos de texto em cenas
@@ -83,10 +99,18 @@ class GDevelopAdapter extends BaseEngineAdapter {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 50 — `catch (e) {}` engolia um game.json ilegível ou
+        // malformado, e o adapter devolvia `success: true` com zero textos.
+        // O `buildUniverse()` (FASE 4) derivava o total daqui: um jogo com
+        // 5.000 linhas reportava universo 0 e cobertura 100% — o certificado
+        // podia declarar COMPLETED sobre um jogo que nunca foi lido.
+        acc.fail('game.json', e);
+      }
     }
 
-    return { success: true, texts: allTexts, count: allTexts.length };
+    // FASE 9: o relatório decide o `success`, não a intenção do adapter.
+    return acc.report({ texts: allTexts, count: allTexts.length });
   }
 
   async validate(gameDir, texts, translations) {
@@ -94,6 +118,10 @@ class GDevelopAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    // FASE 10 / D1 — o contrato de apply. Este adapter escreve em `game.json`
+    // ou `data.json`, e os textos extraídos declaram `file: "game.json"`, então
+    // o plano derivado dos textos cobre o que ele escreve.
+    const ac = startApplyContract(gameDir, texts);
     const candidateFiles = [
       path.join(gameDir, "game.json"),
       path.join(gameDir, "data.json")
@@ -151,14 +179,20 @@ class GDevelopAdapter extends BaseEngineAdapter {
         }
       }
 
-      fs.writeFileSync(targetPath, JSON.stringify(data, null, 2), 'utf8');
+      // FASE 10 / D1 — hash declarado a partir do CONTEÚDO EM MEMÓRIA.
+      // Hashear o arquivo depois de escrever compararia o número com ele mesmo.
+      const saida = JSON.stringify(data, null, 2);
+      fs.writeFileSync(targetPath, saida, 'utf8');
+      ac.wrote(path.relative(gameDir, targetPath).replace(/\\/g, "/"), saida);
 
-      return {
+      // FASE 10 / D1 — `ac.finish` acrescenta `transactional`,
+      // `filesToBackup` e `fileHashes` ao que o adapter já devolvia.
+      return ac.finish({
         success: true,
         modifiedFiles: [targetPath],
         count: appliedCount,
         message: `Tradução GDevelop aplicada com sucesso em ${path.basename(targetPath)} (${appliedCount} textos).`
-      };
+      });
     } catch (e) {
       return { success: false, error: e.message, modifiedFiles: [], count: 0 };
     }
@@ -166,7 +200,7 @@ class GDevelopAdapter extends BaseEngineAdapter {
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return { success: res.success, restoredFiles: res.restoredFiles || [gameDir] };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

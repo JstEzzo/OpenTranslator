@@ -16,21 +16,40 @@ class UnrealEngineHandler extends BaseEngineHandler {
 
   _findPakFiles(gameDir) {
     const pakFiles = [];
-    const pakDirs = [
-      path.join(gameDir, 'Content', 'Paks'),
-      path.join(gameDir, 'Trover', 'Content', 'Paks'),
-    ];
-
-    for (const pakDir of pakDirs) {
+    // Descoberta ESTRUTURAL de .pak.
+    //
+    // Antes isto era uma lista de caminhos literais, incluindo
+    //   path.join(gameDir, 'Trover', 'Content', 'Paks')
+    // — o nome de UM jogo. Funcionava apenas para o jogo cujo instalador cria
+    // a subpasta com o título, e falhava para qualquer outro título/idioma.
+    //
+    // A regra correta não é o nome da pasta, é a FORMA: um .pak vive em
+    // <algo>/Content/Paks. Essa pasta pode estar na raiz (projeto Unreal
+    // instalado direto) ou em uma subpasta intermediária (layout de
+    // instalador, <Titulo>/Content/Paks). Varrer por estrutura cobre os dois
+    // casos sem nomear nenhum jogo.
+    const MAX_DEPTH = 3;
+    const collect = (dir, depth) => {
+      const pakDir = path.join(dir, 'Content', 'Paks');
       if (fs.existsSync(pakDir)) {
-        const files = fs.readdirSync(pakDir);
+        let files = [];
+        try { files = fs.readdirSync(pakDir); } catch (_) { files = []; }
         for (const f of files) {
-          if (f.toLowerCase().endsWith('.pak')) {
-            pakFiles.push(path.join(pakDir, f));
-          }
+          if (f.toLowerCase().endsWith('.pak')) pakFiles.push(path.join(pakDir, f));
         }
       }
-    }
+      if (depth >= MAX_DEPTH) return;
+      let entries;
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+      for (const e of entries) {
+        if (!e.isDirectory()) continue;
+        // Não descer em conteúdo de usuário: .pak não vive dentro de
+        // Content/Paks de outro projeto, e Saved/Intermediate só custam I/O.
+        if (e.name === 'Saved' || e.name === 'Intermediate' || e.name === 'DerivedDataCache') continue;
+        collect(path.join(dir, e.name), depth + 1);
+      }
+    };
+    collect(gameDir, 0);
 
     return pakFiles;
   }
@@ -236,16 +255,46 @@ encode(r"${csvFile}", r"${locresFile}")
     return { success: false, patchedFiles: [], error: 'Font patching in UE .pak files requires custom asset editing tools.' };
   }
 
-  async cleanup({ gameDir, options = {} }) {
-    const pakFiles = this._findPakFiles(gameDir);
-    for (const pakFile of pakFiles) {
-      const extractDir = path.join(path.dirname(pakFile), '_unreal_extract');
-      if (fs.existsSync(extractDir)) {
-        fs.rmSync(extractDir, { recursive: true, force: true });
+    /**
+     * FASE 9 / PASSO 44 — cleanup que declara o que não conseguiu apagar.
+     *
+     * `fs.rmSync` sem `try` podia lançar e derrubar o cleanup inteiro; com o
+     * `success: true` sem payload original, um `_unreal_extract` remanescente
+     * passava invisível. O diretório de extração órfão é grande e é
+     * reaproveitado: sobrar um significa que a próxima extração pode ler
+     * arquivos de uma sessão anterior.
+     */
+    async cleanup({ gameDir, options = {} }) {
+      const pakFiles = this._findPakFiles(gameDir);
+      const naoRemovidos = [];
+      let removidos = 0;
+
+      for (const pakFile of pakFiles) {
+        const extractDir = path.join(path.dirname(pakFile), '_unreal_extract');
+        if (!fs.existsSync(extractDir)) continue;
+        try {
+          fs.rmSync(extractDir, { recursive: true, force: true });
+          if (fs.existsSync(extractDir)) {
+            naoRemovidos.push({ dir: extractDir, error: 'ainda presente após a remoção' });
+          } else {
+            removidos++;
+          }
+        } catch (e) {
+          naoRemovidos.push({ dir: extractDir, error: e.message });
+        }
       }
+
+      return {
+        success: naoRemovidos.length === 0,
+        status: naoRemovidos.length === 0 ? 'CLEAN' : 'PARTIAL_CLEAN',
+        removedDirs: removidos,
+        remaining: naoRemovidos,
+        warning: naoRemovidos.length
+          ? `${naoRemovidos.length} diretório(s) de extração não foram removidos. `
+            + 'Uma extração posterior pode reusar arquivos de uma sessão antiga.'
+          : null,
+      };
     }
-    return { success: true };
-  }
 
   static detect(gameDir) {
     const pakFiles = this.prototype._findPakFiles(gameDir);

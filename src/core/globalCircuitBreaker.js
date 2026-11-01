@@ -51,6 +51,9 @@ class GlobalCircuitBreaker {
     this.providers = new Map();
     this.baseCooldownMs = 15 * 1000; // 15 segundos base adaptativo (NÃO 10 minutos!)
     this.maxCooldownMs = 5 * 60 * 1000; // 5 minutos teto
+    // FASE 3 / PASSO 27 — falhas consecutivas (rede/5xx) também cooldown.
+    this.failureThreshold = 3;         // 3 falhas seguidas abrem o cooldown
+    this.failureCooldownBaseMs = 5 * 1000; // 5s base, crescendo até maxCooldownMs
   }
 
   static getInstance() {
@@ -73,22 +76,36 @@ class GlobalCircuitBreaker {
     const now = Date.now();
 
     // Transição de COOLDOWN/RATE_LIMITED para HALF_OPEN quando o tempo expira
-    if (p.state === STATES.RATE_LIMITED || p.state === STATES.COOLDOWN) {
-      if (p.cooldownUntil && now >= p.cooldownUntil) {
+    if (p.state === STATES.RATE_LIMITED || p.state === STATES.COOLDOWN
+        || p.state === STATES.NETWORK_ERROR) {
+      // FASE 3 / PASSO 27 — NETWORK_ERROR entra no mesmo protocolo de cooldown.
+      // Sem esta linha, uma falha de rede com cooldown aplicado voltava a ser
+      // autorizada imediatamente, porque o estado não era coberto aqui.
+      //
+      // `cooldownUntil > 0` é a condição que distingue "cooldown ativo" de
+      // "falha isolada registrada": abaixo do threshold, _applyFailureCooldown
+      // zera o cooldown justamente para NÃO bloquear o provedor.
+      const cooldownActive = p.cooldownUntil > now;
+      if (p.cooldownUntil > 0 && now >= p.cooldownUntil) {
         p.state = STATES.HALF_OPEN;
         p.nextProbeAt = now;
         p.probeInFlight = false;
-      } else {
+      } else if (cooldownActive) {
         p.requestsBlocked++;
         return {
           allowed: false,
           state: p.state,
-          reason: "RATE_LIMITED",
+          reason: p.state === STATES.NETWORK_ERROR ? 'NETWORK_ERROR' : 'RATE_LIMITED',
           cooldownUntil: p.cooldownUntil ? new Date(p.cooldownUntil).toISOString() : null,
           remainingMs: Math.max(0, p.cooldownUntil - now),
           nextProbeAt: p.cooldownUntil ? new Date(p.cooldownUntil).toISOString() : null,
           requestsBlocked: p.requestsBlocked
         };
+      }
+      // NETWORK_ERROR com cooldown já expirado OU falha isolada (cooldownUntil
+      // = 0): seguir para o protocolo HALF_OPEN / AVAILABLE normalmente.
+      if (p.state === STATES.NETWORK_ERROR && !cooldownActive) {
+        p.state = p.consecutiveErrors > 0 ? STATES.DEGRADED : STATES.AVAILABLE;
       }
     }
 
@@ -146,8 +163,16 @@ class GlobalCircuitBreaker {
     p.consecutiveErrors = 0;
     p.lastStatusCode = 200;
 
-    if (p.state === STATES.HALF_OPEN || p.state === STATES.DEGRADED) {
+    // FASE 3 / PASSO 27 — um sucesso limpa QUALQUER estado de falha,
+    // inclusive os novos (COOLDOWN por 5xx/rede e NETWORK_ERROR).
+    // Antes, a recuperação só tratava HALF_OPEN e DEGRADED: um provedor que
+    // voltava a responder continuava bloqueado até o próximo canExecute, e o
+    // cooldown era zerado mas o estado não.
+    if (p.state === STATES.HALF_OPEN || p.state === STATES.DEGRADED
+        || p.state === STATES.COOLDOWN || p.state === STATES.NETWORK_ERROR) {
       p.state = STATES.AVAILABLE;
+      p.cooldownUntil = 0;
+      p.nextProbeAt = 0;
       p.concurrency = 4;
       p.cooldownUntil = 0;
       p.nextProbeAt = 0;
@@ -207,14 +232,53 @@ class GlobalCircuitBreaker {
     if (classifiedError.type === "SERVER_ERROR") {
       p.requests5xx++;
       p.lastError = classifiedError.message || "Server Error 5xx";
+      // FASE 3 / PASSO 27 — 5xx agora COOLDA.
+      // Antes, um provedor devolvendo 500 registrava a contagem e seguia
+      // recebendo requisições indefinidamente: o breaker existia para parar
+      // de martelar provedor quebrado e não parava.
+      // O estado precisa ser COOLDOWN, e não apenas ter o cooldownUntil
+      // preenchido: `canExecute` só consulta o cooldown para os estados que
+      // entram no protocolo de transição.
+      this._applyFailureCooldown(p, now, 'SERVER_ERROR');
+      if (p.cooldownUntil > now) p.state = STATES.COOLDOWN;
       return;
     }
 
     if (classifiedError.type === "NETWORK_ERROR") {
       p.state = STATES.NETWORK_ERROR;
       p.lastError = classifiedError.message || "Network Error";
+      this._applyFailureCooldown(p, now, 'NETWORK_ERROR');
       return;
     }
+  }
+
+  /**
+   * Aplica cooldown a falhas que não são rate limit.
+   *
+   * FASE 3 / PASSO 27 — O breaker só cooldownava em 429, 302 e auth. Erro de
+   * rede e 5xx apenas marcavam o estado, e `canExecute` continuava devolvendo
+   * `allowed: true`. Na prática, um provedor fora do ar ou devolvendo 500
+   * recebia requisições indefinidamente, que é exatamente o que um circuit
+   * breaker existe para impedir.
+   *
+   * Política: uma falha isolada pode ser transitória e passa. Falhas
+   * CONSECUTIVAS abrem o cooldown, com backoff exponencial a partir de
+   * `failureCooldownBaseMs`, até `maxCooldownMs`.
+   */
+  _applyFailureCooldown(p, now, kind) {
+    if (p.consecutiveErrors < this.failureThreshold) {
+      p.cooldownUntil = 0;
+      p.nextProbeAt = 0;
+      return;
+    }
+    const over = p.consecutiveErrors - this.failureThreshold;
+    const multiplier = Math.pow(2, Math.min(over, 6));
+    const cd = Math.min(this.maxCooldownMs, this.failureCooldownBaseMs * multiplier);
+    p.cooldownUntil = now + cd;
+    p.nextProbeAt = p.cooldownUntil;
+    p.concurrency = 0;
+    p.lastError = `${p.lastError || kind} (${p.consecutiveErrors} falhas consecutivas; `
+      + `pausa de ${Math.round(cd / 1000)}s)`;
   }
 
   getProviderHealth(providerKey) {

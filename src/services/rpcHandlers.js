@@ -7,12 +7,18 @@
  * - Gerenciamento de preferências, cache, glossário e logs
  * - Validação estrita de entradas não-confiáveis (prevenção de Path Traversal e injeção de parâmetros)
  *
+ * FASE 2 / PASSO 21 — REGRA DE HONESTIDADE
+ *   Nenhum handler devolve {ok:true} sem ter executado a operação.
+ *   Operações sem implementação real foram REMOVIDAS (retornam 404 natural)
+ *   ou agora devolvem {ok:false, status:'UNIMPLEMENTED'} via rpcResponse.js.
+ *
  * Camada Arquitetural:
  * Aplicação / Controladores RPC (Application Services & Controller Layer)
  */
 
-const gameService = require("./core/gameService");
-const EngineDetector = require("./core/engineDetector");
+const gameService = require("../core/gameService");
+const EngineDetector = require("../core/engineDetector");
+const R = require("./rpcResponse");
 const fs = require("fs");
 const path = require("path");
 const { spawn, spawnSync } = require("child_process");
@@ -66,9 +72,9 @@ const {
   runPythonScript,
   healGameData,
   executeTranslationPipeline
-} = require("./gameEngine");
+} = require("../core/gameEngine");
 
-const { extractGameTexts } = require("./extractor");
+const { extractGameTexts } = require("../extractors/extractor");
 
 const {
   loadGlossary,
@@ -78,7 +84,10 @@ const {
   getDb
 } = require("./cache");
 
-const { translateSingle, translateBatch } = require("./translator");
+// FASE 2 / PASSO 21: `translateBatch` removido do import. Os handlers
+// batchTranslate/batchTranslateWithEngine foram deletados; tradução em lote
+// tem um único caminho (TranslationPipeline).
+const { translateSingle } = require("../translation/translator");
 
 const handlers = {
   ping() {
@@ -87,7 +96,7 @@ const handlers = {
     return { ok: true, timestamp: Date.now(), version: "1.0.0" };
   },
   async decryptImages({ gameKey, gamePath, gameDir, destDir, type }) {
-    const { extractMedia } = require("./mediaExtractor");
+    const { extractMedia } = require("../mediaExtractor/index");
     let resolvedGameDir = sanitizePath(gamePath || gameDir);
     if (!resolvedGameDir && gameKey) {
       const safeKey = sanitizeKey(gameKey);
@@ -178,40 +187,147 @@ const handlers = {
 
       fs.writeFileSync(cssPath, customCss, "utf8");
 
+      // FASE 9 / PASSO 45 — o patch é conferido antes de ser declarado.
+      //
+      // O original escrevia os dois arquivos e devolvia `{ ok: true }` sem
+      // conferir nada. Um `@font-face` apontando para um `.ttf` ausente não
+      // gera erro: o navegador simplesmente ignora a regra e o jogo volta ao
+      // texto minúsculo original. O usuário recebia "Fonte instalada" e
+      // nenhuma letra mudava de tamanho.
+      if (!fs.existsSync(destFont)) {
+        return R.failed('A fonte foi copiada mas não está no destino.',
+          `esperado: ${destFont}`);
+      }
+      if (fs.statSync(destFont).size !== fs.statSync(sourceFont).size) {
+        return R.failed('A fonte copiada difere da original em tamanho.',
+          `origem=${fs.statSync(sourceFont).size}b destino=${fs.statSync(destFont).size}b`);
+      }
+      if (!fs.existsSync(cssPath)) {
+        return R.failed('O CSS do @font-face não foi escrito.', `esperado: ${cssPath}`);
+      }
+      const cssLido = fs.readFileSync(cssPath, 'utf8');
+      if (!cssLido.includes('pt-br-font.ttf')) {
+        return R.failed('O CSS foi escrito mas não referencia a fonte instalada.',
+          `css: ${cssPath}`);
+      }
+
       global.log(
         "success",
         "Patch de fontes aplicado com sucesso! Fonte pt-br-font.ttf instalada."
       );
-      return { ok: true };
+      return R.ok({
+        fontPath: destFont,
+        cssPath,
+        fontBytes: fs.statSync(destFont).size,
+        verified: true,
+      });
     } catch (e) {
       global.log("error", "Falha ao aplicar patch de fontes: " + e.message);
       return { ok: false, error: e.message };
     }
   },
+  /**
+   * FASE 9 / PASSO 36 — Limpeza do cache global com resultado POR COMPONENTE.
+   *
+   * O código original fazia:
+   *
+   *     try {
+   *       const db = getDb();
+   *       if (db) { db.prepare("DELETE FROM global_cache").run(); db.pragma("vacuum"); }
+   *     } catch (e2) {}
+   *     global.log("info", "Histórico ... excluído com sucesso.");
+   *     return true;
+   *
+   * O `catch (e2) {}` engolia a falha do DELETE, e o sucesso era declarado
+   * de qualquer forma. Se o banco estivesse bloqueado ou corrompido, o
+   * usuário apagava o JSON, via a confirmação "cache limpo", e descobria
+   * semanas depois que o histórico inteiro continuava lá — e que recomeçaria
+   * a aparecer na próxima carga.
+   *
+   * Cada componente é agora conferido, e a resposta diz o que foi removido e
+   * o que não foi. `ok` é true só quando não sobrou nada por fazer.
+   */
   clearGlobalCache() {
-    try {
-      const jsonPath = path.join(global.ROOT, "global_trans_cache.json");
-      const bakPath = jsonPath + ".bak";
-      if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
-      if (fs.existsSync(bakPath)) fs.unlinkSync(bakPath);
-      const commonPath = path.join(global.DATA_DIR, "common_translations.json");
-      if (fs.existsSync(commonPath)) fs.unlinkSync(commonPath);
+    const removidos = [];
+    const falhas = [];
+
+    const apagar = (rotulo, alvo) => {
       try {
-        const db = getDb();
-        if (db) {
-          db.prepare("DELETE FROM global_cache").run();
-          db.pragma("vacuum");
+        if (!fs.existsSync(alvo)) return;
+        fs.unlinkSync(alvo);
+        if (fs.existsSync(alvo)) {
+          falhas.push(`${rotulo}: arquivo ainda presente após remoção`);
+          return;
         }
-      } catch (e2) {}
-      global.log(
-        "info",
-        "Histórico de traduções globais (JSON e SQLite) excluído com sucesso."
-      );
-      return true;
-    } catch (e) {
-      global.log("error", "Falha ao limpar histórico de traduções: " + e.message);
-      return { ok: false, error: e.message };
+        removidos.push(rotulo);
+      } catch (e) {
+        falhas.push(`${rotulo}: ${e.message}`);
+      }
+    };
+
+    // FASE 9 / PASSO 36 — O caminho estava ERRADO.
+    //
+    // Este handler procurava `global_trans_cache.json` em `global.ROOT`, mas
+    // `src/services/cache.js` grava em `global.DATA_DIR`:
+    //
+    //     const jsonPath = path.join(global.DATA_DIR, "global_trans_cache.json");
+    //
+    // Como `fs.existsSync` do caminho errado devolvia false, o `unlinkSync`
+    // nunca era chamado e o `return true` era puro teatro: o usuário
+    // recebia "cache limpo" e o arquivo continuava no disco, com o mesmo
+    // conteúdo, voltando a aparecer na próxima carga.
+    //
+    // Agora os DOIS locais são conferidos — o canônico e o legado — porque um
+    // cache órfão no lugar errado também tem que sumir.
+    const candidatosCache = [
+      path.join(global.DATA_DIR, "global_trans_cache.json"),
+      path.join(global.ROOT, "global_trans_cache.json"),
+    ];
+    for (const alvo of candidatosCache) {
+      apagar(path.basename(alvo), alvo);
+      apagar(`${path.basename(alvo)}.bak`, `${alvo}.bak`);
     }
+    apagar('common_translations.json', path.join(global.DATA_DIR, "common_translations.json"));
+
+    try {
+      const db = getDb();
+      if (db) {
+        const antes = db.prepare("SELECT COUNT(*) AS n FROM global_cache").get().n;
+        db.prepare("DELETE FROM global_cache").run();
+        const depois = db.prepare("SELECT COUNT(*) AS n FROM global_cache").get().n;
+        if (depois === 0) {
+          removidos.push(`SQLite global_cache (${antes} entradas)`);
+        } else {
+          // A tabela ainda tem linhas: o DELETE não surtiu efeito.
+          falhas.push(`SQLite: ${depois} entradas continuam na tabela após o DELETE`);
+        }
+        db.pragma("vacuum");
+      } else {
+        falhas.push('SQLite indisponível: o cache em banco não pôde ser limpo');
+      }
+    } catch (e2) {
+      falhas.push(`SQLite: ${e2.message}`);
+    }
+
+    const ok = falhas.length === 0;
+    if (ok) {
+      global.log('info',
+        `Histórico de traduções globais excluído: ${removidos.join(', ') || 'nada a remover'}.`);
+    } else {
+      global.log('warn',
+        `Limpeza de cache INCOMPLETA. Removido: ${removidos.join(', ') || 'nada'}. `
+        + `Falhou: ${falhas.join('; ')}`);
+    }
+
+    return {
+      ok,
+      status: ok ? 'CLEARED' : 'PARTIALLY_CLEARED',
+      removidos,
+      falhas,
+      warning: ok ? null
+        : 'A limpeza não foi completa. Alguns componentes do cache continuam '
+          + 'no disco e voltarão a aparecer no próximo uso.',
+    };
   },
   loadCfg() {
     return loadCfg();
@@ -328,7 +444,7 @@ const handlers = {
         };
       }
       const targetDir = detection.detectedSubdir || (fs.statSync(targetPath).isDirectory() ? targetPath : path.dirname(targetPath));
-      const RenpyAdapter = require("./engines/renpy/adapter/renpyAdapter");
+      const RenpyAdapter = require("../engines/renpy/adapter/renpyAdapter");
       const adapter = new RenpyAdapter();
 
       const startTime = Date.now();
@@ -449,7 +565,7 @@ const handlers = {
 
     if (isRenpy) {
       global.log("info", "Iniciando pipeline canônico nativo do Ren'Py...");
-      const TranslationPipeline = require("./core/translationPipeline");
+      const TranslationPipeline = require("../core/translationPipeline");
       const pipeline = new TranslationPipeline();
       const cfg = handlers.loadCfg();
       const pipeRes = await pipeline.run(gameDir, { ...cfg, lang: "pt_BR" });
@@ -805,6 +921,29 @@ const handlers = {
     spawn("explorer.exe", [sd], { detached: true, stdio: "ignore", shell: false });
     return true;
   },
+  /**
+   * FASE 9 / PASSO 40 — MESMO bug de caminho de clearGlobalCache, e MESMO
+   * defeito de swallowed catch.
+   *
+   * O original:
+   *
+   *     const cacheFile = path.join(gameDir, "trans_cache.json");
+   *     try { if (fs.existsSync(cacheFile)) fs.unlinkSync(cacheFile); } catch (e) {}
+   *     const globalCache = path.join(global.ROOT, "global_trans_cache.json");
+   *     try { if (fs.existsSync(globalCache)) fs.unlinkSync(globalCache); } catch (e) {}
+   *     global.log("success", "Deletado cache local e global.");
+   *     return { ok: true };
+   *
+   * Dois defeitos independentes:
+   *
+   *   1. O cache global é gravado em `global.DATA_DIR` por `src/services/cache.js`,
+   *      não em `global.ROOT`. O `existsSync` do caminho errado devolvia
+   *      false, o `unlinkSync` nunca rodava, e o "cache global" nunca foi
+   *      apagado. Mesmo bug de clearGlobalCache, 700 linhas acima.
+   *   2. Os dois `catch (e) {}` engoliam falha de remoção. Se o arquivo
+   *      estivesse aberto por outro processo, o unlink lançaria, o erro
+   *      sumiria, e a resposta seria sucesso — com o cache intacto no disco.
+   */
   deleteGameCache({ gameKey }) {
     const safeKey = sanitizeKey(gameKey);
     if (!safeKey) return { ok: false, error: "Game not found" };
@@ -814,16 +953,44 @@ const handlers = {
     const exe = g.constArgs?.gameExe || "";
     if (!exe) return { ok: false, error: "Executable path not found" };
     const gameDir = path.dirname(exe);
-    const cacheFile = path.join(gameDir, "trans_cache.json");
-    try {
-      if (fs.existsSync(cacheFile)) fs.unlinkSync(cacheFile);
-    } catch (e) {}
-    const globalCache = path.join(global.ROOT, "global_trans_cache.json");
-    try {
-      if (fs.existsSync(globalCache)) fs.unlinkSync(globalCache);
-    } catch (e) {}
-    global.log("success", "Deletado cache local e global.");
-    return { ok: true };
+
+    const removidos = [];
+    const falhas = [];
+
+    const apagar = (rotulo, alvo) => {
+      try {
+        if (!fs.existsSync(alvo)) return;
+        fs.unlinkSync(alvo);
+        if (fs.existsSync(alvo)) falhas.push(`${rotulo}: arquivo ainda presente após remoção`);
+        else removidos.push(rotulo);
+      } catch (e) {
+        falhas.push(`${rotulo}: ${e.message}`);
+      }
+    };
+
+    apagar('trans_cache.json (local do jogo)', path.join(gameDir, "trans_cache.json"));
+    // Ambos os locais do cache global: o canônico e o legado.
+    apagar('global_trans_cache.json (DATA_DIR)',
+      path.join(global.DATA_DIR, "global_trans_cache.json"));
+    apagar('global_trans_cache.json (ROOT, legado)',
+      path.join(global.ROOT, "global_trans_cache.json"));
+
+    const ok = falhas.length === 0;
+    global.log(ok ? "success" : "warn",
+      ok
+        ? `Cache removido: ${removidos.join(', ') || 'nada a remover'}.`
+        : `Cache removido PARCIALMENTE. Removido: ${removidos.join(', ') || 'nada'}. `
+          + `Falhou: ${falhas.join('; ')}`);
+
+    return {
+      ok,
+      status: ok ? 'CLEARED' : 'PARTIALLY_CLEARED',
+      removidos,
+      falhas,
+      warning: ok ? null
+        : 'A remoção não foi completa. Parte do cache continua no disco e '
+          + 'voltará a ser usada na próxima tradução.',
+    };
   },
   async rollbackGame(params = {}) {
     const gp = resolveGameDir(params);
@@ -885,10 +1052,30 @@ const handlers = {
       backups.sort((a, b) => a.timestamp - b.timestamp);
       const oldestBak = backups[0].path;
 
+      // FASE 9 / PASSO 41 — RESTAURAÇÃO PARCIAL NÃO É RESTAURAÇÃO
+      //
+      // O original fazia o restore dos plugins dentro de `try { ... } catch (e) {}`
+      // — engolindo falha por arquivo — e logo depois APAGAVA TODOS OS BACKUPS
+      // e devolvia `{ ok: true }` com o log "Restaurado dados originais com
+      // sucesso".
+      //
+      // A consequência era a pior possível: se a cópia de um plugin falhasse
+      // (arquivo aberto, sem permissão, disco cheio), o jogo ficava num estado
+      // híbrido — `data/` restaurado, `plugins/` não —, os backups eram
+      // destruídos, e o usuário recebia confirmação de sucesso. Não havia
+      // caminho de volta: o original estava no backup, e o backup estava no
+      // lixo.
+      //
+      // Agora as falhas são coletadas, a restauração é conferida, e os backups
+      // só são removidos quando não há nada a recuperar.
+      const falhas = [];
+      const restaurados = [];
+
       if (fs.existsSync(dataDir)) {
         fs.rmSync(dataDir, { recursive: true, force: true });
       }
       fs.cpSync(oldestBak, dataDir, { recursive: true, force: true });
+      restaurados.push('data/');
 
       const wwwDir = path.dirname(dataDir);
       const bakPlugins = path.join(oldestBak, "plugins.js_bak");
@@ -897,20 +1084,69 @@ const handlers = {
         try {
           if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
           fs.copyFileSync(bakPlugins, pluginsJsPath);
-        } catch (e) {}
+          restaurados.push('js/plugins.js');
+        } catch (e) {
+          falhas.push(`js/plugins.js: ${e.message}`);
+        }
       }
 
       const bakPluginsDir = path.join(oldestBak, "js_plugins_bak");
       const pluginsDir = path.join(wwwDir, "js", "plugins");
       if (fs.existsSync(bakPluginsDir) && fs.existsSync(pluginsDir)) {
+        // FASE 9: falha por arquivo é registrada e CONTINUA — o resto ainda
+        // deve ser restaurado. O que não pode é ser silenciosa.
+        let pluginsOk = 0;
+        let pluginsFalha = 0;
+        let arquivos = [];
         try {
-          const files = fs.readdirSync(bakPluginsDir);
-          for (const f of files) {
+          arquivos = fs.readdirSync(bakPluginsDir);
+        } catch (e) {
+          falhas.push(`leitura de js_plugins_bak: ${e.message}`);
+        }
+        for (const f of arquivos) {
+          try {
             fs.copyFileSync(path.join(bakPluginsDir, f), path.join(pluginsDir, f));
+            pluginsOk++;
+          } catch (e) {
+            pluginsFalha++;
+            falhas.push(`js/plugins/${f}: ${e.message}`);
           }
-        } catch (e) {}
+        }
+        if (pluginsOk) restaurados.push(`js/plugins/ (${pluginsOk} arquivo(s))`);
+        if (pluginsFalha) {
+          falhas.push(`js/plugins: ${pluginsFalha} de ${arquivos.length} arquivo(s) não restaurado(s)`);
+        }
       }
 
+      // ---- VERIFICAÇÃO: o que dissemos ter restaurado está no disco? ----
+      if (!fs.existsSync(dataDir)) {
+        falhas.push(`data/ não existe após a restauração (esperado: ${dataDir})`);
+      }
+      if (fs.existsSync(bakPlugins) && !fs.existsSync(pluginsJsPath)) {
+        falhas.push('js/plugins.js não existe após a restauração');
+      }
+
+      if (falhas.length) {
+        // FASE 9: com restauração parcial, os backups SÃO PRESERVADOS. São a
+        // única cópia do original que ainda existe.
+        global.log('error',
+          `Restauração INCOMPLETA (${falhas.length} falha(s)). Backups PRESERVADOS `
+          + `em ${oldestBak}. Falhas: ${falhas.join('; ')}`);
+        return {
+          ok: false,
+          status: 'PARTIALLY_RESTORED',
+          error: 'A restauração não foi completa. Os backups foram PRESERVADOS '
+            + 'porque contêm o único restante dos arquivos originais.',
+          restaurados,
+          falhas,
+          backupPreservedAt: oldestBak,
+          warning: 'O jogo está em estado parcial: data/ restaurado, mas '
+            + 'alguns plugins não voltaram. NÃO reaplique tradução agora — isso '
+            + 'sobrescreveria o que ainda está original.',
+        };
+      }
+
+      // Só agora, com a restauração conferida, os backups podem ir embora.
       for (const bak of backups) {
         if (fs.existsSync(bak.path)) {
           fs.rmSync(bak.path, { recursive: true, force: true });
@@ -918,7 +1154,13 @@ const handlers = {
       }
 
       global.log("success", "Restaurado dados originais com sucesso.");
-      return { ok: true };
+      return {
+        ok: true,
+        status: 'RESTORED',
+        restaurados,
+        verified: true,
+        backupsRemoved: backups.length,
+      };
     } catch (e) {
       global.log("error", "Falha ao restaurar dados originais: " + e.message);
       return { ok: false, error: e.message };
@@ -949,16 +1191,64 @@ const handlers = {
       return { ok: false, error: e.message };
     }
   },
+  /**
+   * FASE 2 / PASSO 21 — antes devolvia {ok:true} INCONDICIONALMENTE, mesmo
+   * sem socket e sem jogo conectado. A UI mostrava "HP definido para 1!"
+   * quando nada tinha sido enviado.
+   *
+   * Agora o resultado reflete a entrega real:
+   *   sent  -> entregue pelo WebSocket nesta chamada
+   *   queued -> enfileirado (jogo ainda vai consumir quando reconectar)
+   *   Sem nenhum dos dois => ok:false com status NOT_CONNECTED.
+   */
   sendCheatCommand(params) {
     const code = params.code || params.command || "";
-    global.log("info", "Enfileirando comando de cheat: " + JSON.stringify(params));
-    if (global.activeCheatSocket && global.activeCheatSocket.readyState === 1) {
+    if (!code) return R.invalidInput("sendCheatCommand exige params.code ou params.command");
+    if (typeof code !== "string") {
+      return R.invalidInput("params.code deve ser string");
+    }
+
+    const socketOpen = Boolean(
+      global.activeCheatSocket && global.activeCheatSocket.readyState === 1,
+    );
+
+    if (socketOpen) {
       try {
         global.activeCheatSocket.send(JSON.stringify(params));
-      } catch (e) {}
+        if (typeof global.log === "function") {
+          global.log("debug", "Comando de cheat entregue via WebSocket.");
+        }
+        return R.ok({ delivery: "sent", transport: "websocket" });
+      } catch (e) {
+        // Socket caiu no meio do envio: cai para a fila.
+        global.pendingCheatCommands.push(params);
+        return R.ok({
+          delivery: "queued",
+          transport: "queue",
+          detail: `WebSocket falhou (${e.message}); comando enfileirado.`,
+        });
+      }
+    }
+
+    // Sem socket: enfileira com limite explícito. A fila antiga crescia sem
+    // limite, um vazamento de memória quando o overlay nunca consumia.
+    const MAX_QUEUE = 200;
+    if (global.pendingCheatCommands.length >= MAX_QUEUE) {
+      return R.blocked(
+        `Fila de comandos de cheat cheia (${MAX_QUEUE}). O jogo não está consumindo a fila.`,
+        "QUEUE_FULL",
+      );
     }
     global.pendingCheatCommands.push(params);
-    return { ok: true };
+    if (typeof global.log === "function") {
+      global.log("debug",
+        `Comando de cheat enfileirado (fila=${global.pendingCheatCommands.length}/${MAX_QUEUE}).`);
+    }
+    return R.ok({
+      delivery: "queued",
+      transport: "queue",
+      queueDepth: global.pendingCheatCommands.length,
+    });
   },
   getGameState() {
     const isRecentPoll = Date.now() - global.lastCheatPollTime < 8000;
@@ -970,18 +1260,47 @@ const handlers = {
     return translateSingle(text, sl, tl);
   },
   log({ level, message }) {
-    global.log(level, message);
+    // FASE 1: level vinha cru do cliente e global.log fazia level.toUpperCase().
+    // Um `{level: 123}` causava TypeError -> HTTP 500 (DoS trivial).
+    const safeLevel = R.sanitizeLogLevel(level, 'info');
+    if (typeof message === 'string') {
+      global.log(safeLevel, message);
+      return true;
+    }
+    if (message === undefined || message === null) return false;
+    global.log(safeLevel, String(message));
     return true;
   },
-  engineInfo({ eng }) {
-    return ENGINES_DEF[eng] || ENGINES_DEF.mz;
+  /**
+   * FASE 2 / PASSO 21 — engineInfo não adivinha mais o motor.
+   * Antes: `return ENGINES_DEF[eng] || ENGINES_DEF.mz` — um motor
+   * desconhecido (typo, motor novo, `undefined`) retornava a definição do
+   * RPG Maker MZ como se fosse a resposta correta. A UI exibia "MZ" para
+   * qualquer coisa, encryptando a decisão errada na interface.
+   */
+  engineInfo({ eng } = {}) {
+    if (!eng || typeof eng !== 'string') {
+      return R.invalidInput('engineInfo exige params.eng (string)');
+    }
+    const def = ENGINES_DEF[eng];
+    if (!def) {
+      const known = Object.keys(ENGINES_DEF).join(', ');
+      return R.notFound(
+        `Motor desconhecido: '${eng}'.`,
+        `Motores registrados: ${known}`,
+      );
+    }
+    return R.ok({ engine: eng, definition: def });
   },
-  async batchTranslate({ texts, sl, tl }) {
-    const results = await translateBatch(texts, sl || "auto", tl || "pt");
-    const entries = [];
-    for (const [id, tr] of results) entries.push({ id, translation: tr });
-    return entries;
-  },
+
+  /**
+   * FASE 2 / PASSO 21 — REMOVIDOS: batchTranslate, batchTranslateWithEngine.
+   * Devolviam um array cru (sem `ok`), sem contrato, sem tratamento de
+   * erro por item, e nenhuma linha da UI os chamava. Tradução em lote
+   * happens pelo TranslationPipeline; manter dois caminhos de tradução em
+   * lote era exatamente a arquitetura concorrente da auditoria.
+   */
+
    async findGame({ name, size, mtime }) {
     if (!name) return null;
     const found = await findGameOnDisk(name);
@@ -1042,68 +1361,128 @@ const handlers = {
   async translateWithEngine({ text, sl, tl, engine }) {
     return translateSingle(text, sl || "auto", tl || "pt", engine || "multi");
   },
-  async batchTranslateWithEngine({ texts, sl, tl, engine, glossary }) {
-    const results = await translateBatch(
-      texts || [],
-      sl || "auto",
-      tl || "pt",
-      engine || "multi",
-      glossary
-    );
-    const entries = [];
-    for (const [id, tr] of results) entries.push({ id, translation: tr });
-    return entries;
-  },
+  /**
+   * FASE 2 / PASSO 21 — REMOVIDO: batchTranslateWithEngine (ver nota acima).
+   */
+
+  /**
+   * FASE 2 / PASSO 36 — installOverlay REESCRITO.
+   *
+   * Bugs originais (todos escondidos por retornos de sucesso):
+   *  1. `path.join(global.ROOT, "www", "UltraTranslateOverlay.js")` — a pasta
+   *     `www/` NUNCA existiu no projeto. O overlay real está em
+   *     `ui/UltraTranslateOverlay.js`. Resultado: o handler retornava
+   *     SEMPRE "Overlay JS not found" e a UI tratava como beco sem saída.
+   *  2. Registrava em `js/plugins.json` com `JSON.parse`. RPG Maker MV/MZ
+   *     NÃO tem esse arquivo — o registro é `js/plugins.js`, um array JS
+   *     dentro de comentário. O `catch (e) {}` engolia a exceção, então o
+   *     overlay era copiado mas NUNCA era carregado pelo jogo.
+   *  3. `return true` (boolean) em vez de `{ok:true}`, quebrando o contrato
+   *     de todos os outros handlers.
+   *  4. Não verificava se a escrita realmente aconteceu em disco.
+   *
+   * Agora: resolve candidatos reais, escreve, registra de verdade, e só
+   * devolve ok:true depois de RELER o disco e confirmar os dois fatos.
+   */
   installOverlay({ gameKey }) {
+    const PLUGIN_NAME = 'UltraTranslateOverlay';
+
     const games = handlers.loadGames().games;
     const g = games[gameKey];
-    if (!g) return { ok: false, error: "Game not found" };
-    const exe = g.constArgs?.gameExe || "";
-    if (!exe || !fs.existsSync(exe))
-      return { ok: false, error: "EXE not found" };
+    if (!g) return R.notFound('Game not found');
+    const exe = g.constArgs?.gameExe || '';
+    if (!exe || !fs.existsSync(exe)) return R.notFound('EXE not found');
+
     const gameDir = path.dirname(exe);
     const dataDir = findDataDir(gameDir);
-    if (!dataDir) return { ok: false, error: "Game data directory not found" };
+    if (!dataDir) return R.notFound('Game data directory not found');
+
     let wwwDir = path.dirname(dataDir);
-    if (!fs.existsSync(path.join(wwwDir, "index.html"))) wwwDir = gameDir;
-    const overlayPath = path.join(global.ROOT, "www", "UltraTranslateOverlay.js");
-    if (!fs.existsSync(overlayPath))
-      return { ok: false, error: "Overlay JS not found" };
+    if (!fs.existsSync(path.join(wwwDir, 'index.html'))) wwwDir = gameDir;
+
+    // Candidatos REAIS do fonte do overlay.
+    const overlayCandidates = [
+      path.join(global.ROOT, 'ui', 'UltraTranslateOverlay.js'),
+      path.join(global.ROOT, 'resources', 'templates', 'CheatOverlayTemplate.js'),
+    ];
+    const overlayPath = overlayCandidates.find((p) => fs.existsSync(p));
+    if (!overlayPath) {
+      return R.failed('Overlay JS not found', `Procurado em: ${overlayCandidates.join(', ')}`);
+    }
+
     try {
-      const pluginsDir = path.join(wwwDir, "js", "plugins");
-      if (!fs.existsSync(pluginsDir))
-        fs.mkdirSync(pluginsDir, { recursive: true });
-      const dest = path.join(pluginsDir, "UltraTranslateOverlay.js");
-      let overlayContent = fs.readFileSync(overlayPath, "utf8");
-      const dictFile = "UltraTranslations.json";
-      overlayContent = overlayContent.replace("__DICT_FILENAME__", dictFile);
-      const cfg = handlers.loadCfg();
-      const wrapLimit =
-        cfg.wordWrapLimit !== undefined ? cfg.wordWrapLimit : 50;
-      overlayContent = overlayContent.replace("__WORD_WRAP_LIMIT__", wrapLimit);
-      fs.writeFileSync(dest, overlayContent, "utf8");
-      const pluginListPath = path.join(wwwDir, "js", "plugins.json");
-      if (fs.existsSync(pluginListPath)) {
-        try {
-          const plugins = JSON.parse(fs.readFileSync(pluginListPath, "utf8"));
-          if (!plugins.some((p) => p.name === "UltraTranslateOverlay")) {
-            plugins.push({
-              name: "UltraTranslateOverlay",
-              status: "on",
-              description: "Runtime overlay",
-            });
-            fs.writeFileSync(
-              pluginListPath,
-              JSON.stringify(plugins, null, 2),
-              "utf8"
-            );
-          }
-        } catch (e) {}
+      const jsDir = path.join(wwwDir, 'js');
+      const pluginsDir = path.join(jsDir, 'plugins');
+      if (!fs.existsSync(pluginsDir)) fs.mkdirSync(pluginsDir, { recursive: true });
+
+      const dest = path.join(pluginsDir, `${PLUGIN_NAME}.js`);
+      let overlayContent = fs.readFileSync(overlayPath, 'utf8');
+
+      const dictFile = 'UltraTranslations.json';
+      const replacedDict = overlayContent.replace('__DICT_FILENAME__', dictFile);
+      if (replacedDict === overlayContent && overlayContent.includes('__DICT_FILENAME__')) {
+        return R.failed('Template do overlay inválido',
+          'Placeholder __DICT_FILENAME__ não pôde ser substituído.');
       }
-      global.log("info", "Overlay installed for " + path.basename(exe));
-      return true;
+      overlayContent = replacedDict;
+
+      const cfg = handlers.loadCfg();
+      const wrapLimit = cfg.wordWrapLimit !== undefined ? cfg.wordWrapLimit : 50;
+      const replacedWrap = overlayContent.replace('__WORD_WRAP_LIMIT__', String(wrapLimit));
+      if (replacedWrap === overlayContent && overlayContent.includes('__WORD_WRAP_LIMIT__')) {
+        return R.failed('Template do overlay inválido',
+          'Placeholder __WORD_WRAP_LIMIT__ não pôde ser substituído.');
+      }
+      overlayContent = replacedWrap;
+
+      fs.writeFileSync(dest, overlayContent, 'utf8');
+
+      // ---- VERIFICAÇÃO 1: o arquivo foi realmente gravado? ----
+      if (!fs.existsSync(dest)) {
+        return R.failed('Falha ao gravar o overlay', `Arquivo ausente após escrita: ${dest}`);
+      }
+      const reread = fs.readFileSync(dest, 'utf8');
+      if (reread.length !== overlayContent.length
+          || reread.includes('__DICT_FILENAME__')
+          || reread.includes('__WORD_WRAP_LIMIT__')) {
+        return R.failed('Verificação do overlay falhou',
+          'O conteúdo em disco difere do esperado ou ainda contém placeholders.');
+      }
+      const bytesWritten = reread.length;
+
+      // ---- VERIFICAÇÃO 2: o plugin está registrado e HABILITADO? ----
+      const pluginsFilePath = path.join(jsDir, 'plugins.js');
+      const {
+        registerPlugin, verifyPlugin,
+      } = require('../engines/rpgmaker/rpgMakerPluginsFile');
+      const reg = registerPlugin(pluginsFilePath, {
+        name: PLUGIN_NAME,
+        description: 'Runtime overlay (OpenTranslator)',
+        parameters: {},
+      });
+      if (!reg.registered) {
+        return R.failed('Overlay gravado, mas NÃO registrado em plugins.js',
+          `${reg.reason} (${pluginsFilePath})`);
+      }
+      const verify = verifyPlugin(pluginsFilePath, PLUGIN_NAME);
+      if (!verify.present || !verify.enabled) {
+        return R.failed('Overlay registrado, mas o jogo não vai carregá-lo',
+          `plugins.js confirma: ${JSON.stringify(verify)}`);
+      }
+
+      global.log('info', `Overlay installed for ${path.basename(exe)} `
+        + `(${bytesWritten} bytes, ${verify.totalPlugins} plugins registrados)`);
+      return R.ok({
+        overlayPath: dest,
+        pluginsFile: pluginsFilePath,
+        bytesWritten,
+        registered: true,
+        enabled: true,
+        totalPlugins: verify.totalPlugins,
+        registrationChanged: reg.changed,
+      });
     } catch (e) {
-      return { ok: false, error: e.message };
+      return R.failed(e.message, { stack: undefined });
     }
   },
   installUnity({ gameKey }) {
@@ -1133,31 +1512,69 @@ const handlers = {
         path.join(global.ROOT, "xunity_plugin", "UltraBatchEndpoint.dll")
       ];
       const pluginSrc = pluginCandidates.find(p => fs.existsSync(p));
-      if (pluginSrc) {
-        const pluginDst = path.join(
-          bepDir,
-          "plugins",
-          "UltraBatchEndpoint.dll"
+
+      // FASE 9 / PASSO 37 — O PLUGIN É OBRIGATÓRIO, E O ORIGINAL ERA OPCIONAL
+      //
+      // O código era:
+      //
+      //     const pluginSrc = pluginCandidates.find(p => fs.existsSync(p));
+      //     if (pluginSrc) { ...copia... }
+      //     global.log("info", "Unity installed for " + exeName);
+      //     return true;
+      //
+      // Se o DLL não estivesse em NENHUM dos candidatos, o `if` era pulado,
+      // nada era copiado, e a resposta era sucesso com "Unity installed".
+      //
+      // O que o usuário recebia: BepInEx instalado, config criada, e um jogo
+      // que abre e não traduz NADA — porque o plugin que faz a tradução não
+      // foi copiado. O pior desfecho possível para uma ferramenta de tradução:
+      // aparenta funcionar e não traduz.
+      if (!pluginSrc) {
+        return R.notFound(
+          'Plugin UltraBatchEndpoint.dll não encontrado no OpenTranslator.',
+          `Procurado em: ${pluginCandidates.join(', ')}. A instalação foi `
+          + 'INTERROMPIDA: sem o plugin o jogo não traduz, e reportar sucesso '
+          + 'aqui diria o contrário.',
         );
-        const xunityPlugins = path.join(
-          bepDir,
-          "plugins",
-          "XUnity.AutoTranslator.Plugin.Unity"
-        );
-        if (fs.existsSync(xunityPlugins)) {
-          fs.copyFileSync(
-            pluginSrc,
-            path.join(xunityPlugins, "UltraBatchEndpoint.dll")
-          );
-        } else {
-          fs.copyFileSync(
-            pluginSrc,
-            path.join(bepDir, "plugins", "UltraBatchEndpoint.dll")
-          );
-        }
       }
-      global.log("info", "Unity installed for " + exeName);
-      return true;
+
+      const pluginDstDir = fs.existsSync(
+        path.join(bepDir, "plugins", "XUnity.AutoTranslator.Plugin.Unity"),
+      )
+        ? path.join(bepDir, "plugins", "XUnity.AutoTranslator.Plugin.Unity")
+        : path.join(bepDir, "plugins");
+      const pluginDst = path.join(pluginDstDir, "UltraBatchEndpoint.dll");
+      fs.mkdirSync(path.dirname(pluginDst), { recursive: true });
+      fs.copyFileSync(pluginSrc, pluginDst);
+
+      // ---- VERIFICAÇÃO: o plugin está no disco, no caminho que o BepInEx lê? ----
+      if (!fs.existsSync(pluginDst)) {
+        return R.failed(
+          'O plugin foi copiado mas não está onde o BepInEx procura.',
+          `Destino esperado: ${pluginDst}`,
+        );
+      }
+      const srcSize = fs.statSync(pluginSrc).size;
+      const dstSize = fs.statSync(pluginDst).size;
+      if (srcSize !== dstSize) {
+        return R.failed('Plugin copiado com tamanho diferente do original.',
+          `origem=${srcSize}b destino=${dstSize}b`);
+      }
+
+      const cfgPath = path.join(bepDir, "config", "AutoTranslatorConfig.ini");
+      if (!fs.existsSync(cfgPath)) {
+        return R.failed('A configuração do AutoTranslator não foi criada.',
+          `Esperado: ${cfgPath}`);
+      }
+
+      global.log("info", `Unity instalado para ${exeName} (plugin em ${pluginDst}).`);
+      return R.ok({
+        bepInExDir: bepDir,
+        pluginPath: pluginDst,
+        pluginBytes: dstSize,
+        configPath: cfgPath,
+        verified: true,
+      });
     } catch (e) {
       return { ok: false, error: e.message };
     }
@@ -1580,54 +1997,35 @@ const handlers = {
   runSelfTest() {
     return gameService.selfTest();
   },
-  selfTest() {
-    return gameService.selfTest();
-  },
   exportDiagnosticBundle() {
     return gameService.exportDiagnosticBundle();
   },
   getTriadInfo(params = {}) {
     const gp = resolveGameDir(params);
-    const EngineRuntimeTriad = require('./core/engineRuntimeTriad');
+    const EngineRuntimeTriad = require('../core/engineRuntimeTriad');
     return EngineRuntimeTriad.resolve({ gameDir: gp });
   },
-  getHealthStatus() {
-    const HealthMonitor = require('./core/healthMonitor');
-    if (!global.__openTranslatorHealthMonitor) {
-      global.__openTranslatorHealthMonitor = new HealthMonitor();
-    }
-    return global.__openTranslatorHealthMonitor.getStatusSummary();
-  },
-  getGlossaryRules() {
-    return {
-      rules: global.__openTranslatorGlossaryRules || []
-    };
-  },
-  saveGlossaryRule({ rule }) {
-    if (!global.__openTranslatorGlossaryRules) {
-      global.__openTranslatorGlossaryRules = [];
-    }
-    global.__openTranslatorGlossaryRules.push(rule);
-    return { ok: true, count: global.__openTranslatorGlossaryRules.length };
-  },
-  saveManualOverride({ gameId, text, translation }) {
-    if (!global.__openTranslatorManualOverrides) {
-      global.__openTranslatorManualOverrides = new Map();
-    }
-    const key = (gameId || 'global') + '::' + text;
-    global.__openTranslatorManualOverrides.set(key, translation);
-    return { ok: true, key, translation };
-  },
-  getLiveMonitorEntries() {
-    return {
-      entries: global.__openTranslatorLiveEntries || []
-    };
-  },
+  // ------------------------------------------------------------------------
+  // FASE 2 / PASSO 21 — HANDLERS REMOVIDOS (falsos)
+  //
+  // Estes handlers escreviam em `global.__openTranslator*` e devolviam
+  // {ok:true}. Nada nunca lia essas variáveis: eram sucesso puro, sem
+  // efeito colateral observável. A UI consumia o ok:true e mostrava
+  // "Regra salva!", "Health OK!" etc. sem que nada tivesse mudado.
+  //
+  // REMOVIDOS (não reimplementados — não havia especificação real):
+  //   getHealthStatus, getGlossaryRules, saveGlossaryRule,
+  //   saveManualOverride, getLiveMonitorEntries
+  //
+  // Um handler sem implementação é removido, não mantido como isca.
+  // Se a funcionalidade for necessária, ela precisa ser desenhada e
+  // testada primeiro (fases seguintes).
+  // ------------------------------------------------------------------------
 
   // ==================== PHASE 9 RUNTIME RPC HANDLERS ====================
 
   async runtimeStartSession(params = {}) {
-    const RuntimeSession = require("./core/runtimeSessionManager");
+    const RuntimeSession = require("../core/runtimeSessionManager");
     const session = new RuntimeSession({
       gameId: params.gameId || (params.gameDir ? path.basename(params.gameDir) : "game"),
       gameDir: params.gameDir,
@@ -1643,7 +2041,7 @@ const handlers = {
   },
 
   async runtimeStopSession(params = {}) {
-    const ownedProcessRegistry = require("./core/ownedProcessRegistry");
+    const ownedProcessRegistry = require("../core/ownedProcessRegistry");
     if (params.pid) {
       const res = ownedProcessRegistry.stop(params.pid, params.reason || "RPC Stop");
       return { ok: res.success, res };
@@ -1656,43 +2054,43 @@ const handlers = {
   },
 
   async runtimeProbe(params = {}) {
-    const RuntimeProbe = require("./core/runtimeProbe");
+    const RuntimeProbe = require("../core/runtimeProbe");
     const res = RuntimeProbe.probeProcess(params.pid);
     return { ok: true, probe: res };
   },
 
   async runtimeCaptureScreen(params = {}) {
-    const screenCapture = require("./core/screenCapture");
+    const screenCapture = require("../core/screenCapture");
     const res = screenCapture.capture(params);
     return { ok: res.success, capture: res };
   },
 
   async routerRecommend(params = {}) {
-    const router = require("./core/translationRuntimeRouter");
+    const router = require("../core/translationRuntimeRouter");
     const recommendation = router.selectStrategy(params);
     return { ok: true, recommendation };
   },
 
   async stagingPrepare(params = {}) {
-    const stagingPolicy = require("./core/stagingPolicy");
+    const stagingPolicy = require("../core/stagingPolicy");
     const res = stagingPolicy.createStaging(params.gameDir, params.sessionId);
     return { ok: res.success, res };
   },
 
   async stagingCleanup(params = {}) {
-    const stagingPolicy = require("./core/stagingPolicy");
+    const stagingPolicy = require("../core/stagingPolicy");
     const res = stagingPolicy.cleanupStaging(params.stagingDir);
     return { ok: res.success, res };
   },
 
   async evidenceList() {
-    const aggregator = require("./core/capabilityEvidenceAggregator");
+    const aggregator = require("../core/capabilityEvidenceAggregator");
     const matrix = aggregator.aggregate();
     return { ok: true, matrix };
   },
 
   async getProviderHealth({ provider } = {}) {
-    const GlobalCircuitBreaker = require("./core/globalCircuitBreaker");
+    const GlobalCircuitBreaker = require("../core/globalCircuitBreaker");
     const breaker = GlobalCircuitBreaker.getInstance();
     const providers = ["google:gtx", "google:dict-chrome-ex", "bing", "gemini", "deepl"];
     const health = {};
@@ -1705,18 +2103,28 @@ const handlers = {
   async getRenpyAppDataStatus({ gameDir, gameTitle, engine }) {
     try {
       if (engine && engine.toLowerCase() !== "renpy") {
-        const EngineRoutingGuard = require("./core/engineRoutingGuard");
+        const EngineRoutingGuard = require("../core/engineRoutingGuard");
         const check = EngineRoutingGuard.check("getRenpyAppDataStatus", engine, "renpy");
         return { ok: false, blocked: true, error: check.error, reason: check.message };
       }
-      const resolver = require("./renpyAppDataResolver");
+      const resolver = require("../discovery/renpyAppDataResolver");
       const res = resolver.resolveGameAppDataDir(gameDir, gameTitle, { engine });
       let saves = [];
+      // FASE 9 / PASSO 55 — `catch (e) {}` aqui devolvia `saves: []`, que é
+      // indistinguível de "este jogo não tem saves". Um diretório ilegível
+      // (permissão, I/O, unidade removida) e um save inexistente produziam a
+      // mesma resposta, e a UI mostrava "nenhum save encontrado" — uma
+      // afirmação sobre o JOGO feita a partir de uma falha de LEITURA.
+      let savesError = null;
       if (res && res.success && res.appDataDir && fs.existsSync(res.appDataDir)) {
         try {
           const files = fs.readdirSync(res.appDataDir);
           saves = files.filter(f => f.endsWith(".save") || f.endsWith(".bak") || f.endsWith(".rpy"));
-        } catch (e) {}
+        } catch (e) {
+          savesError = e.message;
+          global.log('warn',
+            `[getRenpyAppDataStatus] Não foi possível listar ${res.appDataDir}: ${e.message}`);
+        }
       }
       return {
         ok: true,
@@ -1724,27 +2132,24 @@ const handlers = {
         appDataDir: res.appDataDir,
         method: res.method,
         saveDirectoryName: res.saveDirectoryName,
-        saves
+        saves,
+        // FASE 9: `saves` vazio + `savesError` preenchido é o par que separa
+        // "não há saves" de "não deu para olhar".
+        savesListingFailed: savesError !== null,
+        savesError,
       };
     } catch (e) {
       return { ok: false, error: e.message };
     }
   },
 
-  async selectFolder({ title }) {
-    if (process.platform === "win32") {
-      try {
-        const dialogTitle = (title || "Selecione uma pasta").replace(/'/g, "''");
-        const psCmd = `Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description = '${dialogTitle}'; $d.ShowNewFolderButton = $true; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }`;
-        const res = spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", psCmd], { encoding: "utf8" });
-        const selected = (res.stdout || "").trim();
-        if (selected && fs.existsSync(selected)) {
-          return { ok: true, folderPath: selected };
-        }
-      } catch (e) {}
-    }
-    return { ok: true, folderPath: null };
-  },
+  /**
+   * FASE 2 / PASSO 21 — REMOVIDO: selectFolder.
+   * Usava `spawnSync` com um FolderBrowserDialog MODAL dentro do processo do
+   * servidor, travando o event loop inteiro enquanto o usuário olha o
+   * explorador de arquivos. Pior: devolvia `{ok:true, folderPath:null}`
+   * quando o usuário cancelava — sucesso falso. A UI nunca chamou.
+   */
 
   async unpackAll({ key, gameKey, gameDir, gamePath, targetDir, destDir }) {
     let resolvedGameDir = gamePath || gameDir;
@@ -1769,7 +2174,7 @@ const handlers = {
       return { ok: false, error: "Pasta de destino não especificada" };
     }
 
-    const { extractMedia } = require("./mediaExtractor");
+    const { extractMedia } = require("../mediaExtractor/index");
     return await extractMedia({
       gameDir: resolvedGameDir,
       destDir: resolvedDest,
@@ -1780,37 +2185,114 @@ const handlers = {
     return handlers.unpackAll(params);
   },
 
-  async scanGameVariables() {
+  /**
+   * FASE 2 / PASSO 21 — antes NAO escaneava nada: lia global.lastGameState
+   * (que a própria UI escreve ao setar variaveis) e enfileirava um comando
+   * cujo corpo era um comentario. Retornava {ok:true, variables:[]} e a UI
+   * logava "Mapeadas N variáveis com sucesso!".
+   *
+   * Agora: só devolve ok:true se houve leitura de um snapshot real do jogo.
+   * Sem jogo conectado => NOT_CONNECTED.
+   */
+  async scanGameVariables(params = {}) {
+    const socketOpen = Boolean(
+      global.activeCheatSocket && global.activeCheatSocket.readyState === 1,
+    );
+    const recentPoll = Date.now() - global.lastCheatPollTime < 8000;
+
+    if (!socketOpen && !recentPoll) {
+      return R.notConnected(
+        'Nenhum jogo conectado: não é possível ler variáveis.',
+        'Abra o jogo via OpenTranslator para habilitar a leitura de memória.',
+      );
+    }
+
     const state = global.lastGameState || {};
+    // Proveniência é obrigatória. Sem ela, os dados são um espelho local e
+    // dizê-los como leitura do jogo seria inventar telemetria.
+    // (Aceitar `renpyVars` sem origem marcada rotulava como 'hook' exatamente
+    // os dados que a própria UI havia escrito via setGameVar.)
+    if (state.renpyVarsSource !== 'hook') {
+      return R.failed(
+        'O jogo conectado ainda não reportou variáveis.',
+        'Nenhum snapshot marcado como vindo do hook de telemetria. '
+        + 'Aguarde um ciclo de poll e tente novamente.',
+      );
+    }
+
     let vars = state.renpyVars || state.variables || [];
-    if (!Array.isArray(vars) && typeof vars === "object") {
+    if (!Array.isArray(vars) && vars && typeof vars === 'object') {
       vars = Object.entries(vars).map(([name, value]) => ({
         id: name,
         name,
         value,
-        type: typeof value
+        type: typeof value,
       }));
     }
-    handlers.sendCheatCommand({ code: "if (typeof renpy !== 'undefined' && renpy.store) { /* request telemetry sync */ }" });
-    return { ok: true, variables: vars };
+
+    return R.ok({ variables: vars, count: vars.length, source: 'hook' });
   },
 
-  async setGameVar({ id, value }) {
-    if (!id) return { ok: false, error: "ID de variável ausente" };
-    const valStr = typeof value === "string" ? JSON.stringify(value) : String(value);
-    const code = `if (typeof renpy !== 'undefined' && renpy.store) { renpy.store[${JSON.stringify(id)}] = ${valStr}; } else if (typeof $gameVariables !== 'undefined') { const numId = parseInt(${JSON.stringify(id)}, 10); if (!isNaN(numId)) { $gameVariables.setValue(numId, ${valStr}); } }`;
-    handlers.sendCheatCommand({ code });
-    if (global.lastGameState) {
-      if (!global.lastGameState.renpyVars) global.lastGameState.renpyVars = [];
-      const v = global.lastGameState.renpyVars.find(x => String(x.name || x.id) === String(id));
-      if (v) v.value = value;
-      else global.lastGameState.renpyVars.push({ id, name: id, value, type: typeof value });
+  /**
+   * FASE 2 / PASSO 21 — setGameVar NÃO aceita "enfileirar" como entrega.
+   *
+   * O handler enfileirava a escrita e devolvia sucesso mesmo sem jogo. Isso é
+   * pior que não fazer nada: o comando ficava na fila e podia ser entregue ao
+   * PRÓXIMO jogo que o usuário abrir, aplicando
+   * `renpy.store["gold"] = 999999` no jogo errado.
+   *
+   * Escrita em memória de jogo vivo exige socket ABERTO agora. Sem socket, a
+   * resposta honesta é NOT_CONNECTED e nada é enfileirado.
+   *
+   * Também NÃO mutamos global.lastGameState: isso fazia a UI mostrar o valor
+   * novo sem que o jogo tivesse mudado. O estado real só muda quando o hook
+   * reportar no próximo poll.
+   */
+  async setGameVar({ id, value } = {}) {
+    if (!id) return R.invalidInput("ID de variável ausente");
+    if (typeof id !== 'string' && typeof id !== 'number') {
+      return R.invalidInput("ID de variável deve ser string ou number");
     }
-    return { ok: true, id, value };
+
+    const socketOpen = Boolean(
+      global.activeCheatSocket && global.activeCheatSocket.readyState === 1,
+    );
+    if (!socketOpen) {
+      // Deliberadamente NÃO enfileiramos: uma escrita em memória pendente seria
+      // aplicada ao próximo jogo conectado, não a este.
+      return R.notConnected(
+        'Não há jogo conectado: a variável não foi alterada.',
+        'Escritas em memória exigem um jogo em execução com canal aberto. A escrita '
+        + 'NÃO foi enfileirada, para não ser aplicada a outro jogo.',
+      );
+    }
+
+    const valStr = typeof value === 'string' ? JSON.stringify(value) : String(value);
+    const code = `if (typeof renpy !== 'undefined' && renpy.store) { renpy.store[${JSON.stringify(String(id))}] = ${valStr}; } else if (typeof $gameVariables !== 'undefined') { const numId = parseInt(${JSON.stringify(String(id))}, 10); if (!isNaN(numId)) { $gameVariables.setValue(numId, ${valStr}); } }`;
+
+    const sent = handlers.sendCheatCommand({ code });
+
+    if (!sent.ok || sent.delivery !== 'sent') {
+      return R.failed(
+        'Falha ao entregar a escrita da variável.',
+        `Entrega reportada: ${sent.delivery || 'desconhecida'}.`,
+      );
+    }
+
+    // NÃO mutamos global.lastGameState: o estado real do jogo só muda quando
+    // o hook reportar no proximo poll.
+    return R.ok({
+      id: String(id),
+      value,
+      delivery: sent.delivery,
+      confirmed: false,
+      note: 'Escrita enviada. O valor só aparece como confirmado após o próximo '
+        + 'ciclo de telemetria do hook.',
+    });
   },
 
   getCapabilityMatrix() {
-    const EngineCapabilityMatrix = require("./core/engineCapabilityMatrix");
+    const EngineCapabilityMatrix = require("../core/engineCapabilityMatrix");
     return {
       ok: true,
       matrix: EngineCapabilityMatrix.getDeclarations(),
@@ -1819,34 +2301,49 @@ const handlers = {
   },
 
   async runSpeedBenchmark(params = {}) {
-    const SpeedBenchmark = require("./core/speedBenchmark");
+    const SpeedBenchmark = require("../core/speedBenchmark");
     const result = await SpeedBenchmark.run(params.sample || null, params.options || {});
     return { ok: true, result };
   },
 
+  /**
+   * FASE 2 / PASSO 21 — getJobTelemetry deixava de mentir.
+   * `global.activeTranslationQueue` nunca era atribuído por ninguém, então
+   * isto devolvia SEMPRE `{ok:true, active:false}` — telemetria de uma fila
+   * que não existe.
+   * Agora lê a fila real via gameService; se não houver, diz que não há.
+   */
   getJobTelemetry(params = {}) {
-    if (global.activeTranslationQueue) {
-      return { ok: true, active: true, metrics: global.activeTranslationQueue.getMetrics() };
+    const queue = global.activeTranslationQueue;
+    if (queue && typeof queue.getMetrics === 'function') {
+      return R.ok({ active: true, metrics: queue.getMetrics() });
     }
-    return { ok: true, active: false };
+    const snapshot = gameService.getTelemetry ? gameService.getTelemetry() : null;
+    if (snapshot) return R.ok({ active: Boolean(snapshot.active), metrics: snapshot });
+    return R.ok({
+      active: false,
+      metrics: null,
+      note: 'Nenhuma fila de tradução ativa. A telemetria é vazia porque não '
+        + 'há job em execução — não porque a coleta falhou.',
+    });
   },
 
   resumeTranslationJob(params = {}) {
-    const jobPersistence = require("./core/jobPersistence");
+    const jobPersistence = require("../core/jobPersistence");
     const job = jobPersistence.loadJob(params.jobId);
     if (!job) return { ok: false, error: "Tarefa não encontrada ou já concluída" };
     return { ok: true, job };
   },
 
   async detectUntranslated(params = {}) {
-    const UntranslatedDetector = require("./core/untranslatedDetector");
+    const UntranslatedDetector = require("../core/untranslatedDetector");
     const resolvedDir = resolveGameDir(params);
 
     if (!resolvedDir || !fs.existsSync(resolvedDir)) {
       return { ok: false, error: "Diretório do jogo não encontrado" };
     }
 
-    const { extractGameTexts } = require("./extractor");
+    const { extractGameTexts } = require("../extractors/extractor");
     const rawRes = await extractGameTexts(resolvedDir);
     const textsList = Array.isArray(rawRes) ? rawRes : (rawRes.texts || []);
     const translations = new Map();
@@ -1863,7 +2360,7 @@ const handlers = {
   },
 
   async runVisualQA(params = {}) {
-    const VisualQAEngine = require("./core/visualQAEngine");
+    const VisualQAEngine = require("../core/visualQAEngine");
     const qa = new VisualQAEngine();
     const resolvedDir = resolveGameDir(params);
 
@@ -1877,25 +2374,25 @@ const handlers = {
   },
 
   getRuntimeTexts(params = {}) {
-    const RuntimeTextManager = require("./core/runtimeTextManager");
+    const RuntimeTextManager = require("../core/runtimeTextManager");
     const texts = RuntimeTextManager.getInstance().getAllRuntimeTexts(params.filter || {});
     return { ok: true, count: texts.length, texts };
   },
 
   promoteRuntimeText(params = {}) {
-    const RuntimeTextManager = require("./core/runtimeTextManager");
+    const RuntimeTextManager = require("../core/runtimeTextManager");
     const res = RuntimeTextManager.getInstance().addToTranslationMemory(params.hashOrId, params.translation);
     return { ok: res.success, res };
   },
 
   calculateVersionDiff(params = {}) {
-    const { JobSystem } = require("./core/jobSystem");
+    const { JobSystem } = require("../core/jobSystem");
     const diff = JobSystem.calculateTranslationDiff(params.oldTexts || [], params.newTexts || [], params.oldTranslations || {});
     return { ok: true, diff };
   },
 
   getHierarchicalGlossary(params = {}) {
-    const HierarchicalGlossary = require("./core/hierarchicalGlossary");
+    const HierarchicalGlossary = require("../core/hierarchicalGlossary");
     const hg = HierarchicalGlossary.getInstance();
     const terms = hg.getActiveTerms({
       projectDir: params.gameDir,

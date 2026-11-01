@@ -1,0 +1,42 @@
+Windows; Node v24.18.0; npm run verify
+Lint: 358 arquivos JS; zero issues.
+Gate de sucesso: 257 afirmacoes varridas; zero padroes apontados.
+C# launcher: compilado; um aviso de campo nao utilizado.
+
+>> RESUMO
+======================================================================
+  PASS  uiHealth                   pass=3 fail=0
+  PASS  hookLifecycle              pass=2 fail=0
+  PASS  auditContracts             pass=7 fail=0
+  PASS  http_rpc_security          pass=25 fail=0
+  PASS  xss_ui                     pass=21 fail=0
+  PASS  owned_process              pass=15 fail=0
+  PASS  translationCertificate     pass=20 fail=0
+  PASS  rpcHonesty                 pass=38 fail=0
+  PASS  applyVerification          pass=15 fail=0
+  PASS  providerContract           pass=27 fail=0
+  PASS  providerFalseSuccess       pass=14 fail=0
+  PASS  gatewayEnforcement         pass=14 fail=0
+  PASS  coverageTruth              pass=23 fail=0
+  PASS  universeCount              pass=11 fail=0
+  PASS  cacheDurability            pass=20 fail=0
+  PASS  applyTransaction           pass=19 fail=0
+  PASS  engineAndRollback          pass=15 fail=0
+  PASS  uiWiring                   pass=19 fail=0
+  PASS  successInvariant           pass=19 fail=0
+  PASS  pipelineTransaction        pass=10 fail=0
+  PASS  applyContract              pass=14 fail=0
+  PASS  adapterRuntimeContract     pass=42 fail=0
+  PASS  certificateCoherence       pass=29 fail=0
+  PASS  identityReprocessCycle     pass=11 fail=0
+  PASS  displayTextClassification  pass=16 fail=0
+  PASS  translationIdentity        pass=15 fail=0
+  PASS  providerRateLimitSemantics pass=17 fail=0
+  PASS  unrealApplyHonesty         pass=5 fail=0
+  PASS  applyPathContainment       pass=27 fail=0
+  PASS  cheatServerContract        pass=31 fail=0
+
+  TOTAL  pass=544  fail=0
+  suítes com falha: 0/30
+
+TODAS AS SUÍTES PASSARAM.

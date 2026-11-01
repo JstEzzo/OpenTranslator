@@ -11,17 +11,21 @@
  * Domínio / Provedores de Tradução (Translation Domain & External Gateways)
  */
 
-const GlobalCircuitBreaker = require("./core/globalCircuitBreaker");
-const ProviderGateway = require("./core/providerGateway");
-const ProviderErrorClassifier = require("./core/providerErrorClassifier");
-const LogDeduplicator = require("./core/logDeduplicator");
-const TextChunker = require("./core/textChunker");
+const GlobalCircuitBreaker = require("../core/globalCircuitBreaker");
+const ProviderGateway = require("../core/providerGateway");
+// G1/G2: TODA abertura de socket passa por aqui. O import é obrigatório: sem
+// ele o runtime lança "ProviderHttp is not defined" em TODOS os providers e o
+// translateBatch devolve Map vazio — falha silenciosa, sem erro visível.
+const ProviderHttp = require("../core/providerHttp");
+const ProviderErrorClassifier = require("../core/providerErrorClassifier");
+const LogDeduplicator = require("../core/logDeduplicator");
+const TextChunker = require("../core/textChunker");
 if (typeof global.log !== "function") global.log = (lvl, msg) => {};
 const path = require("path");
 const https = require("https");
 const { spawn } = require("child_process");
-if (!global.ROOT) global.ROOT = path.resolve(__dirname, '..');
-const { loadGlossary, loadCfg, saveNewGlobalTranslations } = require("./cache");
+if (!global.ROOT) global.ROOT = path.resolve(__dirname, '..', '..');
+const { loadGlossary, loadCfg, saveNewGlobalTranslations } = require("../services/cache");
 const http = require("http");
 const querystring = require("querystring");
 
@@ -261,61 +265,44 @@ async function translateBingSingleRaw(text, sl, tl) {
     body.append("text", text);
     if (token.IG) body.append("IG", token.IG);
     if (token.IID) body.append("IID", token.IID);
-    const raw = await new Promise((res, rej) => {
-      let completed = false;
-      const rq = https.request(
-        url,
-        {
-          method: "POST",
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Content-Length": Buffer.byteLength(body.toString(), "utf8"),
-            Accept: "application/json",
-          },
-        },
-        (r) => {
-          let d = "";
-          r.setEncoding("utf8");
-          r.on("data", (c) => (d += c));
-          r.on("end", () => {
-            if (completed) return;
-            completed = true;
-            if (r.statusCode === 429 || r.statusCode === 302 || r.statusCode === 411) {
-              engineBans["bing"] = Date.now() + 10 * 60 * 1000;
-              global.log("warn", `[translator] Bing HTTP ${r.statusCode}. Banido por 10min.`);
-              return rej(new Error(`HTTP ${r.statusCode}`));
-            }
-            if (r.statusCode !== 200) {
-              return rej(new Error(`HTTP ${r.statusCode}`));
-            }
-            res(d);
-          });
-          r.on("error", (e) => {
-            if (!completed) {
-              completed = true;
-              rej(e);
-            }
-          });
-        },
-      );
-      rq.on("error", (e) => {
-        if (!completed) {
-          completed = true;
-          rej(e);
-        }
-      });
-      rq.setTimeout(12000, () => {
-        if (!completed) {
-          completed = true;
-          if (rq.socket) rq.socket.destroy();
-          rq.destroy();
-          rej(new Error("timeout"));
-        }
-      });
-      rq.write(body.toString());
-      rq.end();
+    // G1/G2 ponto 4/10 — Bing. Só o transporte muda: o POST vai pelo
+    // ProviderHttp, que passa pelo ProviderGateway.executeRequest. O
+    // classificação de status abaixo (P-008) foi reaplicada no corpo.
+    const raw = await ProviderHttp.post({
+      url,
+      providerKey: "bing",
+      body: body.toString(),
+      timeoutMs: 12000,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+    }).then((r) => {
+      if (r.status === 429 || r.status === 302 || r.status === 411) {
+        const classified = ProviderErrorClassifier.classify(
+          { statusCode: r.status, message: `HTTP ${r.status}` },
+          { statusCode: r.status, headers: r.headers, body: r.body },
+        );
+        const cooldown = classified.type === "RATE_LIMITED"
+          ? classified.retryAfterMs
+          : BAN_DURATION_MS;
+        engineBans["bing"] = Date.now() + (
+          classified.type === "RATE_LIMITED" ? classified.retryAfterMs : BAN_DURATION_MS
+        );
+        global.log("warn",
+          `[translator] Bing HTTP ${r.status} classificado como ${classified.type}. `
+          + `Cooldown de ${Math.round(cooldown / 1000)}s. `
+          + (classified.type === "RATE_LIMITED"
+            ? "Rate limit temporário — NÃO é banimento permanente."
+            : classified.message));
+        throw new Error(`HTTP ${r.status}`);
+      }
+      if (r.status !== 200) {
+        throw new Error(`HTTP ${r.status}`);
+      }
+      return r.body;
     });
     const j = JSON.parse(raw);
     if (Array.isArray(j) && j[0] && j[0].translations && j[0].translations[0]) {
@@ -326,8 +313,14 @@ async function translateBingSingleRaw(text, sl, tl) {
     if (typeof j === "string") return j;
     return text;
   } catch (e) {
+    // P-008 — o `catch` NÃO pode banir o Bing por 10 minutos. JSON malformado
+    // e erro de socket caem aqui: banir o provedor por 10min por um erro de
+    // parsing é untrue. Um status já CLASSIFICADO acima (429/302/411) tem o
+    // próprio cooldown; o resto usa o switch adaptativo de 15s.
     global.log("warn", `[Bing] Erro traduzindo "${text.substring(0, 40)}...": ${e.message}`);
-    engineBans["bing"] = Date.now() + 10 * 60 * 1000;
+    if (!/^HTTP (429|302|411)$/.test(e.message)) {
+      triggerSmartSwitch("bing");
+    }
     return text;
   }
 }
@@ -414,16 +407,18 @@ Regras estritas:
     });
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: headers,
-        body: body,
-        signal: AbortSignal.timeout(15000),
+      // G1/G2 ponto 1/10 — LLM (OpenAI-compatível). `fetchGuarded` devolve
+      // {status, headers, body} e passa pelo ProviderGateway.executeRequest.
+      const response = await ProviderHttp.fetchGuarded({
+        url,
+        providerKey: `llm:${provider}`,
+        timeoutMs: 15000,
+        init: { method: "POST", headers: headers, body: body },
       });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(`HTTP ${response.status}: ${response.body}`);
       }
-      const data = await response.json();
+      const data = JSON.parse(response.body);
       const tr = data.choices?.[0]?.message?.content;
       if (tr) return tr.trim();
     } catch (e) {
@@ -446,16 +441,18 @@ Regras estritas:
     });
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: headers,
-        body: body,
-        signal: AbortSignal.timeout(15000),
+      // G1/G2 ponto 2/10 — Anthropic/Claude. Endpoint e headers preservados;
+      // só o transporte passa pelo gateway.
+      const response = await ProviderHttp.fetchGuarded({
+        url,
+        providerKey: "llm:anthropic",
+        timeoutMs: 15000,
+        init: { method: "POST", headers: headers, body: body },
       });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(`HTTP ${response.status}: ${response.body}`);
       }
-      const data = await response.json();
+      const data = JSON.parse(response.body);
       const tr = data.content?.[0]?.text;
       if (tr) return tr.trim();
     } catch (e) {
@@ -483,16 +480,17 @@ async function translateDeepL(text, sl, tl, config) {
   });
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: headers,
-      body: body,
-      signal: AbortSignal.timeout(10000),
+    // G1/G2 ponto 3/10 — DeepL. Autenticação no header preservada.
+    const response = await ProviderHttp.fetchGuarded({
+      url,
+      providerKey: "deepl",
+      timeoutMs: 10000,
+      init: { method: "POST", headers: headers, body: body },
     });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`HTTP ${response.status}: ${response.body}`);
     }
-    const data = await response.json();
+    const data = JSON.parse(response.body);
     const tr = data.translations?.[0]?.text;
     if (tr) return tr;
   } catch (e) {
@@ -746,72 +744,73 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
 
       try {
         breaker.recordRequestStart("google:gtx");
-        const raw = await new Promise((res, rej) => {
-          const isPost = !!postBody;
-          const reqOptions = {
-            method: isPost ? "POST" : "GET",
+        // G1/G2 ponto 5/10 — Google GTX. O breaker local (canExecute /
+        // recordRequestStart) é mantidO porque carrega a semântica de
+        // COOLDOWN/RATE_LIMITED que este provider já tinha; o SOCKET passa
+        // pelo ProviderHttp, que executa o ProviderGateway.executeRequest e
+        // portanto registra a tentativa também no breaker central.
+        const isPost = !!postBody;
+        const rawRes = isPost
+          ? await ProviderHttp.post({
+            url,
+            providerKey: "google:gtx",
+            body: postBody,
+            timeoutMs: 15000,
             headers: {
               "User-Agent":
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
               Accept: "application/json, text/plain, */*",
+              "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
             },
-          };
-          if (isPost) {
-            reqOptions.headers["Content-Type"] = "application/x-www-form-urlencoded;charset=utf-8";
-            reqOptions.headers["Content-Length"] = Buffer.byteLength(postBody);
-          }
-          const rq = https.request(
+          })
+          : await ProviderHttp.get({
             url,
-            reqOptions,
-            (rsp) => {
-              let d = "";
-              rsp.setEncoding("utf8");
-              rsp.on("data", (c) => (d += c));
-              rsp.on("end", () => {
-                breaker.recordRequestEnd("google:gtx");
-                const classified = ProviderErrorClassifier.classify(null, { statusCode: rsp.statusCode, headers: rsp.headers });
-
-                if (rsp.statusCode === 429) {
-                  const retryAfter = rsp.headers["retry-after"] || "desconhecido";
-                  breaker.recordError("google:gtx", classified);
-                  LogDeduplicator.getInstance().logRateLimit(
-                    "google:gtx",
-                    `HTTP 429 | Retry-After: ${retryAfter} | Cooldown: ${classified.retryAfterSec || 15}s`
-                  );
-                  return rej(new Error(`HTTP 429 Rate Limit`));
-                }
-
-                if (rsp.statusCode === 302) {
-                  breaker.recordError("google:gtx", classified);
-                  LogDeduplicator.getInstance().logRateLimit(
-                    "google:gtx",
-                    `HTTP 302 | CAPTCHA / Unusual Traffic redirect`
-                  );
-                  return rej(new Error(`HTTP 302 Redirect`));
-                }
-
-                if (rsp.statusCode !== 200) {
-                  breaker.recordError("google:gtx", classified);
-                  return rej(new Error(`HTTP ${rsp.statusCode}`));
-                }
-                breaker.recordSuccess("google:gtx");
-                res(d);
-              });
-            }
-          );
-          rq.on("error", (e) => {
-            breaker.recordRequestEnd("google:gtx");
-            rej(e);
+            providerKey: "google:gtx",
+            timeoutMs: 15000,
+            options: {
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                Accept: "application/json, text/plain, */*",
+              },
+            },
           });
-          rq.setTimeout(15000, () => {
-            breaker.recordRequestEnd("google:gtx");
-            if (rq.socket) rq.socket.destroy();
-            rq.destroy();
-            rej(new Error("timeout"));
-          });
-          if (isPost) rq.write(postBody);
-          rq.end();
+        const raw = rawRes.body;
+
+        // Classificação preservada do bloco original: 429 é RATE_LIMITED
+        // (respeita Retry-After), 302 é CAPTCHA/block, o resto é erro. É o
+        // que alimenta o breaker local e decide se há retry.
+        breaker.recordRequestEnd("google:gtx");
+        const classified = ProviderErrorClassifier.classify(null, {
+          statusCode: rawRes.status,
+          headers: rawRes.headers,
+          body: rawRes.body,
         });
+
+        if (rawRes.status === 429) {
+          const retryAfter = (rawRes.headers && rawRes.headers["retry-after"]) || "desconhecido";
+          breaker.recordError("google:gtx", classified);
+          LogDeduplicator.getInstance().logRateLimit(
+            "google:gtx",
+            `HTTP 429 | Retry-After: ${retryAfter} | Cooldown: ${classified.retryAfterSec || 15}s`
+          );
+          throw new Error(`HTTP 429 Rate Limit`);
+        }
+
+        if (rawRes.status === 302) {
+          breaker.recordError("google:gtx", classified);
+          LogDeduplicator.getInstance().logRateLimit(
+            "google:gtx",
+            `HTTP 302 | CAPTCHA / Unusual Traffic redirect`
+          );
+          throw new Error(`HTTP 302 Redirect`);
+        }
+
+        if (rawRes.status !== 200) {
+          breaker.recordError("google:gtx", classified);
+          throw new Error(`HTTP ${rawRes.status}`);
+        }
+        breaker.recordSuccess("google:gtx");
 
         if (raw && raw.trim().startsWith("[")) {
           return JSON.parse(raw);
@@ -967,69 +966,37 @@ async function translateGoogleMobileSingle(text, sl, tl) {
       if (attempt > 0) await new Promise(r => setTimeout(r, 500 * attempt));
       const ua = getRandomUA();
       const url = `https://translate.google.com/m?sl=${encodeURIComponent(sl || "auto")}&tl=${encodeURIComponent(tl || "pt")}&q=${encodeURIComponent(text)}`;
-      const raw = await new Promise((res, rej) => {
-        let completed = false;
-        const rq = https.get(
-          url,
-          {
-            headers: {
-              "User-Agent": ua,
-              "Referer": "https://translate.google.com/",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-            }
+      // G1/G2 ponto 6/10 — Google Mobile (scraping HTML). Só o transporte muda;
+      // o tratamento de 429/302 com openCaptchaSolver é preservado abaixo.
+      const gmRes = await ProviderHttp.get({
+        url,
+        providerKey: "google-mobile",
+        timeoutMs: 25000,
+        options: {
+          headers: {
+            "User-Agent": ua,
+            "Referer": "https://translate.google.com/",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           },
-          (rsp) => {
-            let d = "";
-            rsp.setEncoding("utf8");
-            rsp.on("data", (c) => (d += c));
-            rsp.on("end", () => {
-              if (completed) return;
-              completed = true;
-              if (rsp.statusCode === 429 || rsp.statusCode === 302) {
-                if (attempt < 2) { return rej(new Error(`retry ${rsp.statusCode}`)); }
-                const redirect = rsp.headers.location || "https://www.google.com/sorry/index";
-                global.log("warn", `[translator] Google Mobile HTTP ${rsp.statusCode}. Cooldown temporário ativado.`);
-                engineBans["google-mobile"] = Date.now() + 30 * 1000;
-                openCaptchaSolver(redirect).then(() => {
-                  global.log("info", "CAPTCHA resolvido! Reativando Google Mobile.");
-                  delete engineBans["google-mobile"];
-                  res("");
-                }).catch(() => {
-                  rej(new Error(`HTTP ${rsp.statusCode} Rate Limit`));
-                });
-                return;
-              }
-              if (rsp.statusCode !== 200) {
-                if (attempt < 2) { return rej(new Error(`retry ${rsp.statusCode}`)); }
-                return rej(new Error(`HTTP ${rsp.statusCode}`));
-              }
-              res(d);
-            });
-            rsp.on("error", (e) => {
-              if (!completed) {
-                completed = true;
-                rej(e);
-              }
-            });
-          }
-        );
-        rq.on("error", (e) => {
-          if (!completed) {
-            completed = true;
-            rej(e);
-          }
-        });
-        rq.setTimeout(25000, () => {
-          if (!completed) {
-            completed = true;
-            global.log("warn", `[Google Mobile] timeout. Cooldown temporário ativado.`);
-            engineBans["google-mobile"] = Date.now() + 30 * 1000;
-            if (rq.socket) rq.socket.destroy();
-            rq.destroy();
-            rej(new Error("timeout"));
-          }
-        });
+        },
       });
+      let raw = gmRes.body;
+      if (gmRes.status === 429 || gmRes.status === 302) {
+        if (attempt < 2) { throw new Error(`retry ${gmRes.status}`); }
+        const redirect = (gmRes.headers && gmRes.headers.location) || "https://www.google.com/sorry/index";
+        global.log("warn", `[translator] Google Mobile HTTP ${gmRes.status}. Cooldown temporário ativado.`);
+        engineBans["google-mobile"] = Date.now() + 30 * 1000;
+        await openCaptchaSolver(redirect)
+          .then(() => {
+            global.log("info", "CAPTCHA resolvido! Reativando Google Mobile.");
+            delete engineBans["google-mobile"];
+            raw = "";
+          })
+          .catch(() => { throw new Error(`HTTP ${gmRes.status} Rate Limit`); });
+      } else if (gmRes.status !== 200) {
+        if (attempt < 2) { throw new Error(`retry ${gmRes.status}`); }
+        throw new Error(`HTTP ${gmRes.status}`);
+      }
       const match = raw.match(/class="result-container">([\s\S]*?)<\/div>/i);
       if (match && match[1]) {
         const tr = match[1]
@@ -1174,77 +1141,63 @@ async function translateSingleRawGoogle(text, sl, tl) {
     const urlLen = url.length;
 
     breaker.recordRequestStart("google:gtx");
-    const raw = await new Promise((res, rej) => {
-      const rq = https.get(
-        url,
-        {
-          headers: { "User-Agent": getRandomUA(), Accept: "application/json" },
-        },
-        (rsp) => {
-          let d = "";
-          rsp.setEncoding("utf8");
-          rsp.on("data", (c) => (d += c));
-          rsp.on("end", () => {
-            breaker.recordRequestEnd("google:gtx");
-            const classified = ProviderErrorClassifier.classify(null, {
-              statusCode: rsp.statusCode,
-              headers: rsp.headers,
-              body: d
-            });
-
-            if (rsp.statusCode === 429) {
-              const retryAfter = rsp.headers["retry-after"] || "desconhecido";
-              breaker.recordError("google:gtx", classified);
-              global.log(
-                "warn",
-                `[PROVIDER RATE LIMIT] Google GTX retornou HTTP 429. Request chars: ${reqChars} | Request bytes: ${reqBytes} | URL length: ${urlLen} | Retry-After: ${retryAfter} | Classificação: RATE_LIMITED | Cooldown: ${classified.retryAfterSec || 15}s`
-              );
-              return rej(new Error(`HTTP 429 Rate Limit`));
-            }
-
-            if (rsp.statusCode === 302) {
-              const location = rsp.headers.location || "";
-              breaker.recordError("google:gtx", classified);
-              global.log(
-                "warn",
-                `[PROVIDER REDIRECT] Google GTX retornou HTTP 302 (Location: ${location}). Request chars: ${reqChars} | Request bytes: ${reqBytes} | URL length: ${urlLen} | Classificação: CAPTCHA_OR_BLOCK`
-              );
-              return rej(new Error(`HTTP 302 Redirect`));
-            }
-
-            if (rsp.statusCode === 413 || rsp.statusCode === 414) {
-              breaker.recordError("google:gtx", classified);
-              global.log(
-                "warn",
-                `[PROVIDER PAYLOAD] Request excedeu o limite seguro (HTTP ${rsp.statusCode}). Chars: ${reqChars} | Bytes: ${reqBytes} | URL length: ${urlLen} | Classificação: PAYLOAD_TOO_LARGE`
-              );
-              return rej(new Error(`HTTP ${rsp.statusCode} Payload Too Large`));
-            }
-
-            if (rsp.statusCode !== 200) {
-              breaker.recordError("google:gtx", classified);
-              return rej(new Error(`HTTP ${rsp.statusCode}`));
-            }
-
-            breaker.recordSuccess("google:gtx");
-            res(d);
-          });
-          rsp.on("error", (e) => {
-            breaker.recordRequestEnd("google:gtx");
-            rej(e);
-          });
-        },
-      );
-      rq.on("error", (e) => {
-        breaker.recordRequestEnd("google:gtx");
-        rej(e);
-      });
-      rq.setTimeout(15000, () => {
-        breaker.recordRequestEnd("google:gtx");
-        rq.destroy();
-        rej(new Error("timeout"));
-      });
+    // G1/G2 ponto 7/10 — Google GTX (caminho único, GET com q na URL).
+    // A telemetria por status (429/302/413) abaixo é preservada integralmente:
+    // é ela que alimenta o breaker e o log de payload.
+    const gtxRes = await ProviderHttp.get({
+      url,
+      providerKey: "google:gtx",
+      timeoutMs: 15000,
+      options: {
+        headers: { "User-Agent": getRandomUA(), Accept: "application/json" },
+      },
+    }).catch((e) => {
+      breaker.recordRequestEnd("google:gtx");
+      throw e;
     });
+    const raw = gtxRes.body;
+    breaker.recordRequestEnd("google:gtx");
+    const classified = ProviderErrorClassifier.classify(null, {
+      statusCode: gtxRes.status,
+      headers: gtxRes.headers,
+      body: gtxRes.body,
+    });
+
+    if (gtxRes.status === 429) {
+      const retryAfter = (gtxRes.headers && gtxRes.headers["retry-after"]) || "desconhecido";
+      breaker.recordError("google:gtx", classified);
+      global.log(
+        "warn",
+        `[PROVIDER RATE LIMIT] Google GTX retornou HTTP 429. Request chars: ${reqChars} | Request bytes: ${reqBytes} | URL length: ${urlLen} | Retry-After: ${retryAfter} | Classificação: RATE_LIMITED | Cooldown: ${classified.retryAfterSec || 15}s`
+      );
+      throw new Error(`HTTP 429 Rate Limit`);
+    }
+
+    if (gtxRes.status === 302) {
+      const location = (gtxRes.headers && gtxRes.headers.location) || "";
+      breaker.recordError("google:gtx", classified);
+      global.log(
+        "warn",
+        `[PROVIDER REDIRECT] Google GTX retornou HTTP 302 (Location: ${location}). Request chars: ${reqChars} | Request bytes: ${reqBytes} | URL length: ${urlLen} | Classificação: CAPTCHA_OR_BLOCK`
+      );
+      throw new Error(`HTTP 302 Redirect`);
+    }
+
+    if (gtxRes.status === 413 || gtxRes.status === 414) {
+      breaker.recordError("google:gtx", classified);
+      global.log(
+        "warn",
+        `[PROVIDER PAYLOAD] Request excedeu o limite seguro (HTTP ${gtxRes.status}). Chars: ${reqChars} | Bytes: ${reqBytes} | URL length: ${urlLen} | Classificação: PAYLOAD_TOO_LARGE`
+      );
+      throw new Error(`HTTP ${gtxRes.status} Payload Too Large`);
+    }
+
+    if (gtxRes.status !== 200) {
+      breaker.recordError("google:gtx", classified);
+      throw new Error(`HTTP ${gtxRes.status}`);
+    }
+
+    breaker.recordSuccess("google:gtx");
 
     const j = JSON.parse(raw);
     return j && j[0]
@@ -1272,25 +1225,20 @@ async function translatePapagoSingle(text, sl, tl) {
       source: src, target: tl, text: text,
       dict: "true", useGlossary: "false", honorific: "false", dictDisplay: "30"
     }).toString();
-    const raw = await new Promise((res, rej) => {
-      let done = false;
-      const rq = https.request("https://papago.naver.com/api/text/translation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "User-Agent": getRandomUA(),
-          "Referer": "https://papago.naver.com/",
-          "Accept": "application/json"
-        },
-      }, (rsp) => {
-        let d = ""; rsp.setEncoding("utf8");
-        rsp.on("data", (c) => d += c);
-        rsp.on("end", () => { if (done) return; done = true; res({ status: rsp.statusCode, body: d }); });
-        rsp.on("error", (e) => { if (!done) { done = true; rej(e); } });
-      });
-      rq.on("error", (e) => { if (!done) { done = true; rej(e); } });
-      rq.setTimeout(15000, () => { if (!done) { done = true; rq.destroy(); rej(new Error("timeout")); } });
-      rq.write(body); rq.end();
+    // G1/G2 ponto 8/10 — Papago. Endpoint, headers e body preservados; só o
+    // socket passa pelo gateway. O shape {status, body} é o mesmo que o
+    // ProviderHttp devolve, então o tratamento abaixo não mudou.
+    const raw = await ProviderHttp.post({
+      url: "https://papago.naver.com/api/text/translation",
+      providerKey: "papago",
+      body: body,
+      timeoutMs: 15000,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": getRandomUA(),
+        "Referer": "https://papago.naver.com/",
+        "Accept": "application/json"
+      },
     });
     if (raw.status === 429 || raw.status === 302) {
       engineBans["papago"] = Date.now() + 30 * 1000;
@@ -1314,16 +1262,12 @@ async function translateMyMemoryOne(text, sl, tl) {
   try {
     const src = sl === "auto" ? detectLang(text) : sl;
     const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=" + encodeURIComponent(src) + "%7C" + encodeURIComponent(tl);
-    const raw = await new Promise((res, rej) => {
-      let done = false;
-      const rq = https.get(url, { headers: { "User-Agent": getRandomUA() } }, (rsp) => {
-        let d = ""; rsp.setEncoding("utf8");
-        rsp.on("data", (c) => d += c);
-        rsp.on("end", () => { if (done) return; done = true; res({ status: rsp.statusCode, body: d }); });
-        rsp.on("error", (e) => { if (!done) { done = true; rej(e); } });
-      });
-      rq.on("error", (e) => { if (!done) { done = true; rej(e); } });
-      rq.setTimeout(10000, () => { if (!done) { done = true; rq.destroy(); rej(new Error("timeout")); } });
+    // G1/G2 ponto 9/10 — MyMemory. GET; shape {status, body} preservado.
+    const raw = await ProviderHttp.get({
+      url,
+      providerKey: "mymemory",
+      timeoutMs: 10000,
+      options: { headers: { "User-Agent": getRandomUA() } },
     });
     if (raw.status === 429) {
       engineBans["mymemory"] = Date.now() + 30 * 1000;
@@ -1352,16 +1296,12 @@ async function translateYandexSingle(text, sl, tl) {
   try {
     const src = sl === "auto" ? detectLang(text) : sl;
     const qs = new URLSearchParams({ key: "dummy", lang: src + "-" + tl, text: text }).toString();
-    const raw = await new Promise((res, rej) => {
-      let done = false;
-      const rq = https.get("https://translate.yandex.net/api/v1.5/tr.json/translate?" + qs, { headers: { "User-Agent": getRandomUA() } }, (rsp) => {
-        let d = ""; rsp.setEncoding("utf8");
-        rsp.on("data", (c) => d += c);
-        rsp.on("end", () => { if (done) return; done = true; res({ status: rsp.statusCode, body: d }); });
-        rsp.on("error", (e) => { if (!done) { done = true; rej(e); } });
-      });
-      rq.on("error", (e) => { if (!done) { done = true; rej(e); } });
-      rq.setTimeout(10000, () => { if (!done) { done = true; rq.destroy(); rej(new Error("timeout")); } });
+    // G1/G2 ponto 10/10 — Yandex. GET; shape {status, body} preservado.
+    const raw = await ProviderHttp.get({
+      url: "https://translate.yandex.net/api/v1.5/tr.json/translate?" + qs,
+      providerKey: "yandex",
+      timeoutMs: 10000,
+      options: { headers: { "User-Agent": getRandomUA() } },
     });
     if (raw.status === 429 || raw.status === 302) {
       engineBans["yandex"] = Date.now() + 30 * 1000;

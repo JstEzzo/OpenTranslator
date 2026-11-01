@@ -3,12 +3,33 @@
  *
  * Responsabilidades:
  * - Auditar a cobertura de tradução contra todos os textos extraídos de qualquer motor.
- * - Detectar textos potencialmente exibíveis que continuam em inglês ou sem tradução após o primeiro lote.
+ * - Detectar textos potencialmente exibíveis que continuam sem tradução após o primeiro lote.
  * - Diferenciar contextualmente conteúdo exibível de identificadores técnicos e código-fonte.
  * - Executar a Segunda Passagem Automática de recuperação com fallback para Translation Memory,
  *   Common Translations, LocalDictionaryProvider e Provedores Secundários.
  * - Garantir que nenhuma string exibível seja descartada silenciosamente antes da injeção.
  * - Validar a integridade de variáveis ([var]) e tags ({tag}) nos textos recuperados.
+ *
+ * ---------------------------------------------------------------------------
+ * FASE 4 / PASSO 28 — A COBERTURA AGORA É MEDIDA, NÃO DECLARADA
+ *
+ * O código anterior decidia "isto já está traduzido?" com UM regex:
+ *
+ *   const hasSource = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(clean)
+ *
+ * Ele só enxerga kana japonês e ideogramas CJK. Para hangul é sempre falso, e
+ * o corpo fazia:
+ *
+ *   if (!hasSource) { translations.set(t.id, clean); initialCoveredCount++; }
+ *
+ * O texto de origem era copiado para o mapa de traduções e contado como
+ * traduzido. Um jogo coreano reportava 100% de cobertura, `success: true` e
+ * ZERO traduções — o mapa inteiro era coreano rotulado como português.
+ *
+ * Agora a decisão passa por `scriptDetector.isTranslated`, que conhece os
+ * scripts que o projeto realmente suporta e exige que a tradução esteja no
+ * idioma ALVO. E o relatório expõe o motivo de cada texto não coberto, para
+ * que a cobertura possa ser auditada em vez de aceita.
  *
  * Localização Arquitetural:
  * src/core/coverageGuarantor.js (Camada de Orquestração / QA de Cobertura)
@@ -16,8 +37,11 @@
 
 const QAEngine = require('./qaEngine');
 const translationMemory = require('./translationMemory');
-const { loadCommonTranslations, getCommonTranslation } = require('../cache');
+const { loadCommonTranslations, getCommonTranslation } = require('../services/cache');
 const CodeProtector = require('./codeProtector');
+const {
+  isTranslated, dominantScript, isIdentitySafe, hasNonLatinScript,
+} = require('./scriptDetector');
 
 class CoverageGuarantor {
   constructor(options = {}) {
@@ -28,8 +52,15 @@ class CoverageGuarantor {
 
   /**
    * Avalia contextualmente se um texto é potencialmente exibível ao jogador.
-   * Não descarta termos curtos (ex: "Debbie", "Shagmoor", "under", "mysterious")
-   * se pertencerem a contextos de interface, diálogo, telas ou metadados de entidades.
+   *
+   * FASE 4 — a função TERMINAVA em `return true` incondicional. Todo texto
+   * que não fosse barrado por uma das regras explícitas era considerado
+   * exibível, ou seja, a "filtração contextual" não filtrava: apenas
+   * descartava literais conhecidos. Um identificador como `sprite_v2_01`
+   * passava por todos os testes e era tratado como frase a traduzir.
+   *
+   * Agora, texto sem espaço E sem letra acentuada é identificado técnico,
+   * salvo quando o tipo declarado é de conteúdo visível.
    *
    * @param {object} textObj Objeto de texto extraído ({ original, clean, type, context, file })
    * @returns {boolean} True se o texto for conteúdo visualmente exibível
@@ -64,16 +95,38 @@ class CoverageGuarantor {
       'variable_string'
     ]);
 
-    if (textObj.type && displayableTypes.has(textObj.type)) {
+    const declaredDisplayable = Boolean(textObj.type && displayableTypes.has(textObj.type));
+    if (declaredDisplayable) {
       return true;
     }
 
-    // Se possui espaços e letras, é frase ou texto legível
-    if (/\s/.test(clean) && /[a-zA-ZÀ-ÿ]/.test(clean)) {
-      return true;
+    // FASE 4 — segue para as regras estruturais em vez de aceitar tudo.
+
+    // Identificador técnico: sem espaço, com padrão de código (underscore
+    // junto de dígitos, camelCase com número, caminho de recurso). Não é
+    // frase visível ao jogador.
+    if (!/\s/.test(clean)) {
+      if (/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/i.test(clean)) return false;
+      if (/^[A-Za-z][a-zA-Z]*\d+([A-Za-z]\d*)*$/.test(clean)) return false;
+      if (/^[a-z]+[A-Z][a-zA-Z]*\d*$/.test(clean) && clean.length > 8) return false;
+      // Palavra única NÃO é identificador: pode ser nome de menu ("Options",
+      // " potions"). Só cai acima de 3 "palavras" compostas.
     }
 
-    return true;
+    // Chave de dicionário em formato de constante.
+    if (/^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test(clean)) return false;
+
+    // Frase: tem espaço e letra.
+    if (/\s/.test(clean) && /\p{L}/u.test(clean)) return true;
+
+    // Texto sem espaços em script não-latin: é conteúdo visível (coreano,
+    // japonês, chinês). Identificadores técnicos são sempre ASCII.
+    if (!/\s/.test(clean) && hasNonLatinScript(clean)) return true;
+
+    // Palavra única em qualquer script: pode ser item, menu, nome. Exibível.
+    if (/\p{L}/u.test(clean)) return true;
+
+    return false;
   }
 
   /**
@@ -91,46 +144,96 @@ class CoverageGuarantor {
     const gameId = options.gameId || 'game';
 
     const uncovered = [];
+    const uncoveredReasons = new Map();
     let initialCoveredCount = 0;
 
-    let identicalToSourceCount = 0;
+    // FASE 4 — a contagem de "coberto" passa a ser uma PERGUNTA ao detector,
+    // não uma suposição sobre regex. `identicalToSourceCount` deixou de
+    // significar "no cache" e passou a significar "a tradução é o original",
+    // que é exatamente o caso que precisa de justificativa.
+    let identityCount = 0;
+    let identityJustified = 0;
+
     for (const t of texts) {
       const currentTr = translations.get(t.id);
-      const hasSource = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(t.clean || t.original || '');
-      if (currentTr && typeof currentTr === 'string' && currentTr.trim().length > 0) {
-        if (currentTr !== t.clean || !hasSource) {
-          initialCoveredCount++;
-        } else {
-          identicalToSourceCount++;
-          if (this.isDisplayableContent(t)) {
-            uncovered.push(t);
-          }
+      const verdict = isTranslated(t.clean || t.original, currentTr, {
+        targetLang: tl,
+      });
+
+      if (verdict.covered) {
+        initialCoveredCount++;
+        if (currentTr && String(currentTr).trim()
+            === String(t.clean || t.original).trim()) {
+          identityCount++;
+          if (isIdentitySafe(t.clean || t.original)) identityJustified++;
         }
       } else {
-        if (!hasSource) {
-          translations.set(t.id, t.clean || t.original);
-          initialCoveredCount++;
-        } else if (this.isDisplayableContent(t)) {
+        // FASE 4 — NÃO copia mais o original para o mapa contando como
+        // tradução. Um texto não traduzido permanece não traduzido, e a
+        // segunda passagem é quem tenta recuperá-lo de verdade.
+        uncoveredReasons.set(t.id, verdict.reason);
+        if (this.isDisplayableContent(t)) {
           uncovered.push(t);
+        } else {
+          // Não exibível: sair da contagem de pendências, mas registrar que
+          // foi avaliado. Antes ele virava "coberto" sem traduzir.
+          initialCoveredCount++;
         }
       }
     }
 
     if (global.log) {
-      global.log('info', `[CoverageGuarantor] Auditoria Inicial: ${initialCoveredCount}/${texts.length} traduzidos efetivos` +
-        (identicalToSourceCount > 0 ? ` (${identicalToSourceCount} no cache idênticos ao original)` : '') +
-        `. Detectados ${uncovered.length} textos potencialmente exibíveis pendentes.`);
+      global.log('info', `[CoverageGuarantor] Auditoria Inicial: ${initialCoveredCount}/${texts.length} traduzidos efetivos`
+        + (identityCount > 0
+          ? ` (${identityCount} com tradução idêntica ao original, ${identityJustified} justificáveis)`
+          : '')
+        + `. Detectados ${uncovered.length} textos exibíveis pendentes.`);
     }
 
     if (uncovered.length === 0) {
+      // FASE 4 — o 100% aqui era HARDCODED e não incluía
+      // isCriticallyDeficient, o que fazia o consumidor ler `undefined`
+      // como "não há deficiência". O percentual é agora calculado sobre o
+      // universo real.
+      //
+      // O formato de retorno é o MESMO do caminho completo: um consumidor não
+      // pode descobrir o caminho tomado por um campo que existe num ramo e
+      // falta no outro. A primeira versão deste código devolvia
+      // `uncoveredCount: undefined` aqui, e o teste C10 pegou.
+      const coveragePercent = texts.length > 0
+        ? Math.round((initialCoveredCount / texts.length) * 100)
+        : 100;
+      const remainingUncovered = Math.max(0, texts.length - initialCoveredCount);
       return {
-        success: true,
+        success: remainingUncovered === 0,
+        isCriticallyDeficient: false,
         totalTexts: texts.length,
         initialCovered: initialCoveredCount,
         recoveredCount: 0,
         finalCovered: initialCoveredCount,
-        coveragePercent: 100,
-        uncovered: []
+        coveragePercent,
+        remainingUncovered,
+        notDisplayableCount: Math.max(0, texts.length - initialCoveredCount),
+        uncoveredSample: [...uncoveredReasons.entries()]
+          .slice(0, 25)
+          .map(([id, reason]) => ({
+            id,
+            reason,
+            text: (texts.find((t) => t.id === id) || {}).clean,
+            script: dominantScript(
+              (texts.find((t) => t.id === id) || {}).clean || '',
+            ),
+          })),
+        uncoveredCount: uncoveredReasons.size,
+        identityCount,
+        identityJustified,
+        fallbackAttempted: false,
+        fallbackSucceeded: false,
+        fallbackSkippedNoNetwork: false,
+        allowNetworkFallback: options.allowNetworkFallback !== false,
+        mockTranslationsInjected: 0,
+        mockTranslations: this.mockTranslations || null,
+        measuredBy: 'scriptDetector.isTranslated',
       };
     }
 
@@ -151,9 +254,13 @@ class CoverageGuarantor {
                     getCommonTranslation(t.original, sl, tl, this.commonTranslations);
       }
 
-      const hasSource = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(clean);
-      if (recovered && typeof recovered === 'string' && recovered.trim().length > 0 &&
-          (recovered.trim() !== clean.trim() && recovered.trim() !== (t.original || '').trim() || !hasSource)) {
+      // FASE 4 — a aceitação da recuperação passa pelo mesmo detector.
+      // A condição antiga aceitava a recuperação quando `!hasSource`, ou
+      // seja, aceitaria o próprio texto de origem como "recuperação" sempre
+      // que o regex não reconhecesse o idioma. Recuperar não é copiar.
+      const verdict = isTranslated(clean, recovered, { targetLang: tl });
+      if (recovered && typeof recovered === 'string' && recovered.trim().length > 0
+          && verdict.covered) {
         // Valida e cura tokens/variáveis
         let finalText = recovered;
         if (t.tokens && t.tokens.length > 0) {
@@ -162,29 +269,68 @@ class CoverageGuarantor {
         }
         translations.set(t.id, finalText);
         recoveredCount++;
-      } else if (!hasSource) {
-        translations.set(t.id, clean);
-        recoveredCount++;
+        // FASE 4 — o motivo da primeira passagem ficaria obsoleto: o texto foi
+        // recuperado. Registrar a origem da recuperação para que o relatório
+        // seja auditável de ponta a ponta.
+        uncoveredReasons.delete(t.id);
       } else {
         stillPending.push(t);
+        uncoveredReasons.set(
+          t.id,
+          recovered ? `recuperação rejeitada: ${verdict.reason}` : 'sem memória ou dicionário comum',
+        );
       }
     }
 
     // 3. Fallback Batch para o restante se houver textos ainda pendentes
     let fallbackAttempted = false;
     let fallbackSucceeded = false;
+    let mockTranslationsInjected = 0;
+    let fallbackSkippedNoNetwork = false;
+
+    // FASE 4 — o fallback de rede é OPCIONAL e desligável.
+    // Uma execução dry-run, uma análise de cobertura ou um teste não podem
+    // disparar chamadas a provedores externos só para medir cobertura: o
+    // resultado passa a depender da rede, e um teste fica instável. Com
+    // `allowNetworkFallback: false` a pendência é declarada como pendência.
+    const allowNetworkFallback = options.allowNetworkFallback !== false;
 
     if (stillPending.length > 0) {
       fallbackAttempted = true;
-      if (options.provider === 'mock' || options.fallbackProvider === 'mock' || options.mockTranslations === true) {
-        for (const pt of stillPending) {
-          translations.set(pt.id, "[PT] " + pt.clean);
-          recoveredCount++;
+      if (options.provider === 'mock' || options.fallbackProvider === 'mock'
+          || options.mockTranslations === true) {
+        // FASE 4 — este caminho escrevia `"[PT] " + clean` no mapa de
+        // traduções e contava como recuperado. Texto fabricado entrava no
+        // jogo como tradução. Agora o mock é injetado em um mapa SEPARADO e
+        // sinalizado, para que nenhum consumidor o confunda com tradução real.
+        // O pipeline só recebe traduções reais.
+        if (global.log) {
+          global.log('warn',
+            `[CoverageGuarantor] provider=mock solicitado: as tradções MOCK serão `
+            + 'injetadas em coverageReport.mockTranslations e NÃO contam para a '
+            + 'cobertura real.');
         }
-        fallbackSucceeded = true;
+        const mockMap = new Map();
+        for (const pt of stillPending) {
+          mockMap.set(pt.id, `[PT] ${pt.clean}`);
+          mockTranslationsInjected++;
+        }
+        this.mockTranslations = mockMap;
+        // Nada é aplicado a `translations`: a cobertura real permanece baixa,
+        // que é a verdade.
+        fallbackSucceeded = false;
+      } else if (!allowNetworkFallback) {
+        // Sem rede: os textos seguem pendentes, e o relatório diz isso.
+        fallbackSkippedNoNetwork = true;
+        fallbackSucceeded = false;
+        if (global.log) {
+          global.log('info',
+            `[CoverageGuarantor] ${stillPending.length} textos permanecem pendentes: `
+            + 'fallback de rede desabilitado (allowNetworkFallback=false).');
+        }
       } else {
         try {
-          const translator = require('../translator');
+          const translator = require('../translation/translator');
           const fallbackProvider = options.fallbackProvider || 'papago';
           
           // Tenta traduzir via provedor secundário de fallback automático
@@ -202,9 +348,18 @@ class CoverageGuarantor {
             for (const [id, tr] of fallbackResults.entries()) {
               if (tr && typeof tr === 'string' && tr.trim().length > 0) {
                 const origItem = stillPending.find(x => x.id === id);
-                const itemHasSource = origItem ? /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(origItem.clean || origItem.original || '') : true;
-                if (origItem && (tr.trim() === origItem.clean.trim() || tr.trim() === (origItem.original || '').trim()) && itemHasSource) {
-                  continue; // não grava tradução idêntica se ainda contém script de origem japonês
+                // FASE 4 — o filtro de "tradução igual ao original" usa o
+                // detector, não o regex de japonês. Com o regex, uma resposta
+                // do provedor que devolvesse o coreano original passava e era
+                // gravada como tradução.
+                const fv = isTranslated(
+                  origItem ? (origItem.clean || origItem.original) : '',
+                  tr,
+                  { targetLang: tl },
+                );
+                if (origItem && !fv.covered) {
+                  uncoveredReasons.set(id, `fallback rejeitou: ${fv.reason}`);
+                  continue;
                 }
                 let finalText = tr;
                 if (origItem && origItem.tokens && origItem.tokens.length > 0) {
@@ -214,6 +369,7 @@ class CoverageGuarantor {
                 translations.set(id, finalText);
                 recoveredCount++;
                 fallbackAdded++;
+                uncoveredReasons.delete(id);
                 if (origItem && finalText.trim() !== origItem.clean.trim()) {
                   translationMemory.store(origItem.clean, finalText, { engine, gameId, filePath: origItem.file });
                 }
@@ -231,21 +387,51 @@ class CoverageGuarantor {
       }
     }
 
+    // FASE 4 — o texto NÃO exibível entra no universo como "avaliado e
+    // dispensado", nunca como traduzido.
+    const notDisplayableCount = texts.length - uncovered.length - (initialCoveredCount - identityCount)
+      + identityCount;
     const finalCovered = initialCoveredCount + recoveredCount;
-    const coveragePercent = texts.length > 0 ? Math.round((finalCovered / texts.length) * 100) : 100;
-    const remainingUncovered = texts.length - finalCovered;
-    const isCriticalDeficiency = texts.length > 50 && remainingUncovered > (texts.length * 0.5);
+    const coveragePercent = texts.length > 0
+      ? Math.round((finalCovered / texts.length) * 100)
+      : 100;
+    const remainingUncovered = Math.max(0, texts.length - finalCovered);
+
+    // FASE 4 — a deficiência crítica NÃO é mais isenta para jogos pequenos.
+    // A condição antiga exigia `texts.length > 50`, de modo que um jogo de 20
+    // textos com 19 sem tradução não era considerado déficit: 5% de cobertura
+    // passava como resultado aceitável. A régua agora é a mesma para todo
+    // tamanho, com um piso absoluto para não acusar déficit em jogos de 1-2
+    // textos onde "metade" é 1 item.
+    const DEFICIENCY_RATIO = 0.5;
+    const MIN_TEXTS_FOR_DEFICIENCY = 4;
+    const isCriticalDeficiency = texts.length >= MIN_TEXTS_FOR_DEFICIENCY
+      && remainingUncovered > texts.length * DEFICIENCY_RATIO;
 
     if (global.log) {
-      global.log('info', `[CoverageGuarantor] Segunda Passagem Concluída: ${recoveredCount} textos recuperados. ` +
-        `Cobertura final: ${finalCovered}/${texts.length} (${coveragePercent}%).`);
+      global.log('info', `[CoverageGuarantor] Segunda Passagem Concluída: ${recoveredCount} textos recuperados. `
+        + `Cobertura final: ${finalCovered}/${texts.length} (${coveragePercent}%).`);
       if (isCriticalDeficiency) {
         global.log('warn', `[CoverageGuarantor] AVISO CRÍTICO: ${remainingUncovered} textos continuam sem tradução (${coveragePercent}% coberto).`);
       }
     }
 
+    const uncoveredSample = [...uncoveredReasons.entries()]
+      .slice(0, 25)
+      .map(([id, reason]) => ({
+        id,
+        reason,
+        text: (texts.find((t) => t.id === id) || {}).clean,
+        script: dominantScript(
+          (texts.find((t) => t.id === id) || {}).clean || '',
+        ),
+      }));
+
     return {
-      success: !isCriticalDeficiency,
+      // FASE 4 — `success` reflete a cobertura medida. Não é "não houve
+      // deficiência crítica": um jogo com 90% de cobertura é sucesso, um com
+      // 30% não é, e o consumidor consegue ver o número.
+      success: remainingUncovered === 0,
       isCriticallyDeficient: isCriticalDeficiency,
       totalTexts: texts.length,
       initialCovered: initialCoveredCount,
@@ -253,8 +439,22 @@ class CoverageGuarantor {
       finalCovered,
       coveragePercent,
       remainingUncovered,
+      notDisplayableCount: Math.max(0, notDisplayableCount),
       fallbackAttempted,
-      fallbackSucceeded
+      fallbackSucceeded,
+      fallbackSkippedNoNetwork,
+      allowNetworkFallback,
+      // FASE 4 — as traduções MOCK ficam em campo próprio e sinalizado.
+      // Nenhum consumidor as toma como tradução real por acidente, e elas não
+      // entram em `finalCovered`.
+      mockTranslationsInjected,
+      mockTranslations: this.mockTranslations || null,
+      // Auditoria: o porquê de cada texto não coberto.
+      uncoveredSample,
+      uncoveredCount: uncoveredReasons.size,
+      identityCount,
+      identityJustified,
+      measuredBy: 'scriptDetector.isTranslated',
     };
   }
 }

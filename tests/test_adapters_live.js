@@ -1,12 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const RpgMakerAdapter = require('./src/engines/rpgmaker/rpgMakerAdapter');
-const RenpyAdapter = require('./src/engines/renpy/renpyAdapter');
-const WolfAdapter = require('./src/engines/wolf/wolfAdapter');
-const UnityAdapter = require('./src/engines/unity/unityAdapter');
-const GodotAdapter = require('./src/engines/godot/godotAdapter');
-const CocosAdapter = require('./src/engines/cocos/cocos2dxAdapter');
+const RpgMakerAdapter = require('../src/engines/rpgmaker/rpgMakerAdapter');
+const RenpyAdapter = require('../src/engines/renpy/renpyAdapter');
+const WolfAdapter = require('../src/engines/wolf/wolfAdapter');
+const UnityAdapter = require('../src/engines/unity/unityAdapter');
+const GodotAdapter = require('../src/engines/godot/godotAdapter');
+const CocosAdapter = require('../src/engines/cocos/cocos2dxAdapter');
 
 const baseDir = 'C:\\Users\\Teste\\Desktop\\Nova pasta';
 

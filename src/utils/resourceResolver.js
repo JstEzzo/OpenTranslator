@@ -8,7 +8,7 @@ const fs = require('fs');
 class ResourceResolver {
   constructor() {
     // Root directory of OpenTranslator
-    this.rootDir = path.resolve(__dirname, '../../..');
+    this.rootDir = path.resolve(__dirname, '../..');
     this.toolDir = path.resolve(__dirname, '../..');
     this.dataDir = path.resolve(this.rootDir, 'data');
     this.docsDir = path.resolve(this.rootDir, 'docs');

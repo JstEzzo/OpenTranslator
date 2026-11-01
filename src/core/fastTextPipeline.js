@@ -14,9 +14,68 @@
  *   capture -> filter -> cache -> provider -> validation -> output -> total
  * - Separação estrita: PIPELINE LATENCY vs REAL PROVIDER LATENCY
  * - Circuit breaker e Modo Offline automático
+ *
+ * ---------------------------------------------------------------------------
+ * FASE 3 / PASSO 25 — O RESULTADO DIZ SE FOI TRADUZIDO
+ *
+ * Este arquivo tinha três defeitos que se combinavam para produzir texto falso
+ * no jogo:
+ *
+ *  1. CONFUSÃO DE TIPO: `translatedText = await provider.translate(...)`
+ *     atribuía o RETORNO INTEIRO (um objeto) à variável que deveria conter
+ *     texto. Daí em diante o glossário, o validador de placeholders e o
+ *     outputProvider operavam sobre um objeto, e o jogo recebia
+ *     "[object Object]".
+ *
+ *  2. TEXTO FABRICADO: com o circuit breaker aberto, o código fazia
+ *     `translatedText = `[Offline] ${originalText}``. O japonês com um prefixo
+ *     inventado parece tradução e é gravado como se fosse.
+ *
+ *  3. SUCESSO NÃO VERIFICADO: `source = 'EXTERNAL_PROVIDER'` e
+ *     `consecutiveFailures = 0` eram atribuídos sem checar se o provedor
+ *     traduziu alguma coisa. Um provedor que devolvesse o original mantinha o
+ *     contador zerado para sempre, aparecendo saudável enquanto nunca
+ *     traduzia nada.
+ *
+ * Agora todo retorno de provedor passa por `translationResult.normalize()`, e o
+ * resultado carrega `wasTranslated` e `notTranslatedReason`.
  */
 
 const { performance } = require('perf_hooks');
+const {
+  TRANSLATION_STATUS: S, normalize: normalizeTranslationResult,
+} = require('./translationResult');
+
+/**
+ * Normaliza o retorno de QUALQUER provedor, antigo ou novo.
+ *
+ * Provedores legados devolvem `{ok, original, translated, source}`; os novos
+ * devolvem o contrato. Ambos são aceitos, e o formato errado nunca vira texto.
+ */
+function normalizeProviderResult(raw, sourceText) {
+  // Formato legado {ok, translated, source}
+  if (raw && typeof raw === 'object'
+      && typeof raw.translated === 'string'
+      && typeof raw.ok === 'boolean') {
+    const t = raw.translated;
+    if (raw.ok && t.trim() !== '' && t.trim() !== String(sourceText).trim()) {
+      return normalizeTranslationResult(t, {
+        sourceText, provider: raw.source || 'LEGACY_PROVIDER',
+      });
+    }
+    return normalizeTranslationResult(
+      {
+        status: raw.ok ? S.NOT_TRANSLATED : S.FAILED,
+        reason: raw.ok
+          ? 'provedor legado devolveu o texto de origem'
+          : (raw.error || 'provedor legado reportou falha'),
+      },
+      { sourceText, provider: raw.source || 'LEGACY_PROVIDER' },
+    );
+  }
+  // Formato novo (contrato) ou string crua: deixa o contrato decidir.
+  return normalizeTranslationResult(raw, { sourceText, provider: 'PROVIDER' });
+}
 
 class FastTextPipeline {
   constructor(options = {}) {
@@ -129,21 +188,65 @@ class FastTextPipeline {
 
     // 4. Provider Translation (Se não achou em cache/TM)
     const tProv0 = performance.now();
+    // `wasTranslated` é a verdade da linha. Antes não existia: o pipeline
+    // devolvia `translation` sem dizer se aquilo era tradução ou o original
+    // devolvido por um provedor que não conseguiu traduzir.
+    let wasTranslated = Boolean(translatedText);
+    let notTranslatedReason = null;
+
     if (!translatedText) {
       // Verifica circuit breaker
       if (this.circuitBreakerOpen && Date.now() < this.circuitBreakerResetTime) {
         source = 'CIRCUIT_BREAKER_OFFLINE';
-        translatedText = `[Offline] ${originalText}`;
+        // FASE 3 — NADA de texto fabricado. O código original fazia
+        // `translatedText = `[Offline] ${originalText}``: um prefixo inventado
+        // sobre o texto japonês, que parecia tradução e ia parar no jogo
+        // escrito como "[Offline] こんにちは". Sem tradução, a resposta honesta
+        // é o original e a marca de que não foi traduzido.
+        translatedText = originalText;
+        wasTranslated = false;
+        notTranslatedReason = 'circuit breaker aberto';
       } else {
         this.circuitBreakerOpen = false;
         try {
           if (contextServices.translationProvider && !this.offlineMode) {
-            translatedText = await contextServices.translationProvider.translate(originalText);
-            source = 'EXTERNAL_PROVIDER';
-            this.consecutiveFailures = 0;
+            const raw = await contextServices.translationProvider.translate(originalText);
+
+            // FASE 3 — CONFUSÃO DE TIPO CORRIGIDA.
+            // O original asignava o RETORNO INTEIRO do provider a
+            // `translatedText`. Os providers devolvem objeto
+            // (`{ok, original, translated}`), então `translatedText` virava
+            // objeto e chegava ao jogo como "[object Object]" — passando
+            // ainda pelo validador de placeholders e pelo outputProvider.
+            const res = normalizeProviderResult(raw, originalText);
+            if (res.isSuccess && typeof res.translation === 'string') {
+              translatedText = res.translation;
+              wasTranslated = true;
+              source = res.provider ? `PROVIDER:${res.provider}` : 'EXTERNAL_PROVIDER';
+            } else {
+              // O provedor respondeu mas não traduziu. Registrar sucesso
+              // aqui era o que mantinha `consecutiveFailures` zerado para
+              // sempre: um provedor que nunca traduz nada parecia saudável.
+              translatedText = originalText;
+              wasTranslated = false;
+              notTranslatedReason = res.reason || 'provedor não retornou tradução';
+              source = 'PROVIDER_NO_TRANSLATION';
+              this.consecutiveFailures++;
+            }
+            if (res.status === S.FAILED) {
+              this.consecutiveFailures++;
+              if (this.consecutiveFailures >= 3) {
+                this.circuitBreakerOpen = true;
+                this.circuitBreakerResetTime = Date.now() + 15000;
+              }
+            } else if (res.isSuccess) {
+              this.consecutiveFailures = 0;
+            }
           } else {
             source = 'OFFLINE_FALLBACK';
             translatedText = originalText;
+            wasTranslated = false;
+            notTranslatedReason = 'modo offline: nenhum provedor consultado';
           }
         } catch (provErr) {
           this.consecutiveFailures++;
@@ -153,6 +256,8 @@ class FastTextPipeline {
           }
           source = 'OFFLINE_ERROR_FALLBACK';
           translatedText = originalText;
+          wasTranslated = false;
+          notTranslatedReason = `provedor lançou: ${provErr.message}`;
         }
       }
     }
@@ -166,8 +271,15 @@ class FastTextPipeline {
     if (contextServices.placeholderValidator) {
       const valid = contextServices.placeholderValidator.validate(originalText, translatedText);
       if (!valid.valid) {
-        // Se corrompeu variáveis, restaura original
+        // FASE 3 — rever silenciosamente para o original escondia o problema.
+        // Agora a reversão é registrada: o consumidor sabe que a tradução foi
+        // ABANDONADA por corrupção de placeholder, e não simplesmente nunca
+        // aconteceu. Antes, `source` continuava apontando para o provedor,
+        // sugerindo que a tradução tinha sido aplicada.
         translatedText = originalText;
+        wasTranslated = false;
+        notTranslatedReason = `placeholder inválido: ${(valid.errors || []).join('; ') || 'motivo não informado'}`;
+        source = 'PLACEHOLDER_REVERTED';
       }
     }
     latencies.validationMs = Number((performance.now() - tVal0).toFixed(3));
@@ -186,6 +298,10 @@ class FastTextPipeline {
     return {
       original: originalText,
       translation: translatedText,
+      // FASE 3 — a verdade da linha, explícita.
+      wasTranslated,
+      isSuccess: wasTranslated,
+      notTranslatedReason,
       source,
       priority: item.priority,
       latencies

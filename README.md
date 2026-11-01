@@ -8,7 +8,7 @@
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
 [![Node.js](https://img.shields.io/badge/Node.js-Port%C3%A1til%20Integrado-green?logo=node.js)](#)
-[![Status](https://img.shields.io/badge/Status-Produ%C3%A7%C3%A3o%20Est%C3%A1vel-success)](#)
+[![Status](https://img.shields.io/badge/Status-Em%20valida%C3%A7%C3%A3o-yellow)](#)
 [![Launcher](https://img.shields.io/badge/Launcher-Nativo%20EXE-orange)](#)
 
 </div>
@@ -26,7 +26,15 @@
 
 ---
 
+## Estado de validação
+
+A revisão de 31/10/2026 está registrada em [docs/audit/REVIEW-2026-10-31.md](docs/audit/REVIEW-2026-10-31.md). Os testes automatizados não certificam todos os motores nem substituem testes de tradução e restauração em jogos reais. O inventário de arquivos não representa leitura semântica integral.
+
+Para validar o código em desenvolvimento, instale as dependências com `npm ci` e execute `npm run verify`. A nova verificação no GitHub usa Node 24 em Windows. O executável distribuído e o empacotamento antigo ainda precisam de validação específica antes de uma nova release.
+
 ## 🎮 Motores de Jogos Suportados
+
+A tabela abaixo descreve as capacidades anunciadas pelo projeto; a compatibilidade deve ser confirmada por versão do motor e por jogo.
 
 | Motor de Jogo | Tradução Estática | Hook em Tempo Real | Recursos Especiais |
 |---|:---:|:---:|---|

@@ -2,11 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const EngineDetector = require('./src/core/engineDetector');
-const RpgMakerAdapter = require('./src/engines/rpgmaker/rpgMakerAdapter');
-const RenpyAdapter = require('./src/engines/renpy/renpyAdapter');
-const UnityAdapter = require('./src/engines/unity/unityAdapter');
-const WolfAdapter = require('./src/engines/wolf/wolfAdapter');
+const EngineDetector = require('../src/core/engineDetector');
+const RpgMakerAdapter = require('../src/engines/rpgmaker/rpgMakerAdapter');
+const RenpyAdapter = require('../src/engines/renpy/renpyAdapter');
+const UnityAdapter = require('../src/engines/unity/unityAdapter');
+const WolfAdapter = require('../src/engines/wolf/wolfAdapter');
 
 const baseDir = 'C:\\Users\\Teste\\Desktop\\Nova pasta';
 

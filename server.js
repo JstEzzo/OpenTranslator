@@ -57,9 +57,9 @@ global.lastCheatPollTime = 0;
 
 // ==================== LOGGER ====================
 // Deve ser carregado ANTES de qualquer outro módulo que use global.log
-const loggerManager = require("./src/loggerManager");
+const loggerManager = require("./src/utils/loggerManager");
 loggerManager.setLogPath(global.LOG_PATH);
-require("./src/logger");
+require("./src/utils/logger");
 
 // ==================== TRATAMENTO DE EXCEÇÕES ====================
 process.on("uncaughtException", (err) => {
@@ -72,29 +72,8 @@ process.on("unhandledRejection", (reason) => {
 
 // ==================== GERENCIAMENTO DE INSTÂNCIAS (PID) ====================
 const PID_FILE = path.join(global.DATA_DIR, "server.pid");
-try {
-  const portNum = parseInt(global.PORT, 10);
-  if (process.platform === "win32" && !isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
-    const args = [
-      "-NoProfile", "-NonInteractive", "-Command",
-      `Get-NetTCPConnection -LocalPort ${portNum} -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }`
-    ];
-    spawnSync("powershell", args, { stdio: "ignore" });
-  }
-  if (fs.existsSync(PID_FILE)) {
-    const oldPid = parseInt(fs.readFileSync(PID_FILE, "utf8").trim(), 10);
-    if (!isNaN(oldPid) && oldPid > 0 && oldPid !== process.pid) {
-      if (process.platform === "win32") {
-        spawnSync("taskkill", ["/PID", String(oldPid), "/F"], { stdio: "ignore" });
-      } else {
-        spawnSync("kill", ["-9", String(oldPid)], { stdio: "ignore" });
-      }
-      fs.unlinkSync(PID_FILE);
-    }
-  }
-} catch (e) {
-  // Erros na limpeza inicial do PID/porta são silenciosos, não críticos.
-}
+// Uma porta ocupada ou um PID antigo nao comprovam propriedade do processo.
+// tryListen informa o conflito; nunca encerre outros programas no bootstrap.
 
 let isCleaningUp = false;
 function shutdownAll(reason = "App Shutdown") {
@@ -122,14 +101,14 @@ function shutdownAll(reason = "App Shutdown") {
   // 2. Restaurar backups pendentes se o jogo ainda estiver modificando arquivos
   if (global.launchedBak) {
     try {
-      const { restoreGameData } = require("./src/gameEngine");
+      const { restoreGameData } = require("./src/core/gameEngine");
       restoreGameData(global.launchedBak);
     } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
   }
 
   // 3. Fechar porta do servidor HTTP (3000)
   try {
-    const { server } = require("./src/httpServer");
+    const { server } = require("./src/services/httpServer");
     if (server && server.listening) {
       server.close();
     }
@@ -137,13 +116,14 @@ function shutdownAll(reason = "App Shutdown") {
 
   // 4. Fechar portas e sockets do Hook Server (16005)
   try {
-    const { stopHookServer } = require("./src/cheatServer");
+    const { stopHookServer } = require("./src/services/cheatServer");
     stopHookServer();
   } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
 
   // 5. Limpar arquivo de PID
   try {
-    if (fs.existsSync(PID_FILE)) {
+    if (fs.existsSync(PID_FILE) &&
+        fs.readFileSync(PID_FILE, "utf8").trim() === String(process.pid)) {
       fs.unlinkSync(PID_FILE);
     }
   } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
@@ -159,12 +139,14 @@ process.on("SIGHUP", () => shutdownAll("SIGHUP - Janela/Terminal Fechado"));
 
 // ==================== INICIALIZAÇÃO DOS MÓDULOS ====================
 // O cache precisa ser carregado para inicializar o SQLite imediatamente
-require("./src/cache");
+require("./src/services/cache");
 
 // ==================== SERVIDOR HTTP ====================
-const { tryListen } = require("./src/httpServer");
+const { tryListen } = require("./src/services/httpServer");
 tryListen(global.PORT);
 
 // ==================== HOOK SERVER (WebSocket + HTTP 16005) ====================
-const { startHookServer } = require("./src/cheatServer");
-startHookServer();
+const { startHookServer } = require("./src/services/cheatServer");
+startHookServer().catch((err) => {
+  global.log("error", "Falha ao iniciar servidor de hooks: " + err.message);
+});

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const rc = require('./src/engines/renpy/renpyCommon');
+const rc = require('../src/engines/renpy/renpyCommon');
 
 const gameDir = 'C:/Users/Teste/Desktop/Nova pasta/UL_V0.8/game';
 const origContent = fs.readFileSync(path.join(gameDir, 'data/events/e07.rpy.original'), 'utf-8');

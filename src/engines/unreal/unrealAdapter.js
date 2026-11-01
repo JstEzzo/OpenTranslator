@@ -17,10 +17,23 @@ const BackupManager = require('../../core/backupManager');
 const UnrealHandler = require('./unrealHandler');
 
 const UnrealLocResProvider = require('./unrealLocResProvider');
+const { rollbackResult } = require('../rollbackResult.js');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
+const { PartialReport } = require('../../core/partialApply');
 
 class UnrealAdapter extends BaseEngineAdapter {
   constructor() {
     super("unreal", "Unreal Engine");
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "todo arquivo que eu toco está no backup que
+    // a transação vai fazer". `ac.finish` verifica a cada apply e devolve
+    // `transactional: false` se a afirmação deixar de valer.
+    //
+    // `this` só existe DEPOIS de `super()`: numa classe derivada, tocar `this`
+    // antes disso lança em tempo de construção.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "unreal" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_unreal_backup" });
     this.handler = new UnrealHandler();
@@ -62,6 +75,8 @@ class UnrealAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const allTexts = [];
+    // FASE 9 / PASSO 56 — o relatorio decide o `success`.
+    const acc = new PartialReport();
     const locDir = path.join(gameDir, 'Content', 'Localization');
 
     if (fs.existsSync(locDir)) {
@@ -117,15 +132,20 @@ class UnrealAdapter extends BaseEngineAdapter {
               }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          // FASE 9 / PASSO 56 — o .locres nao pode ser lido. O catch
+          // externo engolia a falha e o adapter devolvia `success: true`:
+          // o arquivo inteiro sumia do UNIVERSO sem deixar sinal, e a
+          // cobertura (FASE 4) passava a ser calculada sobre o que
+          // sobrou. Um numero menor, e parece legitimo.
+          // Ver src/core/partialApply.js.
+          acc.fail(relFile || '<locres>', e);
+        }
       }
     }
 
-    return {
-      success: true,
-      texts: allTexts,
-      count: allTexts.length
-    };
+    // FASE 9 / PASSO 56 — quem decide o `success` e o relatorio.
+    return acc.report({ texts: allTexts, count: allTexts.length });
   }
 
   async validate(gameDir, texts, translations) {
@@ -133,6 +153,8 @@ class UnrealAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    // FASE 10 / D1 — o contrato de apply. O plano de arquivos vem dos textos.
+    const ac = startApplyContract(gameDir, texts);
     const byFile = new Map();
     for (const t of texts) {
       if (!t.file) continue;
@@ -145,12 +167,34 @@ class UnrealAdapter extends BaseEngineAdapter {
 
     const modifiedFiles = new Set();
     let appliedCount = 0;
+    // Escopo do METODO: os `catch` por arquivo registram a falha nela.
+    const accApply = new PartialReport();
 
+    // Percorre os arquivos planejados e monta a lista de trabalho antes do
+    // try/catch, para que `success` possa ser derivado do que aconteceu.
+    const forEachFile = [];
     for (const [relPath, fileTexts] of byFile.entries()) {
       const fullPath = path.join(gameDir, relPath);
       if (!fs.existsSync(fullPath)) continue;
+      forEachFile.push([relPath, fileTexts, fullPath]);
+    }
+    // era `success: true` INCONDICIONAL — inclusive quando todo arquivo falhou.
+    // Evidencia do bug: .locres invalido -> SHA256 do arquivo inalterado,
+    // `count: 0`, e ainda assim `{ success: true }` com a mensagem dizendo
+    // "compilado com sucesso (0 textos)".
+    //
+    // A correcao NAO e trocar `true` por `false`: e registrar a falha por
+    // arquivo e derivar `success` do que realmente foi gravado. Um adapter
+    // que aplicou 3 de 5 arquivos tem sucesso PARCIAL, nao sucesso.
+    const failedFiles = [];
+    let anySucceeded = false;
 
-      if (fileTexts[0].format === "locres") {
+    for (const [relPath, fileTexts, fullPath] of forEachFile) {
+      // `extract()` emite `format: "locres_text"`, mas este teste exigia
+      // `format === "locres"`. A condicao NUNCA casava, entao o apply do
+      // Unreal nunca gravava nada — e, antes da correcao do U-001, ainda
+      // devolvia `success: true`. Aceita as duas formas.
+      if (fileTexts[0].format === "locres" || fileTexts[0].format === "locres_text") {
         try {
           const buf = fs.readFileSync(fullPath);
           const parsed = UnrealLocResProvider.parseLocRes(buf);
@@ -168,27 +212,40 @@ class UnrealAdapter extends BaseEngineAdapter {
 
           const compiledLocRes = UnrealLocResProvider.buildLocRes(namespaces);
           fs.writeFileSync(fullPath, compiledLocRes);
+          ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), compiledLocRes);
           modifiedFiles.add(fullPath);
+          anySucceeded = true;
         } catch (e) {
+          // FASE 9 / U-001 — a falha deixou de ser silenciosa e deixou de ser
+          // mascarada como sucesso.
+          failedFiles.push({ file: relPath, error: e.message });
+          accApply.fail(relPath, e);
           if (global.log) global.log('error', `[Unreal] Erro ao compilar locres ${relPath}: ${e.message}`);
         }
       }
     }
 
-    return {
-      success: true,
+    // Derivado do que aconteceu de fato, nao de uma constante.
+    const allFailed = !anySucceeded && forEachFile.length > 0;
+    const ok2 = failedFiles.length === 0;
+    return ac.finish({
+      success: !allFailed,
       modifiedFiles: Array.from(modifiedFiles),
       count: appliedCount,
-      message: `Tradução Unreal compilada em .locres com sucesso (${appliedCount} textos em ${modifiedFiles.size} arquivos).`
-    };
+      // A mensagem nao pode afirmar sucesso quando nenhum arquivo foi gravado.
+      message: allFailed
+        ? `Falha ao compilar ${failedFiles.length}/${forEachFile.length} arquivo(s) .locres; `
+          + `nenhum foi gravado (${failedFiles.map((f) => f.file).join(', ')}).`
+        : `Tradução Unreal compilada em .locres (${appliedCount} textos em ${modifiedFiles.size} arquivos`
+          + (failedFiles.length ? `; ${failedFiles.length} falharam: ${failedFiles.map((f) => f.file).join(', ')}` : '')
+          + ').',
+      ...(failedFiles.length ? { errors: failedFiles, failedFiles } : {}),
+    });
   }
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return {
-      success: res.success,
-      restoredFiles: res.restoredFiles || [gameDir]
-    };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

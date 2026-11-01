@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { detectEngine, getExeArch, getHookDll } = require('./src/gameEngine');
+const { detectEngine, getExeArch, getHookDll } = require('../src/core/gameEngine');
 
 const baseDir = 'C:\\Users\\Teste\\Desktop\\Nova pasta';
 

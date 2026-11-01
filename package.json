@@ -5,11 +5,16 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/validate_real_ui_certification.js",
-    "test:renpy": "node tests/validate_renpy_certification.js",
-    "test:mz": "node tests/validate_mz_certification.js",
+    "test": "node tests/index.js",
+    "test:security": "node tests/index.js --security",
+    "test:unit": "node tests/index.js --unit",
+    "test:bail": "node tests/index.js --bail",
+    "legacy:renpy": "node tests/validate_renpy_certification.js",
+    "legacy:mz": "node tests/validate_mz_certification.js",
     "smoke": "OpenTranslator.exe --smoke-test",
-    "lint": "node tools/repoLint.js"
+    "lint": "node tools/repoLint.js",
+    "audit:success": "node tools/successAudit.js",
+    "verify": "npm run lint && npm run audit:success && npm test"
   },
   "private": true,
   "dependencies": {

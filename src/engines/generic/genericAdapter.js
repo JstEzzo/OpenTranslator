@@ -11,10 +11,27 @@ const BaseEngineAdapter = require("../../core/baseEngineAdapter");
 const CodeProtector = require("../../core/codeProtector");
 const BackupManager = require("../../core/backupManager");
 const TextClassifier = require("../../core/textClassifier");
+const { rollbackResult } = require('../rollbackResult.js');
+const { PartialReport } = require('../../core/partialApply');
+// FASE 10 / D1 — o contrato de apply (filesToBackup + fileHashes).
+const { startApplyContract } = require('../../core/applyContract');
 
 class GenericAdapter extends BaseEngineAdapter {
   constructor() {
     super("generic", "Engine Genérica / Scanner Universal");
+
+    // FASE 10 / D1 — este adapter é transacional.
+    //
+    // O opt-in é uma AFIRMAÇÃO: "meu conjunto de escrita está coberto
+    // pelo backup que a transação vai fazer". O genericAdapter escreve
+    // apenas nos arquivos de onde os textos vieram, e `ac.finish` reprova
+    // a transação se isso deixar de ser verdade.
+    //
+    // FASE 10 — `this` NÃO pode ser tocado antes de `super()`: numa classe
+    // derivada o objeto ainda não existe, e o acesso lança em tempo de
+    // construção. A primeira versão deste bloco estava antes do super e
+    // quebrava o módulo inteiro.
+    this.transactional = true;
     this.codeProtector = new CodeProtector({ engine: "generic" });
     this.backupManager = new BackupManager({ backupDirName: ".opent_generic_backup" });
   }
@@ -53,6 +70,11 @@ class GenericAdapter extends BaseEngineAdapter {
   async extract(gameDir, options = {}) {
     const textExts = new Set([".json", ".txt", ".csv", ".po", ".xml", ".ini", ".yaml", ".yml", ".ts", ".js", ".lua", ".gd"]);
     const rawExtracted = [];
+    // FASE 9 / PASSO 59 — o relatorio decide o `success`.
+    // Precisa viver no escopo do METODO: um `catch` de dentro de `scanDir`
+    // (que e uma funcao aninhada) precisa registrar a falha nela, e o
+    // `return` do fim do metodo precisa leia-la.
+    const accApply = new PartialReport();
 
     const scanDir = (dir, depth = 0) => {
       if (depth > 4) return;
@@ -91,7 +113,11 @@ class GenericAdapter extends BaseEngineAdapter {
                         }
                       };
                       parseJson(parsed);
-                    } catch (e) {}
+                    } catch (e) {
+                      // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+                      // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+                      accApply.fail(fullPath, e);
+                    }
                   } else {
                     const lines = content.split("\n");
                     for (let lIdx = 0; lIdx < lines.length; lIdx++) {
@@ -109,11 +135,19 @@ class GenericAdapter extends BaseEngineAdapter {
                     }
                   }
                 }
-              } catch (e) {}
+              } catch (e) {
+                // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+                // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+                accApply.fail(fullPath, e);
+              }
             }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
+        // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
+        accApply.fail(fullPath, e);
+      }
     };
 
     scanDir(gameDir);
@@ -130,12 +164,11 @@ class GenericAdapter extends BaseEngineAdapter {
       });
     }
 
-    return {
-      success: true,
+    return accApply.report({
       texts: finalTexts,
       count: finalTexts.length,
       filteredOutCount: filteredOut.length
-    };
+});
   }
 
   async validate(gameDir, texts, translations) {
@@ -143,6 +176,9 @@ class GenericAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    // FASE 10 / D1 — o contrato de apply. O plano de arquivos vem dos textos:
+    // um texto traduzível veio de um arquivo, e aplicar escreve nesse arquivo.
+    const ac = startApplyContract(gameDir, texts);
     const byFile = new Map();
     for (const t of texts) {
       if (!t.file) continue;
@@ -154,6 +190,7 @@ class GenericAdapter extends BaseEngineAdapter {
     this.backupManager.createBackup(gameDir, filesToBackup, { engine: "generic" });
 
     const modifiedFiles = new Set();
+    const applyErrors = [];
     let appliedCount = 0;
 
     try {
@@ -190,7 +227,16 @@ class GenericAdapter extends BaseEngineAdapter {
             }
 
             if (fileModified) {
-              fs.writeFileSync(fullPath, JSON.stringify(parsed, null, 2), "utf8");
+              // FASE 10 / D1 — ADOÇÃO DO CONTRATO DE APPLY
+              //
+              // O conteúdo é içado para uma variável antes de escrever. Não é
+              // estilo: `fs.writeFileSync(p, JSON.stringify(...))` não deixa
+              // nada para hashear, e o hash do que o adapter DECLARA ter
+              // escrito tem de vir do conteúdo em memória — hashear o arquivo
+              // depois de escrever compararia o número com ele mesmo.
+              const saida = JSON.stringify(parsed, null, 2);
+              fs.writeFileSync(fullPath, saida, "utf8");
+              ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), saida);
               modifiedFiles.add(fullPath);
             }
           } catch (e) {}
@@ -216,19 +262,50 @@ class GenericAdapter extends BaseEngineAdapter {
             }
 
             if (fileModified) {
-              fs.writeFileSync(fullPath, lines.join("\n"), "utf8");
+              // FASE 10 / D1 — conteúdo içado pelo mesmo motivo do sítio JSON:
+              // o hash declarado precisa vir da memória, não de uma releitura.
+              const saida = lines.join("\n");
+              fs.writeFileSync(fullPath, saida, "utf8");
+              ac.wrote(path.relative(gameDir, fullPath).replace(/\\/g, "/"), saida);
               modifiedFiles.add(fullPath);
             }
-          } catch (e) {}
+          } catch (e) {
+            // FASE 9 / PASSO 43 — patch parcial não é patch completo.
+            //
+            // Este `catch (e) {}` engolia falha de leitura/escrita por arquivo,
+            // e o método devolvia `success: true` no fim. O `count` contava
+            // apenas os arquivos que deram certo — honesto —, mas `success`
+            // afirmava que o jogo inteiro estava traduzido. A UI recebia
+            // "Traduções estáticas aplicadas com sucesso" e o `applyVerifier`
+            // (FASE 2) era quem teria de pegar isso no pós-apply, relendo o
+            // jogo inteiro para descobrir que faltavam linhas.
+            //
+            // É melhor o adapter saber agora, e dizer qual arquivo falhou.
+            applyErrors.push({ file: path.relative(gameDir, fullPath).replace(/\\/g, "/"), error: e.message });
+          }
         }
       }
 
-      return {
-        success: true,
+      const partial = applyErrors.length > 0;
+      // FASE 10 / D1 — `ac.finish` envelopa o retorno e acrescenta
+      // `transactional`, `filesToBackup` e `fileHashes`. Os campos que o
+      // adapter já devolvia são preservados; `success` continua decidindo a
+      // partialidade, porque o contrato não é dono desse julgamento.
+      return ac.finish({
+        success: !partial,
+        status: partial ? 'PARTIAL' : 'COMPLETE',
         modifiedFiles: Array.from(modifiedFiles),
         count: appliedCount,
-        message: `Traduções estáticas aplicadas com sucesso (${appliedCount} textos em ${modifiedFiles.size} arquivos).`
-      };
+        applyErrors,
+        message: partial
+          ? `Trad aplicadas PARCIALMENTE: ${appliedCount} textos em ${modifiedFiles.size} `
+            + `arquivo(s), com ${applyErrors.length} arquivo(s) falhando.`
+          : `Traduções estáticas aplicadas com sucesso (${appliedCount} textos em ${modifiedFiles.size} arquivos).`,
+        warning: partial
+          ? 'Alguns arquivos não puderam ser escritos. O jogo está traduzido '
+            + 'apenas em parte, e a tradução será reprocessada no próximo uso.'
+          : null,
+      });
     } catch (err) {
       await this.rollback(gameDir);
       return {
@@ -241,10 +318,7 @@ class GenericAdapter extends BaseEngineAdapter {
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreOldestBackup(gameDir);
-    return {
-      success: res.success,
-      restoredFiles: res.restoredFiles || [gameDir]
-    };
+    return rollbackResult(res, this.id || this.engineId || "unknown");
   }
 }
 

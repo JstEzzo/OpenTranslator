@@ -18,11 +18,18 @@ const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { unescapeRenpyString } = require('../renpyCommon');
 const CodeProtector = require('../../../core/codeProtector');
+// C2 — separa texto exibível de identificador/código por FORMA DA STRING.
+// Não é blacklist de palavras nemKnowledge de um jogo: vale para qualquer
+// engine que aceite Python/Ren'Py.
+const { classifyDisplayText } = require('../../../core/displayTextClassifier');
 
 class RenpyExtractor {
   constructor(options = {}) {
     this.options = options;
     this.codeProtector = new CodeProtector({ engine: 'renpy' });
+    // C2 — composição do que o classificador de forma descartou por.extract(),
+    // para que a remoção de ruído seja AUDITÁVEL e não silenciosa.
+    this.shapeStats = {};
   }
 
   /**
@@ -248,6 +255,17 @@ class RenpyExtractor {
       }
 
       // 5. Constantes de módulos Python descompilados (.py)
+      //
+      // C2 — estes arquivos são o resultado de DESCOMPILAR o `.pyc`: o
+      // decompilador despeja o pool de constantes como literais isolados,
+      // uma linha por constante, sem atribuição. Num jogo real isso produziu
+      // 1.791 entradas no corpus das quais a maioria era identificador
+      // ("open", "cast", "pillarbox", "load_module", "barb_menu.art_banana")
+      // que nunca aparece na tela — só consome cota do pipeline.
+      //
+      // A classificação é por FORMA DA STRING (src/core/displayTextClassifier),
+      // não por nome de jogo, não por blacklist de palavras e não por
+      // "Python = intraduzível": prosa dentro de `.py` continua sendo extraída.
       if (relFile.endsWith('.py')) {
         const CONST_LINE_RE = /^[ \t]*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')[ \t]*$/gm;
         let constLineMatch;
@@ -255,6 +273,12 @@ class RenpyExtractor {
           const raw = constLineMatch[1] !== undefined ? constLineMatch[1] : constLineMatch[2];
           const mLineNum = content.substring(0, constLineMatch.index).split('\n').length;
           const unescaped = unescapeRenpyString(raw);
+          const shape = classifyDisplayText(unescaped);
+          if (!shape.display) {
+            this.shapeStats[shape.kind] = (this.shapeStats[shape.kind] || 0) + 1;
+            continue;
+          }
+          this.shapeStats[`${shape.kind}:kept`] = (this.shapeStats[`${shape.kind}:kept`] || 0) + 1;
           addCandidate(unescaped, raw, 'module_constant', '', mLineNum);
         }
       }

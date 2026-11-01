@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const EngineDetector = require('./src/core/engineDetector');
+const EngineDetector = require('../src/core/engineDetector');
 
 const baseDir = 'C:\\Users\\Teste\\Desktop\\Nova pasta';
 

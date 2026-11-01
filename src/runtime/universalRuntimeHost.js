@@ -104,10 +104,24 @@ class UniversalRuntimeHost {
   stopSession(pid) {
     const session = this.sessions.get(pid);
     if (!session) return { ok: false };
+    // FASE 9: capturing the state BEFORE mutating it. Reading it afterwards
+    // would always give the new value — a field that looks like it works and
+    // is always wrong.
+    const wasActive = session.status === 'ACTIVE' || session.status === 'MONITORING';
+    const previousStatus = session.status;
     session.status = 'CLOSED';
     this.eventBus.emitEvent('PROCESS_EXITED', { pid, code: 0 });
     this.sessions.delete(pid);
-    return { ok: true };
+    // FASE 9 / PASSO 48 — `{ ok: true }` sem payload não dizia se havia
+    // alguma sessão ativa. O chamador não podia distinguir "encerrei o jogo"
+    // de "a sessão já estava parada", e as duas exigem ações diferentes.
+    return {
+      ok: true,
+      status: 'CLOSED',
+      pid,
+      wasActive,
+      previousStatus,
+    };
   }
 
   getStatus() {

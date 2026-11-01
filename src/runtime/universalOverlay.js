@@ -38,9 +38,25 @@ class UniversalOverlay {
   closeSession(sessionId) {
     const session = this.sessions.get(sessionId);
     if (!session) return { ok: false };
+    const entryCount = session.regions.length;
+    // FASE 9: capturar ANTES de marcar — ler depois devolveria `false` sempre,
+    // que é a forma mais sutil de um campo que parece funcionar.
+    const wasActive = session.active === true;
     session.active = false;
     this.sessions.delete(sessionId);
-    return { ok: true };
+    // FASE 9 / PASSO 48 — sucesso sem payload.
+    //
+    // `{ ok: true }` aqui não dizia NADA. O chamador não podia saber quantas
+    // regiões foram liberadas nem se a sessão estava de fato ativa antes do
+    // pedido — e um overlay que "fecha" uma sessão já fechada devolvia a mesma
+    // resposta de uma que estava rodando.
+    return {
+      ok: true,
+      status: 'CLOSED',
+      sessionId,
+      wasActive,
+      regionsReleased: entryCount,
+    };
   }
 }
 

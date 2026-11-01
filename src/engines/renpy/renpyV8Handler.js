@@ -27,7 +27,7 @@ class RenpyV8Handler extends BaseEngineHandler {
 
         const args = [unpackScript, '-i', gameSubDir, '-o', gameSubDir, '--mode', 'extract', '--py-version', '3'];
 
-        const loggerManager = require('../../loggerManager.js');
+        const loggerManager = require('../../utils/loggerManager');
         execFile(pythonBin, args, { cwd: gameDir }, (error, stdout, stderr) => {
           if (error) {
             const errDetails = (stderr && stderr.trim().length > 0) ? stderr.trim() : (stdout && stdout.trim().length > 0) ? stdout.trim() : error.message;

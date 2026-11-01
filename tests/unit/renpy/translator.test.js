@@ -3,7 +3,7 @@
  */
 
 const assert = require('assert');
-const RenpyTranslator = require('../../src/engines/renpy/translator/renpyTranslator');
+const RenpyTranslator = require('../../../src/engines/renpy/translator/renpyTranslator');
 
 async function run() {
   console.log('--- [TEST] RenpyTranslator Unit Tests ---');

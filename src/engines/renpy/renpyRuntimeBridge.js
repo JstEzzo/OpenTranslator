@@ -148,7 +148,24 @@ class RenpyRuntimeBridge {
       const res = await this.session.stop('RenpyRuntimeBridge Finish');
       return res;
     }
-    return { success: true };
+    // FASE 9 / PASSO 36 — NÃO havia sessão para encerrar.
+    //
+    // O código devolvia `{ success: true }`. O consumidor usa esse campo para
+    // decidir se o jogo foi fechado: a UI mostrava "sessão encerrada" e o
+    // usuário acreditava que o processo tinha parado, quando nada foi
+    // encerrado porque nada estava rodando por este bridge. Se o jogo
+    // estivesse aberto por outro caminho, continuaria rodando.
+    //
+    // "Não havia nada para encerrar" é um resultado, e é um resultado
+    // distinto de "encerrei com sucesso". Quem chamou precisa saber qual dos
+    // dois aconteceu — e o que fazer a seguir.
+    return {
+      success: false,
+      status: 'NO_SESSION',
+      error: 'Não há sessão de runtime ativa para encerrar.',
+      stopped: false,
+      wasRunning: false,
+    };
   }
 }
 
