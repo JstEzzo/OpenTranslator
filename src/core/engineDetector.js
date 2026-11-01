@@ -12,20 +12,7 @@ class EngineDetector {
    * Lê a arquitetura PE (32-bit ou 64-bit) de um arquivo executável.
    */
   static getExeArch(exePath) {
-    if (!exePath || !fs.existsSync(exePath)) return 32;
-    try {
-      const fd = fs.openSync(exePath, "r");
-      const buf = Buffer.alloc(4);
-      fs.readSync(fd, buf, 0, 4, 0x3c);
-      const peOffset = buf.readUInt32LE(0);
-      const machineBuf = Buffer.alloc(2);
-      fs.readSync(fd, machineBuf, 0, 2, peOffset + 4);
-      fs.closeSync(fd);
-      const machine = machineBuf.readUInt16LE(0);
-      if (machine === 0x8664) return 64; // AMD64 / x64
-      if (machine === 0x014c) return 32; // i386 / x86
-    } catch (e) {}
-    return 32;
+    return require("./executableInfo").executableBits(exePath);
   }
 
   /**
@@ -67,7 +54,7 @@ class EngineDetector {
       return {
         engine: "unknown",
         engineVersion: "unknown",
-        architecture: "x86",
+        architecture: "unknown",
         confidence: 0,
         evidence: ["Caminho alvo não existe no sistema de arquivos"],
         warnings: ["Jogo não encontrado no disco"],
@@ -80,7 +67,7 @@ class EngineDetector {
       gameDir = targetPath;
       // Tenta localizar um .exe principal
       const files = fs.readdirSync(gameDir);
-      const exes = files.filter(f => f.toLowerCase().endsWith(".exe"));
+      const exes = files.filter(f => /\.exe$/i.test(f) && !/^(unins|uninstall|crash|updat|setup|redist)/i.test(f)).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
       if (exes.length > 0) {
         exePath = path.join(gameDir, exes[0]);
       }
@@ -89,7 +76,8 @@ class EngineDetector {
       gameDir = path.dirname(targetPath);
     }
 
-    const arch = exePath ? EngineDetector.getExeArch(exePath) : 64;
+    const executable = require("./executableInfo").readExecutableInfo(exePath);
+    const architecture = executable ? executable.architecture : "unknown";
     const evidence = [];
     const warnings = [];
 
@@ -149,19 +137,21 @@ class EngineDetector {
 
     if (hasGameDir && (hasRpy || hasRenpyDir || hasTlDir || hasRenpyExe)) {
       evidence.push("Arquitetura oficial Ren'Py detectada (game/, scripts .rpy/.rpyc/.rpa ou tl/)");
-      let version = "8.x";
-      let pyVer = "Python 3";
+      let version = "unknown";
+      let pyVer = "unknown";
+      const libDir = path.join(effectiveGameDir, "lib");
+      const runtimeNames = fs.existsSync(libDir) ? fs.readdirSync(libDir) : [];
 
-      if (fs.existsSync(path.join(effectiveGameDir, "lib", "py3-windows-x86_64")) || fs.existsSync(path.join(effectiveGameDir, "lib", "python3.12")) || fs.existsSync(path.join(effectiveGameDir, "lib", "python3.9"))) {
+      if (runtimeNames.some(name => /^py3-windows-|^python3\.\d+/i.test(name))) {
         version = "8.x";
-        pyVer = "Python 3 (64-bit)";
+        pyVer = "Python 3";
         evidence.push(`Runtime moderno Ren'Py 8 detectado (${pyVer})`);
       } else if (fs.existsSync(path.join(effectiveGameDir, "lib", "windows-i686")) || fs.existsSync(path.join(effectiveGameDir, "lib", "python2.7"))) {
         version = "7.x/6.x";
         pyVer = "Python 2.7";
         evidence.push(`Runtime clássico Ren'Py 7 detectado (${pyVer})`);
       } else {
-        evidence.push("Arquivos Ren'Py detectados sem runtime lib explícito (usando adapter compatível universal)");
+        evidence.push("Arquivos Ren'Py detectados; versão do runtime não identificada");
       }
 
       return {
@@ -170,7 +160,7 @@ class EngineDetector {
         engineVersion: version,
         supportStatus: "SUPPORTED",
         detectedSubdir,
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.98,
         evidence,
         warnings,
@@ -191,7 +181,7 @@ class EngineDetector {
     // 2. DETECÇÃO RPG MAKER MV / MZ (NW.js / HTML5)
     // -------------------------------------------------------------
     const wwwDir = path.join(gameDir, "www");
-    const hasWwwData = fs.existsSync(path.join(wwwDir, "data", "System.json")) || fs.existsSync(path.join(wwwDir, "data"));
+    const hasWwwData = fs.existsSync(path.join(wwwDir, "data", "System.json"));
     const hasRootData = fs.existsSync(path.join(gameDir, "data", "System.json"));
     const hasRmmzCore = fs.existsSync(path.join(gameDir, "js", "rmmz_core.js")) || fs.existsSync(path.join(wwwDir, "js", "rmmz_core.js"));
     const hasRpgCore = fs.existsSync(path.join(gameDir, "js", "rpg_core.js")) || fs.existsSync(path.join(wwwDir, "js", "rpg_core.js"));
@@ -201,10 +191,20 @@ class EngineDetector {
       const subType = isMz ? "RPG Maker MZ" : "RPG Maker MV";
       evidence.push(`Estrutura de dados do ${subType} localizada (System.json / plugins.js)`);
 
+      let engineVersion = "unknown";
+      const coreName = isMz ? "rmmz_core.js" : "rpg_core.js";
+      for (const base of [gameDir, wwwDir]) {
+        try {
+          const text = fs.readFileSync(path.join(base, "js", coreName), "utf8");
+          const versionMatch = text.match(/RPGMAKER_VERSION\s*=\s*["']([0-9]+(?:\.[0-9]+){1,3})["']/);
+          if (versionMatch) { engineVersion = `${isMz ? "MZ" : "MV"} ${versionMatch[1]}`; break; }
+        } catch (_) {}
+      }
+      if (!hasRmmzCore && !hasRpgCore) warnings.push("Núcleo ausente: família MV/MZ inferida pela estrutura; versão não confirmada");
       return {
         engine: isMz ? "mz" : "mv",
-        engineVersion: isMz ? "MZ 1.x" : "MV 1.x",
-        architecture: `x${arch}`,
+        engineVersion,
+        architecture,
         confidence: 0.98,
         evidence,
         warnings,
@@ -235,7 +235,7 @@ class EngineDetector {
       return {
         engine: "electron",
         engineVersion: "Chromium / Electron",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -295,7 +295,7 @@ class EngineDetector {
       return {
         engine: "rgss",
         engineVersion: ver,
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -369,7 +369,7 @@ class EngineDetector {
           engineVersion: exactUnityVersion ? `Unity IL2CPP ${exactUnityVersion}` : "Unity IL2CPP",
           exactVersion: exactUnityVersion || null,
           unityType: "IL2CPP",
-          architecture: `x${arch}`,
+          architecture,
           confidence: 0.96,
           evidence,
           warnings: ["IL2CPP compila C# para C++ nativo. Localização via TextAssets/AssetBundles ou hook nativo."],
@@ -392,7 +392,7 @@ class EngineDetector {
           engineVersion: exactUnityVersion ? `Unity Mono ${exactUnityVersion}` : "Unity Mono",
           exactVersion: exactUnityVersion || null,
           unityType: "Mono",
-          architecture: `x${arch}`,
+          architecture,
           confidence: 0.98,
           evidence,
           warnings: [],
@@ -414,7 +414,7 @@ class EngineDetector {
         engineVersion: exactUnityVersion ? `Unity Genérico ${exactUnityVersion}` : "Unity Genérico",
         exactVersion: exactUnityVersion || null,
         unityType: "Generic",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.88,
         evidence,
         warnings,
@@ -431,7 +431,7 @@ class EngineDetector {
       return {
         engine: "wolf",
         engineVersion: "Wolf RPG",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -455,7 +455,7 @@ class EngineDetector {
       return {
         engine: "tyrano",
         engineVersion: "TyranoScript",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.92,
         evidence,
         warnings,
@@ -479,7 +479,7 @@ class EngineDetector {
       return {
         engine: isZ ? "krkrz" : "krkr",
         engineVersion: isZ ? "Kirikiri Z" : "Kirikiri 2",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.90,
         evidence,
         warnings,
@@ -519,7 +519,7 @@ class EngineDetector {
       return {
         engine: "godot",
         engineVersion: "Godot 3.x/4.x",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -548,7 +548,7 @@ class EngineDetector {
       return {
         engine: "unreal",
         engineVersion: "Unreal Engine 4/5",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.94,
         evidence,
         warnings,
@@ -577,7 +577,7 @@ class EngineDetector {
       return {
         engine: "gamemaker",
         engineVersion: "GameMaker Studio",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -594,7 +594,7 @@ class EngineDetector {
       return {
         engine: "construct",
         engineVersion: "Construct 3/2",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -611,7 +611,7 @@ class EngineDetector {
       return {
         engine: "defold",
         engineVersion: "Defold",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.95,
         evidence,
         warnings,
@@ -630,7 +630,7 @@ class EngineDetector {
       return {
         engine: isCreator ? "cocos_creator" : "cocos2dx",
         engineVersion: isCreator ? "Cocos Creator 2/3" : "Cocos2d-x",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.93,
         evidence,
         warnings,
@@ -647,7 +647,7 @@ class EngineDetector {
       return {
         engine: "gdevelop",
         engineVersion: "GDevelop 5",
-        architecture: `x${arch}`,
+        architecture,
         confidence: 0.92,
         evidence,
         warnings,
@@ -664,7 +664,7 @@ class EngineDetector {
     return {
       engine: "generic",
       engineVersion: "Desconhecida",
-      architecture: `x${arch}`,
+      architecture,
       confidence: 0.20,
       evidence,
       warnings,

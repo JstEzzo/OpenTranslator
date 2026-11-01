@@ -31,6 +31,7 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: "unit", name: "executableCompatibility", file: "tests/unit/executableCompatibility.test.js", desc: "PE validado, ARM64 separado de AMD64 e RenPy sem versao inventada" },
   { group: 'unit', name: 'explicitProviderChoice', file: 'tests/unit/explicitProviderChoice.test.js', desc: 'Traducao com provedor fixo nao envia texto a outro servico em fallback' },
   { group: 'unit', name: 'unrealLocResFormat', file: 'tests/unit/unrealLocResFormat.test.js', desc: 'LocRes real v3, assinatura oficial, preservacao de hashes e deteccao de pacotes nao extraidos' },
   { group: 'unit', name: 'shutdownHttp', file: 'tests/unit/shutdownHttp.test.js', desc: 'Encerramento HTTP real conclui job e restaura backup antes de sair' },

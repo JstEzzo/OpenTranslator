@@ -17,7 +17,7 @@ const DECLARATIONS = [
     engine: "rpgmaker",
     name: "RPG Maker MV / MZ",
     versions: ["MV", "MZ"],
-    status: "FULLY VALIDATED",
+    status: "PARTIAL",
     detection: "PASS",
     inspection: "PASS",
     extraction: "PASS",
@@ -52,7 +52,7 @@ const DECLARATIONS = [
     versions: ["8.x (Python 3) [COMPROVADO]"],
     verifiedVersions: ["8.x (Python 3)"],
     unverifiedVersions: ["6.x (Python 2)", "7.x (Python 2)"],
-    status: "FULLY VALIDATED",
+    status: "PARTIAL",
     detection: "PASS",
     inspection: "PASS",
     extraction: "PASS",
@@ -86,7 +86,7 @@ const DECLARATIONS = [
     engine: "unity",
     name: "Unity Engine (Mono / IL2CPP)",
     versions: ["2018.x (Mono)", "6000.x / Unity 6 (IL2CPP)"],
-    status: "FULLY VALIDATED",
+    status: "PARTIAL",
     detection: "PASS",
     inspection: "PASS",
     extraction: "PASS",
@@ -120,7 +120,7 @@ const DECLARATIONS = [
     engine: "wolf",
     name: "Wolf RPG Editor",
     versions: ["Wolf RPG 2.x", "Wolf RPG 3.x"],
-    status: "FULLY VALIDATED",
+    status: "PARTIAL",
     detection: "PASS",
     inspection: "PASS",
     extraction: "PASS",
@@ -154,7 +154,7 @@ const DECLARATIONS = [
     engine: "rgss",
     name: "RGSS3 / RPG Maker VX Ace",
     versions: ["RGSS3 (VX Ace)"],
-    status: "FULLY VALIDATED",
+    status: "PARTIAL",
     detection: "PASS",
     inspection: "PASS",
     extraction: "PASS",
@@ -188,7 +188,7 @@ const DECLARATIONS = [
     engine: "godot",
     name: "Godot Engine",
     versions: ["Godot 3.x", "Godot 4.x"],
-    status: "FULLY VALIDATED",
+    status: "PARTIAL",
     detection: "PASS",
     inspection: "PASS",
     extraction: "PASS",
@@ -348,11 +348,11 @@ const DECLARATIONS = [
 
 class EngineCapabilityMatrix {
   static getAll() {
-    return DECLARATIONS;
+    return structuredClone(DECLARATIONS);
   }
 
   static getDeclarations() {
-    return DECLARATIONS;
+    return structuredClone(DECLARATIONS);
   }
 
   static getMatrixSummary() {
@@ -365,7 +365,7 @@ class EngineCapabilityMatrix {
   }
 
   static getEngine(engineId) {
-    return DECLARATIONS.find(d => d.engine === engineId) || null;
+    return structuredClone(DECLARATIONS.find(d => d.engine === engineId) || null);
   }
 
   static getFormattedTable() {
@@ -393,6 +393,6 @@ class EngineCapabilityMatrix {
   }
 }
 
-EngineCapabilityMatrix.saveMatrixFile();
+// Persist only when explicitly requested; importing must not overwrite user data.
 
 module.exports = EngineCapabilityMatrix;

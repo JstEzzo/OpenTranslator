@@ -385,11 +385,13 @@ const handlers = {
     if (stat.isDirectory()) {
       gameDir = resolvedExePath;
       const files = fs.readdirSync(gameDir);
-      const exes = files.filter(f => f.toLowerCase().endsWith(".exe"));
-      if (exes.length > 0) resolvedExe = path.join(gameDir, exes[0]);
+      const exes = files.filter(f => /\.exe$/i.test(f) && !/^(unins|uninstall|crash|updat|setup|redist)/i.test(f)).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+      if (!exes.length) return { ok: false, error: "Nenhum executável de jogo encontrado nesta pasta." };
+      resolvedExe = path.join(gameDir, exes[0]);
     } else {
       gameDir = path.dirname(resolvedExePath);
     }
+    if (!/\.exe$/i.test(resolvedExe) || !fs.statSync(resolvedExe).isFile()) return { ok: false, error: "Selecione um executável .exe do jogo." };
     const detection = await EngineDetector.detect(resolvedExe);
     const key = "g_" + Date.now();
     const gameData = {

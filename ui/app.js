@@ -295,56 +295,8 @@
   function applyTheme() {
     const theme = S.cfg.theme || {};
     const accent = theme.accent || "#3b8ef0";
-    const bgImage = theme.bgImage || "";
-    const glassOpacity =
-      theme.glassOpacity !== undefined ? theme.glassOpacity : 45;
-
-    let css = `:root {
-      --accent: ${accent};
-      --accent2: ${adjustColorBrightness(accent, -15)};
-      --accent3: ${adjustColorBrightness(accent, -30)};
-    }`;
-
-    if (bgImage) {
-      const sanitizedBg = bgImage.replace(/\\/g, "/");
-      css += `
-        body {
-          background-image: linear-gradient(rgba(10, 10, 15, 0.85), rgba(10, 10, 15, 0.85)), url('${sanitizedBg}') !important;
-          background-size: cover !important;
-          background-position: center !important;
-          background-attachment: fixed !important;
-          background-repeat: no-repeat !important;
-        }
-      `;
-    } else {
-      css += `
-        body {
-          background-image: none !important;
-          background: var(--bg) !important;
-        }
-      `;
-    }
-
-    const glassBg = `rgba(15, 15, 22, ${glassOpacity / 100})`;
-    css += `
-      .cg, .gc, #sd, #bar, #modal-inner, .tb, #statusbar {
-        background: ${glassBg} !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
-      }
-      /* Prevent blur bleeding onto text elements */
-      h1, h2, h3, h4, h5, h6, label, span, button, input, select, textarea {
-        transform: translateZ(0);
-        -webkit-font-smoothing: antialiased !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-      }
-      body, button, input, select, textarea {
-        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      }
-    `;
-
+    const safeAccent = /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#3b8ef0";
+    const css = `:root { --accent: ${safeAccent}; --accent2: ${adjustColorBrightness(safeAccent, -15)}; --accent3: ${adjustColorBrightness(safeAccent, -30)}; }`;
     let styleEl = $("custom-theme-style");
     if (!styleEl) {
       styleEl = document.createElement("style");
@@ -1144,7 +1096,7 @@
     }
   }
   function engineInfo(eng) {
-    return ENGINES_DEF[eng] || ENGINES_DEF.mz;
+    return ENGINES_DEF[eng] || { label: "Não identificado", icon: "?", js: false };
   }
   const SUPPORTED_ENGINES = new Set(["mv", "mz", "rgss", "python", "renpy", "tyrano", "wolf", "unity", "godot", "unreal"]);
   const PARTIAL_ENGINES = new Set(["wolf", "krkr", "krkrz", "srpg", "agtk", "kmy", "bakin"]);
@@ -1172,345 +1124,17 @@
       S.cfg = c;
       if (c && c.lang) _lang = c.lang;
     } catch (e) { console.warn(`app.js: ${e.message}`); }
-    const st = document.createElement("style");
-    st.textContent = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
-@font-face{font-family:'NotoSansCJK';src:url('NotoSans/cjk/NotoSansCJKsc-Regular.otf') format('opentype');font-weight:400;font-style:normal}
-@font-face{font-family:'Noto Emoji';src:url('NotoSans/emoji/NotoColorEmoji-Regular.ttf') format('truetype');font-weight:400;font-style:normal}
-@font-face{font-family:'Unifont Smooth';src:url('unifont-all.ttf') format('truetype');font-weight:400;font-style:normal}
-@font-face{font-family:'OpenT PGMMV';src:url('../loaders/opent_PGMMV_font.ttf') format('truetype');font-weight:400;font-style:normal}
-@font-face{font-family:'Notdef Fallback';src:url('rawres/notdef.ttf') format('truetype');font-weight:400;font-style:normal}
-:root{
-  --bg:#08080c;
-  --bg2:#0d0d14;
-  --bg3:#13131f;
-  --bg4:#1a1a2b;
-  --bg5:#222238;
-  --bd:rgba(255,255,255,0.06);
-  --bd2:rgba(255,255,255,0.12);
-  --bd3:rgba(255,255,255,0.18);
-  --txt:#f2f3f8;
-  --txt2:#969ab5;
-  --txt3:#60657c;
-  --accent:#6c5ce7;
-  --accent-grad:linear-gradient(135deg,#6c5ce7,#a29bfe);
-  --accent2:#a29bfe;
-  --accent3:#5849cf;
-  --green:#00b894;
-  --green2:#55efc4;
-  --red:#d63031;
-  --red2:#ff7675;
-  --orange:#fdcb6e;
-  --purple:#e84393;
-  --font:'Outfit','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  --fontGame:'Unifont Smooth','NotoSansCJK','Noto Emoji','OpenT PGMMV',sans-serif;
-  --radius:8px;
-  --radius-sm:6px;
-  --radius-lg:12px;
-  --shadow:0 4px 12px rgba(0,0,0,.4);
-  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
-  --transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-*{margin:0;padding:0;box-sizing:border-box;min-width:0}
-body{
-  font-family:var(--font);background:var(--bg);color:var(--txt);
-  overflow:hidden;height:100vh;font-size:14px;line-height:1.5;
-  -webkit-user-select:none;user-select:none;
-  width:100%;
-}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
-::-webkit-scrollbar-thumb:hover{background:var(--bd3)}
-
-/* ===== APP LAYOUT ===== */
-#app{display:flex;flex-direction:column;height:100vh}
-
-/* Title bar */
-#bar{
-  display:flex;align-items:center;height:38px;background:rgba(8,8,12,0.4);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--bd);
-  -webkit-app-region:drag;flex-shrink:0
-}
-#bar-l{
-  flex:1;padding:0 14px;display:flex;align-items:center;gap:8px;
-  font-size:11px;color:var(--txt2);font-weight:600;letter-spacing:0.3px
-}
-#bar-r{display:flex}
-
-#ly{display:flex;flex:1;overflow:hidden}
-
-/* Sidebar */
-#sd{
-  width:68px;background:rgba(13,13,20,0.55);backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);border-right:1px solid var(--bd);
-  display:flex;flex-direction:column;gap:4px;padding:12px 6px;flex-shrink:0
-}
-#sd button{
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:10px 4px;border:none;background:transparent;color:var(--txt3);
-  cursor:pointer;border-radius:var(--radius);font-size:8px;line-height:1.1;
-  transition:var(--transition);position:relative;font-weight:500
-}
-#sd button:hover{background:rgba(255,255,255,0.03);color:var(--txt)}
-#sd button.on{background:rgba(108,92,231,0.08);color:var(--accent)}
-#sd button.on::before{
-  content:'';position:absolute;left:2px;top:50%;transform:translateY(-50%);
-  width:3px;height:20px;background:var(--accent-grad);border-radius:2px
-}
-#sd button .si{width:20px;height:20px;stroke:currentColor;transition:stroke var(--transition)}
-#sd button .sl{font-size:8px;letter-spacing:.2px;margin-top:2px;text-transform:uppercase}
-
-/* Main content */
-#mc{flex:1;overflow:hidden;background:var(--bg)}
-.tb{display:none;height:100%;overflow-y:auto;padding:0}
-.tb.on{display:block;animation:tabIn .25s ease}
-@keyframes tabIn{0%{opacity:.6;transform:scale(0.99)}100%{opacity:1;transform:scale(1)}}
-
-/* ===== BUTTONS ===== */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:7px 16px;border:1px solid var(--bd);background:rgba(255,255,255,0.02);
-  color:var(--txt);border-radius:var(--radius-sm);cursor:pointer;
-  font-size:11px;font-family:var(--font);transition:var(--transition);
-  white-space:nowrap;box-shadow:var(--shadow)
-}
-.btn:hover{background:rgba(255,255,255,0.06);border-color:var(--bd2);transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,0.25)}
-.btn:active{transform:translateY(0);box-shadow:var(--shadow)}
-.btn.pri{background:var(--accent-grad);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(108,92,231,0.2)}
-.btn.pri:hover{filter:brightness(1.1);box-shadow:0 6px 18px rgba(108,92,231,0.35);transform:translateY(-2px)}
-.btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn.dgr{color:var(--red);border-color:var(--red)}
-.btn.dgr:hover{background:rgba(214,48,49,0.08);border-color:var(--red2);transform:translateY(-2px)}
-.btn.sm{font-size:10px;padding:5px 12px;border-radius:var(--radius-sm)}
-.btn.xs{font-size:9px;padding:3px 8px;border-radius:var(--radius-sm)}
-.btn .bi{font-size:13px}
-.st{
-  border-radius:20px;padding:1px 8px;font-size:8px;letter-spacing:.3px;
-  background:rgba(90,91,106,.12);color:var(--txt3);white-space:nowrap;
-  border:1px solid rgba(90,91,106,.08);text-transform:uppercase
-}
-.st.on{background:rgba(78,202,110,.06);color:var(--green);border-color:rgba(78,202,110,.1)}
-#cstat{font-size:8px}
-
-/* ===== STATUS BAR ===== */
-#statusbar{
-  display:flex;align-items:center;height:24px;
-  background:var(--bg2);border-top:1px solid var(--bd);
-  padding:0 12px;font-size:10px;color:var(--txt3);gap:12px;
-  flex-shrink:0;-webkit-app-region:no-drag
-}
-#sbInfo{color:var(--txt3);font-size:9px}
-#sbCenter{flex:1;text-align:center;font-size:9px;color:var(--txt3)}
-#sbRight{color:var(--txt2);font-size:9px;display:flex;gap:8px}
-
-/* ===== GAME LIBRARY ===== */
-#tb-gl{padding:10px 14px}
-#drop-zone{
-  border:2px dashed var(--bd);padding:16px 20px 12px;
-  text-align:center;color:var(--txt3);font-size:12px;
-  margin-bottom:8px;cursor:pointer;border-radius:var(--radius-lg);
-  transition:all var(--transition);display:flex;flex-direction:column;
-  align-items:center;gap:6px;background:var(--bg2);max-width:100%
-}
-#drop-zone .dz-txt{word-break:break-word;max-width:100%}
-#drop-zone:hover{border-color:var(--txt2);background:var(--bg3)}
-#drop-zone.dragover{border-color:var(--accent);background:rgba(59,142,240,.04);box-shadow:0 0 20px rgba(59,142,240,.06)}
-
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-.dz-icon{font-size:22px;color:var(--txt2)}
-.dz-txt{font-size:10px;color:var(--txt2);max-width:400px;line-height:1.4}
-.dz-engines{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:2px}
-.dz-el{
-  font-size:8px;color:var(--txt3);background:var(--bg4);
-  padding:2px 7px;border-radius:20px;border:1px solid var(--bd)
-}
-.gl-bar{display:flex;gap:5px;margin-bottom:6px;align-items:center;padding:0}
-.gl-inp{
-  flex:1;padding:5px 10px;background:var(--bg2);border:1px solid var(--bd);
-  color:var(--txt);font-size:11px;font-family:var(--font);border-radius:var(--radius-sm);
-  transition:border-color var(--transition)
-}
-.gl-inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,142,240,.08)}
-#gl-list{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));width:100%;}
-.gc{
-  background:rgba(255,255,255,0.01);border:1px solid var(--bd);padding:12px 14px;
-  cursor:pointer;display:flex;align-items:center;gap:12px;
-  border-radius:var(--radius-lg);transition:var(--transition);
-  box-shadow:var(--shadow)
-}
-.gc:hover{border-color:var(--accent2);background:rgba(255,255,255,0.03);transform:translateY(-3px);box-shadow:var(--shadow-lg)}
-.gc.launched{border-color:var(--green);background:rgba(0,184,148,0.04);box-shadow:0 0 16px rgba(0,184,148,0.12)}
-.gc.launched:hover{transform:translateY(-2px);box-shadow:0 0 20px rgba(0,184,148,0.18)}
-.gc .gi{flex:1;min-width:0}
-.gc .gt{font-size:12px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.gc .gs{font-size:9px;color:var(--txt3);margin-top:4px;display:flex;gap:8px;align-items:center}
-.gc .ga{display:flex;gap:6px;flex-shrink:0}
-.gc .ga .btn{padding:3px 8px;font-size:10px;min-width:24px;justify-content:center}
-.eng-ok{color:var(--green);background:rgba(0,184,148,0.15);border:1px solid rgba(0,184,148,0.3)}
-.eng-plan{color:var(--orange);background:rgba(253,204,91,0.15);border:1px solid rgba(253,204,91,0.3)}
-.eng-warn{color:var(--orange);background:rgba(253,204,91,0.1);border:1px dashed rgba(253,204,91,0.5)}
-
-#tb-sv{padding:8px 14px}
-#tb-sv .sg{margin-bottom:10px;border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden}
-#tb-sv .sg-h{background:var(--bg2);padding:8px 12px;font-size:11px;font-weight:600;color:var(--txt);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background var(--transition)}
-#tb-sv .sg-h:hover{background:var(--bg3)}
-#tb-sv .sg-b{padding:0;overflow:hidden;transition:max-height .2s;max-height:0}
-#tb-sv .sg-b.on{max-height:2000px}
-#tb-sv .sf{display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:10px;border-top:1px solid var(--bd);transition:background var(--transition)}
-#tb-sv .sf:hover{background:var(--bg3)}
-#tb-sv .sf .sfn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt)}
-#tb-sv .sf .sfs{color:var(--txt3);font-size:9px;white-space:nowrap}
-#tb-sv .sf .sfa{display:flex;gap:3px}
-#tb-sv .empty{padding:30px;text-align:center;color:var(--txt3);font-size:11px}
-#tb-sv .sg-ico{font-size:12px}
-
-/* ===== CONFIG ===== */
-#tb-cf{overflow-y:auto;padding:10px 14px 40px}
-.cg{
-  background:rgba(255,255,255,0.015);border:1px solid var(--bd);border-radius:var(--radius-lg);
-  margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)
-}
-.cg h4{
-  font-size:10px;color:var(--accent2);padding:10px 14px;
-  background:rgba(255,255,255,0.02);border-bottom:1px solid var(--bd);
-  text-transform:uppercase;letter-spacing:.5px;font-weight:700
-}
-.cg-body{padding:4px 0}
-.ci{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:5px 12px;border-bottom:1px solid rgba(30,30,46,.4);
-  gap:8px;min-height:30px
-}
-.ci:last-child{border-bottom:none}
-.ci label{
-  font-size:10px;color:var(--txt2);white-space:nowrap;
-  min-width:80px;flex-shrink:0
-}
-.ci input,.ci select{
-  padding:5px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--bd);
-  color:var(--txt);font-size:10px;font-family:var(--font);border-radius:var(--radius-sm);
-  transition:var(--transition);width:150px;flex-shrink:0
-}
-.ci input:focus,.ci select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,0.15);background:rgba(255,255,255,0.04)}
-.ci input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-.ci .btn{flex-shrink:0}
-.ci .btn+.btn{margin-left:4px}
-
-/* Config tool buttons grid */
-#tb-cf .tools-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-  gap:6px;padding:8px 12px
-}
-#tb-cf .tools-grid .btn{
-  width:100%;justify-content:flex-start;padding:6px 12px;font-size:10px;
-  background:rgba(255,255,255,0.01);border-color:var(--bd)
-}
-#tb-cf .tools-grid .btn:hover{background:rgba(255,255,255,0.04);border-color:var(--accent2);transform:translateY(-2px)}
-#tb-cf .tools-grid .btn .bi{font-size:12px}
-
-/* Stats values */
-.ci .sv{
-  font-size:10px;font-weight:600;text-align:right;width:80px;flex-shrink:0
-}
-.ci .sv.gr{color:var(--green)}
-.ci .sv.or{color:var(--orange)}
-.ci .sv.pr{color:var(--purple)}
-
-/* ===== CHEATS ===== */
-#tb-ch{display:none;flex-direction:column;height:100%;overflow-y:auto;padding:10px 14px 40px}
-#tb-ch.on{display:flex}
-
-/* ===== LOG ===== */
-#tb-lg{display:none;flex-direction:column;height:100%;padding:0}
-#tb-lg.on{display:flex}
-#tb-lg .lg-header{
-  display:flex;align-items:center;gap:8px;padding:4px 12px;
-  background:var(--bg2);border-bottom:1px solid var(--bd);
-  font-size:10px;color:var(--txt3);flex-shrink:0
-}
-#lb{
-  flex:1;overflow-y:auto;font-family:var(--font);font-size:12px;
-  background:#07070c;padding:2px 0;line-height:1.6
-}
-.le{display:flex;padding:1px 12px;font-size:12px;word-break:break-word;gap:6px;-webkit-user-select:text;user-select:text;cursor:text}
-.lt{color:var(--txt3);width:65px;flex-shrink:0;font-size:10px;text-align:right}
-.le .lm{flex:1}
-.le.li{color:var(--txt)}
-.le.le{color:var(--red)}
-.le.ls{color:var(--green)}
-.le.lw{color:var(--orange)}
-
-/* ===== GAME EDIT MODAL ===== */
-#modal{
-  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.7);z-index:999;padding:20px;overflow-y:auto;
-  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)
-}
-#modal.on{display:block;animation:fadeIn .15s ease}
-@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
-#modal-inner{
-  background:var(--bg3);border:1px solid var(--bd2);
-  border-radius:var(--radius-lg);max-width:540px;margin:40px auto;
-  padding:16px;box-shadow:var(--shadow-lg)
-}
-.mh{font-size:12px;color:var(--accent);margin-bottom:10px;border-bottom:1px solid var(--bd);padding-bottom:6px;font-weight:600}
-.mg{display:flex;gap:12px}
-.mc2{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-#modal-inner .f{margin-bottom:2px;display:flex;flex-direction:column;gap:2px}
-#modal-inner .f label{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px}
-#modal-inner .f input,#modal-inner .f select{
-  padding:4px 8px;background:var(--bg2);border:1px solid var(--bd);
-  color:var(--txt);border-radius:var(--radius-sm);font-size:10px;font-family:var(--font);
-  transition:border-color var(--transition)
-}
-#modal-inner .f input:focus,#modal-inner .f select:focus{outline:none;border-color:var(--accent)}
-#modal-inner .fi{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:10px}
-#modal-inner .fi label{color:var(--txt3)}
-#modal-inner .fi .fv{color:var(--txt2)}
-#modal-inner .fb{display:flex;gap:6px;justify-content:flex-end;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px}
-
-/* ===== SAVES ===== */
-.sv-item{
-  padding:5px 10px;background:var(--bg2);border:1px solid var(--bd);
-  border-radius:var(--radius-sm);margin-bottom:4px;font-size:10px;
-  display:flex;justify-content:space-between;align-items:center;
-  transition:background var(--transition)
-}
-.sv-item:hover{background:var(--bg3)}
-#ps{
-  width:100%;padding:5px 8px;margin:0 0 6px;background:var(--bg2);
-  border:1px solid var(--bd);color:var(--txt);border-radius:var(--radius-sm);
-  font-size:10px;font-family:var(--font);transition:border-color var(--transition)
-}
-#ps:focus{outline:none;border-color:var(--accent)}
-.hd{display:none!important}
-input{outline:none}
-.help-tip {
-  display: block;
-  font-size: 9px;
-  color: var(--txt2);
-  margin-bottom: 6px;
-  margin-top: -2px;
-  padding: 0 12px;
-  line-height: 1.3;
-  font-weight: 400;
-}
-.toast-card {
-  animation: toastIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-}
-@keyframes toastIn {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-select option {
-  background-color: var(--bg3) !important;
-  color: var(--txt) !important;
-}
-  `;
-    document.head.appendChild(st);
-
+    if (!$("application-styles")) {
+      const styles = document.createElement("link");
+      styles.id = "application-styles";
+      styles.rel = "stylesheet";
+      styles.href = "styles/base.css";
+      document.head.appendChild(styles);
+      const layout = document.createElement("link");
+      layout.rel = "stylesheet";
+      layout.href = "styles/layout.css";
+      document.head.appendChild(layout);
+    }
     applyTheme();
 
     const langOpts = Object.keys(LANGS)
@@ -1539,19 +1163,19 @@ select option {
       <button data-t="cf"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span class="sl">${t("tabConfig")}</span></button>
       <button data-t="ch" id="btn-cheats"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span class="sl">Cheats ⚡</span></button>
       <button data-t="lg"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span class="sl">${t("tabLog")}</span></button>
-      <button data-t="pf" id="btn-performance"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg><span class="sl">Engines &amp; Velocidade</span></button>
+      <button data-t="pf" id="btn-performance"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg><span class="sl">Compatibilidade</span></button>
     </div>
     <div id="mc">
 
       <!-- GAMES -->
-      <div id="tb-gl" class="tb on">
+      <div id="tb-gl" class="tb on"><div class="library-heading"><div><h1>Biblioteca</h1><p>Seus jogos e suas traduções, em um só lugar.</p></div><button id="glAdd" class="btn primary">+ Adicionar jogo</button></div>
         <div id="drop-zone">
           <div class="dz-icon">\ud83d\udcc2</div>
-          <div class="dz-txt">${t("dropText")}</div>
+          <div class="dz-txt">Arraste o executável do jogo aqui ou clique em Adicionar jogo.</div>
         </div>
         <div class="gl-bar">
           <input id="glSearch" placeholder="${t("searchGames")}" class="gl-inp">
-          <button id="glRefresh" class="btn sm" title="${t("refresh")}">\u21bb</button>
+          <button id="glRefresh" class="btn sm" title="${t("refresh")}">↻ Atualizar</button>
         </div>
         <div id="gl-list"></div>
         <!-- Modern Glassmorphic Launch Progress Modal -->
@@ -2292,7 +1916,7 @@ select option {
       return;
     }
     let html = "";
-    for (const k of S.gameKeys) {
+    for (const k of [...S.gameKeys].sort((a, b) => (S.games[a]?.libConf?.title || a).localeCompare(S.games[b]?.libConf?.title || b, "pt-BR", { numeric: true, sensitivity: "base" }))) {
       const d = S.games[k];
       if (!d) {
         html +=
@@ -2304,7 +1928,7 @@ select option {
       const lc = d.libConf || {};
       const ca = d.constArgs || {};
       const exe = ca.gameExe || "";
-      const eng = ca.engine || "mz";
+      const eng = ca.engine || "unknown";
       const ei = engineInfo(eng);
       const engLabel = ei.label || eng;
       const engIcon = ei.icon || "";
@@ -2312,7 +1936,7 @@ select option {
       const launched = S.launchedKey === k;
       const playBtn = launched
         ? '<span style="color:var(--green);font-size:10px;padding:0 6px">\u25b6 Running</span>'
-        : '<button class="btn xs glPlay">\u25b6</button>';
+        : '<button class="btn xs glPlay" title="Iniciar jogo">▶ Iniciar</button>';
       const title = lc.title || (exe ? basename(exe) : "") || k;
       html +=
         '<div class="gc' +
@@ -2328,7 +1952,7 @@ select option {
         ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "full" ? "✓" : engStatus.s === "planned" ? "⚙" : engStatus.s === "fantasma" ? "❌" : "?"}</span>` +
         '</div></div><div class="ga">' +
         playBtn +
-        '<button class="btn xs glEdit">\u270e</button><button class="btn xs dgr glDel">\u2715</button></div></div>';
+        '<button class="btn xs glEdit" title="Editar jogo">Editar</button><button class="btn xs dgr glDel" title="Remover da biblioteca">Remover</button></div></div>';
     }
     g.innerHTML = html;
     // Filter by search
@@ -2380,7 +2004,7 @@ select option {
     const m = $("modal");
     if (!m) return;
     const exePath = ca.gameExe || "";
-    const curEng = ca.engine || "mz";
+    const curEng = ca.engine || "unknown";
     const ei = engineInfo(curEng);
     const lastLaunch = lc.lastLaunch
       ? new Date(lc.lastLaunch).toLocaleString()
@@ -2402,19 +2026,19 @@ select option {
       <div class="f"><label>${t("gamePath")}</label>
         <div style="display:flex;gap:3px">
           <input id="mExe" value="${esc(exePath)}" placeholder="C:\\Games\\Game\\Game.exe" style="flex:1">
-          <button id="mBrowse" class="btn sm">...</button>
+
         </div>
       </div>
     </div>
     <div class="mc2">
       <div class="f"><label>${t("tags")}</label><input id="mTags" value="${esc(tags)}" placeholder="Separated by comma"></div>
       <div class="f"><label>${t("note")}</label><textarea id="mNote" rows="2" style="resize:vertical;padding:3px 5px;background:var(--bg2);border:1px solid var(--bd);color:var(--txt);border-radius:3px;font-size:10px;font-family:var(--font)">${esc(lc.note || "")}</textarea></div>
-      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${esc(ei.icon || "")} ${esc(ei.label || curEng)} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(✅ Fully Verified)" : "(Nativo)")}</span></div>
+      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${esc(ei.icon || "")} ${esc(ei.label || curEng)} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(Validação por jogo)" : "(Nativo)")}</span></div>
       ${(curEng === "python" || curEng === "renpy") ? `
       <div style="background:rgba(108,92,231,0.12);padding:8px 10px;border-radius:6px;border:1px solid rgba(108,92,231,0.3);margin:5px 0">
-        <div style="font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:6px">🎭 Ren'Py Visual Novel Engine <span style="background:rgba(0,184,148,0.2);color:var(--green2);padding:2px 6px;border-radius:4px;font-size:10px">✅ Fully Verified</span></div>
+        <div style="font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:6px">🎭 Ren'Py Visual Novel Engine <span style="background:rgba(0,184,148,0.2);color:var(--green2);padding:2px 6px;border-radius:4px;font-size:10px">Validação por jogo</span></div>
         <div style="font-size:11px;color:var(--txt);margin-top:3px">
-          <div>Suporte da Engine: <b>✅ 8.x (Python 3) — Comprovado</b></div>
+          <div>Suporte da Engine: <b>8.x (Python 3) — verificar compatibilidade do jogo</b></div>
           <div style="color:var(--txt2);font-size:10px;margin-top:2px">Não comprovado: ⚠️ 6.x / ⚠️ 7.x (Python 2) — Requer validação</div>
           <div style="margin-top:2px">Método: <b>Translation Layer Oficial (Puramente Aditiva)</b></div>
         </div>
@@ -2425,7 +2049,7 @@ select option {
     </div>
   </div>
   <div class="fb" style="display:flex;flex-wrap:wrap;justify-content:space-between;width:100%;gap:10px">
-    <div style="display:flex;flex-wrap:wrap;gap:4px">
+    <details class="game-tools"><summary>Ferramentas avançadas de tradução e recuperação</summary><div>
       <button id="mPreTranslate" class="btn sm pri">${t("mPreTranslate") || "Translate Files 🌐"}</button>
       <button id="mTestRenpyCompat" class="btn sm" style="background:#e84393;color:#fff" title="Testar compatibilidade oficial de ponta a ponta com extração de amostra e validação">Testar Compatibilidade Ren'Py 🎭</button>
       <button id="mDryRun" class="btn sm" style="background:#2b8a3e;color:#fff" title="Simula a extração sem modificar nenhum arquivo">Simular (Dry Run) 🧪</button>
@@ -2450,7 +2074,7 @@ select option {
       <button id="mUnpackAll" class="btn sm" style="background:var(--accent);color:#fff" title="Descompactar 100% dos arquivos (.rpa, mídias e scripts) para uma pasta">Descompactar Tudo 📦</button>
       <button id="mDelCache" class="btn sm dgr">${t("deleteCache") || "Delete Cache"}</button>
       <button id="mExportCache" class="btn sm">${t("exportTexts") || "Export Texts"}</button>
-    </div>
+    </div></details>
     <div style="display:flex;gap:4px">
       <button id="mCancel" class="btn">${t("btnCancel") || "Cancel"}</button><button id="mSave" class="btn pri">${t("btnSave") || "Save"}</button>
     </div>
@@ -2459,6 +2083,12 @@ select option {
     m.classList.add("on");
     m.dataset.key = key || "";
 
+    if (!key) {
+      const tools = m.querySelector(".game-tools");
+      if (tools) tools.hidden = true;
+      const engineLabel = m.querySelector(".fi .fv");
+      if (engineLabel) engineLabel.textContent = "Identificado ao salvar o caminho do jogo";
+    }
     $("mDryRun")?.addEventListener("click", async () => {
       const btn = $("mDryRun");
       btn.disabled = true;
@@ -3402,8 +3032,16 @@ select option {
     });
     $("mCancel").addEventListener("click", () => m.classList.remove("on"));
     $("mSave").addEventListener("click", async () => {
-      const k = m.dataset.key || "g_" + Date.now();
-      const exeVal = $("mExe").value;
+      let k = m.dataset.key;
+      const exeVal = $("mExe").value.trim();
+      if (!exeVal) { showToast("Informe o caminho completo do jogo.", "error"); $("mExe").focus(); return; }
+      if (!k) {
+        try {
+          const added = await rpc("addGameByPath", { exePath: exeVal, title: $("mTitle").value });
+          if (!added?.ok) { showToast(added?.error || "Não foi possível adicionar o jogo.", "error"); return; }
+          k = added.key;
+        } catch (error) { showToast(error.message || "Não foi possível adicionar o jogo.", "error"); return; }
+      }
       const meng = await detectEngine(exeVal);
       const tagArr = $("mTags")
         .value.split(",")
@@ -3425,13 +3063,6 @@ select option {
       });
       m.classList.remove("on");
       renderGames();
-    });
-    $("mBrowse").addEventListener("click", () => {
-      log(
-        "info",
-        "Type or paste the full EXE path (e.g. C:\\Games\\Game\\Game.exe)",
-      );
-      $("mExe").select();
     });
     $("mTitleTrBtn")?.addEventListener("click", async () => {
       const title = $("mTitle")?.value;
@@ -3582,6 +3213,7 @@ select option {
     }
   });
   $("svRef")?.addEventListener("click", renderSaves);
+  $("glAdd")?.addEventListener("click", () => openEdit(null));
   $("glSearch")?.addEventListener("input", renderGames);
   $("glRefresh")?.addEventListener("click", async () => {
     await loadGames();

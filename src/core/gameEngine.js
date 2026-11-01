@@ -243,19 +243,7 @@ function detectEngine(exePath, exeDir) {
 }
 
 function getExeArch(exePath) {
-  try {
-    const fd = fs.openSync(exePath, "r");
-    const buf = Buffer.alloc(4);
-    fs.readSync(fd, buf, 0, 4, 0x3c);
-    const peOffset = buf.readUInt32LE(0);
-    const machineBuf = Buffer.alloc(2);
-    fs.readSync(fd, machineBuf, 0, 2, peOffset + 4);
-    fs.closeSync(fd);
-    const machine = machineBuf.readUInt16LE(0);
-    if (machine === 0x8664) return 64;
-    if (machine === 0x014c) return 32;
-  } catch (e) {}
-  return 32;
+  return require("./executableInfo").executableBits(exePath);
 }
 
 function getHookDll(eng, exePath) {
@@ -265,20 +253,15 @@ function getHookDll(eng, exePath) {
   if (eng === "mz" || eng === "mv") {
     return null;
   }
-  if (eng === "wolf") {
-    try {
-      const stats = fs.statSync(exePath);
-      if (stats.size > 4000000) {
-        return "wolfHook.dll";
-      }
-    } catch (e) {}
-    return "wolfHook3.dll";
-  }
+  // Unknown/ARM64 binaries cannot use x86 or AMD64 injectors.
+  if (arch === null) return null;
+  // File size is not a Wolf version signature. No automatic hook without evidence.
+  if (eng === "wolf") return null;
   if (eng === "krkrz") {
     return arch === 64 ? "krkrzHook64.dll" : "krkrzHook32.dll";
   }
   if (eng === "krkr") {
-    return "krkr2Hook.dll";
+    return arch === 32 ? "krkr2Hook.dll" : null;
   }
   if (eng === "rgss") {
     return arch === 64 ? "RGSSHook64.dll" : "RGSSHook.dll";
@@ -287,10 +270,10 @@ function getHookDll(eng, exePath) {
     return arch === 64 ? "PythonHook64.dll" : "PythonHook.dll";
   }
   if (eng === "srpg") {
-    return "SRPGHook.dll";
+    return arch === 32 ? "SRPGHook.dll" : null;
   }
   if (eng === "agtk") {
-    return "AgtkHook.dll";
+    return arch === 32 ? "AgtkHook.dll" : null;
   }
   return null;
 }
