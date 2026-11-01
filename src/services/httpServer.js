@@ -68,19 +68,18 @@ function logInternal(level, msg) {
  * A implementacao canonica esta em src/core/shutdownCoordinator.js.
  */
 function terminateAllProcessesAndExit(reason) {
-  try {
-    const coordinator = require('../core/shutdownCoordinator');
-    coordinator.requestShutdown(reason);
-  } catch (e) {
-    logInternal('warn', `[shutdown] coordinator indisponivel: ${e.message}`);
-    process.exit(0);
-  }
+  return require('../core/shutdownCoordinator').requestShutdown(reason);
 }
 
 // SIGINT/SIGTERM sao tratados exclusivamente pelo shutdownCoordinator,
 // registrado em server.js. Aqui nao ha mais listener concorrente (C8).
 
 const server = http.createServer((req, res) => {
+  if (require('../core/shutdownCoordinator').isShuttingDown()) {
+    res.writeHead(503, { 'Content-Type': 'application/json', Connection: 'close' });
+    res.end(JSON.stringify({ ok: false, error: 'Aplicacao encerrando' }));
+    return;
+  }
   let parsedUrl;
   try {
     parsedUrl = new URL(req.url, 'http://localhost');
@@ -148,6 +147,9 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname === '/api/close_app' || pathname === '/api/shutdown') {
+    if (req.method !== 'POST') {
+      res.writeHead(405, { Allow: 'POST' }); res.end('Method not allowed'); return;
+    }
     // Encerrar o app e' uma operacao destrutiva: exige token.
     const guard = sessionGuard.guardRequest({
       req, requireToken: true, expectedToken: global.SESSION_TOKEN,
@@ -163,6 +165,10 @@ const server = http.createServer((req, res) => {
     });
     res.end(JSON.stringify({ ok: true, message: 'Encerrando aplicacao e jogo...' }));
 
+    if (pathname === '/api/shutdown') {
+      terminateAllProcessesAndExit('Encerramento explicito pelo launcher');
+      return;
+    }
     // Tolerancia para nao fechar ao dar F5: se um heartbeat chegar em ate
     // 2500ms, o encerramento e cancelado.
     const shutdownRequestedAt = Date.now();
@@ -271,7 +277,13 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        const result = await handler(params, { requestId: guard.requestId });
+        const lifecycle = require('../core/shutdownCoordinator');
+        if (lifecycle.isShuttingDown()) {
+          res.writeHead(503, { 'Content-Type': 'application/json', Connection: 'close' });
+          res.end(JSON.stringify({ ok: false, error: 'Aplicacao encerrando' }));
+          return;
+        }
+        const result = await lifecycle.trackOperation(handler(params, { requestId: guard.requestId }));
         const isErr = result && typeof result === 'object' && result.ok === false;
         res.writeHead(isErr ? 400 : 200, {
           'Content-Type': 'application/json',

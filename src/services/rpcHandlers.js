@@ -527,10 +527,10 @@ const handlers = {
 
     global.isLaunchingGame = true;
     try {
-      if (global.restoreTimeout) {
-        clearTimeout(global.restoreTimeout);
-        global.restoreTimeout = null;
-      }
+      const lifecycle = require('../core/shutdownCoordinator');
+      if (lifecycle.isShuttingDown()) return { ok: false, error: 'Aplicacao encerrando' };
+      const pendingRestore = await lifecycle.restorePendingGame();
+      if (!pendingRestore.ok) return { ok: false, error: pendingRestore.error };
       const games = handlers.loadGames().games;
       const g = games[key];
       if (!g) {
@@ -589,6 +589,10 @@ const handlers = {
         return { ok: false, error: errorMsg, details: pipeRes.details, stack: pipeRes.stack, certificate: pipeRes.certificate, status: pipeRes.status };
       }
 
+      // Preserve the post-translation state before modifying the runtime overlay.
+      bakDir = backupGameData(gameDir);
+      if (!bakDir) return { ok: false, error: 'Backup do overlay nao confirmado; jogo preservado' };
+      global.launchedBak = bakDir;
       // Garante injeção de CheatOverlay.js para suporte ao Dual Hook / Runtime Translation
       try {
         const dataDir = findDataDir(gameDir);
@@ -741,6 +745,15 @@ const handlers = {
     }
     const gp = proc.pid;
     const currentBak = bakDir;
+    // An injector may exit while its detached child keeps running. Its exit is not proof that the game stopped.
+    global.unverifiedDetachedGameProcess = Boolean(proc.spawnfile &&
+      path.resolve(proc.spawnfile).toLowerCase() === path.resolve(injectExe).toLowerCase());
+    if (proc.pid) {
+      const registration = require('../core/ownedProcessRegistry').register(proc, {
+        executable: proc.spawnfile || exe, sessionId: key,
+      });
+      if (!registration.ok) global.log('warn', 'Processo nao registrado: ' + registration.reason);
+    }
     global.launchedProc = proc;
     global.launchedKey = key;
     global.launchedBak = currentBak;
@@ -758,14 +771,7 @@ const handlers = {
       );
       if (global.launchedBak) {
         const bakToRestore = global.launchedBak;
-        global.launchedBak = null;
-        if (global.restoreTimeout) {
-          clearTimeout(global.restoreTimeout);
-        }
-        global.restoreTimeout = setTimeout(() => {
-          restoreGameData(bakToRestore);
-          global.restoreTimeout = null;
-        }, 20000);
+        require('../core/shutdownCoordinator').scheduleGameRestore(bakToRestore);
       }
       global.launchedProc = null;
       global.launchedKey = null;
@@ -776,14 +782,7 @@ const handlers = {
       global.log("error", "Process error: " + err.message);
       if (global.launchedBak) {
         const bakToRestore = global.launchedBak;
-        global.launchedBak = null;
-        if (global.restoreTimeout) {
-          clearTimeout(global.restoreTimeout);
-        }
-        global.restoreTimeout = setTimeout(() => {
-          restoreGameData(bakToRestore);
-          global.restoreTimeout = null;
-        }, 20000);
+        require('../core/shutdownCoordinator').scheduleGameRestore(bakToRestore);
       }
       global.launchedProc = null;
       global.launchedKey = null;

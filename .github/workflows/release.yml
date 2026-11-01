@@ -1,69 +1,62 @@
-name: Build & Release OpenTranslator Single-Executable Binaries
+name: Build portable OpenTranslator
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    tags: ['v*']
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    name: Build Windows Single Executable
     runs-on: windows-latest
-
+    timeout-minutes: 30
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - name: Build launcher and portable runtime
+        shell: pwsh
+        run: |
+          node tools/package_release.js --output "$env:RUNNER_TEMP/OpenTranslator-Portable"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Smoke test portable launcher
+        shell: pwsh
+        run: |
+          $source = Join-Path $env:RUNNER_TEMP 'OpenTranslator-Portable'
+          $smokeDir = Join-Path $env:RUNNER_TEMP 'OpenTranslator-Smoke'
+          Copy-Item -LiteralPath $source -Destination $smokeDir -Recurse
+          $launcher = Join-Path $smokeDir 'OpenTranslator.exe'
+          $probe = Start-Process -FilePath $launcher -ArgumentList '--smoke-test' -WindowStyle Hidden -Wait -PassThru
+          if ($probe.ExitCode -ne 0) { throw "Launcher smoke test failed: $($probe.ExitCode)" }
+      - name: Archive portable package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "$env:RUNNER_TEMP/OpenTranslator-Portable/*" -DestinationPath "$env:RUNNER_TEMP/OpenTranslator-Win64-Portable.zip"
+      - uses: actions/upload-artifact@v4
         with:
-          python-version: '3.12'
-
-      - name: Install Build Tools & Dependencies
-        run: |
-          cd Tool
-          npm install
-          npm install -g pkg pyinstaller
-
-      - name: Compile Sidecar Python Binaries
-        run: |
-          cd Tool
-          pyinstaller --onefile --name open_translator_core open_translator.py
-          pyinstaller --onefile --name unpack_renpy_core resources/renpy/unpack_renpy_all.py
-
-      - name: Package Single Executable Node Application
-        run: |
-          cd Tool
-          npx pkg server.js --targets node20-win-x64 --output dist/OpenTranslator.exe
-
-      - name: Assemble Release Artifact Bundle
-        run: |
-          mkdir -p dist/bundle
-          cp Tool/dist/OpenTranslator.exe dist/bundle/
-          cp -r Tool/www dist/bundle/
-          cp -r Tool/config dist/bundle/
-          cp -r Tool/resources dist/bundle/
-          cp -r Tool/loaders dist/bundle/
-          mkdir -p dist/bundle/dist
-          cp Tool/dist/open_translator_core.exe dist/bundle/dist/ 2>$null || true
-          cp Tool/dist/unpack_renpy_core.exe dist/bundle/dist/ 2>$null || true
-          Compress-Archive -Path dist/bundle/* -DestinationPath dist/OpenTranslator-Win64-Portable.zip
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+          name: OpenTranslator-Win64-Portable
+          path: ${{ runner.temp }}/OpenTranslator-Win64-Portable.zip
+          if-no-files-found: error
+          retention-days: 7
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          files: dist/OpenTranslator-Win64-Portable.zip
-          name: OpenTranslator Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: OpenTranslator-Win64-Portable
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: OpenTranslator-Win64-Portable.zip
+          draft: true
+          fail_on_unmatched_files: true

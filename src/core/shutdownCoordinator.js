@@ -1,213 +1,161 @@
-/**
- * shutdownCoordinator.js — Fonte Unica de Verdade para Encerramento (FASE 1 / PASSO 9)
- *
- * Problema corrigido:
- *   Existiam DUAS implementacoes de shutdown competindo nos MESMOS sinais:
- *     - server.js:shutdownAll()      (SIGINT/SIGTERM, exit em 250ms)
- *     - httpServer.js:terminateAllProcessesAndExit() (SIGINT/SIGTERM, exit em 100ms)
- *   Ambas registravam listeners de SIGINT/SIGTERM. O exit de 100ms vencia o de
- *   250ms, entao restoreGameData era abortado. Nenhuma das duas checava se o
- *   backup ja estava verificado.
- *
- * Este modulo e o unico dono de:
- *   - listeners SIGINT/SIGTERM/SIGHUP
- *   - ordem de teardown (rollback -> processos -> sockets -> db -> pid file)
- *   - idempotencia (isShuttingDown)
- *
- * Ordem de teardown (FASE 1 / PASSO 9 / PASSO 35):
- *   1. Marcar isShuttingDown (idempotencia)
- *   2. Cancelar jobs em andamento (se houver coordinator de jobs)
- *   3. Fazer checkpoint dos jobs ativos
- *   4. Encerrar processos registrados (verifyPidIntegrity fail-closed)
- *   5. Encerrar sockets (HTTP + hook)
- *   6. Fechar o DB com wal_checkpoint(TRUNCATE)
- *   7. Remover data/server.pid
- *   8. exit(0)
- *
- * Regra critica: o backup usado para rollback NAO e' apagado (PASSO 9).
- */
-
 'use strict';
 
+// Shared by signals, HTTP shutdown and the delayed game-exit restore.
 const fs = require('fs');
 const path = require('path');
-
-const STATE = {
-  IDLE: 'IDLE',
-  RUNNING: 'RUNNING',
-  DONE: 'DONE',
-};
-
-let state = STATE.IDLE;
-let requestedReason = null;
+let state = 'IDLE';
+let reason = null;
 let exitCode = 0;
+let shutdownPromise = null;
+let exitPromise = null;
+let restorePromise = null;
+const operations = new Set();
 const steps = [];
 
-/** Registra uma etapa do teardown, para observabilidade. */
-function recordStep(name, ok, detail) {
-  const entry = {
-    step: name,
-    ok: Boolean(ok),
-    detail: detail || null,
-    at: new Date().toISOString(),
-  };
-  steps.push(entry);
-  const logFn = global.log;
-  if (typeof logFn === 'function') {
-    try { logFn(ok ? 'info' : 'warn', `[shutdown] ${name}${detail ? ': ' + detail : ''}`); } catch (_) {}
+function recordStep(step, ok, detail = null) {
+  steps.push({ step, ok: Boolean(ok), detail, at: new Date().toISOString() });
+  if (!ok) exitCode = 1;
+  if (typeof global.log === 'function') {
+    try { global.log(ok ? 'info' : 'error', `[shutdown] ${step}: ${detail || (ok ? 'OK' : 'falha')}`); } catch (_) { /* logging cannot interrupt recovery */ }
   }
-  return entry;
 }
-
-/** Snapshot do teardown (usado por /api/shutdown-status e pelos testes). */
 function getShutdownReport() {
-  return {
-    state,
-    reason: requestedReason,
-    exitCode,
-    steps: steps.slice(),
-    at: new Date().toISOString(),
-  };
+  return { state, reason, exitCode, steps: steps.map(s => ({ ...s })), at: new Date().toISOString() };
 }
+function isShuttingDown() { return state !== 'IDLE'; }
 
-/** true se o processo ja esta em teardown. */
-function isShuttingDown() {
-  return state === STATE.RUNNING || state === STATE.DONE;
+function trackOperation(operation) {
+  const promise = Promise.resolve(operation);
+  operations.add(promise);
+  promise.then(() => operations.delete(promise), () => operations.delete(promise));
+  return promise;
 }
-
-/**
- * Executa o teardown completo. Idempotente.
- * @param {string} reason
- * @param {number} code
- */
-function performShutdown(reason, code) {
-  if (state !== STATE.IDLE) return getShutdownReport();
-  state = STATE.RUNNING;
-  requestedReason = reason;
-  exitCode = code || 0;
-
-  try { console.log(`[shutdown] Encerrando OpenTranslator (${reason})...`); } catch (_) {}
-
-  // 1) Encerrar processos de jogo registrados (verifyPidIntegrity fail-closed).
-  let stopReport;
-  try {
-    const registry = require('./ownedProcessRegistry');
-    stopReport = registry.shutdownAll(`Shutdown: ${reason}`);
-    recordStep('stopOwnedProcesses', stopReport && stopReport.attempted >= 0, stopReport ? JSON.stringify(stopReport) : null);
-  } catch (e) {
-    recordStep('stopOwnedProcesses', false, e.message);
+function withTimeout(promise, ms, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+function clearRestoreTimer() {
+  if (global.restoreTimeout) clearTimeout(global.restoreTimeout);
+  global.restoreTimeout = null;
+}
+function restorePendingGame() {
+  if (restorePromise) return restorePromise;
+  clearRestoreTimer();
+  const backup = global.launchedBak;
+  if (!backup) return Promise.resolve({ ok: true, skipped: true });
+  if (global.unverifiedDetachedGameProcess) return Promise.resolve({ ok: false,
+    backupPreservedAt: backup, error: 'Processo filho do injetor nao confirmado como encerrado; backup preservado para recuperacao manual' });
+  restorePromise = Promise.resolve().then(async () => {
+    const { restoreGameData } = require('./gameEngine');
+    const result = await restoreGameData(backup);
+    const ok = result === true || Boolean(result && result.ok === true && result.verified === true);
+    if (!ok) return { ok: false, backupPreservedAt: backup, error: result && result.error || 'Restauracao nao confirmada' };
+    if (global.launchedBak === backup) global.launchedBak = null;
+    return { ok: true, result };
+  }).catch(err => ({ ok: false, backupPreservedAt: backup, error: err.message }))
+    .finally(() => { restorePromise = null; });
+  return restorePromise;
+}
+function scheduleGameRestore(backup, delayMs = 20000) {
+  if (!backup) return;
+  if (global.launchedBak && global.launchedBak !== backup) {
+    throw new Error('Existe outra restauracao pendente; backup preservado');
   }
+  global.launchedBak = backup;
+  clearRestoreTimer();
+  if (isShuttingDown()) return;
+  global.restoreTimeout = setTimeout(() => {
+    restorePendingGame().then(result => {
+      if (!result.ok && typeof global.log === 'function') global.log('error', result.error);
+    });
+  }, delayMs);
+}
+function closeHttpServer(server, timeoutMs) {
+  if (!server || !server.listening) return Promise.resolve();
+  return withTimeout(new Promise((resolve, reject) => {
+    server.close(err => err ? reject(err) : resolve());
+    if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
+  }), timeoutMs, 'Requisicoes HTTP ainda ativas; restauracao preservada');
+}
 
-  // 2) Processo legado (global.launchedProc), se ainda existir.
-  if (global.launchedProc) {
+function performShutdown(requestedReason = 'App Shutdown', code = 0, options = {}) {
+  if (shutdownPromise) return shutdownPromise;
+  state = 'RUNNING'; reason = requestedReason; exitCode = code;
+  clearRestoreTimer();
+  const timeoutMs = options.timeoutMs || 30000;
+  shutdownPromise = Promise.resolve().then(async () => {
+    // Drain both foreground RPC and jobs started in the background before touching game files.
+    let drained = true;
     try {
-      const pid = typeof global.launchedProc === 'object'
-        ? global.launchedProc.pid
-        : global.launchedProc;
-      if (pid && pid > 0) {
-        if (process.platform === 'win32') {
-          require('child_process').spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore', timeout: 5000 });
-        } else {
-          process.kill(pid, 'SIGKILL');
-        }
-        recordStep('stopLegacyLaunchedProc', true, `pid=${pid}`);
-      }
-      global.launchedProc = null;
-    } catch (e) {
-      recordStep('stopLegacyLaunchedProc', false, e.message);
+      const { server } = require('../services/httpServer');
+      await Promise.all([
+        closeHttpServer(server, timeoutMs),
+        withTimeout(Promise.allSettled([...operations]), timeoutMs, 'Operacoes ainda ativas'),
+        withTimeout(Promise.resolve(require('../services/cheatServer').stopHookServer()), timeoutMs, 'Hooks ainda ativos'),
+      ]);
+      recordStep('drainOperationsAndSockets', true);
+    } catch (err) { drained = false; recordStep('drainOperationsAndSockets', false, err.message); }
+
+    const legacy = global.launchedProc;
+    const legacyPid = legacy && (typeof legacy === 'object' ? legacy.pid : legacy);
+    let stopped = false;
+    try {
+      const registry = require('./ownedProcessRegistry');
+      const owned = legacyPid ? registry.isOwned(legacyPid) : true;
+      const report = registry.shutdownAll(`Shutdown: ${requestedReason}`);
+      const legacyAlive = legacyPid && (!legacy || legacy.exitCode === null || legacy.exitCode === undefined);
+      stopped = report.blocked === 0 && (!legacyAlive || owned);
+      recordStep('stopOwnedProcesses', stopped, JSON.stringify(report));
+      if (stopped) global.launchedProc = null;
+    } catch (err) { recordStep('stopOwnedProcesses', false, err.message); }
+
+    if (drained && stopped) {
+      const restored = await restorePendingGame();
+      recordStep('restoreGameBackup', restored.ok, restored.error || null);
+    } else if (global.launchedBak) {
+      recordStep('restoreGameBackup', false, 'Backup preservado: operacao ou processo ainda ativo');
     }
-  }
-
-  // 3) Fechar sockets.
-  try {
-    const { server } = require('../services/httpServer');
-    if (server && server.listening) {
-      await_close(server);
-      recordStep('closeHttpServer', true, 'closed');
+    if (drained) {
+      try {
+        const result = require('../services/cache').closeDb();
+        recordStep('closeDatabase', !result || result.ok !== false, result && result.error);
+      } catch (err) { recordStep('closeDatabase', false, err.message); }
+      try {
+        const memory = require('./translationMemory');
+        if (memory.db && memory.db.open) memory.db.close();
+        recordStep('closeTranslationMemory', true);
+      } catch (err) { recordStep('closeTranslationMemory', false, err.message); }
     }
-  } catch (e) {
-    recordStep('closeHttpServer', false, e.message);
-  }
-
-  try {
-    const { stopHookServer } = require('../services/cheatServer');
-    if (typeof stopHookServer === 'function') {
-      const r = stopHookServer();
-      recordStep('closeHookServer', true, r ? JSON.stringify(r) : null);
-    }
-  } catch (e) {
-    recordStep('closeHookServer', false, e.message);
-  }
-
-  // 4) Fechar DB com checkpoint WAL.
-  try {
-    const { closeDb } = require('../services/cache');
-    const r = closeDb();
-    recordStep('closeDatabase', true, r ? JSON.stringify(r) : null);
-  } catch (e) {
-    recordStep('closeDatabase', false, e.message);
-  }
-
-  // 5) Remover pid file (nao-APAGAR backup).
-  try {
-    const pidFile = path.join(global.DATA_DIR || path.join(global.ROOT || '.', 'data'), 'server.pid');
-    if (fs.existsSync(pidFile)) {
-      fs.unlinkSync(pidFile);
-      recordStep('removePidFile', true, pidFile);
-    } else {
-      recordStep('removePidFile', true, 'ausente');
-    }
-  } catch (e) {
-    recordStep('removePidFile', false, e.message);
-  }
-
-  state = STATE.DONE;
-  try { console.log('[shutdown] Teardown concluido.'); } catch (_) {}
-  return getShutdownReport();
-}
-
-/**
- * Solicita encerramento: executa teardown e sai.
- * Idempotente — multiplos sinais nao causam teardown duplo.
- */
-function requestShutdown(reason, code) {
-  if (isShuttingDown()) return getShutdownReport();
-  const report = performShutdown(reason || 'App Shutdown', code || 0);
-  // Pequeno grace period para o log ser flushado.
-  setTimeout(() => process.exit(exitCode), 120);
-  return report;
-}
-
-/** Fecha um http.Server sem bloquear (chamada sync wrapper). */
-function await_close(server) {
-  try { server.close(); } catch (_) { /* ja fechado */ }
-}
-
-/** Registra os sinais de processo. Chamado uma unica vez por server.js. */
-function installSignalHandlers() {
-  if (global.__otShutdownInstalled) return;
-  global.__otShutdownInstalled = true;
-  process.on('SIGINT', () => requestShutdown('SIGINT - Ctrl+C'));
-  process.on('SIGTERM', () => requestShutdown('SIGTERM - Processo finalizado'));
-  process.on('SIGHUP', () => requestShutdown('SIGHUP - Janela/Terminal fechado'));
-  process.on('beforeExit', () => {
-    // Nao encerra aqui: beforeExit pode disparar em operacoes normais.
+    try {
+      const file = path.join(global.DATA_DIR || path.join(global.ROOT || '.', 'data'), 'server.pid');
+      if (fs.existsSync(file) && fs.readFileSync(file, 'utf8').trim() === String(process.pid)) fs.unlinkSync(file);
+      recordStep('removeOwnedPidFile', true);
+    } catch (err) { recordStep('removeOwnedPidFile', false, err.message); }
+    state = 'DONE';
+    return getShutdownReport();
+  }).catch(err => {
+    recordStep('shutdown', false, err.message); state = 'DONE'; return getShutdownReport();
   });
+  return shutdownPromise;
 }
-
-/** Usado pelos testes para resetar o estado entre cenarios. */
-function _resetForTests() {
-  state = STATE.IDLE;
-  requestedReason = null;
-  exitCode = 0;
-  steps.length = 0;
+function requestShutdown(requestedReason, code) {
+  if (!exitPromise) exitPromise = performShutdown(requestedReason, code).then(report => {
+    // Only log flushing happens after teardown; no restoration is cut short by this timer.
+    setTimeout(() => process.exit(report.exitCode), 120);
+    return report;
+  });
+  return exitPromise;
 }
-
+let installed = false;
+function installSignalHandlers() {
+  if (installed) return;
+  installed = true;
+  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => requestShutdown(signal));
+}
 module.exports = {
-  requestShutdown,
-  performShutdown,
-  getShutdownReport,
-  isShuttingDown,
-  installSignalHandlers,
-  _resetForTests,
+  performShutdown, requestShutdown, installSignalHandlers, getShutdownReport,
+  isShuttingDown, trackOperation, restorePendingGame, scheduleGameRestore,
 };

@@ -138,8 +138,10 @@ function closeDb() {
       db = null;
     } catch (e) {
       logWarn("Aviso ao fechar banco de dados SQLite: " + e.message);
+      return { ok: false, error: e.message };
     }
   }
+  return { ok: true, closed: db === null };
 }
 
 /**

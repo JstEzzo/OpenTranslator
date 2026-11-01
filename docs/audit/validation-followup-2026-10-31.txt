@@ -1,0 +1,5 @@
+Windows; Node v24.18.0.
+Resultado anterior: npm run verify, 567 aprovados em 35 suites, zero falhas.
+Casos adicionais de filho desvinculado e falha de logger: suite shutdownLifecycle, 9 aprovados.
+Launcher C# compilado; pacote portatil gerado; smoke do launcher: exit 0.
+Validacao final do snapshot registrada nos checks do PR.

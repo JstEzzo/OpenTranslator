@@ -131,10 +131,21 @@ function parseTranslationPayload(body, searchParams) {
   return { text, texts, reqSl, reqTl };
 }
 
+function processRuntimeText(...args) {
+  const lifecycle = require('../core/shutdownCoordinator');
+  if (lifecycle.isShuttingDown()) return Promise.reject(new Error('Aplicacao encerrando'));
+  return lifecycle.trackOperation(
+    RuntimeTextManager.getInstance().processRuntimeText(...args),
+  );
+}
+
 function startHookServer(port = 16005, host = "127.0.0.1") {
   return new Promise((resolve, reject) => {
     try {
       hookHttpServer = whttp.createServer(async (req, res) => {
+        if (require('../core/shutdownCoordinator').isShuttingDown()) {
+          res.writeHead(503, { Connection: 'close' }); res.end('Aplicacao encerrando'); return;
+        }
         let parsed;
         try {
           parsed = new URL(req.url, "http://localhost");
@@ -236,7 +247,7 @@ function startHookServer(port = 16005, host = "127.0.0.1") {
                 const responseTexts = [];
 
                 for (const itemText of texts) {
-                  const result = await rtm.processRuntimeText(
+                  const result = await processRuntimeText(
                     itemText,
                     { engine: "runtime", origin: "dual_hook_batch" },
                     async (protectedStr) => {
@@ -258,7 +269,7 @@ function startHookServer(port = 16005, host = "127.0.0.1") {
                   })
                 );
               } else if (text) {
-                const result = await rtm.processRuntimeText(
+                const result = await processRuntimeText(
                   text,
                   { engine: "runtime", origin: "dual_hook_http" },
                   async (protectedStr) => {
@@ -320,6 +331,7 @@ function startHookServer(port = 16005, host = "127.0.0.1") {
         activeWsClients.add(ws);
         safeLog("info", "Game hook connected via WebSocket to " + port);
         ws.on("message", async (message) => {
+          if (require('../core/shutdownCoordinator').isShuttingDown()) return;
           try {
             const msgStr = message.toString();
             let data;
@@ -363,7 +375,7 @@ function startHookServer(port = 16005, host = "127.0.0.1") {
 
               const rtm = RuntimeTextManager.getInstance();
 
-              const result = await rtm.processRuntimeText(
+              const result = await processRuntimeText(
                 text,
                 { engine: "runtime", origin: "dual_hook_ws" },
                 async (protectedStr) => {
@@ -429,37 +441,26 @@ function startHookServer(port = 16005, host = "127.0.0.1") {
 }
 
 function stopHookServer(callback) {
-  for (const ws of activeWsClients) {
-    try {
-      ws.terminate();
-    } catch (e) { safeLog("warn", `cheatServer: ${e.message}`); }
-  }
+  const wss = hookWss;
+  const server = hookHttpServer;
+  hookWss = null;
+  hookHttpServer = null;
+  for (const ws of activeWsClients) ws.terminate();
   activeWsClients.clear();
-
-  if (global.activeCheatSocket) {
-    try {
-      global.activeCheatSocket.terminate();
-    } catch (e) { safeLog("warn", `cheatServer: ${e.message}`); }
-    global.activeCheatSocket = null;
-  }
-  if (hookWss) {
-    try {
-      hookWss.close();
-    } catch (e) { safeLog("warn", `cheatServer: ${e.message}`); }
-    hookWss = null;
-  }
-  if (hookHttpServer) {
-    const s = hookHttpServer;
-    hookHttpServer = null;
-    try {
-      s.close(callback);
-    } catch (e) {
-      safeLog("warn", `cheatServer: ${e.message}`);
-      if (typeof callback === 'function') callback();
-    }
-  } else if (typeof callback === 'function') {
-    callback();
-  }
+  global.activeCheatSocket = null;
+  const stopped = Promise.all([
+    new Promise((resolve, reject) => {
+      if (!wss) return resolve();
+      wss.close(err => err && err.code !== 'ERR_SERVER_NOT_RUNNING' ? reject(err) : resolve());
+    }),
+    new Promise((resolve, reject) => {
+      if (!server || !server.listening) return resolve();
+      server.close(err => err ? reject(err) : resolve());
+      if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
+    }),
+  ]);
+  if (typeof callback === 'function') stopped.then(() => callback(), err => callback(err));
+  return stopped;
 }
 
 module.exports = {

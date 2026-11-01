@@ -14,7 +14,8 @@
     "smoke": "OpenTranslator.exe --smoke-test",
     "lint": "node tools/repoLint.js",
     "audit:success": "node tools/successAudit.js",
-    "verify": "npm run lint && npm run audit:success && npm test"
+    "verify": "npm run lint && npm run audit:success && npm test",
+    "package:portable": "node tools/package_release.js"
   },
   "private": true,
   "dependencies": {

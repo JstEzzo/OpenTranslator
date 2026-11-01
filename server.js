@@ -18,7 +18,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { spawnSync } = require("child_process");
 
 // ==================== CONSTANTES GLOBAIS ====================
 global.ROOT     = __dirname;
@@ -70,72 +69,10 @@ process.on("unhandledRejection", (reason) => {
   global.log("error", reason instanceof Error ? reason : new Error("Unhandled Rejection: " + reason));
 });
 
-// ==================== GERENCIAMENTO DE INSTÂNCIAS (PID) ====================
-const PID_FILE = path.join(global.DATA_DIR, "server.pid");
-// Uma porta ocupada ou um PID antigo nao comprovam propriedade do processo.
-// tryListen informa o conflito; nunca encerre outros programas no bootstrap.
-
-let isCleaningUp = false;
-function shutdownAll(reason = "App Shutdown") {
-  if (isCleaningUp) return;
-  isCleaningUp = true;
-  global.log("info", `Encerrando OpenTranslator (${reason})...`);
-  console.log(`[OpenTranslator] Encerrando aplicação (${reason})...`);
-
-  // 1. Encerrar qualquer processo de jogo ativo
-  if (global.launchedProc) {
-    try {
-      const pid = typeof global.launchedProc === "object" ? global.launchedProc.pid : global.launchedProc;
-      if (pid && pid > 0) {
-        global.log("info", `Encerrando processo de jogo ativo (PID ${pid})...`);
-        if (process.platform === "win32") {
-          spawnSync("taskkill", ["/F", "/T", "/PID", String(pid)], { stdio: "ignore" });
-        } else {
-          process.kill(pid, "SIGKILL");
-        }
-      }
-    } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
-    global.launchedProc = null;
-  }
-
-  // 2. Restaurar backups pendentes se o jogo ainda estiver modificando arquivos
-  if (global.launchedBak) {
-    try {
-      const { restoreGameData } = require("./src/core/gameEngine");
-      restoreGameData(global.launchedBak);
-    } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
-  }
-
-  // 3. Fechar porta do servidor HTTP (3000)
-  try {
-    const { server } = require("./src/services/httpServer");
-    if (server && server.listening) {
-      server.close();
-    }
-  } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
-
-  // 4. Fechar portas e sockets do Hook Server (16005)
-  try {
-    const { stopHookServer } = require("./src/services/cheatServer");
-    stopHookServer();
-  } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
-
-  // 5. Limpar arquivo de PID
-  try {
-    if (fs.existsSync(PID_FILE) &&
-        fs.readFileSync(PID_FILE, "utf8").trim() === String(process.pid)) {
-      fs.unlinkSync(PID_FILE);
-    }
-  } catch (e) { if (global.log) global.log("warn", `server: ${e.message}`); }
-
-  setTimeout(() => process.exit(0), 250);
-}
-
-global.shutdownAll = shutdownAll;
-
-process.on("SIGINT", () => shutdownAll("SIGINT - Ctrl+C"));
-process.on("SIGTERM", () => shutdownAll("SIGTERM - Processo Finalizado"));
-process.on("SIGHUP", () => shutdownAll("SIGHUP - Janela/Terminal Fechado"));
+// Signals and HTTP requests share one awaited teardown.
+const shutdownCoordinator = require('./src/core/shutdownCoordinator');
+global.shutdownAll = shutdownCoordinator.requestShutdown;
+shutdownCoordinator.installSignalHandlers();
 
 // ==================== INICIALIZAÇÃO DOS MÓDULOS ====================
 // O cache precisa ser carregado para inicializar o SQLite imediatamente

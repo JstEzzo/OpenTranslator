@@ -407,6 +407,8 @@ namespace OpenTranslatorLauncher
             Log("[2/10] Verificando runtime Node.js...");
 
             string nodePortable = ResolveExistingPath(
+                Path.Combine(BaseDir, "bin", "node.exe"),
+                Path.Combine(ToolDir, "bin", "node.exe"),
                 Path.Combine(BaseDir, "bin", "node-v20.18.3-win-x64", "node.exe"),
                 Path.Combine(ToolDir, "bin", "node-v20.18.3-win-x64", "node.exe")
             );
@@ -844,17 +846,37 @@ namespace OpenTranslatorLauncher
             return false;
         }
 
-        public void StopServer()
+        public bool StopServer()
         {
-            if (ActiveServerProcess != null && !ActiveServerProcess.HasExited)
+            if (ActiveServerProcess == null) return true;
+            try
             {
-                try
+                if (ActiveServerProcess.HasExited) { ActiveServerProcess = null; return true; }
+                string token = FetchSessionToken();
+                if (string.IsNullOrEmpty(token)) throw new Exception("Token de encerramento indisponivel.");
+                var req = (HttpWebRequest)WebRequest.Create(string.Format("http://127.0.0.1:{0}/api/shutdown", ServerPort));
+                req.Method = "POST";
+                req.Timeout = 5000;
+                req.ContentLength = 0;
+                req.Headers.Add("X-OpenTranslator-Token", token);
+                using (var response = (HttpWebResponse)req.GetResponse())
                 {
-                    ActiveServerProcess.Kill();
-                    ActiveServerProcess.WaitForExit(2000);
+                    if (response.StatusCode != HttpStatusCode.OK) throw new Exception("Encerramento recusado.");
                 }
-                catch { }
+                if (!ActiveServerProcess.WaitForExit(35000))
+                {
+                    Log("Encerramento ainda em andamento. O backend foi preservado para concluir a restauracao.");
+                    return false;
+                }
+                bool clean = ActiveServerProcess.ExitCode == 0;
                 ActiveServerProcess = null;
+                if (!clean) Log("Backend encerrou com pendencias. Consulte o log e os backups preservados.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log("Nao foi possivel concluir o encerramento: " + ex.Message);
+                return false;
             }
         }
 
@@ -876,7 +898,7 @@ namespace OpenTranslatorLauncher
             Log("=== Executando Rotina de Auto-Correção ===");
             try
             {
-                StopServer();
+                if (!StopServer()) return;
                 Thread.Sleep(500);
 
                 string dataDir = Path.Combine(ToolDir, "data");
@@ -1189,15 +1211,13 @@ namespace OpenTranslatorLauncher
             btnRestart = CreateButton("Reiniciar", new Point(410, 130), new Size(120, 40), Color.FromArgb(39, 41, 46));
             btnRestart.Click += (s, e) =>
             {
-                engine.StopServer();
-                StartDiagnosis(true);
+                if (engine.StopServer()) StartDiagnosis(true);
             };
 
             btnExitApp = CreateButton("Encerrar OpenTranslator", new Point(540, 130), new Size(150, 40), Color.FromArgb(185, 28, 28));
             btnExitApp.Click += (s, e) =>
             {
-                engine.StopServer();
-                Application.Exit();
+                if (engine.StopServer()) Application.Exit();
             };
 
             runningPanel.Controls.Add(lblRunningTitle);
@@ -1246,12 +1266,12 @@ namespace OpenTranslatorLauncher
 
             this.FormClosing += (s, e) =>
             {
+                if (!engine.StopServer()) { e.Cancel = true; return; }
                 if (trayIcon != null)
                 {
                     trayIcon.Visible = false;
                     trayIcon.Dispose();
                 }
-                engine.StopServer();
             };
 
             this.Load += (s, e) =>
@@ -1269,7 +1289,7 @@ namespace OpenTranslatorLauncher
                 trayMenu.Items.Add("Abrir Interface", null, (s, e) => OpenWebInterface());
                 trayMenu.Items.Add("Exibir Painel", null, (s, e) => { this.Show(); this.WindowState = FormWindowState.Normal; this.BringToFront(); });
                 trayMenu.Items.Add(new ToolStripSeparator());
-                trayMenu.Items.Add("Encerrar OpenTranslator", null, (s, e) => { engine.StopServer(); Application.Exit(); });
+                trayMenu.Items.Add("Encerrar OpenTranslator", null, (s, e) => { if (engine.StopServer()) Application.Exit(); });
 
                 trayIcon = new NotifyIcon
                 {

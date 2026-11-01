@@ -911,174 +911,16 @@ function patchGameData(gameDir, texts, translations) {
 
 function backupGameData(gameDir) {
   const dataDir = findDataDir(gameDir);
-  if (!dataDir) return "";
-  const bakDir = dataDir + "_bak_" + Date.now();
-  try {
-    fs.cpSync(dataDir, bakDir, { recursive: true, force: true });
-    const wwwDir = path.dirname(dataDir);
-    const htmlPath = path.join(wwwDir, "index.html");
-    if (fs.existsSync(htmlPath)) {
-      try {
-        fs.copyFileSync(htmlPath, path.join(bakDir, "index.html"));
-      } catch (e) {}
-    }
-    const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
-    if (fs.existsSync(pluginsJsPath)) {
-      try {
-        fs.copyFileSync(pluginsJsPath, path.join(bakDir, "plugins.js_bak"));
-      } catch (e) {}
-    }
-    const pluginsDir = path.join(wwwDir, "js", "plugins");
-    if (fs.existsSync(pluginsDir)) {
-      try {
-        const pluginsBakDir = path.join(bakDir, "js_plugins_bak");
-        fs.mkdirSync(pluginsBakDir, { recursive: true });
-        const pluginFiles = fs.readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
-        for (const f of pluginFiles) {
-          fs.copyFileSync(path.join(pluginsDir, f), path.join(pluginsBakDir, f));
-        }
-      } catch (e) {}
-    }
-    global.log("info", "Backup: " + path.basename(bakDir));
-    return bakDir;
-  } catch (e) {
-    global.log("error", "Backup failed: " + e.message);
-    return "";
+  if (!dataDir) return '';
+  try { return require('./legacyGameRestore').backupGameData(dataDir); }
+  catch (err) {
+    if (typeof global.log === 'function') global.log('error', 'Backup nao confirmado: ' + err.message);
+    return '';
   }
 }
 
 function restoreGameData(bakDir) {
-  if (!bakDir || !fs.existsSync(bakDir)) return false;
-  const parentDir = path.dirname(bakDir);
-  const baseName = path.basename(bakDir).replace(/_bak_\d+$/, "");
-  const origDir = path.join(parentDir, baseName);
-  try {
-    if (fs.existsSync(origDir))
-      fs.rmSync(origDir, { recursive: true, force: true });
-    fs.cpSync(bakDir, origDir, { recursive: true, force: true });
-    // =========================================================================
-    // FASE 9 / PASSO 54 — RESTAURAÇÃO PARCIAL NÃO É RESTAURAÇÃO
-    //
-    // Este é o MESMO defeito corrigido em `rpcHandlers.restoreOriginal`,
-    // duplicado aqui. Os quatro `catch (e) {}` engoliam falha de restauração
-    // por arquivo, e a sequência final era:
-    //
-    //     fs.rmSync(bakDir, { recursive: true, force: true });   // apaga o backup
-    //     global.log("info", "Restored original data from backup");
-    //     return true;
-    //
-    // Se a cópia de `js/plugins/*` falhasse, o jogo ficava num estado
-    // híbrido — `data/` restaurado, `plugins/` não —, o backup era destruído,
-    // e o chamador recebia `true`. Não havia caminho de volta: o original
-    // estava no backup, e o backup estava no lixo.
-    //
-    // Agora: as falhas são coletadas, a restauração é conferida, e o backup só
-    // sai quando não há nada a recuperar.
-    // =========================================================================
-    const restoreFailures = [];
-    const restored = [];
-
-    fs.cpSync(bakDir, origDir, { recursive: true, force: true });
-    restored.push('data/');
-
-    const bakHtml = path.join(bakDir, "index.html");
-    const wwwDir = path.dirname(origDir);
-    if (fs.existsSync(bakHtml)) {
-      try {
-        const htmlPath = path.join(wwwDir, "index.html");
-        if (fs.existsSync(htmlPath)) fs.unlinkSync(htmlPath);
-        fs.copyFileSync(bakHtml, htmlPath);
-        restored.push('index.html');
-      } catch (e) {
-        restoreFailures.push(`index.html: ${e.message}`);
-      }
-    }
-    const bakPlugins = path.join(bakDir, "plugins.js_bak");
-    const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
-    if (fs.existsSync(bakPlugins)) {
-      try {
-        if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
-        fs.copyFileSync(bakPlugins, pluginsJsPath);
-        restored.push('js/plugins.js');
-      } catch (e) {
-        restoreFailures.push(`js/plugins.js: ${e.message}`);
-      }
-    }
-    const bakPluginsDir = path.join(bakDir, "js_plugins_bak");
-    const pluginsDir = path.join(wwwDir, "js", "plugins");
-    if (fs.existsSync(bakPluginsDir) && fs.existsSync(pluginsDir)) {
-      // FASE 9: falha por arquivo continua o loop, mas é REGISTRADA.
-      let okCount = 0;
-      let files = [];
-      try {
-        files = fs.readdirSync(bakPluginsDir);
-      } catch (e) {
-        restoreFailures.push(`leitura de js_plugins_bak: ${e.message}`);
-      }
-      for (const f of files) {
-        try {
-          fs.copyFileSync(path.join(bakPluginsDir, f), path.join(pluginsDir, f));
-          okCount++;
-        } catch (e) {
-          restoreFailures.push(`js/plugins/${f}: ${e.message}`);
-        }
-      }
-      if (okCount) restored.push(`js/plugins/ (${okCount} arquivo(s))`);
-    }
-    const cheatScript = path.join(wwwDir, "CheatOverlay.js");
-    if (fs.existsSync(cheatScript)) {
-      try {
-        fs.unlinkSync(cheatScript);
-        restored.push('CheatOverlay.js removido');
-      } catch (e) {
-        // FASE 9: o overlay injetado não sair é problema real — ele
-        // intercepta input do jogo e ficaria ativo sobre um jogo restaurado.
-        restoreFailures.push(`CheatOverlay.js: ${e.message}`);
-      }
-    }
-
-    // ---- VERIFICAÇÃO: o que dissemos ter restaurado está no disco? ----
-    if (!fs.existsSync(origDir)) {
-      restoreFailures.push(`data/ ausente após restaurar (esperado: ${origDir})`);
-    }
-    if (fs.existsSync(bakHtml) && !fs.existsSync(path.join(wwwDir, "index.html"))) {
-      restoreFailures.push('index.html ausente após restaurar');
-    }
-
-    if (restoreFailures.length) {
-      // FASE 9: com restauração parcial o backup é PRESERVADO — é a única
-      // cópia do original que ainda existe.
-      global.log('error',
-        `Restauração INCOMPLETA (${restoreFailures.length} falha(s)). Backup `
-        + `PRESERVADO em ${bakDir}. Falhas: ${restoreFailures.join('; ')}`);
-      return {
-        ok: false,
-        success: false,
-        status: 'PARTIALLY_RESTORED',
-        error: 'A restauração não foi completa. O backup foi PRESERVADO porque '
-          + 'contém o único restante dos arquivos originais.',
-        restored,
-        failures: restoreFailures,
-        backupPreservedAt: bakDir,
-        warning: 'O jogo está em estado parcial. NÃO reaplique tradução agora: '
-          + 'isso sobrescreveria o que ainda está original.',
-      };
-    }
-
-    // Só agora, com a restauração conferida, o backup pode ir embora.
-    fs.rmSync(bakDir, { recursive: true, force: true });
-    global.log("info", `Restaurado dado original do backup: ${restored.join(', ')}.`);
-    return {
-      ok: true,
-      success: true,
-      status: 'RESTORED',
-      restored,
-      verified: true,
-    };
-  } catch (e) {
-    global.log("error", "Restore failed: " + e.message);
-    return { ok: false, success: false, status: 'RESTORE_FAILED', error: e.message };
-  }
+  return require('./legacyGameRestore').restoreGameData(bakDir);
 }
 
 function restoreOldestBackup(gameDir, sessionRef = {}) {
@@ -1122,44 +964,12 @@ function restoreOldestBackup(gameDir, sessionRef = {}) {
           path.basename(oldestBak)
       );
 
-      if (fs.existsSync(dataDir)) {
-        fs.rmSync(dataDir, { recursive: true, force: true });
+      const restored = restoreGameData(oldestBak);
+      if (!restored.ok) {
+        global.log('error', 'Auto-restauracao incompleta: ' + restored.error);
+        return false;
       }
-
-      fs.cpSync(oldestBak, dataDir, { recursive: true, force: true });
-
-      const wwwDir = path.dirname(dataDir);
-      const bakPlugins = path.join(oldestBak, "plugins.js_bak");
-      const pluginsJsPath = path.join(wwwDir, "js", "plugins.js");
-      if (fs.existsSync(bakPlugins)) {
-        try {
-          if (fs.existsSync(pluginsJsPath)) fs.unlinkSync(pluginsJsPath);
-          fs.copyFileSync(bakPlugins, pluginsJsPath);
-        } catch (e) {}
-      }
-
-      const pluginsBakDir = path.join(oldestBak, "js_plugins_bak");
-      const pluginsDir = path.join(wwwDir, "js", "plugins");
-      if (fs.existsSync(pluginsBakDir) && fs.existsSync(pluginsDir)) {
-        try {
-          const bakPlugins = fs.readdirSync(pluginsBakDir).filter(f => f.endsWith(".js"));
-          for (const f of bakPlugins) {
-            const dest = path.join(pluginsDir, f);
-            if (fs.existsSync(dest)) fs.unlinkSync(dest);
-            fs.copyFileSync(path.join(pluginsBakDir, f), dest);
-          }
-        } catch (e) {}
-      }
-
-      for (const bak of backups) {
-        if (fs.existsSync(bak.path)) {
-          fs.rmSync(bak.path, { recursive: true, force: true });
-        }
-      }
-      global.log(
-        "info",
-        "Self-Healing: Backup restaurado e arquivos temporários limpos com sucesso."
-      );
+      return true;
     }
   } catch (e) {
     global.log("warn", "Falha ao processar auto-restauração de backup: " + e.message);

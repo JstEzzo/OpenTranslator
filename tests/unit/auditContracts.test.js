@@ -35,7 +35,7 @@ try {
   test('runner uses final totals, not incidental log contents', () => {
     assert.strictEqual(fixture('example pass=99 fail=0\npass=2 fail=0').pass, 2);
   });
-  test('bootstrap never kills port owners or a stale PID; shutdown keeps another instance PID', () => {
+  test('bootstrap delegates shutdown without issuing process termination commands', () => {
     const signals = {};
     const kills = [];
     let deleted = false;
@@ -53,6 +53,7 @@ try {
         if (name === 'https') return { Agent: class {} };
         if (name.endsWith('loggerManager')) return { setLogPath() {} };
         if (name.endsWith('/logger')) { context.global.log = () => {}; return {}; }
+        if (name.endsWith('/shutdownCoordinator')) return { requestShutdown() {}, installSignalHandlers() {} };
         if (name.endsWith('/httpServer')) return { tryListen() {}, server: null };
         if (name.endsWith('/cheatServer')) return { startHookServer: () => Promise.resolve(), stopHookServer() {} };
         if (name.endsWith('/cache')) return {};

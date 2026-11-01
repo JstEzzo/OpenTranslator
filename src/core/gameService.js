@@ -83,10 +83,11 @@ class GameService {
    * Inicia um job de tradução completo assíncrono com checkpoints em disco.
    */
   async startTranslationJob(gamePath, options = {}) {
+    if (require('./shutdownCoordinator').isShuttingDown()) return { ok: false, error: 'Aplicacao encerrando' };
     const job = jobSystem.createJob(gamePath, options);
     jobSystem.updateProgress(job.id, "analyzing", 0, 0, { status: "running" });
 
-    (async () => {
+    const operation = (async () => {
       try {
         const detection = await EngineDetector.detect(gamePath);
         jobSystem.updateProgress(job.id, "extracting", 0, 0, { engine: detection.engine });
@@ -108,6 +109,8 @@ class GameService {
         jobSystem.updateProgress(job.id, "failed", 0, 0, { status: "failed", error: err.message });
       }
     })();
+
+    require('./shutdownCoordinator').trackOperation(operation);
 
     return { ok: true, jobId: job.id };
   }

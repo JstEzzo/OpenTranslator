@@ -31,6 +31,11 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: 'unit', name: 'shutdownHttp', file: 'tests/unit/shutdownHttp.test.js', desc: 'Encerramento HTTP real conclui job e restaura backup antes de sair' },
+  { group: 'unit', name: 'portablePackage', file: 'tests/unit/portablePackage.test.js', desc: 'Pacote inclui dependencias, preserva destinos existentes e confere runtime' },
+  { group: 'unit', name: 'backgroundJobLifecycle', file: 'tests/unit/backgroundJobLifecycle.test.js', desc: 'Jobs em segundo plano persistem estados e participam do encerramento' },
+  { group: 'unit', name: 'shutdownLifecycle', file: 'tests/unit/shutdownLifecycle.test.js', desc: 'Encerramento aguarda operacoes e restauracao; preserva backups em falha' },
+  { group: 'unit', name: 'legacyGameRestore', file: 'tests/unit/legacyGameRestore.test.js', desc: 'Restauracao em staging, hashes, arquivos extras e retencao de backups' },
   {
     group: 'unit', name: 'uiHealth',
     file: 'tests/unit/uiHealth.test.js',

@@ -4788,7 +4788,11 @@ select option {
   window.addEventListener("beforeunload", function () {
     if (!window.isReloading) {
       try {
-        navigator.sendBeacon("/api/close_app", JSON.stringify({ close: true }));
+        fetch('/api/close_app', {
+          method: 'POST', keepalive: true,
+          headers: { 'Content-Type': 'application/json', 'X-OpenTranslator-Token': SESSION_TOKEN },
+          body: JSON.stringify({ close: true }),
+        }).catch(() => {});
       } catch (e) { console.warn(`app.js: ${e.message}`); }
     }
   });
