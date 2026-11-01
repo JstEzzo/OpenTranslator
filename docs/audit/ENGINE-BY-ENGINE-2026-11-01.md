@@ -17,6 +17,7 @@ Pesquisa em documentação dos fabricantes, repositórios oficiais de ferramenta
 - Defold/Cocos Creator: identificadores incluem caminho relativo para evitar colisão entre arquivos homônimos.
 - Unity: falha na ponte de assets deixa de virar extração bem-sucedida com zero textos se o fallback gerenciado também não produzir conteúdo.
 - Cheats: alias `command` convertido para `code` antes do transporte; limite de fila também aplicado quando o socket falha no envio. Overlay informa se o jogo está pronto e o estado real de HP/MP infinito; uma tela de título sem objetos de gameplay não habilita o painel. Controles exclusivos de RPG Maker não aparecem no painel RenPy.
+- Biblioteca: falha no detector retorna desconhecido, em vez de inventar RPG Maker MZ. Os selos informam suporte parcial/integração pendente; Unity não é mais rotulado sem handler apesar do adapter existente.
 - Compatibilidade: 22 perfis pesquisáveis com versão/escopo, cheats, problemas conhecidos, pendências e fontes. Removidos números históricos de benchmark fixos e marcações globais PASS que não representavam testes de cada versão.
 - Preferências: texto padrão de 16 px com opções 14/16/18/20, redução de animações, biblioteca por nome/recência, caminhos opcionais e cor de destaque. Opções sem efeito de wallpaper/transparência retiradas da tela. Ferramentas e diagnósticos agrupados.
 - Recursos JS/CSS da interface não ficam em cache após a atualização. Identificadores de versão vencem o cache antigo de cinco minutos.
@@ -264,3 +265,5 @@ O material público do MTool apresenta importação/exportação de tradução, 
 - Launcher recompilado e smoke de inicialização com saída **0**.
 - Interface conferida em janela padrão e largura de 800 px: busca de compatibilidade, abertura de preferências, salvamento de tamanho 18 px e retorno a 16 px. Nenhum erro de JavaScript capturado nessas verificações.
 - A revisão visual não equivale a teste de todos os jogos nem certificação dos cheats em jogos comerciais. A hipótese de handoff do Chromium foi corrigida no fluxo de abertura; o smoke não conta janelas visíveis do navegador.
+
+Verificação complementar da biblioteca: suite uiHealth com 6 casos aprovada, rpcHonesty aprovado e lint aprovado após ajustar o fallback de detecção e os selos de suporte.

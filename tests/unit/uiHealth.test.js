@@ -28,6 +28,16 @@ async function main() {
   assert(!limited['provider-health-notice'].innerHTML.includes('Tradução pausada'));
   const hostile = await render({ 'google:gtx': { state: '<img src=x onerror=alert(1)>' } });
   assert(!hostile['provider-health-grid'].innerHTML.includes('<img'));
-  console.log('pass=3 fail=0');
+  const detectionCode = source.slice(source.indexOf('  async function detectEngine(exePath, exeDir)'), source.indexOf('  function engineInfo(eng)'));
+  const context = { rpc: async () => { throw new Error('server unavailable'); }, console: { warn() {} } };
+  vm.runInNewContext(detectionCode + ';this.detect = detectEngine;', context);
+  assert.strictEqual(await context.detect('missing.exe'), 'unknown');
+  context.rpc = async () => 'mz';
+  assert.strictEqual(await context.detect('game.exe'), 'mz');
+  const statuses = source.slice(source.indexOf('  const SUPPORTED_ENGINES ='), source.indexOf('  function engineIsJS'));
+  vm.runInNewContext(statuses + ';this.status = engineSupportStatus;', context);
+  assert.strictEqual(context.status('unity'), 'partial');
+  assert.strictEqual(context.status('bakin'), 'planned');
+  console.log('pass=6 fail=0');
 }
 main().catch(err => { console.error(err); console.log('pass=0 fail=1'); process.exitCode = 1; });

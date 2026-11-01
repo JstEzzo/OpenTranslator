@@ -97,6 +97,7 @@
 - `docs/architecture/TRANSLATION_MEMORY.md`
 - `docs/audit/COMPATIBILITY-MTOOL-2026-11-01.md`
 - `docs/audit/dependencies-2026-10-31.json`
+- `docs/audit/engine-adapters-inspection-2026-11-01.json`
 - `docs/audit/ENGINE-BY-ENGINE-2026-11-01.md`
 - `docs/audit/FOLLOWUP-2026-10-31.md`
 - `docs/audit/mtool-switch-program-inventory-2026-11-01.json`

@@ -1090,8 +1090,8 @@
     wolf: { label: "Wolf RPG", js: false, icon: "\ud83d\udc3a" },
     rgss: { label: "RGSS (XP/VX/Ace)", js: false, icon: "\u2699" },
     unity: { label: "Unity", js: false, icon: "\ud83c\udf10" },
-    python: { label: "Ren'Py Visual Novel Engine", js: false, icon: "🎭", status: "FULLY VERIFIED" },
-    renpy: { label: "Ren'Py Visual Novel Engine", js: false, icon: "🎭", status: "FULLY VERIFIED" },
+    python: { label: "Ren'Py Visual Novel Engine", js: false, icon: "🎭", status: "PARTIAL" },
+    renpy: { label: "Ren'Py Visual Novel Engine", js: false, icon: "🎭", status: "PARTIAL" },
     srpg: { label: "SRPG Studio", js: false, icon: "\u2694" },
     agtk: { label: "Action Game Toolkit", js: false, icon: "\ud83c\udff0" },
     kmy: { label: "KMY", js: false, icon: "\ud83d\udd2e" },
@@ -1105,26 +1105,24 @@
     try {
       return await rpc("detectEngine", { exePath, exeDir });
     } catch (e) {
-      return "mz";
+      return "unknown";
     }
   }
   function engineInfo(eng) {
     return ENGINES_DEF[eng] || { label: "Não identificado", icon: "?", js: false };
   }
-  const SUPPORTED_ENGINES = new Set(["mv", "mz", "rgss", "python", "renpy", "tyrano", "wolf", "unity", "godot", "unreal"]);
-  const PARTIAL_ENGINES = new Set(["wolf", "krkr", "krkrz", "srpg", "agtk", "kmy", "bakin"]);
+  const SUPPORTED_ENGINES = new Set(["mv", "mz", "rgss", "python", "renpy", "wolf", "unity", "godot", "unreal", "gamemaker", "construct", "defold", "gdevelop", "cocos", "cocos_creator", "cocos2dx", "electron", "generic"]);
+  const PARTIAL_ENGINES = new Set(["tyrano", "krkr", "krkrz", "srpg", "agtk", "kmy", "bakin"]);
   function engineSupportStatus(eng) {
-    if (eng === "unity") return "fantasma";
-    if (SUPPORTED_ENGINES.has(eng)) return "full";
+    if (SUPPORTED_ENGINES.has(eng)) return "partial";
     if (PARTIAL_ENGINES.has(eng)) return "planned";
     return "unknown";
   }
   function engineSupportLabel(eng) {
     const s = engineSupportStatus(eng);
-    if (s === "full") return { s, text: t("engineFullSupport") || "Suporte Total", cls: "eng-ok" };
-    if (s === "planned") return { s, text: t("enginePlanned") || "Planejado (Fase 2)", cls: "eng-plan" };
-    if (s === "fantasma") return { s, text: t("engineGhost") || "Engine Fantasma — Sem Handler", cls: "eng-ghost" };
-    return { s, text: t("engineUnknown") || "Status Desconhecido", cls: "eng-warn" };
+    if (s === "partial") return { s, text: "Suporte parcial — confira o perfil de compatibilidade", cls: "eng-plan" };
+    if (s === "planned") return { s, text: "Integração pendente", cls: "eng-plan" };
+    return { s, text: "Compatibilidade não identificada", cls: "eng-warn" };
   }
   function engineIsJS(eng) {
     return engineInfo(eng).js;
@@ -1805,7 +1803,7 @@
         esc(engIcon) +
         " " +
         esc(engLabel) +
-        ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "full" ? "✓" : engStatus.s === "planned" ? "⚙" : engStatus.s === "fantasma" ? "❌" : "?"}</span>` +
+        ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "partial" ? "Parcial" : engStatus.s === "planned" ? "Pendente" : "?"}</span>` +
         '</div>' + (S.cfg.showGamePaths ? '<div class="game-path">' + esc(exe) + '</div>' : '') + '</div><div class="ga">' +
         playBtn +
         '<button class="btn xs glEdit" title="Editar jogo">Editar</button><button class="btn xs dgr glDel" title="Remover da biblioteca">Remover</button></div></div>';
