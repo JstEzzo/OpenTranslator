@@ -122,9 +122,9 @@ Project file, bundled component, or resource. Presence and hash do not certify b
 
 - Category: Product / development tool.
 - Description basis: Metadata and location.
-- Size: 6215 bytes; lines: 98.
+- Size: 6589 bytes; lines: 97.
 - Reading: Full decoded text.
-- SHA-256: `0ce2a13ecccb6a0e325f88d1f6838eb09f177c1e82d82e952306f747669099c7`.
+- SHA-256: `02c00730cc3a58f0be82ac58df472ec58bceb40bb4587f348eb4bc2627904b99`.
 
 ## `server.js`
 

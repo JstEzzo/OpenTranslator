@@ -14,9 +14,9 @@
 
 ## Download and run
 
-Download **OpenTranslator-Win64-Portable.zip** from a successful **Build portable OpenTranslator** run on the [Actions page](https://github.com/JstEzzo/OpenTranslator/actions/workflows/release.yml). Extract the entire archive and open `OpenTranslator.exe`. Keep its subdirectories beside the executable. GitHub may require you to sign in to download a workflow artifact. Artifacts have limited retention.
+Download **OpenTranslator-Win64-Portable.zip** from [GitHub Releases](https://github.com/JstEzzo/OpenTranslator/releases). The first public download is [1.0.0 Preview 1](https://github.com/JstEzzo/OpenTranslator/releases/tag/1.0.0-preview.1). Extract the entire archive and open `OpenTranslator.exe`. Keep its subdirectories beside the executable. `SHA256SUMS.txt` is included on the release page to verify the ZIP.
 
-**Code → Download ZIP** downloads the development source, including tests and documentation. It is not the portable application. Tagged releases are created as drafts; a draft is not a published stable release.
+**Code → Download ZIP** downloads the development source, including tests and documentation. It is not the portable application. Development builds are also available from successful **Build portable OpenTranslator** runs on the [Actions page](https://github.com/JstEzzo/OpenTranslator/actions/workflows/release.yml); these artifacts have limited retention and may require GitHub sign-in. The automatic `v*` tag workflow creates draft releases. The published preview is not a stable compatibility certification; read its known limitations before testing game modifications.
 
 The application and native launcher use **English**, including when an older configuration contains `lang: "pt"`. The interface language is separate from the source and target languages selected for game translation. Changing the application language does not translate a game or change its target language.
 
