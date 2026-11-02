@@ -12,6 +12,8 @@ const BackupManager = require("../../core/backupManager");
 const { extractGameTexts } = require('../../extractors/extractor');
 const { patchGameData, backupGameData, restoreOldestBackup } = require('../../core/gameEngine');
 const { PartialReport } = require('../../core/partialApply');
+const TextWrap = require('./installTextWrap');
+const NativeTextData = require('./nativeTextData');
 
 class RpgMakerAdapter extends BaseEngineAdapter {
   constructor() {
@@ -71,7 +73,8 @@ class RpgMakerAdapter extends BaseEngineAdapter {
 });
     }
 
-    const rawTexts = extractGameTexts(gameDir);
+    const nativeData = NativeTextData.extract(gameDir);
+    const rawTexts = nativeData ? nativeData.texts : extractGameTexts(gameDir);
     const allTexts = [];
 
     for (const t of rawTexts) {
@@ -86,7 +89,8 @@ class RpgMakerAdapter extends BaseEngineAdapter {
 
     return accApply.report({
       texts: allTexts,
-      count: allTexts.length
+      count: allTexts.length,
+      ...(nativeData ? {preservedNames:nativeData.preservedNames,coverageScope:nativeData.coverageScope,universeComplete:false} : {})
 });
   }
 
@@ -130,6 +134,10 @@ class RpgMakerAdapter extends BaseEngineAdapter {
       };
     }
 
+    const wrapRoot = fs.existsSync(path.join(gameDir, 'www', 'js', 'plugins.js')) ? path.join(gameDir, 'www') : gameDir;
+    const enableWrap = options.wrapDialogue === true || (options.wrapDialogue !== false && options.skipBackup !== true);
+    const wrapPlan = enableWrap ? TextWrap.plan(wrapRoot) : null;
+
     // Garante criação de backup transacional dos dados e plugins para a sessão
     if (options.skipBackup !== true) {
       const filesToBackup = [];
@@ -141,7 +149,8 @@ class RpgMakerAdapter extends BaseEngineAdapter {
         try {
           const dFiles = fs.readdirSync(targetDataDir);
           for (const f of dFiles) {
-            filesToBackup.push(path.join(targetDataDir, f));
+            const file = path.join(targetDataDir, f);
+            if (fs.statSync(file).isFile()) filesToBackup.push(file);
           }
         } catch (e) {}
       }
@@ -154,12 +163,15 @@ class RpgMakerAdapter extends BaseEngineAdapter {
       const cheatScript = path.join(wwwDir, "CheatOverlay.js");
       if (fs.existsSync(cheatScript)) filesToBackup.push(cheatScript);
 
-      this.backupManager.createSessionBackup(gameDir, filesToBackup, {
+      if (wrapPlan && !wrapPlan.created) filesToBackup.push(wrapPlan.file);
+      const backup = this.backupManager.createSessionBackup(gameDir, filesToBackup, {
         sessionId: options.sessionId,
         transactionId: options.transactionId,
         backupId: options.backupId,
-        engine: "rpgmaker"
+        engine: "rpgmaker",
+        createdFiles: wrapPlan && wrapPlan.created ? [path.relative(gameDir, wrapPlan.file)] : []
       });
+      if (!backup.success) return { success:false, error:backup.error || 'Could not create a verified game backup', count:0, modifiedFiles:[] };
     }
 
     // Restaura códigos protegidos antes de passar para o patchGameData nativo
@@ -176,10 +188,18 @@ class RpgMakerAdapter extends BaseEngineAdapter {
       }
     }
 
-    const patchedCount = patchGameData(gameDir, texts, restoredMap);
+    const native = texts.some(text=>text.nativeKind);
+    if(native && texts.some(text=>!text.nativeKind)) throw new Error('Mixed database translation formats are not supported');
+    const nativeResult = native ? NativeTextData.apply(gameDir,texts,restoredMap) : null;
+    const patchedCount = nativeResult ? nativeResult.count : patchGameData(gameDir, texts, restoredMap);
+    let textWrap = null;
+    try { if (wrapPlan) textWrap = TextWrap.install(wrapRoot, wrapPlan); }
+    catch (error) { return { success:false, error:error.message, count:patchedCount, modifiedFiles:[path.join(wrapRoot, 'data')] }; }
     return {
       success: true,
-      modifiedFiles: [path.join(gameDir, "data")],
+      modifiedFiles: [...(nativeResult?.modifiedFiles || [path.join(gameDir, "data")]), ...(textWrap?.files || [])],
+      fileHashes: nativeResult?.fileHashes,
+      textWrap,
       count: patchedCount
     };
   }
@@ -187,45 +207,7 @@ class RpgMakerAdapter extends BaseEngineAdapter {
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreSessionBackup(gameDir, options);
 
-    // Limpa eventuais resíduos da sessão de teste
-    try {
-      const actualDataDir = fs.existsSync(path.join(gameDir, "www", "data"))
-        ? path.join(gameDir, "www", "data")
-        : (fs.existsSync(path.join(gameDir, "data")) ? path.join(gameDir, "data") : null);
-      if (actualDataDir) {
-        const wwwDir = path.dirname(actualDataDir);
-        // Remove pastas de backup temporárias data_bak_* criadas pelo patchGameData durante a sessão
-        try {
-          const parentEntries = fs.readdirSync(wwwDir);
-          for (const pe of parentEntries) {
-            if (pe.startsWith("data_bak_")) {
-              const bakDirPath = path.join(wwwDir, pe);
-              try { fs.rmSync(bakDirPath, { recursive: true, force: true }); } catch (err) {}
-            }
-          }
-        } catch (e) {}
-
-        const cheatScript = path.join(wwwDir, "CheatOverlay.js");
-        const relCheat = path.relative(gameDir, cheatScript).replace(/\\/g, "/");
-        const wasRestored = res && Array.isArray(res.restoredFiles) && res.restoredFiles.includes(relCheat);
-        if (!wasRestored && fs.existsSync(cheatScript)) {
-          try { fs.unlinkSync(cheatScript); } catch (e) {}
-        }
-        const cheatLog = path.join(gameDir, "cheat_overlay.log");
-        if (fs.existsSync(cheatLog)) {
-          try { fs.unlinkSync(cheatLog); } catch (e) {}
-        }
-        const pluginsBakDir = path.join(actualDataDir, "js_plugins_bak");
-        if (fs.existsSync(pluginsBakDir)) {
-          try { fs.rmSync(pluginsBakDir, { recursive: true, force: true }); } catch (e) {}
-        }
-        const pluginsJsBak = path.join(actualDataDir, "plugins.js_bak");
-        if (fs.existsSync(pluginsJsBak)) {
-          try { fs.unlinkSync(pluginsJsBak); } catch (e) {}
-        }
-      }
-    } catch (e) {}
-
+    // BackupManager restores only verified files and removes session-owned additions.
     // FASE 7 / PASSO 33 — dois defeitos na mesma linha:
     //
     //   success: res.success !== false,      // undefined !== false => TRUE
@@ -238,7 +220,7 @@ class RpgMakerAdapter extends BaseEngineAdapter {
     // no lado errado da comparação.
     return rollbackResult(res, this.id || this.engineId || "rpgmaker", {
       details: res,
-      cleanupPerformed: true,
+      cleanupPerformed: res?.success === true,
     });
   }
 }

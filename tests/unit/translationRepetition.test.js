@@ -7,7 +7,7 @@ const memory=require('../../src/core/translationMemory'),{TranslationMemory2}=me
 const detector=require('../../src/core/engineDetector'),translator=require('../../src/translation/translator'),http=require('../../src/core/providerHttp');
 const prior={detect:detector.detect,batch:translator.translateBatch,get:http.get,post:http.post};let pass=0;
 (async()=>{
- for(const [source,target] of [['Yes','Sim, sim.'],['Yes','Sim im'],['Load','Carregar Carregar'],['Load','Carregar caaretgar'],['New Game','Novo jogo Novo jogo'],['He is arriving.','Ele ele ele está chegando.'],['Hello','<unk> olá']]) {
+ for(const [source,target] of [['Yes','Sim, sim.'],['Yes','Sim im'],['Load','Carregar Carregar'],['Load','Carregar caaretgar'],['New Game','Novo jogo Novo jogo'],['He is arriving.','Ele ele ele está chegando.'],['Hello','<unk> olá'],['Japan is aging.','>>pob << O Japão está envelhecendo.'],['Hello','>>por<< Olá']]) {
   assert.strictEqual(quality.inspect(source,target).valid,false,source+' -> '+target);assert.strictEqual(QA.validate(source,target).qaStatus,'fail');pass++;
  }
  for(const [source,target] of [['Yes','Sim'],['hahaha','ha ha ha'],['No, no!','Não, não!'],['Go, go, go!','Vá, vá, vá!'],['はいはいはい','Sim sim sim'],['I had had enough.','Eu já tinha me cansado.'],['Hello [name] [name]','Olá [name] [name]'],['{b}Hello{/b}','{b}Olá{/b}']]) {

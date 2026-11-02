@@ -41,3 +41,5 @@ Current guides are written in English. Earlier phase/laboratory reports are hist
 ## Historical material
 
 `audit/`, `audits/`, `history/`, and `reports/` contain dated review/laboratory records. Their English status summaries explain scope and preserve access to the original reports. They do not supersede current guides, certify all engine versions, or establish that every old benchmark was repeated. See [the English migration record](audit/ENGLISH-INTERFACE-2026-11-01.md).
+
+- [Optional local translation and dialogue wrapping](LOCAL_TRANSLATION.md)

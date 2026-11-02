@@ -59,7 +59,9 @@ class QAEngine {
       return bal === 0;
     };
 
-    if (!checkBalance(translated, '{', '}')) {
+    // RPG Maker font-size controls are commands, not brace delimiters.
+    const balancedText = translated.replace(/\\[{}]/g, '');
+    if (!checkBalance(balancedText, '{', '}')) {
       qaErrors.push("Desbalanceamento de chaves '{ }' na tradução.");
     }
     if (!checkBalance(translated, '[', ']')) {

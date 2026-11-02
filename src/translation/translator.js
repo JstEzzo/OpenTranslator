@@ -596,6 +596,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
 
 async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchTranslated, options = {}) {
   if (!engine || engine === "auto") engine = "multi";
+  if (engine === 'local_marian') return require('./localTranslation').translateBatch(texts,sl,tl,glossary,onBatchTranslated,options);
   options = { ...options, allowProviderFallback: options.allowProviderFallback === true || engine === "multi" };
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
   const results = new Map();
@@ -1104,6 +1105,11 @@ async function translateSingle(text, sl, tl, engine) {
 async function translateSingleUnchecked(text, sl, tl, engine) {
   const cfg = loadCfg();
   if (!engine || engine === "auto") engine = cfg.engine || "multi";
+  if (engine === 'local_marian') {
+    const result=await require('./localTranslation').translateBatch([{id:'single',clean:text,original:text}],sl,tl,[],null,{});
+    if(!result.has('single'))throw new Error('Local translation requires review or the text is already unchanged.');
+    return result.get('single');
+  }
   if (engine === "bing") return translateBingSingle(text, sl, tl);
   if (engine === "papago") return translatePapagoSingle(text, sl, tl);
   if (engine === "mymemory") return translateMyMemoryOne(text, sl, tl);

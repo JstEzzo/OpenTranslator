@@ -1084,6 +1084,7 @@
               <option value="multi">${t("cfgEngineMulti")}</option>
               <option value="llm">${t("cfgEngineLlm")}</option>
               <option value="deepl">${t("cfgEngineDeepl")}</option>
+              <option value="local_marian">Local translation · Offline</option>
             </select></div>
             
             <!-- Settings de LLM -->

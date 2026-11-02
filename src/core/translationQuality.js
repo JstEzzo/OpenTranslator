@@ -34,6 +34,8 @@ function inspect(original, translated) {
   if (typeof original !== 'string' || typeof translated !== 'string') return { valid:false, issues:['INVALID_TRANSLATION_TYPE'] };
   if (original === translated) return {valid:true, issues};
   if ((translated.includes('<unk>') && !original.includes('<unk>')) || (translated.includes('⁇') && !original.includes('⁇'))) issues.push('UNKNOWN_MODEL_TOKEN');
+  const modelTag = />>\s*(?:pob|por|pt(?:[_-]br)?)\s*<</gi;
+  if ((translated.match(modelTag) || []).length > (original.match(modelTag) || []).length) issues.push('MODEL_CONTROL_TOKEN');
   const source = words(original), target = words(translated);
   let allowed = Math.max(...[1,2,3,4].map(width => repetitions(source,width)));
   for (const token of source) {

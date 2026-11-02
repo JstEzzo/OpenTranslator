@@ -301,7 +301,7 @@ class TranslationPipeline {
               }
             }
           },
-          { allowProviderFallback }
+          { ...options, allowProviderFallback }
         );
 
         if (newTranslations.rejectedTranslations?.length) {
@@ -492,6 +492,11 @@ class TranslationPipeline {
     if (qualityFailures.length) {
       return { success:false, status:'FAILED_QA', error:'Translation contains repeated words or invalid model output. No game files were modified.',
         details:qualityFailures, appliedCount:0, pending:qualityFailures.length };
+    }
+
+    if (qaErrorsCount > 0) {
+      return { success:false, status:'FAILED_QA', error:'Translation failed structural quality checks. No game files were modified.',
+        qaErrorsCount, appliedCount:0 };
     }
 
     // Validação estrutural do Adapter
