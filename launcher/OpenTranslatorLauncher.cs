@@ -68,7 +68,7 @@ namespace OpenTranslatorLauncher
                     }
                     else if (res == DialogResult.Retry)
                     {
-                        MessageBox.Show("Feche a instancia anterior pelo proprio OpenTranslator e tente novamente. Nenhum processo sera encerrado apenas por ocupar uma porta.", "OpenTranslator", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Close the previous instance using OpenTranslator and try again. A process will not be stopped just because it occupies a port.", "OpenTranslator", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
                     else
@@ -133,7 +133,7 @@ namespace OpenTranslatorLauncher
 
             var lblTitle = new Label
             {
-                Text = "OpenTranslator Já em Execução",
+                Text = "OpenTranslator is already running",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Location = new Point(20, 16),
@@ -143,8 +143,8 @@ namespace OpenTranslatorLauncher
             var lblDesc = new Label
             {
                 Text = serverResponding
-                    ? "Uma instância do OpenTranslator já está aberta e respondendo na porta 8080.\nO que você deseja fazer?"
-                    : "Uma instância do OpenTranslator foi detectada, mas o servidor não está respondendo.\nVocê pode reiniciar o sistema limpo ou cancelar.",
+                    ? "OpenTranslator is already responding on port 8080.\nWhat would you like to do?"
+                    : "An OpenTranslator instance was detected, but its server is not responding.\nYou can restart it or cancel.",
                 Location = new Point(22, 50),
                 Size = new Size(440, 50),
                 ForeColor = Color.FromArgb(209, 213, 219)
@@ -152,7 +152,7 @@ namespace OpenTranslatorLauncher
 
             var btnOpen = new Button
             {
-                Text = "Abrir Interface Web",
+                Text = "Open web interface",
                 DialogResult = DialogResult.OK,
                 Location = new Point(20, 130),
                 Size = new Size(150, 36),
@@ -165,7 +165,7 @@ namespace OpenTranslatorLauncher
 
             var btnRestart = new Button
             {
-                Text = "Reiniciar",
+                Text = "Restart",
                 DialogResult = DialogResult.Retry,
                 Location = new Point(180, 130),
                 Size = new Size(130, 36),
@@ -178,7 +178,7 @@ namespace OpenTranslatorLauncher
 
             var btnCancel = new Button
             {
-                Text = "Cancelar",
+                Text = "Cancel",
                 DialogResult = DialogResult.Cancel,
                 Location = new Point(320, 130),
                 Size = new Size(130, 36),
@@ -265,7 +265,7 @@ namespace OpenTranslatorLauncher
             }
             catch (Exception ex)
             {
-                Log("  [WARN] Falha ao obter token de sessao em /api/ping: " + ex.Message);
+                Log("  [WARN] Could not obtain the session token from /api/ping:" + ex.Message);
                 return null;
             }
         }
@@ -326,16 +326,16 @@ namespace OpenTranslatorLauncher
         public void InitSteps()
         {
             Steps.Clear();
-            Steps.Add(new DiagnosticStep { Id = "files", Title = "Arquivos Essenciais do Sistema", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "runtime", Title = "Runtime Node.js (Portátil / Sistema)", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "deps", Title = "Módulos Nativo e SQLite (Transação Real)", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "db", Title = "Diretórios de Dados e Cache Local", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "ports", Title = "Verificação e Liberação de Portas (8080, 16005)", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "permissions", Title = "Permissões de Leitura e Escrita", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "backend", Title = "Inicialização do Servidor Backend", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "http", Title = "Conexão e Resposta HTTP (Health Check)", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "files", Title = "Required application files", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "runtime", Title = "Node.js runtime (portable / system)", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "deps", Title = "Native modules and SQLite transaction", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "db", Title = "Data directories and local cache", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "ports", Title = "Port availability (8080, 16005)", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "permissions", Title = "Read and write permissions", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "backend", Title = "Backend server startup", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "http", Title = "HTTP connection and health check", Status = "PENDING" });
             Steps.Add(new DiagnosticStep { Id = "frontend", Title = "Integridade dos Ativos Frontend", Status = "PENDING" });
-            Steps.Add(new DiagnosticStep { Id = "rpc", Title = "Comunicação RPC Segura (Ping / Load)", Status = "PENDING" });
+            Steps.Add(new DiagnosticStep { Id = "rpc", Title = "Authenticated RPC communication (ping / load)", Status = "PENDING" });
         }
 
         private void UpdateStep(string id, string status, string details, long durationMs = 0)
@@ -355,14 +355,14 @@ namespace OpenTranslatorLauncher
 
         public bool RunAllChecks(bool startBackend, CancellationTokenSource cts, Action<string, string, string, string> onFail)
         {
-            Log("=== Iniciando Verificação de Integridade Rigorosa do OpenTranslator ===");
-            Log("Diretório Base: " + BaseDir);
-            Log("Diretório Tool: " + ToolDir);
+            Log("=== Starting OpenTranslator integrity checks ===");
+            Log("Base directory:" + BaseDir);
+            Log("Application directory:" + ToolDir);
 
             // Step 1: Files
             var sw = Stopwatch.StartNew();
-            UpdateStep("files", "RUNNING", "Validando integridade dos arquivos...");
-            Log("[1/10] Verificando arquivos essenciais...");
+            UpdateStep("files", "RUNNING", "Checking required files...");
+            Log("[1/10] Checking required files...");
             string serverJs = ResolveExistingPath(Path.Combine(BaseDir, "server.js"), Path.Combine(ToolDir, "server.js"));
             // FASE 5.5 — `httpServer.js` e `rpcHandlers.js` foram movidos para
             // `src/services/` (responsabilidade: serviços). O layout antigo
@@ -379,9 +379,9 @@ namespace OpenTranslatorLauncher
                 if (!File.Exists(rf))
                 {
                     sw.Stop();
-                    string cause = "Arquivo essencial não encontrado: " + Path.GetFileName(rf);
+                    string cause = "Required file not found:" + Path.GetFileName(rf);
                     string det = "Caminho esperado: " + rf;
-                    SetError("files", "Arquivos essenciais ausentes", cause, det);
+                    SetError("files", "Missing required files", cause, det);
                     UpdateStep("files", "ERROR", cause, sw.ElapsedMilliseconds);
                     if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                     return false;
@@ -390,7 +390,7 @@ namespace OpenTranslatorLauncher
                 if (fi.Length == 0)
                 {
                     sw.Stop();
-                    string cause = "Arquivo essencial está vazio (0 bytes): " + Path.GetFileName(rf);
+                    string cause = "Required file is empty (0 bytes):" + Path.GetFileName(rf);
                     SetError("files", "Arquivo corrompido", cause, rf);
                     UpdateStep("files", "ERROR", cause, sw.ElapsedMilliseconds);
                     if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
@@ -398,13 +398,13 @@ namespace OpenTranslatorLauncher
                 }
             }
             sw.Stop();
-            UpdateStep("files", "OK", "5/5 arquivos principais íntegros", sw.ElapsedMilliseconds);
-            Log("  [OK] Arquivos essenciais verificados com sucesso.");
+            UpdateStep("files", "OK", "5/5 required files are present and non-empty", sw.ElapsedMilliseconds);
+            Log("  [OK] Required files checked.");
 
             // Step 2: Runtime
             sw.Restart();
             UpdateStep("runtime", "RUNNING", "Detectando runtime Node.js...");
-            Log("[2/10] Verificando runtime Node.js...");
+            Log("[2/10] Checking Node.js runtime...");
 
             string nodePortable = ResolveExistingPath(
                 Path.Combine(BaseDir, "bin", "node.exe"),
@@ -421,7 +421,7 @@ namespace OpenTranslatorLauncher
                 {
                     selectedNode = nodePortable;
                     nodeVer = ver;
-                    Log("  [OK] Node.js portátil funcional: " + ver);
+                    Log("  [OK] Portable Node.js is working:" + ver);
                 }
             }
 
@@ -432,16 +432,16 @@ namespace OpenTranslatorLauncher
                 {
                     selectedNode = "node";
                     nodeVer = sysVer;
-                    Log("  [OK] Node.js do sistema funcional: " + sysVer);
+                    Log("  [OK] System Node.js is working:" + sysVer);
                 }
             }
 
             if (selectedNode == null)
             {
                 sw.Stop();
-                string cause = "Nenhum runtime Node.js operacional encontrado.";
-                string det = "O executável portátil não foi localizado em: " + nodePortable + " e 'node' não está no PATH.";
-                SetError("runtime", "Runtime Node.js não encontrado", cause, det);
+                string cause = "No working Node.js runtime found.";
+                string det = "The portable executable was not found at:" + nodePortable + " and 'node' is not on PATH.";
+                SetError("runtime", "Node.js runtime not found", cause, det);
                 UpdateStep("runtime", "ERROR", cause, sw.ElapsedMilliseconds);
                 if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                 return false;
@@ -452,8 +452,8 @@ namespace OpenTranslatorLauncher
 
             // Step 3: Dependencies & SQLite Live Test
             sw.Restart();
-            UpdateStep("deps", "RUNNING", "Executando teste real de transação SQLite...");
-            Log("[3/10] Testando dependências nativas e SQLite em runtime real...");
+            UpdateStep("deps", "RUNNING", "Running a SQLite transaction test...");
+            Log("[3/10] Testing native dependencies and SQLite...");
 
             string probeScript = "try { const ws = require('ws'); const Database = require('better-sqlite3'); const db = new Database(':memory:'); db.prepare('CREATE TABLE _probe(id INT, v TEXT)').run(); db.prepare('INSERT INTO _probe VALUES (1, @v)').run({ v: 'ok' }); const row = db.prepare('SELECT v FROM _probe WHERE id = 1').get(); db.close(); if (row && row.v === 'ok') console.log('SQLITE_AND_WS_OK'); else { console.error('SQLITE_BAD_RESULT'); process.exit(1); } } catch(e) { console.error('MODULE_ERROR: ' + e.message); process.exit(1); }";
 
@@ -464,9 +464,9 @@ namespace OpenTranslatorLauncher
             if (!probeSuccess || !probeOut.Contains("SQLITE_AND_WS_OK"))
             {
                 sw.Stop();
-                string cause = "Incompatibilidade no módulo nativo better-sqlite3 ou ws.";
-                string det = string.Format("Erro retornado pelo Node:\n{0}\n{1}\nRuntime: {2}", probeErr, probeOut, NodeExe);
-                SetError("deps", "Falha Crítica no SQLite Nativo", cause, det);
+                string cause = "The native better-sqlite3 module or ws is incompatible.";
+                string det = string.Format("Node.js returned:\n{0}\n{1}\nRuntime: {2}", probeErr, probeOut, NodeExe);
+                SetError("deps", "Native SQLite check failed", cause, det);
                 UpdateStep("deps", "ERROR", cause, sw.ElapsedMilliseconds);
                 if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                 return false;
@@ -474,77 +474,77 @@ namespace OpenTranslatorLauncher
 
             sw.Stop();
             UpdateStep("deps", "OK", "ws e better-sqlite3 nativo validados com SQL real", sw.ElapsedMilliseconds);
-            Log("  [OK] Dependências nativas e transação SQLite validadas.");
+            Log("  [OK] Native dependencies and SQLite transaction passed.");
 
             // Step 4: Database & Cache Dirs
             sw.Restart();
-            UpdateStep("db", "RUNNING", "Verificando diretórios de dados...");
-            Log("[4/10] Verificando diretórios de dados e integridade de cache...");
+            UpdateStep("db", "RUNNING", "Checking data directories...");
+            Log("[4/10] Checking data directories and cache...");
             string dataDir = Directory.Exists(Path.Combine(BaseDir, "data")) ? Path.Combine(BaseDir, "data") : Path.Combine(ToolDir, "data");
             string gameLibDir = Directory.Exists(Path.Combine(BaseDir, "gameLib")) ? Path.Combine(BaseDir, "gameLib") : Path.Combine(ToolDir, "gameLib");
             if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
             if (!Directory.Exists(gameLibDir)) Directory.CreateDirectory(gameLibDir);
 
             sw.Stop();
-            UpdateStep("db", "OK", "data e gameLib prontos", sw.ElapsedMilliseconds);
-            Log("  [OK] Diretórios de dados validados.");
+            UpdateStep("db", "OK", "data and gameLib are ready", sw.ElapsedMilliseconds);
+            Log("  [OK] Data directories checked.");
 
             // Step 5: Ports
             sw.Restart();
-            UpdateStep("ports", "RUNNING", "Verificando portas 8080 e 16005...");
-            Log("[5/10] Verificando disponibilidade de portas...");
+            UpdateStep("ports", "RUNNING", "Checking ports 8080 and 16005...");
+            Log("[5/10] Checking port availability...");
 
             bool port8080InUse = IsPortInUse(8080);
             if (port8080InUse)
             {
-                Log("  Porta 8080 em uso. Testando se pertence a um OpenTranslator saudável...");
+                Log("  Port 8080 is in use. Checking for a healthy OpenTranslator instance...");
                 bool healthy = CheckHttpHealthy(8080, 1500);
                 if (healthy)
                 {
-                    Log("  [OK] Instância anterior do OpenTranslator respondendo na porta 8080.");
-                    UpdateStep("ports", "OK", "Instância ativa detectada na porta 8080", sw.ElapsedMilliseconds);
+                    Log("  [OK] An existing OpenTranslator instance is responding on port 8080.");
+                    UpdateStep("ports", "OK", "Active instance detected on port 8080", sw.ElapsedMilliseconds);
                 }
                 else
                 {
-                    Log("  Porta ocupada. O processo nao sera encerrado sem comprovacao de propriedade.");
+                    Log("  Port occupied. The process will not be stopped without proof of ownership.");
                     if (IsPortInUse(8080))
                     {
                         sw.Stop();
-                        string cause = "Porta 8080 ocupada. Feche o programa responsavel e tente novamente.";
-                        string det = "Verifique processos conflitantes na porta 8080 no Gerenciador de Tarefas.";
-                        SetError("ports", "Porta 8080 indisponível", cause, det);
+                        string cause = "Port 8080 is occupied. Close the application using it and retry.";
+                        string det = "Check Task Manager for conflicting processes on port 8080.";
+                        SetError("ports", "Port 8080 is unavailable", cause, det);
                         UpdateStep("ports", "ERROR", cause, sw.ElapsedMilliseconds);
                         if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                         return false;
                     }
-                    UpdateStep("ports", "OK", "Portas 8080 e 16005 liberadas com sucesso", sw.ElapsedMilliseconds);
+                    UpdateStep("ports", "OK", "Ports 8080 and 16005 are available", sw.ElapsedMilliseconds);
                 }
             }
             else
             {
-                UpdateStep("ports", "OK", "Portas 8080 e 16005 livres", sw.ElapsedMilliseconds);
+                UpdateStep("ports", "OK", "Ports 8080 and 16005 are free", sw.ElapsedMilliseconds);
             }
             sw.Stop();
-            Log("  [OK] Portas validadas.");
+            Log("  [OK] Ports checked.");
 
             // Step 6: Permissions
             sw.Restart();
-            UpdateStep("permissions", "RUNNING", "Testando permissões de gravação...");
-            Log("[6/10] Testando permissões de gravação...");
+            UpdateStep("permissions", "RUNNING", "Testing write permissions...");
+            Log("[6/10] Testing write permissions...");
             try
             {
                 string testFile = Path.Combine(dataDir, ".perm_test_" + Guid.NewGuid().ToString("N"));
                 File.WriteAllText(testFile, "OK");
                 File.Delete(testFile);
                 sw.Stop();
-                UpdateStep("permissions", "OK", "Gravação em Tool/data confirmada", sw.ElapsedMilliseconds);
-                Log("  [OK] Permissões confirmadas.");
+                UpdateStep("permissions", "OK", "Writing to the data directory succeeded", sw.ElapsedMilliseconds);
+                Log("  [OK] Permissions checked.");
             }
             catch (Exception ex)
             {
                 sw.Stop();
-                string cause = "Falha ao gravar no diretório de dados: " + ex.Message;
-                SetError("permissions", "Permissões insuficientes", cause, ex.ToString());
+                string cause = "Could not write to the data directory:" + ex.Message;
+                SetError("permissions", "Insufficient permissions", cause, ex.ToString());
                 UpdateStep("permissions", "ERROR", cause, sw.ElapsedMilliseconds);
                 if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                 return false;
@@ -554,8 +554,8 @@ namespace OpenTranslatorLauncher
 
             // Step 7: Backend Launch
             sw.Restart();
-            UpdateStep("backend", "RUNNING", "Inicializando servidor backend...");
-            Log("[7/10] Inicializando servidor backend...");
+            UpdateStep("backend", "RUNNING", "Starting backend server...");
+            Log("[7/10] Starting backend server...");
 
             bool alreadyRunning = CheckHttpHealthy(8080, 500);
             if (!alreadyRunning)
@@ -564,43 +564,43 @@ namespace OpenTranslatorLauncher
                 if (!launched)
                 {
                     sw.Stop();
-                    string cause = "Falha ao iniciar o processo Node.js do servidor.";
-                    string det = "Comando: " + NodeExe + " server.js --no-browser\nDiretório: " + ToolDir;
-                    SetError("backend", "Backend falhou na inicialização", cause, det);
+                    string cause = "Could not start the Node.js server process.";
+                    string det = "Command: " + NodeExe + " server.js --no-browser\nDirectory:" + ToolDir;
+                    SetError("backend", "Backend startup failed", cause, det);
                     UpdateStep("backend", "ERROR", cause, sw.ElapsedMilliseconds);
                     if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                     return false;
                 }
             }
             sw.Stop();
-            string bMsg = alreadyRunning ? "Servidor já em execução (reutilizado)" : "Servidor iniciado (PID: " + ServerPid + ")";
+            string bMsg = alreadyRunning ? "Server already running (reused)" : "Server started (PID:" + ServerPid + ")";
             UpdateStep("backend", "OK", bMsg, sw.ElapsedMilliseconds);
             Log("  [OK] " + bMsg);
 
             // Step 8: HTTP Health Check
             sw.Restart();
-            UpdateStep("http", "RUNNING", "Aguardando confirmação HTTP 200...");
-            Log("[8/10] Aguardando confirmação HTTP 200...");
+            UpdateStep("http", "RUNNING", "Waiting for HTTP 200 response...");
+            Log("[8/10] Waiting for HTTP 200 response...");
 
             bool httpOk = WaitForHttpReady(8080, 15000);
             if (!httpOk)
             {
                 sw.Stop();
-                string cause = "O servidor backend não respondeu na porta 8080 após 15 segundos.";
-                string det = "Últimos logs:\n" + GetRecentLogSnippet();
-                SetError("http", "Timeout de conexão HTTP", cause, det);
+                string cause = "The backend did not respond on port 8080 within 15 seconds.";
+                string det = "Recent logs:\n" + GetRecentLogSnippet();
+                SetError("http", "HTTP connection timed out", cause, det);
                 UpdateStep("http", "ERROR", cause, sw.ElapsedMilliseconds);
                 if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                 return false;
             }
             sw.Stop();
             UpdateStep("http", "OK", "HTTP 200 OK em http://localhost:8080", sw.ElapsedMilliseconds);
-            Log("  [OK] Servidor respondendo via HTTP.");
+            Log("  [OK] Server is responding over HTTP.");
 
             // Step 9: Frontend Assets
             sw.Restart();
-            UpdateStep("frontend", "RUNNING", "Verificando index.html e app.js...");
-            Log("[9/10] Verificando ativos da interface frontend...");
+            UpdateStep("frontend", "RUNNING", "Checking index.html and app.js...");
+            Log("[9/10] Checking frontend assets...");
             try
             {
                 var reqHtml = (HttpWebRequest)WebRequest.Create("http://127.0.0.1:8080/index.html");
@@ -624,8 +624,8 @@ namespace OpenTranslatorLauncher
             catch (Exception ex)
             {
                 sw.Stop();
-                string cause = "Falha ao requisitar ativos frontend: " + ex.Message;
-                SetError("frontend", "Falha de carregamento da interface", cause, ex.ToString());
+                string cause = "Could not request frontend assets:" + ex.Message;
+                SetError("frontend", "Interface loading failed", cause, ex.ToString());
                 UpdateStep("frontend", "ERROR", cause, sw.ElapsedMilliseconds);
                 if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                 return false;
@@ -633,7 +633,7 @@ namespace OpenTranslatorLauncher
 
             // Step 10: RPC Test
             sw.Restart();
-            UpdateStep("rpc", "RUNNING", "Testando chamada RPC segura (ping)...");
+            UpdateStep("rpc", "RUNNING", "Testing authenticated RPC call (ping)...");
             Log("[10/10] Realizando teste de chamada RPC...");
             try
             {
@@ -669,7 +669,7 @@ namespace OpenTranslatorLauncher
 
                 if (string.IsNullOrEmpty(respJson) || !respJson.Contains("\"ok\":true"))
                 {
-                    throw new Exception("Resposta RPC inválida: " + respJson);
+                    throw new Exception("Invalid RPC response:" + respJson);
                 }
 
                 sw.Stop();
@@ -679,14 +679,14 @@ namespace OpenTranslatorLauncher
             catch (Exception ex)
             {
                 sw.Stop();
-                string cause = "Falha na chamada RPC: " + ex.Message;
-                SetError("rpc", "Falha de comunicação RPC", cause, ex.ToString());
+                string cause = "RPC call failed:" + ex.Message;
+                SetError("rpc", "RPC communication failed", cause, ex.ToString());
                 UpdateStep("rpc", "ERROR", cause, sw.ElapsedMilliseconds);
                 if (onFail != null) onFail(LastErrorStep, LastErrorMessage, LastErrorCause, LastErrorDetails);
                 return false;
             }
 
-            Log("=== Todos os 10 diagnósticos concluídos com SUCESSO REAL! ===");
+            Log("=== All 10 startup checks passed ===");
             return true;
         }
 
@@ -696,7 +696,7 @@ namespace OpenTranslatorLauncher
             LastErrorMessage = title;
             LastErrorCause = cause;
             LastErrorDetails = details;
-            Log(string.Format("  [FALHA] {0}: {1}", title, cause));
+            Log(string.Format("  [FAILED] {0}: {1}", title, cause));
         }
 
         private bool RunNodeProbe(string script, out string stdout, out string stderr)
@@ -839,7 +839,7 @@ namespace OpenTranslatorLauncher
             }
             catch (Exception ex)
             {
-                Log("Erro ao disparar processo node: " + ex.Message);
+                Log("Could not start the Node.js process:" + ex.Message);
             }
             return false;
         }
@@ -863,7 +863,7 @@ namespace OpenTranslatorLauncher
                 }
                 if (!ActiveServerProcess.WaitForExit(35000))
                 {
-                    Log("Encerramento ainda em andamento. O backend foi preservado para concluir a restauracao.");
+                    Log("Shutdown is still in progress. The backend was preserved to finish restoration.");
                     return false;
                 }
                 bool clean = ActiveServerProcess.ExitCode == 0;
@@ -873,7 +873,7 @@ namespace OpenTranslatorLauncher
             }
             catch (Exception ex)
             {
-                Log("Nao foi possivel concluir o encerramento: " + ex.Message);
+                Log("Could not complete shutdown:" + ex.Message);
                 return false;
             }
         }
@@ -893,7 +893,7 @@ namespace OpenTranslatorLauncher
 
         public void AutoFix()
         {
-            Log("=== Executando Rotina de Auto-Correção ===");
+            Log("=== Running recovery checks ===");
             try
             {
                 if (!StopServer()) return;
@@ -918,11 +918,11 @@ namespace OpenTranslatorLauncher
                     catch { }
                 }
 
-                Log("Rotina de auto-correção finalizada.");
+                Log("Recovery checks completed.");
             }
             catch (Exception ex)
             {
-                Log("Exceção na auto-correção: " + ex.Message);
+                Log("Recovery error:" + ex.Message);
             }
         }
     }
@@ -1037,7 +1037,7 @@ namespace OpenTranslatorLauncher
             };
             lblSubtitle = new Label
             {
-                Text = "Sistema de Inicialização, Autodiagnóstico e Recuperação",
+                Text = "Startup, diagnostics, and recovery",
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(156, 163, 175),
                 Location = new Point(22, 42),
@@ -1045,7 +1045,7 @@ namespace OpenTranslatorLauncher
             };
             lblBadge = new Label
             {
-                Text = "DIAGNOSTICANDO",
+                Text = "CHECKING",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 BackColor = Color.FromArgb(30, 58, 138),
                 ForeColor = Color.FromArgb(147, 197, 253),
@@ -1067,7 +1067,7 @@ namespace OpenTranslatorLauncher
             progressBar = new ProgressBar { Location = new Point(10, 10), Size = new Size(680, 8), Style = ProgressBarStyle.Continuous, Maximum = 10, Value = 0 };
             lblStepStatus = new Label
             {
-                Text = "Iniciando verificações pré-voo...",
+                Text = "Starting preflight checks...",
                 Font = new Font("Segoe UI", 10f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(209, 213, 219),
                 Location = new Point(10, 25),
@@ -1093,7 +1093,7 @@ namespace OpenTranslatorLauncher
                 startY += 26;
             }
 
-            var btnDiagLog = CreateButton("Ver Logs Detalhados", new Point(15, startY + 10), new Size(180, 32), Color.FromArgb(39, 41, 46));
+            var btnDiagLog = CreateButton("View detailed logs", new Point(15, startY + 10), new Size(180, 32), Color.FromArgb(39, 41, 46));
             btnDiagLog.Click += (s, e) => ShowLogsView();
             diagListPanel.Controls.Add(btnDiagLog);
 
@@ -1101,7 +1101,7 @@ namespace OpenTranslatorLauncher
             recoveryPanel = new Panel { Dock = DockStyle.Fill, Visible = false };
             var lblRecHead = new Label
             {
-                Text = "OPENTRANSLATOR NÃO FOI INICIADO",
+                Text = "OPENTRANSLATOR DID NOT START",
                 Font = new Font("Segoe UI", 14f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(239, 68, 68),
                 Location = new Point(10, 5),
@@ -1109,7 +1109,7 @@ namespace OpenTranslatorLauncher
             };
             lblErrorTitle = new Label
             {
-                Text = "Problema Detectado",
+                Text = "Issue detected",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 244, 246),
                 Location = new Point(12, 36),
@@ -1117,7 +1117,7 @@ namespace OpenTranslatorLauncher
             };
             lblErrorCause = new Label
             {
-                Text = "Causa do erro...",
+                Text = "Error cause...",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(252, 165, 165),
                 Location = new Point(12, 60),
@@ -1135,11 +1135,11 @@ namespace OpenTranslatorLauncher
                 Size = new Size(680, 180)
             };
 
-            btnAutoFix = CreateButton("Tentar Corrigir Automaticamente", new Point(12, 295), new Size(230, 36), Color.FromArgb(16, 185, 129));
+            btnAutoFix = CreateButton("Run recovery checks", new Point(12, 295), new Size(230, 36), Color.FromArgb(16, 185, 129));
             btnAutoFix.Click += (s, e) =>
             {
                 btnAutoFix.Enabled = false;
-                btnAutoFix.Text = "Corrigindo...";
+                btnAutoFix.Text = "Checking recovery...";
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
                     engine.AutoFix();
@@ -1147,28 +1147,28 @@ namespace OpenTranslatorLauncher
                     this.BeginInvoke(new Action(() =>
                     {
                         btnAutoFix.Enabled = true;
-                        btnAutoFix.Text = "Tentar Corrigir Automaticamente";
+                        btnAutoFix.Text = "Run recovery checks";
                         StartDiagnosis(true);
                     }));
                 });
             };
 
-            btnSafeStart = CreateButton("Modo de Recuperação", new Point(250, 295), new Size(180, 36), Color.FromArgb(245, 158, 11));
+            btnSafeStart = CreateButton("Recovery mode", new Point(250, 295), new Size(180, 36), Color.FromArgb(245, 158, 11));
             btnSafeStart.Click += (s, e) =>
             {
                 isSafeMode = true;
                 StartDiagnosis(false);
             };
 
-            btnCopyReport = CreateButton("Copiar Relatório", new Point(440, 295), new Size(130, 36), Color.FromArgb(39, 41, 46));
+            btnCopyReport = CreateButton("Copy report", new Point(440, 295), new Size(130, 36), Color.FromArgb(39, 41, 46));
             btnCopyReport.Click += (s, e) =>
             {
                 string report = GenerateDiagnosticReport();
                 Clipboard.SetText(report);
-                MessageBox.Show("Relatório copiado para a área de transferência!", "Diagnóstico", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Report copied to clipboard.", "Diagnostics", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            btnToggleLogsFromError = CreateButton("Ver Logs", new Point(580, 295), new Size(110, 36), Color.FromArgb(39, 41, 46));
+            btnToggleLogsFromError = CreateButton("View logs", new Point(580, 295), new Size(110, 36), Color.FromArgb(39, 41, 46));
             btnToggleLogsFromError.Click += (s, e) => ShowLogsView();
 
             recoveryPanel.Controls.Add(lblRecHead);
@@ -1184,7 +1184,7 @@ namespace OpenTranslatorLauncher
             runningPanel = new Panel { Dock = DockStyle.Fill, Visible = false };
             lblRunningTitle = new Label
             {
-                Text = "OpenTranslator em Execução",
+                Text = "OpenTranslator is running",
                 Font = new Font("Segoe UI", 14f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(16, 185, 129),
                 Location = new Point(10, 10),
@@ -1192,27 +1192,27 @@ namespace OpenTranslatorLauncher
             };
             lblRunningInfo = new Label
             {
-                Text = "Servidor ativo em http://localhost:8080\nDual Hook ativo na porta 16005\nInterface web operacional.",
+                Text = "Server active at http://localhost:8080\nDual Hook active on port 16005\nWeb interface is ready.",
                 Font = new Font("Segoe UI", 10f),
                 ForeColor = Color.FromArgb(209, 213, 219),
                 Location = new Point(12, 45),
                 Size = new Size(680, 80)
             };
 
-            btnOpenBrowser = CreateButton("Abrir Interface Web", new Point(12, 130), new Size(200, 40), Color.FromArgb(14, 165, 233));
+            btnOpenBrowser = CreateButton("Open web interface", new Point(12, 130), new Size(200, 40), Color.FromArgb(14, 165, 233));
             btnOpenBrowser.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnOpenBrowser.Click += (s, e) => OpenWebInterface();
 
-            btnViewLogs = CreateButton("Ver Diagnóstico / Logs", new Point(220, 130), new Size(180, 40), Color.FromArgb(39, 41, 46));
+            btnViewLogs = CreateButton("View diagnostics / logs", new Point(220, 130), new Size(180, 40), Color.FromArgb(39, 41, 46));
             btnViewLogs.Click += (s, e) => ShowLogsView();
 
-            btnRestart = CreateButton("Reiniciar", new Point(410, 130), new Size(120, 40), Color.FromArgb(39, 41, 46));
+            btnRestart = CreateButton("Restart", new Point(410, 130), new Size(120, 40), Color.FromArgb(39, 41, 46));
             btnRestart.Click += (s, e) =>
             {
                 if (engine.StopServer()) StartDiagnosis(true);
             };
 
-            btnExitApp = CreateButton("Encerrar OpenTranslator", new Point(540, 130), new Size(150, 40), Color.FromArgb(185, 28, 28));
+            btnExitApp = CreateButton("Exit OpenTranslator", new Point(540, 130), new Size(150, 40), Color.FromArgb(185, 28, 28));
             btnExitApp.Click += (s, e) =>
             {
                 if (engine.StopServer()) Application.Exit();
@@ -1238,7 +1238,7 @@ namespace OpenTranslatorLauncher
                 Dock = DockStyle.Fill
             };
             var logBottomBar = new Panel { Dock = DockStyle.Bottom, Height = 45, Padding = new Padding(0, 5, 0, 0) };
-            btnBackFromLog = CreateButton("Voltar ao Painel", new Point(0, 5), new Size(150, 32), Color.FromArgb(39, 41, 46));
+            btnBackFromLog = CreateButton("Back to panel", new Point(0, 5), new Size(150, 32), Color.FromArgb(39, 41, 46));
             btnBackFromLog.Click += (s, e) =>
             {
                 logPanel.Visible = false;
@@ -1246,11 +1246,11 @@ namespace OpenTranslatorLauncher
                 else if (runningPanel.Tag != null && (bool)runningPanel.Tag) runningPanel.Visible = true;
                 else diagListPanel.Visible = true;
             };
-            var btnCopyAllLogs = CreateButton("Copiar Todos os Logs", new Point(160, 5), new Size(180, 32), Color.FromArgb(39, 41, 46));
+            var btnCopyAllLogs = CreateButton("Copy all logs", new Point(160, 5), new Size(180, 32), Color.FromArgb(39, 41, 46));
             btnCopyAllLogs.Click += (s, e) =>
             {
                 Clipboard.SetText(engine.LogBuffer.ToString());
-                MessageBox.Show("Logs copiados para a área de transferência!", "Logs", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Logs copied to clipboard.", "Logs", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             logBottomBar.Controls.Add(btnBackFromLog);
             logBottomBar.Controls.Add(btnCopyAllLogs);
@@ -1284,10 +1284,10 @@ namespace OpenTranslatorLauncher
             try
             {
                 trayMenu = new ContextMenuStrip();
-                trayMenu.Items.Add("Abrir Interface", null, (s, e) => OpenWebInterface());
-                trayMenu.Items.Add("Exibir Painel", null, (s, e) => { this.Show(); this.WindowState = FormWindowState.Normal; this.BringToFront(); });
+                trayMenu.Items.Add("Open interface", null, (s, e) => OpenWebInterface());
+                trayMenu.Items.Add("Show panel", null, (s, e) => { this.Show(); this.WindowState = FormWindowState.Normal; this.BringToFront(); });
                 trayMenu.Items.Add(new ToolStripSeparator());
-                trayMenu.Items.Add("Encerrar OpenTranslator", null, (s, e) => { if (engine.StopServer()) Application.Exit(); });
+                trayMenu.Items.Add("Exit OpenTranslator", null, (s, e) => { if (engine.StopServer()) Application.Exit(); });
 
                 trayIcon = new NotifyIcon
                 {
@@ -1371,7 +1371,7 @@ namespace OpenTranslatorLauncher
             runningPanel.Visible = false;
             logPanel.Visible = false;
             progressBar.Value = 0;
-            lblBadge.Text = "DIAGNOSTICANDO";
+            lblBadge.Text = "CHECKING";
             lblBadge.BackColor = Color.FromArgb(30, 58, 138);
             lblBadge.ForeColor = Color.FromArgb(147, 197, 253);
 
@@ -1406,7 +1406,7 @@ namespace OpenTranslatorLauncher
             logPanel.Visible = false;
             recoveryPanel.Visible = true;
 
-            lblBadge.Text = "FALHA";
+            lblBadge.Text = "FAILED";
             lblBadge.BackColor = Color.FromArgb(153, 27, 27);
             lblBadge.ForeColor = Color.FromArgb(254, 202, 202);
 
@@ -1423,11 +1423,11 @@ namespace OpenTranslatorLauncher
             runningPanel.Visible = true;
             runningPanel.Tag = true;
 
-            lblBadge.Text = "OPERACIONAL";
+            lblBadge.Text = "RUNNING";
             lblBadge.BackColor = Color.FromArgb(6, 78, 59);
             lblBadge.ForeColor = Color.FromArgb(167, 243, 208);
 
-            lblRunningInfo.Text = string.Format("Servidor ativo na porta {0} (PID: {1})\nDual Hook WebSocket ativo na porta 16005\nInterface web e chamadas RPC validadas com sucesso.",
+            lblRunningInfo.Text = string.Format("Server active on port {0} (PID: {1})\nDual Hook WebSocket active on port 16005\nWeb interface and RPC checks passed.",
                 engine.ServerPort, engine.ServerPid);
 
             OpenWebInterface();
@@ -1454,8 +1454,8 @@ namespace OpenTranslatorLauncher
                     if (backend.ExitCode == 0) { this.Close(); return; }
                     this.Show();
                     this.WindowState = FormWindowState.Normal;
-                    ShowFailureUI("backend", "O programa encerrou com pendências",
-                        "Consulte os registros antes de abrir novamente.", engine.GetRecentLogSnippet());
+                    ShowFailureUI("backend", "The application exited with pending issues",
+                        "Check the logs before opening it again.", engine.GetRecentLogSnippet());
                 }));
             };
             backend.Exited += finished;
@@ -1517,7 +1517,7 @@ namespace OpenTranslatorLauncher
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Acesse manualmente no seu navegador:\n" + url + "\n\nErro ao abrir automaticamente: " + ex.Message,
+                MessageBox.Show("Open this address in your browser:\n" + url + "\n\nCould not open the interface automatically:" + ex.Message,
                     "OpenTranslator", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
@@ -1525,13 +1525,13 @@ namespace OpenTranslatorLauncher
         private string GenerateDiagnosticReport()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("# RELATÓRIO DE AUTODIAGNÓSTICO RIGOROSO - OPENTRANSLATOR");
-            sb.AppendLine("Data: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            sb.AppendLine("Sistema Operacional: " + Environment.OSVersion.VersionString);
-            sb.AppendLine("Diretório Base: " + engine.BaseDir);
-            sb.AppendLine("Node.js: " + (engine.NodeExe ?? "Não detectado"));
+            sb.AppendLine("# OPENTRANSLATOR STARTUP DIAGNOSTIC REPORT");
+            sb.AppendLine("Date: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            sb.AppendLine("Operating system:" + Environment.OSVersion.VersionString);
+            sb.AppendLine("Base directory:" + engine.BaseDir);
+            sb.AppendLine("Node.js: " + (engine.NodeExe ?? "Not detected"));
             sb.AppendLine();
-            sb.AppendLine("## Status dos Componentes");
+            sb.AppendLine("## Component status");
             foreach (var st in engine.Steps)
             {
                 sb.AppendLine(string.Format("- [{0}] {1}: {2} ({3} ms)", st.Status, st.Title, st.Details, st.DurationMs));
@@ -1539,17 +1539,17 @@ namespace OpenTranslatorLauncher
             sb.AppendLine();
             if (engine.LastErrorStep != null)
             {
-                sb.AppendLine("## Falha Registrada");
-                sb.AppendLine("Etapa: " + engine.LastErrorStep);
-                sb.AppendLine("Título: " + engine.LastErrorMessage);
-                sb.AppendLine("Causa: " + engine.LastErrorCause);
-                sb.AppendLine("Detalhes:");
+                sb.AppendLine("## Recorded failure");
+                sb.AppendLine("Step: " + engine.LastErrorStep);
+                sb.AppendLine("Title:" + engine.LastErrorMessage);
+                sb.AppendLine("Cause: " + engine.LastErrorCause);
+                sb.AppendLine("Details:");
                 sb.AppendLine("```");
                 sb.AppendLine(engine.LastErrorDetails);
                 sb.AppendLine("```");
                 sb.AppendLine();
             }
-            sb.AppendLine("## Logs de Execução");
+            sb.AppendLine("## Runtime logs");
             sb.AppendLine("```");
             sb.AppendLine(engine.LogBuffer.ToString());
             sb.AppendLine("```");

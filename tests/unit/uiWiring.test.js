@@ -170,7 +170,7 @@ test('W4 iniciar sessão sem sessionId NÃO é declarado iniciado', () => {
   const bloco = clickHandler('mRuntimeStart');
   assert.ok(/res\.sessionId/.test(bloco),
     'a UI precisa exigir sessionId antes de dizer que iniciou');
-  assert.ok(/Sessão runtime não iniciada/.test(bloco),
+  assert.ok(/Runtime session not started/.test(bloco),
     'e precisa avisar quando o servidor não devolveu sessionId');
   assert.ok(/log\("success"/.test(bloco) === false
     || /sessionId/.test(bloco),
@@ -181,7 +181,7 @@ test('W5 encerrar sessão só é declarado quando o servidor confirma', () => {
   const bloco = clickHandler('mRuntimeStop');
   assert.ok(/res\.success/.test(bloco),
     'encerrar precisa checar a confirmação do servidor');
-  assert.ok(/Encerramento não confirmado/.test(bloco),
+  assert.ok(/Shutdown not confirmed/.test(bloco),
     'e avisar quando não confirmada');
 });
 
@@ -208,7 +208,7 @@ test('W7 a UI usa o job system (start/getJobStatus/list/resume)', () => {
 test('W8 iniciar job sem jobId NÃO é declarado iniciado', () => {
   const bloco = clickHandler('mTranslateJob');
   assert.ok(/res\.jobId/.test(bloco), 'a UI precisa exigir jobId');
-  assert.ok(/Job não iniciado/.test(bloco), 'e avisar quando não veio jobId');
+  assert.ok(/Job not started/.test(bloco), 'e avisar quando não veio jobId');
 });
 
 test('W9 o job só é declarado concluído quando o servidor diz completed', () => {
@@ -233,7 +233,7 @@ test('W10 o polling de job é cancelável', () => {
 test('W11 retomar job exige o job de volta, não só ok:true', () => {
   const bloco = APP.slice(APP.indexOf('mResumeJob'));
   assert.ok(/rr\.job/.test(bloco), 'retomar precisa receber o job');
-  assert.ok(/Job não retomado/.test(bloco), 'e avisar quando não recebeu');
+  assert.ok(/Job not resumed/.test(bloco), 'e avisar quando não recebeu');
 });
 
 // ---------------------------------------------------------------------------
@@ -332,7 +332,7 @@ test('W15 o ícone e rótulo do engine são escapados no modal', () => {
 test('W16 benchmark sem resultado avisa, em vez de sumir em silêncio', () => {
   const bloco = APP.slice(APP.indexOf('runSpeedBenchmark'));
   // Antes, um retorno sem `result` caía fora do `if` e nada era mostrado.
-  assert.ok(/else\s*\{[\s\S]{0,400}?O benchmark não retornou resultados/.test(bloco),
+  assert.ok(/else\s*\{[\s\S]{0,400}?The benchmark returned no results/.test(bloco),
     'falta o caminho de ausência de resultado');
 });
 

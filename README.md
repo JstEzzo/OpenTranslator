@@ -1,172 +1,97 @@
 <div align="center">
 
-<img src="resources/OpenTranslator.ico" width="100" alt="OpenTranslator Logo"/>
+<img src="resources/OpenTranslator.ico" width="100" alt="OpenTranslator logo"/>
 
 # OpenTranslator
 
-**Plataforma Universal de Tradução, Modding e Cheats Offline-First para Jogos.**
+**Desktop tools for game translation, engine integrations, and supported runtime cheats.**
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows)](https://github.com/JstEzzo/OpenTranslator)
-[![Node.js](https://img.shields.io/badge/Node.js-Port%C3%A1til%20Integrado-green?logo=node.js)](#)
-[![Status](https://img.shields.io/badge/Status-Em%20valida%C3%A7%C3%A3o-yellow)](#)
-[![Launcher](https://img.shields.io/badge/Launcher-Nativo%20EXE-orange)](#)
+[![Node.js](https://img.shields.io/badge/Node.js-24-green?logo=node.js)](package.json)
+[![Status](https://img.shields.io/badge/Status-In%20validation-yellow)](docs/engines/ENGINE_SUPPORT_MATRIX.md)
 
 </div>
 
----
+## Download and run
 
-## Para baixar e usar
+Download **OpenTranslator-Win64-Portable.zip** from a successful **Build portable OpenTranslator** run on the [Actions page](https://github.com/JstEzzo/OpenTranslator/actions/workflows/release.yml). Extract the entire archive and open `OpenTranslator.exe`. Keep its subdirectories beside the executable. GitHub may require you to sign in to download a workflow artifact. Artifacts have limited retention.
 
-O pacote para uso é **OpenTranslator-Win64-Portable.zip**. Extraia a pasta inteira e abra `OpenTranslator.exe`. Mantenha as subpastas junto do executável.
+**Code → Download ZIP** downloads the development source, including tests and documentation. It is not the portable application. Tagged releases are created as drafts; a draft is not a published stable release.
 
-O botão **Code → Download ZIP** do GitHub baixa o projeto de desenvolvimento, incluindo código, testes e documentação. Ele não é o instalador portátil. O workflow **Build portable OpenTranslator** gera o artefato portátil em pushes para `main`, pull requests e execução manual; releases por tag continuam como rascunho.
+The application and native launcher use **English**, including when an older configuration contains `lang: "pt"`. The interface language is separate from the source and target languages selected for game translation. Changing the application language does not translate a game or change its target language.
 
-O perfil padrão `standard` inclui o runtime Node 24, dependências de execução e recursos encontrados na origem. Exclui dados pessoais, jogos, históricos, testes e fontes de compilação de dependências que não são usadas em runtime. O injetor nativo `loaders/inject.exe` é um componente opcional separado. Recursos que dependem dele não ficam disponíveis até instalar o complemento correspondente. Consulte `RELEASE_MANIFEST.json` para os componentes efetivamente presentes.
+The standard portable profile includes Node 24, runtime dependencies, and the resources available during the build. Personal settings, games, caches, saves, and development history are excluded. The native injector `loaders/inject.exe` is optional and excluded from the standard profile. Features that need an absent component remain unavailable. Check `RELEASE_MANIFEST.json` for the actual contents.
 
-Para construir com todos os componentes opcionais disponíveis localmente: `node tools/package_release.js --profile complete --output PASTA_NOVA`.
+## What is supported?
 
-A classificação de arquivos e as decisões de limpeza estão em [docs/ORGANIZACAO-E-DISTRIBUICAO.md](docs/ORGANIZACAO-E-DISTRIBUICAO.md). Históricos retirados da pasta de trabalho foram compactados fora do projeto; não houve remoção de bancos, jogos ou backups pessoais.
+Support is **partial and dependent on the engine version, game format, architecture, plugins, and installed tools**. Detecting an engine is not proof that translation, runtime hooks, cheats, or restoration work in every game.
 
-## ✨ Destaques da Aplicação
+| Engine family | Current integration | Important limits |
+|---|---|---|
+| RPG Maker MV / MZ | JSON extraction/application; JavaScript runtime bridge | Plugin combinations and NW.js versions need individual testing |
+| RPG Maker XP / VX / VX Ace | Ruby Marshal / RGSS archive bridge | Validate each RGSS generation, RTP, and encoding |
+| Ren’Py | Scripts and additive translation layer | Python 2/3, RPA/RPYC versions, interpolation, and GUI differences matter |
+| Unity | Asset/resource tools and loader-dependent XUnity integration | Mono and IL2CPP require different validation; no universal runtime guarantee |
+| Unreal Engine | LocRes handling and package-related tooling | Pak/IoStore extraction, locale loading, fonts, and package priority matter |
+| Godot, Wolf RPG, Electron/HTML5 | Dedicated adapters or bridges | Imported/compiled resources, archives, fonts, and runtime configurations vary |
+| GameMaker, Construct, Defold, Cocos, GDevelop | Format-specific partial integrations | External text or generated files may require additional game-side loading |
 
-- **Ponto Único de Entrada**: Inicie diretamente pelo executável nativo `OpenTranslator.exe`.
-- **Autodiagnóstico Pré-Voo**: O launcher realiza 10 checagens reais de integridade (binários, runtime, portas 8080/16005, permissões, servidor HTTP 200, frontend e RPC) antes de liberar a interface.
-- **Tela de Recuperação & Safe Start**: Em caso de portas ocupadas ou processos travados, o launcher oferece modos guiados de correção e recuperação.
-- **Rollback Atômico com SHA-256**: Os arquivos originais dos jogos contam com backup automático e validação criptográfica byte-a-byte.
-- **Dual Hook em Tempo Real (Porta 16005)**: Suporte a overlay e cheats em tempo real durante a execução do jogo.
-- **Runtime principal integrado**: o pacote portátil inclui Node.js e dependências nativas. Ferramentas adicionais de alguns motores podem exigir instalação separada; consulte o manifesto do pacote.
+See the [current compatibility profiles](config/engineCompatibility.json) and [engine support guide](docs/engines/ENGINE_SUPPORT_MATRIX.md). A provider's presence or a historical PASS label is not a game compatibility certificate. Cheats require a working game bridge; OpenTranslator is not a universal memory editor.
 
----
+New automatic translations generally require the selected online provider or a separately configured local provider. Cached translations can be reused offline; that does not make every translation workflow offline.
 
-## Estado de validação
+## Startup and shutdown
 
-A revisão de 31/10/2026 está registrada em [docs/audit/REVIEW-2026-10-31.md](docs/audit/REVIEW-2026-10-31.md). Os testes automatizados não certificam todos os motores nem substituem testes de tradução e restauração em jogos reais. O inventário de arquivos não representa leitura semântica integral.
+1. Open `OpenTranslator.exe` in the extracted portable directory.
+2. The launcher checks required files, the runtime, native dependencies, writable directories, local ports, HTTP, frontend assets, and RPC.
+3. It opens one application interface and normally moves its diagnostic panel to the Windows tray.
+4. Use **Exit OpenTranslator** in the launcher or tray to shut down through the application's recovery-aware lifecycle.
 
-Para validar o código em desenvolvimento, instale as dependências com `npm ci` e execute `npm run verify`. A nova verificação no GitHub usa Node 24 em Windows. O empacotamento portátil foi refeito para compilar o launcher C# e incluir Node 24 e dependências nativas. O workflow gera um artefato de teste; releases por tag ficam como rascunho. Isso ainda não certifica todos os motores em máquina limpa.
+Default local ports are **8080** for the application and **16005** for the game bridge. A port conflict is reported; unrelated processes must not be terminated merely because they use a port.
 
-### Gerar pacote portátil (Windows x64)
+## Development and verification
 
-Com Node 24 e dependências instaladas por `npm ci`, execute:
+Use **Node 24 on Windows x64** for the portable build and native dependencies.
 
 ```powershell
-node tools/package_release.js --output ..\OpenTranslator-portable
+npm ci
+npm run verify
 ```
 
-A pasta de destino deve ser nova e ficar fora da árvore do código. O gerador compila o launcher da fonte, inclui `bin/node.exe` e `node_modules`, valida SQLite/WS/ExcelJS com o próprio runtime empacotado e gera `RELEASE_MANIFEST.json` com hashes e ferramentas opcionais presentes/ausentes. Dados pessoais e scripts avulsos de manutenção ficam fora da distribuição.
+`verify` runs repository checks, the success-contract audit, and the registered test suites. Passing these checks does not certify every engine version or replace visual tests in real games. Historical lab scripts are available as `npm run legacy:renpy` and `npm run legacy:mz`; their fixture requirements differ from the default suite.
 
-## 🎮 Motores de Jogos Suportados
+## Build a portable package
 
-A tabela abaixo descreve as capacidades anunciadas pelo projeto; a compatibilidade deve ser confirmada por versão do motor e por jogo.
+The destination must be a new directory outside the source tree:
 
-| Motor de Jogo | Tradução Estática | Hook em Tempo Real | Recursos Especiais |
-|---|:---:|:---:|---|
-| **Ren'Py (Python 2 & 3)** | ✅ | ✅ | Descompilação `.rpyc`, injeção `000_anti_crash.rpy`, rpatool integrado |
-| **RPG Maker (MV & MZ)** | ✅ | ✅ | Dual Hook WebSocket (16005), LatinNameInput, CheatOverlay |
-| **RPG Maker (XP, VX, VX Ace)** | ✅ | ✅ | Descriptografia `.rgss3a`, Ruby Marshal Bridge |
-| **Wolf RPG Editor** | ✅ | ✅ | UberWolfCli integrado, tradução de strings de eventos |
-| **Unity Engine** | ✅ | ✅ | UltraBatchEndpoint.dll, BepInEx XUnity AutoTranslator |
-| **Unreal Engine** | ✅ | — | Extração de `.pak` e tabelas `.locres` |
-| **Visual Novels / Genérico** | ✅ | ✅ | Hook de memória e tradução com memória global SQLite |
-
----
-
-## 🚀 Como Executar
-
-### Para o Usuário Final:
-1. Dê um duplo-clique em **`OpenTranslator.exe`** na raiz da pasta.
-2. O sistema fará a checagem de integridade em ~2 segundos.
-3. A interface web será aberta automaticamente no seu navegador padrão (`http://localhost:8080`).
-4. Para fechar, clique em **Encerrar OpenTranslator** no painel do launcher ou na bandeja do Windows (System Tray).
-
-### Modo de Teste e Autodiagnóstico por Linha de Comando (CI/Dev):
-```bash
-# Executa todas as 10 checagens de integridade e retorna código 0 (sucesso) ou 1 (falha):
-OpenTranslator.exe --smoke-test
-
-# Inicia exibindo diretamente o painel de logs detalhados:
-OpenTranslator.exe --debug
-
-# Inicia em modo de segurança:
-OpenTranslator.exe --safe
+```powershell
+npm run package:portable -- --output ..\OpenTranslator-portable
 ```
 
----
+To include optional components available in the local source:
 
-## 📁 Estrutura Canônica do Repositório
-
-O repositório adota uma topologia compacta e modular dividida em domínios arquiteturais claros, documentada detalhadamente em [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md):
-
-```text
-OpenTranslator/                  ← [PRODUTO & DESENVOLVIMENTO]
-├── OpenTranslator.exe           ← Executável principal (Launcher nativo C#)
-├── server.js                    ← Ponto de entrada do servidor backend HTTP/WebSocket
-├── package.json                 ← Manifesto npm oficial do projeto
-├── README.md                    ← Documentação principal do repositório
-├── .github/                     ← Workflows de CI/CD do GitHub
-├── config/                      # Regras de sintaxe e configurações de engines
-├── data/                        # Memória de tradução, glossários e dados de persistência
-├── docs/                        # Documentação técnica, arquitetura e relatórios consolidados
-│   ├── architecture/            # Especificações de pipeline e memória
-│   ├── engines/                 # Matrizes de compatibilidade por engine
-│   ├── reports/                 # Relatórios consolidados de certificação e auditoria
-│   └── user/                    # Guias de uso e troubleshooting
-├── launcher/                    # Código-fonte oficial do launcher em C#
-├── loaders/                     # Injetores nativos, DLLs Dual Hook e fontes
-├── resources/                   # Recursos consolidados por motor (renpy, unity, rpgmaker, templates)
-├── src/                         # Código-fonte canônico do backend (core, engines, providers, utils)
-├── tests/                       # Suíte unificada de testes (regression, integration, unit, fixtures)
-├── third-party/                 # Dependências e componentes de terceiros com licenças
-├── tools/                       # Ferramentas de manutenção, build, release e lint
-├── ui/                          # Interface web frontend (HTML, CSS, JS)
-└── archives/                    # [HISTÓRICO] Auditorias históricas, migrações e snapshots
-
-OpenTranslator-Lab/              ← [LABORATÓRIO] (Diretório Externo, fora do Git)
-├── fixtures/                    # Jogos e assets completos de teste
-├── staging/                     # Pastas temporárias de descompactação de testes
-├── benchmarks/                  # Resultados de testes de performance
-└── forensic/                    # Dossiês forenses de validação empírica
+```powershell
+npm run package:portable -- --profile complete --output ..\OpenTranslator-complete
 ```
 
----
+The builder compiles the C# launcher, includes `bin/node.exe`, checks SQLite/WS/ExcelJS using the bundled runtime, and writes a manifest with hashes. It refuses an existing destination. A complete profile cannot supply tools that were absent from the build source.
 
-## 🧪 Suíte de Testes Automatizados
+Launcher diagnostics:
 
-O OpenTranslator conta com uma suíte de testes 100% determinística e automatizada:
-
-```bash
-# Executar a validação forense da matriz de jogos reais:
-npm test
-
-# Executar a certificação forense independente de Ren'Py:
-npm run test:renpy
-
-# Executar a certificação forense independente de RPG Maker MZ:
-npm run test:mz
-
-# Executar o linter de integridade do repositório:
-npm run lint
-
-# Executar o smoke test do launcher nativo:
-npm run smoke
-
-# Executar a suíte mestre com 121 testes de regressão (12 fases completas):
-node tests/regression/run_master_regression.js
+```powershell
+.\OpenTranslator.exe --smoke-test
+.\OpenTranslator.exe --debug
+.\OpenTranslator.exe --safe
 ```
 
----
+## Documentation
 
-## 🛠️ Ferramentas de Manutenção e Release
+- [Documentation index](docs/INDEX.md)
+- [Detailed architecture and file guide](docs/GUIA-DETALHADO.md)
+- [File-by-file code catalogue](docs/CATALOGO-DO-CODIGO.md)
+- [Static RPC reference](docs/REFERENCIA-RPC.md)
+- [Packaging and distribution](docs/PRODUCTION_MANIFEST.md)
+- [Organization and historical records](docs/ORGANIZACAO-E-DISTRIBUICAO.md)
+- [Troubleshooting](docs/user/TROUBLESHOOTING.md)
 
-```bash
-# Gerar pacote limpo e portátil de distribuição final:
-node tools/package_release.js
-
-# Executar pipeline de tradução via linha de comando:
-node tools/run-pipeline-cli.js --help
-```
-
----
-
-<div align="center">
-  <sub>OpenTranslator — Tradução Universal para Jogos sem barreiras.</sub>
-</div>
+Documentation describes implementation and evidence separately. Historical records are retained as historical material, not current promises of universal compatibility.

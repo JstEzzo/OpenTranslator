@@ -101,11 +101,12 @@ function buildRelease(options = {}) {
   if (options.launcherBinary) fs.copyFileSync(options.launcherBinary, path.join(outputDir, 'OpenTranslator.exe'));
   else compileLauncher(root, path.join(outputDir, 'OpenTranslator.exe'));
   for (const rel of ['data/logs', 'data/transactions', 'data/sessions', 'data/staging', 'gameLib']) fs.mkdirSync(path.join(outputDir, rel), { recursive: true });
-  fs.writeFileSync(path.join(outputDir, 'LEIA-ME.txt'),
-    'OpenTranslator — Windows x64\n\nAbra OpenTranslator.exe. Mantenha as subpastas junto do executavel.\n' +
-    'Este pacote nao inclui jogos, saves, preferencias, historicos de traducao nem arquivos de desenvolvimento.\n' +
-    (profile === 'standard' ? 'O injetor nativo e opcional e nao esta incluido. Jogos que dependem desse componente precisam do complemento nativo correspondente.\n' : 'Perfil completo: inclui componentes opcionais encontrados na origem.\n') +
-    'Confira RELEASE_MANIFEST.json para ver os componentes realmente presentes.\n', 'utf8');
+  fs.writeFileSync(path.join(outputDir, 'READ-ME.txt'),
+    'OpenTranslator — Windows x64\n\nOpen OpenTranslator.exe. Keep the subdirectories beside the executable.\n' +
+    'The application and launcher start in English. Game translation languages are configured separately.\n' +
+    'This package excludes games, saves, personal settings, translation history, and development files.\n' +
+    (profile === 'standard' ? 'The optional native injector is not included. Features requiring it need the corresponding native add-on.\n' : 'Complete profile: includes optional components found in the build source.\n') +
+    'Check RELEASE_MANIFEST.json for the components actually present.\n', 'utf8');
   verifyBundle(outputDir);
   const runtime = (options.probeRuntime || probeRuntime)(outputDir);
   const files = listFiles(outputDir).sort().map(rel => ({ path: rel.replace(/\\/g, '/'), size: fs.statSync(path.join(outputDir, rel)).size, sha256: hashFile(path.join(outputDir, rel)) }));

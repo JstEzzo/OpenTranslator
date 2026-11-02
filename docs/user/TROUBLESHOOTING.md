@@ -1,53 +1,21 @@
-# Guia de Solução de Problemas (Troubleshooting) - OpenTranslator
+# Troubleshooting
 
-Este documento auxilia na identificação e resolução de eventuais problemas de execução do OpenTranslator.
+## Startup fails
 
----
+Keep the entire extracted portable directory together. Check the launcher diagnostics for missing files, a mismatched Node/SQLite binding, write permissions, or unavailable ports. The current portable build uses Node 24 on Windows x64. An older Node executable can break native modules.
 
-## 🩺 O Autodiagnóstico do Launcher
+Default ports are 8080 and 16005. Close a conflicting application through its normal controls; do not kill an unrelated process just because it owns a port. Use `--debug` for diagnostics and `--safe` for browser software rendering.
 
-Ao abrir o `OpenTranslator.exe`, o sistema executa 10 etapas de verificação:
+## Interface language
 
-1. **Arquivos Essenciais do Sistema**: Confirma a presença e integridade de `server.js`, `httpServer.js`, `rpcHandlers.js`, `index.html` e `app.js`.
-2. **Runtime Node.js**: Verifica a existência e execução do Node portátil (`Tool/bin/node-...`) ou do Node instalado no sistema.
-3. **Dependências NPM**: Confirma que bibliotecas cruciais (`ws`, `better-sqlite3`, etc.) estão presentes em `Tool/node_modules`.
-4. **Banco de Dados & Cache**: Valida as pastas `Tool/data` e `Tool/gameLib`.
-5. **Verificação de Portas**: Testa se as portas `8080` (HTTP) e `16005` (Dual Hook) estão livres. Se houver processos antigos travados, tenta liberá-los.
-6. **Permissões de Leitura e Escrita**: Testa criação de arquivos temporários em `Tool/data`.
-7. **Servidor Backend**: Inicia o processo `node server.js --no-browser`.
-8. **Conexão HTTP**: Aguarda o retorno `200 OK` na rota `/api/ping` ou `/health`.
-9. **Ativos Frontend**: Garante que o navegador receberá os arquivos HTML e JavaScript íntegros.
-10. **Comunicação RPC**: Executa uma chamada de teste segura para validar o protocolo de comunicação.
+The application and launcher always use English. An old `lang: "pt"` setting does not switch the interface back to Portuguese. Game source and target languages remain independently configurable. Refresh an already open browser page after updating; keep the new frontend files together.
 
----
+## Missing translation or cheats
 
-## ⚠️ Falhas Comuns e Como Resolver
+Review the exact engine/version profile and optional tools in `RELEASE_MANIFEST.json`. Detection is not proof of extraction or runtime support. Check the active provider, credentials, rate limits, and whether the game's locale actually loads the generated translation. Text baked into images or compiled formats may need other work.
 
-### 1. "Porta 8080 ou 16005 já está sendo utilizada"
-- **Causa**: Uma sessão anterior do OpenTranslator ou outro serviço web está retendo a porta.
-- **Solução Automática**: Clique em **[Tentar Corrigir]** na tela do inicializador. O launcher encerrará instâncias órfãs e reconfigurará a porta.
-- **Solução Manual**: Abra o Gerenciador de Tarefas do Windows e encerre processos residuais `node.exe`.
+RPG Maker cheats need a live compatible bridge and initialized gameplay objects. A title screen may not expose party/inventory data. RenPy tools use another bridge. Unsupported engines do not gain universal cheats through the interface.
 
-### 2. "Runtime Node.js não encontrado"
-- **Causa**: O diretório `Tool/bin/node-v20.18.3-win-x64` foi movido ou corrompido, e não há Node.js instalado no Windows.
-- **Solução**: Restaure o pacote original ou instale o Node.js LTS (versão 20 ou superior) em [nodejs.org](https://nodejs.org/).
+## Restore or report an error
 
-### 3. "Dependências NPM ausentes"
-- **Causa**: A pasta `Tool/node_modules` está incompleta ou foi removida.
-- **Solução**: Abra o terminal na pasta `Tool` e execute:
-  ```bash
-  npm install
-  ```
-
-### 4. "Falha de Permissões de Gravação"
-- **Causa**: O OpenTranslator está em uma pasta protegida pelo sistema (como `Program Files`) sem permissões de administrador.
-- **Solução**: Mova a pasta do OpenTranslator para sua Área de Trabalho, pasta de Documentos ou execute o `OpenTranslator.exe` como Administrador.
-
----
-
-## 📋 Copiar Relatório de Diagnóstico
-
-Se o programa não iniciar mesmo após tentar a auto-correção:
-1. Clique no botão **[Copiar Relatório]** na tela de erro do inicializador.
-2. O diagnóstico completo (com carimbos de data/hora, causas e detalhes técnicos) será copiado para a sua área de transferência.
-3. Cole o texto em seu chamado ou suporte para análise imediata.
+Close the game, preserve backups and logs, and use the supported restoration operation. If restoration fails, keep the backup for recovery. Report application revision, engine version, architecture, the operation, expected/actual behavior, and relevant error details. Review diagnostic exports for personal paths and secrets before sharing them.

@@ -19,7 +19,7 @@
           notice.style.background = "rgba(220,53,69,0.2)";
           notice.style.border = "1px solid #dc3545";
           notice.style.color = "#ff6b6b";
-          notice.innerHTML = `⚠️ Google GTX está em espera temporária.<br>Novas solicitações a esse provedor aguardam o fim do intervalo.`;
+          notice.innerHTML = `⚠️ Google GTX is temporarily cooling down.<br>New requests to this provider will wait until the cooldown ends.`;
         } else {
           notice.style.display = "none";
         }
@@ -37,15 +37,15 @@
         </div>
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">Gemini</strong><br>
-          STATUS: <span style="color:var(--txt3)">Configuração não verificada</span>
+          STATUS: <span style="color:var(--txt3)">Configuration not verified</span>
         </div>
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">Google Cloud</strong><br>
-          STATUS: <span style="color:var(--txt3)">Configuração não verificada</span>
+          STATUS: <span style="color:var(--txt3)">Configuration not verified</span>
         </div>
         <div style="background:var(--bg2); padding:6px; border-radius:3px; border:1px solid var(--bd); font-size:9px; line-height:1.4">
           <strong style="color:var(--txt)">DeepL</strong><br>
-          STATUS: <span style="color:var(--txt3)">Configuração não verificada</span>
+          STATUS: <span style="color:var(--txt3)">Configuration not verified</span>
         </div>
       `;
     } catch (e) {}
@@ -97,7 +97,7 @@
     });
     const j = await r.json();
     if (!j.ok) {
-      const e = new Error(j.error || "RPC falhou");
+      const e = new Error(j.error || "RPC failed");
       e.requestId = j.requestId;
       e.rpcStatus = j.status;
       e.reason = j.reason;
@@ -145,7 +145,7 @@
       setTimeout(connectDualHook, 3000);
     };
     S.ws.onerror = (e) => {
-      log("warn", `WebSocket Dual Hook erro: ${e.message}`);
+      log("warn", `Dual Hook WebSocket error: ${e.message}`);
       S.wsReady = false;
     };
     S.ws.onmessage = (ev) => {
@@ -324,7 +324,7 @@
     } catch (e) {
       S.cfg = {};
     }
-    if (S.cfg.lang) _lang = S.cfg.lang;
+    S.cfg.lang = "en";
     if ($("cfgSL")) $("cfgSL").value = S.cfg.sl || "auto";
     if ($("cfgTL")) $("cfgTL").value = S.cfg.tl || "pt";
     if ($("cfgAppLang")) $("cfgAppLang").value = _lang;
@@ -391,8 +391,8 @@
     if ($("cfgShowPaths")) S.cfg.showGamePaths = $("cfgShowPaths").checked;
     if ($("cfgReduceMotion")) S.cfg.reduceMotion = $("cfgReduceMotion").checked;
     const result = await rpc("saveCfg", S.cfg);
-    if (result?.ok === false) throw new Error(result.reason || "Não foi possível salvar as configurações");
-    if ($("settings-save-status")) $("settings-save-status").textContent = "Configurações salvas";
+    if (result?.ok === false) throw new Error(result.reason || "Could not save settings");
+    if ($("settings-save-status")) $("settings-save-status").textContent = "Settings saved";
     renderGames();
     applyTheme();
     log("success", t("configSaved"));
@@ -687,181 +687,8 @@
       item: "Item",
       level: "Level",
     },
-    pt: {
-
-    launchPhaseInit: "🧹 Limpando processos e checando engine...",
-    launchPhaseUnpack: "📦 Descompactando pacotes .rpa e mídias...",
-    launchPhaseTranslating: "🤖 Traduzindo scripts e diálogos com AI Engine...",
-    launchPhaseAppData: "📂 Mapeando diretório de saves no AppData...",
-    launchPhaseLaunching: "🚀 Disparando o executável do jogo...",
-    launchPhaseConnected: "✨ Conectado ao CheatOverlay com sucesso!",
-    launchInProgress: "Uma inicialização de jogo já está em andamento",
-
-    btnExtractRpa: "Btnextractrpa",
-
-
-    cheatSaveManager: "Gerenciador de Saves & AppData (%APPDATA%\RenPy)",
-    cheatOpenSaveFolder: "📁 Abrir Pasta de Saves",
-    cheatRefresh: "🔄 Atualizar",
-    cheatResolvedPath: "Caminho Resolvido:",
-    cheatResolutionMethod: "Método de Resolução:",
-    cheatDetectedSaves: "Arquivos de Save / Persistência Detectados:",
-    cheatNoSavesYet: "Nenhum save detectado ainda.",
-    cheatFolderLocatedNoSaves: "Pasta localizada, mas sem saves criados ainda.",
-    cheatAwaitingGame: "Aguardando seleção do jogo...",
-    cheatMemoryScannerTitle: "Scanner de Memória ao Vivo (renpy.store / Universal)",
-    cheatScanVariablesBtn: "Escanear Variáveis",
-    cheatFilterPlaceholder: "Filtrar variáveis (ex: pontos, amor, ouro)...",
-    cheatClickScanHint: "Clique em 'Escanear Variáveis' para ler renpy.store",
-    cheatLaunchTitle: "Inicializando Jogo...",
-    cheatLaunchSub: "Preparando ambiente, traduções e patches",
-    cheatAlreadyTranslated: "⚡ Jogo já traduzido! Carregando executável...",
-
-      tabGames: "Jogos",
-      tabSaves: "Salvamentos",
-      tabConfig: "Config",
-      tabLog: "Log",
-      dropText:
-        "Arraste e solte ou clique aqui para selecionar um arquivo principal do jogo (Game.exe)",
-      dropOrBrowse:
-        "Arraste um Game.exe acima ou clique em Procurar para adicionar um jogo",
-      searchGames: "Pesquisar jogos...",
-      refresh: "Atualizar",
-      noGames: "Nenhum jogo adicionado",
-      noSavesYet:
-        "Nenhum save encontrado. Inicie um jogo primeiro para criar saves.",
-      btnPlay: "Iniciar",
-      btnEdit: "Editar",
-      btnDelete: "Excluir",
-      btnSaveCfg: "Salvar Config",
-      btnSave: "Salvar",
-      btnCancel: "Cancelar",
-      btnBrowse: "Procurar...",
-      btnCopy: "Copiar",
-      btnClear: "Limpar",
-      cfgTrans: "Tradução",
-      cfgSrc: "Idioma Origem",
-      cfgDst: "Idioma Destino",
-      langLabel: "Idioma do App",
-      cfgDiagnostics: "Diagnóstico",
-      cfgTest: "Testar Google Translate",
-      cfgTestRes: "Resultado",
-      cfgCache: "Histórico",
-      cfgClearHistory: "Apagar todas as traduções salvas no cache global",
-      btnClearHistory: "Apagar Histórico",
-      clearHistoryConfirm:
-        "Tem certeza que deseja apagar todo o histórico de traduções salvas? Isso não poderá ser desfeito.",
-      historyCleared: "Histórico de traduções excluído com sucesso!",
-      statusGames: "jogos",
-      modalTitle: "Editar Jogo",
-      modalExe: "Executável",
-      deleteConfirm: "Deletar este jogo?",
-      logCopied: "Log copiado",
-      configSaved: "Config salva",
-      uiTitle: "OpenTranslator v1.0",
-      uiGames: "Jogos",
-      uiSaves: "Salvamentos",
-      cfgEngine: "Serviço de tradução",
-      cfgEngineOff: "Google",
-      cfgEngineGoogle: "Google 🌐",
-      cfgEngineBing: "Bing 🔍",
-      cfgEngineMulti: "Multi-Engine (Google+Bing) 🔁",
-      cfgEngineLlm: "Tradutor IA / LLM 🤖",
-      cfgEngineDeepl: "Tradutor DeepL 📄",
-      glossary: "Glossário",
-      glossaryEditor: "Editor de Glossário",
-      glossaryTerm: "Termo",
-      glossaryTrans: "Tradução",
-      glossaryAdd: "Adicionar",
-      glossarySave: "Salvar Glossário",
-      glossarySaved: "Glossário salvo ({n} termos)",
-      btnInstallUnity: "Instalar XUnity + Plugin",
-      btnInstallOverlay: "Instalar Overlay RPG Maker",
-      btnExtractWolf: "Extrair Jogo Wolf",
-      btnPackWolf: "Empacotar Pasta Wolf",
-      btnExportExcel: "Exportar para Excel (.xlsx) 📊",
-      btnImportExcel: "Importar do Excel (.xlsx) 📥",
-      toolsUnity: "Ferramentas Unity",
-      toolsRpgm: "Ferramentas RPG Maker",
-      toolsWolf: "Ferramentas Wolf RPG",
-      descUnity:
-        "Instale e configure o plugin XUnity AutoTranslator para tradução em tempo real.",
-      descWolf:
-        "Descompacte arquivos de dados (.wolf) ou reempacote diretórios modificados.",
-      descRpgm:
-        "Instale o tradutor em tempo real no jogo ou exporte/importe traduções no formato Excel (.xlsx).",
-      toolsEvb: "Ferramentas Enigma Virtual Box 📦",
-      descEvb:
-        "Extraia arquivos virtuais de executáveis únicos compactados com Enigma Virtual Box.",
-      btnUnpackEvb: "Extrair Executável EVB",
-      visualCustomizer: "Personalização Visual 🎨",
-      accentColor: "Cor de Destaque",
-      bgImage: "Imagem de Fundo",
-      glassEffect: "Efeito Vidro (Glass)",
-      wordWrapLimit: "Quebra de Linha (Limite)",
-      origName: "Nome original",
-      transName: "Nome traduzido",
-      designatedName: "Nome designado",
-      gamePath: "Caminho do jogo",
-      tags: "Tags",
-      note: "Observação",
-      engineLabel: "Engine",
-      lastLaunch: "Última inicialização",
-      firstLaunch: "Primeira inicialização",
-      keyLabel: "Chave",
-      deleteCache: "Deletar Cache",
-      exportTexts: "Exportar Textos",
-      extractImages: "Extrair Imagens 📷",
-      extractAudio: "Extrair Áudio 🎵",
-      patchFonts: "Corrigir Fontes PT-BR 🔤",
-      editGame: "Editar Jogo",
-      addGame: "Adicionar Jogo",
-      yes: "Sim",
-      no: "Não",
-      configSavedMsg: "Configuração salva com sucesso!",
-      mPreTranslate: "Traduzir Arquivos 🌐",
-      mRestoreBackup: "Restaurar Original 🔄",
-      cheatNoGameConnected:
-        "Nenhum jogo ativo conectado. Inicie um jogo RPG Maker MZ/MV para habilitar as funções de Cheat.",
-      cheatGeral: "Geral",
-      cheatGrupo: "Membros / HP",
-      cheatInv: "Inventário",
-      cheatGeneralMods: "Modificações Gerais",
-      cheatTelemetryTitle: "Telemetria ao Vivo",
-      cheatTelemetryWaiting: "Aguardando conexão…",
-      engineFullSupport: "Suporte Total",
-      enginePlanned: "Planejado (Fase 2)",
-      engineUnknown: "Status Desconhecido",
-      cheatGold: "Ouro",
-      cheatSetBtn: "Definir",
-      cheatNoClip: "Atravessar Paredes (NoClip)",
-      cheatDisableEncounters: "Desativar Encontros com Inimigos",
-      cheatBattleGodMode: "Batalha / Modo Deus",
-      cheatInfiniteHP: "Vida Infinita (Max HP) [OFF]",
-      cheatInfiniteMP: "Magia Infinita (Max MP) [OFF]",
-      cheatInfiniteHPLabel: "Vida Infinita (Max HP)",
-      cheatInfiniteMPLabel: "Magia Infinita (Max MP)",
-      cheatInstaWin: "Vitória Instantânea",
-      cheatInstaKill: "Inimigos com 1 HP",
-      cheatTools: "Ferramentas",
-      cheatDevTools: "Console do Desenvolvedor (F12)",
-      cheatGroupHP: "Status do Grupo e Edição de HP/MP",
-      cheatAddInvItem: "Adicionar Item / Arma / Armadura",
-      cheatSelectItem: "Selecione o Item/Equipamento:",
-      cheatWaitingGameData: "Aguardando dados do jogo...",
-      cheatQty: "Quantidade",
-      cheatAddBtn: "Adicionar",
-      cheatInvItems: "Itens no Inventário",
-      cheatFilter: "Filtrar itens...",
-      preparingGame: "Preparando jogo...",
-      cheatSelectItemPlaceholder: "-- Escolha um item --",
-      weapon: "Arma",
-      armor: "Armadura",
-      item: "Item",
-      level: "Nível",
-    },
   };
-  let _lang = "pt";
+  const _lang = "en";
   function t(k) {
     return LANG[_lang]?.[k] || LANG.en[k] || k;
   }
@@ -894,18 +721,18 @@
         const methodEl = $("renpy-appdata-method");
         const listEl = $("renpy-appdata-file-list");
         if (pathEl) pathEl.textContent = res.appDataDir;
-        if (methodEl) methodEl.textContent = res.method || "Automático";
+        if (methodEl) methodEl.textContent = res.method || "Automatic";
         if (listEl) {
           const saves = res.saves || [];
           if (saves.length === 0) {
-            listEl.innerHTML = '<span style="font-size:10px; color:var(--txt3)">Nenhum save encontrado ainda</span>';
+            listEl.innerHTML = "<span style=\"font-size:10px; color:var(--txt3)\">No saves found yet</span>";
           } else {
             listEl.innerHTML = saves.map(s => '<span style="font-size:9px; background:var(--bg3); border:1px solid var(--bd); padding:2px 6px; border-radius:3px">' + esc(s) + '</span>').join("");
           }
         }
       } else {
         const pathEl = $("renpy-appdata-full-path");
-        if (pathEl) pathEl.textContent = "Não detectado ou sem saves externos";
+        if (pathEl) pathEl.textContent = "Not detected, or no external saves";
       }
     } catch (e) { console.warn(`app.js: ${e.message}`); }
   }
@@ -982,7 +809,7 @@
         logBuffer.push(streamLine);
         if (logBuffer.length > 5) logBuffer.shift();
         lStream.innerHTML = logBuffer.map(line => `
-          <div style="color:${line.includes('✓') || line.includes('OK') ? 'var(--green)' : (line.includes('Erro') || line.includes('Falha') ? 'var(--red)' : 'var(--txt2)')}">
+          <div style="color:${line.includes('✓') || line.includes('OK') ? 'var(--green)' : (line.includes("Error") || line.includes("Failed") ? 'var(--red)' : 'var(--txt2)')}">
             ${esc(line)}
           </div>
         `).join("");
@@ -1000,15 +827,15 @@
             if (lastLog.id > lastLogId) lastLogId = lastLog.id;
             const txt = lastLog.message || "";
             if (txt.includes("Descompactando") || txt.includes("Escaneando") || txt.includes("extraindo")) {
-              updateLoadingState(35, t("launchPhaseUnpack") || "Escaneando arquivos...", txt);
-            } else if (txt.includes("Iniciando varredura") || txt.includes("Motor de Tradução") || txt.includes("Translating") || txt.includes("Resultado do cache") || txt.includes("trans_cache")) {
-              updateLoadingState(55, t("launchPhaseTranslating") || "Consultando traduções...", txt);
-            } else if (txt.includes("Arquivo patcheado") || txt.includes("Patched") || txt.includes("Substituídos") || txt.includes("patcheado")) {
-              updateLoadingState(75, "Aplicando traduções...", txt);
-            } else if (txt.includes("AppData Resolver") || txt.includes("Pasta de saves")) {
-              updateLoadingState(80, t("launchPhaseAppData") || "Configurando dados...", txt);
-            } else if (txt.includes("Disparando o motor") || txt.includes("inicializado com sucesso") || txt.toLowerCase().includes("launched") || txt.includes("Spawning process") || txt.includes("JANELA VISÍVEL")) {
-              updateLoadingState(90, t("launchPhaseLaunching") || "Iniciando executável...", txt);
+              updateLoadingState(35, t("launchPhaseUnpack") || "Scanning files...", txt);
+            } else if (txt.includes("Iniciando varredura") || txt.includes("Translation engine") || txt.includes("Translating") || txt.includes("Resultado do cache") || txt.includes("trans_cache")) {
+              updateLoadingState(55, t("launchPhaseTranslating") || "Looking up translations...", txt);
+            } else if (txt.includes("Patched file") || txt.includes("Patched") || txt.includes("Replaced") || txt.includes("patcheado")) {
+              updateLoadingState(75, "Applying translations...", txt);
+            } else if (txt.includes("AppData Resolver") || txt.includes("Save folder")) {
+              updateLoadingState(80, t("launchPhaseAppData") || "Configuring data...", txt);
+            } else if (txt.includes("Disparando o motor") || txt.includes("inicializado com sucesso") || txt.toLowerCase().includes("launched") || txt.includes("Spawning process") || txt.includes("WINDOW VISIBLE")) {
+              updateLoadingState(90, t("launchPhaseLaunching") || "Starting executable...", txt);
             } else if (txt.includes("CheatOverlay conectado") || txt.includes("Menu de cheats ativo")) {
               updateLoadingState(100, t("launchPhaseConnected") || "Conectado!", txt);
             } else {
@@ -1023,8 +850,8 @@
       const r = await rpc("launchGame", { key });
 
       if (r && r.ok === false) {
-        const errMsg = r.error || (r.certificate && r.certificate.reason) || "Erro ao iniciar o jogo";
-        updateLoadingState(100, `Falha: ${errMsg}`, "Erro");
+        const errMsg = r.error || (r.certificate && r.certificate.reason) || "Could not start the game";
+        updateLoadingState(100, `Failed: ${errMsg}`, "Error");
         if (ld) ld.style.display = "none";
         showToast("Launch failed: " + errMsg, "error");
         return;
@@ -1109,7 +936,7 @@
     }
   }
   function engineInfo(eng) {
-    return ENGINES_DEF[eng] || { label: "Não identificado", icon: "?", js: false };
+    return ENGINES_DEF[eng] || { label: "Not identified", icon: "?", js: false };
   }
   const SUPPORTED_ENGINES = new Set(["mv", "mz", "rgss", "python", "renpy", "wolf", "unity", "godot", "unreal", "gamemaker", "construct", "defold", "gdevelop", "cocos", "cocos_creator", "cocos2dx", "electron", "generic"]);
   const PARTIAL_ENGINES = new Set(["tyrano", "krkr", "krkrz", "srpg", "agtk", "kmy", "bakin"]);
@@ -1120,9 +947,9 @@
   }
   function engineSupportLabel(eng) {
     const s = engineSupportStatus(eng);
-    if (s === "partial") return { s, text: "Suporte parcial — confira o perfil de compatibilidade", cls: "eng-plan" };
-    if (s === "planned") return { s, text: "Integração pendente", cls: "eng-plan" };
-    return { s, text: "Compatibilidade não identificada", cls: "eng-warn" };
+    if (s === "partial") return { s, text: "Partial support — check the compatibility profile", cls: "eng-plan" };
+    if (s === "planned") return { s, text: "Integration pending", cls: "eng-plan" };
+    return { s, text: "Compatibility not identified", cls: "eng-warn" };
   }
   function engineIsJS(eng) {
     return engineInfo(eng).js;
@@ -1133,17 +960,17 @@
     try {
       const c = await rpc("loadCfg");
       S.cfg = c;
-      if (c && c.lang) _lang = c.lang;
+      S.cfg = { ...(c || {}), lang: "en" };
     } catch (e) { console.warn(`app.js: ${e.message}`); }
     if (!$("application-styles")) {
       const styles = document.createElement("link");
       styles.id = "application-styles";
       styles.rel = "stylesheet";
-      styles.href = "styles/base.css?v=20261101-r2";
+      styles.href = "styles/base.css?v=20261101-en2";
       document.head.appendChild(styles);
       const layout = document.createElement("link");
       layout.rel = "stylesheet";
-      layout.href = "styles/layout.css?v=20261101-r2";
+      layout.href = "styles/layout.css?v=20261101-en2";
       document.head.appendChild(layout);
     }
     applyTheme();
@@ -1174,19 +1001,19 @@
       <button data-t="cf"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span class="sl">${t("tabConfig")}</span></button>
       <button data-t="ch" id="btn-cheats"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span class="sl">Cheats ⚡</span></button>
       <button data-t="lg"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span class="sl">${t("tabLog")}</span></button>
-      <button data-t="pf" id="btn-performance"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg><span class="sl">Compatibilidade</span></button>
+      <button data-t="pf" id="btn-performance"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg><span class="sl">Compatibility</span></button>
     </div>
     <div id="mc">
 
       <!-- GAMES -->
-      <div id="tb-gl" class="tb on"><div class="library-heading"><div><h1>Biblioteca</h1><p>Seus jogos e suas traduções, em um só lugar.</p></div><button id="glAdd" class="btn primary">+ Adicionar jogo</button></div>
+      <div id="tb-gl" class="tb on"><div class="library-heading"><div><h1>Library</h1><p>Your games and translations in one place.</p></div><button id="glAdd" class="btn primary">+ Add game</button></div>
         <div id="drop-zone">
           <div class="dz-icon">\ud83d\udcc2</div>
-          <div class="dz-txt">Arraste o executável do jogo aqui ou clique em Adicionar jogo.</div>
+          <div class="dz-txt">Drop the game executable here or click Add game.</div>
         </div>
         <div class="gl-bar">
           <input id="glSearch" placeholder="${t("searchGames")}" class="gl-inp">
-          <button id="glRefresh" class="btn sm" title="${t("refresh")}">↻ Atualizar</button>
+          <button id="glRefresh" class="btn sm" title="${t("refresh")}">↻ Refresh</button>
         </div>
         <div id="gl-list"></div>
         <!-- Modern Glassmorphic Launch Progress Modal -->
@@ -1199,8 +1026,8 @@
                 🎮
               </div>
               <div style="display:flex; flex-direction:column; flex:1">
-                <span id="gl-loading-title" style="font-size:14px; font-weight:700; color:var(--txt)">Inicializando Jogo...</span>
-                <span id="gl-loading-sub" style="font-size:11px; color:var(--txt2)">Preparando ambiente, traduções e patches</span>
+                <span id="gl-loading-title" style="font-size:14px; font-weight:700; color:var(--txt)">Launching game...</span>
+                <span id="gl-loading-sub" style="font-size:11px; color:var(--txt2)">Preparing the environment, translations, and patches</span>
               </div>
               <div style="font-size:18px; animation:spin 1s linear infinite; color:var(--accent)">⟳</div>
             </div>
@@ -1214,7 +1041,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px">
               <span id="gl-loading-msg" style="color:var(--txt); font-weight:600; display:flex; align-items:center; gap:6px">
                 <span style="width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; animation:ping 1s infinite"></span>
-                <span>Iniciando verificação do pipeline...</span>
+                <span>Starting pipeline checks...</span>
               </span>
               <span id="gl-loading-pct" style="color:var(--txt2); font-family:monospace; font-size:10px">15%</span>
             </div>
@@ -1239,13 +1066,13 @@
       </div>
 
       <!-- CONFIG -->
-      <div id="tb-cf" class="tb"><header class="page-heading"><div><h1>Configurações</h1><p>Tradução, leitura e ferramentas organizadas por finalidade.</p></div><span id="settings-save-status" role="status">Alterações salvas automaticamente</span></header><div class="settings-grid"><section class="cg"><h2>Leitura e biblioteca</h2><p class="section-description">Ajuste a interface ao seu conforto. As mudanças são salvas automaticamente.</p><div class="settings-fields">
-<label for="cfgAppLang">Idioma do programa</label><select id="cfgAppLang"><option value="pt">Português</option><option value="en">English</option></select>
-<label for="cfgUiFontSize">Tamanho dos textos</label><select id="cfgUiFontSize"><option value="14">Padrão · 14 px</option><option value="16">Confortável · 16 px</option><option value="18">Grande · 18 px</option><option value="20">Muito grande · 20 px</option></select>
-<label for="themeAccent">Cor de destaque</label><input id="themeAccent" type="color">
-<label for="cfgLibrarySort">Ordenar jogos por</label><select id="cfgLibrarySort"><option value="title">Nome · A–Z</option><option value="recent">Mais recentes</option></select>
-<label for="cfgShowPaths">Mostrar caminho dos jogos</label><input id="cfgShowPaths" type="checkbox">
-<label for="cfgReduceMotion">Reduzir animações</label><input id="cfgReduceMotion" type="checkbox">
+      <div id="tb-cf" class="tb"><header class="page-heading"><div><h1>Settings</h1><p>Translation, reading preferences, and tools grouped by purpose.</p></div><span id="settings-save-status" role="status">Changes are saved automatically</span></header><div class="settings-grid"><section class="cg"><h2>Reading and library</h2><p class="section-description">Adjust the interface for comfortable reading. Changes are saved automatically.</p><div class="settings-fields">
+<label for="cfgAppLang">Application language</label><select id="cfgAppLang" disabled aria-label="Application language"><option value="en">English</option></select>
+<label for="cfgUiFontSize">Text size</label><select id="cfgUiFontSize"><option value="14">Standard · 14 px</option><option value="16">Comfortable · 16 px</option><option value="18">Large · 18 px</option><option value="20">Extra large · 20 px</option></select>
+<label for="themeAccent">Accent color</label><input id="themeAccent" type="color">
+<label for="cfgLibrarySort">Sort games by</label><select id="cfgLibrarySort"><option value="title">Name · A–Z</option><option value="recent">Most recent</option></select>
+<label for="cfgShowPaths">Show game paths</label><input id="cfgShowPaths" type="checkbox">
+<label for="cfgReduceMotion">Reduce animations</label><input id="cfgReduceMotion" type="checkbox">
 </div></section><div class="cg">
           <h4>${t("cfgTrans")}</h4>
           <div class="cg-body">
@@ -1259,23 +1086,23 @@
               <option value="deepl">${t("cfgEngineDeepl")}</option>
             </select></div>
             
-            <!-- Configurações de LLM -->
+            <!-- Settings de LLM -->
             <div id="llmConfigArea" style="display:none;flex-direction:column;gap:6px;margin-top:8px;padding:8px;background:var(--bg2);border:1px dashed var(--bd);border-radius:4px">
-              <div class="ci"><label>Provedor LLM</label><select id="cfgLlmProvider" style="font-size:10px">
+              <div class="ci"><label>LLM provider</label><select id="cfgLlmProvider" style="font-size:10px">
                 <option value="openai">OpenAI</option>
                 <option value="deepseek">DeepSeek</option>
                 <option value="anthropic">Claude/Anthropic</option>
                 <option value="local">Ollama/LM Studio (Local)</option>
               </select></div>
-              <div class="ci"><label>API Key</label><input id="cfgLlmApiKey" type="password" placeholder="Chave da API" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
-              <div class="ci"><label>Modelo</label><input id="cfgLlmModel" type="text" placeholder="Ex: gpt-4o-mini" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci"><label>API Key</label><input id="cfgLlmApiKey" type="password" placeholder="API key" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci"><label>Model</label><input id="cfgLlmModel" type="text" placeholder="Ex: gpt-4o-mini" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
               <div class="ci"><label>Base URL</label><input id="cfgLlmBaseUrl" type="text" placeholder="Ex: http://localhost:11434/v1" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
-              <div class="ci" style="flex-direction:column;align-items:stretch"><label>Prompt de Sistema</label><textarea id="cfgLlmPrompt" rows="3" placeholder="Instruções de tradução..." style="padding:4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px;resize:vertical;margin-top:2px"></textarea></div>
+              <div class="ci" style="flex-direction:column;align-items:stretch"><label>System prompt</label><textarea id="cfgLlmPrompt" rows="3" placeholder="Translation instructions..." style="padding:4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px;resize:vertical;margin-top:2px"></textarea></div>
             </div>
             
-            <!-- Configurações de DeepL -->
+            <!-- Settings de DeepL -->
             <div id="deeplConfigArea" style="display:none;flex-direction:column;gap:6px;margin-top:8px;padding:8px;background:var(--bg2);border:1px dashed var(--bd);border-radius:4px">
-              <div class="ci"><label>DeepL API Key</label><input id="cfgDeeplApiKey" type="password" placeholder="Chave da API DeepL" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
+              <div class="ci"><label>DeepL API Key</label><input id="cfgDeeplApiKey" type="password" placeholder="API key DeepL" style="width:120px;padding:2px 4px;background:var(--bg);color:var(--txt);border:1px solid var(--bd);border-radius:3px;font-size:10px"></div>
               <div class="ci" style="justify-content:space-between;align-items:center"><label>Usar API Gratuita</label><input id="cfgDeeplUseFree" type="checkbox" checked style="margin:0"></div>
             </div>
             <div class="ci">
@@ -1298,7 +1125,7 @@
               </div>
             </div>
           </div>
-        </div></div><details class="settings-advanced"><summary>Ferramentas por engine e arquivos</summary><p>Escolha o jogo ao usar cada ferramenta. Estas opções não alteram jogos automaticamente.</p><div class="settings-grid"><div class="cg">
+        </div></div><details class="settings-advanced"><summary>Engine and file tools</summary><p>Choose a game when using a tool. These options do not change games automatically.</p><div class="settings-grid"><div class="cg">
           <h4>${t("toolsUnity")}</h4>
           <span class="help-tip">${t("descUnity")}</span>
           <div class="tools-grid">
@@ -1325,28 +1152,28 @@
           <div class="tools-grid">
             <button class="btn sm evb-extract">${t("btnUnpackEvb")}</button>
           </div>
-        </div></div></details><details class="settings-advanced"><summary>Conexão, diagnóstico e histórico</summary><div class="settings-grid"><div class="cg">
+        </div></div></details><details class="settings-advanced"><summary>Connection, diagnostics, and history</summary><div class="settings-grid"><div class="cg">
           <h4>${t("cfgDiagnostics")}</h4>
           <div class="cg-body">
             <div class="ci"><label>${t("cfgTest")}</label><button id="testTr" class="btn sm">${t("cfgTest")}</button></div>
             <div class="ci"><label>${t("cfgTestRes")}</label><span id="testTrRes" style="font-size:10px;color:var(--txt3)">-</span></div>
             <div class="ci" style="border-top:1px dashed var(--bd);padding-top:8px;margin-top:4px">
-              <label>Auto-Diagnóstico</label>
+              <label>Self-test</label>
               <button id="btnSelfTest" class="btn sm pri">Executar Self-Test 🛡️</button>
             </div>
             <div class="ci">
-              <label>Dossiê do Sistema</label>
-              <button id="btnExportDiag" class="btn sm">Exportar Diagnóstico 📋</button>
+              <label>System diagnostic bundle</label>
+              <button id="btnExportDiag" class="btn sm">Export diagnostics 📋</button>
             </div>
             <div class="ci">
-              <label>Matriz de Evidências</label>
-              <button id="btnEvidenceMatrix" class="btn sm">Ver Evidências 📊</button>
+              <label>Evidence matrix</label>
+              <button id="btnEvidenceMatrix" class="btn sm">View evidence 📊</button>
             </div>
           </div>
         </div><div class="cg" id="provider-health-card" style="border:1px solid var(--bd); background:rgba(15,15,25,0.4)">
           <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-bottom:1px solid var(--bd)">
             <h4 style="margin:0; font-size:11px">🛡️ Provider Health & Circuit Breaker</h4>
-            <button id="btnRefreshProviderHealth" class="btn xs" style="font-size:9px">Atualizar</button>
+            <button id="btnRefreshProviderHealth" class="btn xs" style="font-size:9px">Refresh</button>
           </div>
           <div class="cg-body" style="padding:8px 10px; display:flex; flex-direction:column; gap:6px">
             <div id="provider-health-notice" style="display:none; padding:6px 8px; border-radius:4px; font-size:10px; font-weight:600"></div>
@@ -1384,7 +1211,7 @@
              <div class="cg" style="margin-bottom:0">
                <h4 style="display:flex;justify-content:space-between;align-items:center">
                  <span>${t("cheatTelemetryTitle") || "Telemetria ao Vivo"}</span>
-                 <span id="cheat-telemetry-status" style="font-size:9px;color:var(--txt3)">${t("cheatTelemetryWaiting") || "Aguardando conexão…"}</span>
+                 <span id="cheat-telemetry-status" style="font-size:9px;color:var(--txt3)">${t("cheatTelemetryWaiting") || "Waiting for connection…"}</span>
                </h4>
                <div class="cg-body" style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 12px">
                  <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
@@ -1396,7 +1223,7 @@
                    <div style="font-size:13px;font-weight:700;color:var(--accent2);font-family:var(--fontGame)"><span id="tele-mp-cur">—</span> / <span id="tele-mp-max">—</span></div>
                  </div>
                  <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
-                   <label style="font-size:9px;color:var(--txt2)">Ouro</label>
+                   <label style="font-size:9px;color:var(--txt2)">Gold</label>
                    <div style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--fontGame)"><span id="tele-gold">—</span></div>
                  </div>
                  <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:90px">
@@ -1566,12 +1393,12 @@
       </div>
 
       <div id="tb-pf" class="tb">
-        <header class="page-heading"><div><h1>Compatibilidade</h1><p>Veja o que cada engine permite, os problemas conhecidos e o que ainda falta.</p></div><button id="btnRefreshMatrix" class="btn">Atualizar</button></header>
-        <div class="compat-summary" id="compat-summary">Carregando informações…</div>
-        <label class="search-label" for="compat-search">Buscar engine, versão ou problema</label>
-        <input id="compat-search" type="search" placeholder="Ex.: Unity, fontes, Python 2, cheats…">
+        <header class="page-heading"><div><h1>Compatibility</h1><p>Check engine capabilities, known issues, and remaining work.</p></div><button id="btnRefreshMatrix" class="btn">Refresh</button></header>
+        <div class="compat-summary" id="compat-summary">Loading information…</div>
+        <label class="search-label" for="compat-search">Search by engine, version, or issue</label>
+        <input id="compat-search" type="search" placeholder="Example: Unity, fonts, Python 2, cheats…">
         <div id="pf-matrix-rows" class="compat-grid" aria-live="polite"></div>
-        <details class="diagnostic-details"><summary>Teste de velocidade da tradução</summary><p>Executa requisições de teste ao provedor. A velocidade varia por conexão e limites do serviço.</p><button id="btnRunBenchmark" class="btn">Medir velocidade agora</button><div id="pf-bench-details"></div><table><tbody id="pf-bench-rows"></tbody></table></details>
+        <details class="diagnostic-details"><summary>Translation speed test</summary><p>Sends test requests to the provider. Speed depends on your connection and service limits.</p><button id="btnRunBenchmark" class="btn">Measure speed now</button><div id="pf-bench-details"></div><table><tbody id="pf-bench-rows"></tbody></table></details>
       </div>
     </div>
   </div>
@@ -1770,7 +1597,7 @@
     let html = "";
     for (const k of [...S.gameKeys].sort((a, b) => S.cfg.librarySort === "recent"
       ? (S.games[b]?.libConf?.lastLaunch || S.games[b]?.libConf?.added || 0) - (S.games[a]?.libConf?.lastLaunch || S.games[a]?.libConf?.added || 0)
-      : (S.games[a]?.libConf?.title || a).localeCompare(S.games[b]?.libConf?.title || b, "pt-BR", { numeric: true, sensitivity: "base" }))) {
+      : (S.games[a]?.libConf?.title || a).localeCompare(S.games[b]?.libConf?.title || b, "en", { numeric: true, sensitivity: "base" }))) {
       const d = S.games[k];
       if (!d) {
         html +=
@@ -1790,7 +1617,7 @@
       const launched = S.launchedKey === k;
       const playBtn = launched
         ? '<span style="color:var(--green);font-size:10px;padding:0 6px">\u25b6 Running</span>'
-        : '<button class="btn xs glPlay" title="Iniciar jogo">▶ Iniciar</button>';
+        : "<button class=\"btn xs glPlay\" title=\"Launch game\">▶ Play</button>";
       const title = lc.title || (exe ? basename(exe) : "") || k;
       html +=
         '<div class="gc' +
@@ -1803,10 +1630,10 @@
         esc(engIcon) +
         " " +
         esc(engLabel) +
-        ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "partial" ? "Parcial" : engStatus.s === "planned" ? "Pendente" : "?"}</span>` +
+        ` <span class="${attr(engStatus.cls)}" title="${attr(engStatus.text)}" style="font-size:9px;padding:1px 4px;border-radius:3px">${engStatus.s === "partial" ? "Partial" : engStatus.s === "planned" ? "Pending" : "?"}</span>` +
         '</div>' + (S.cfg.showGamePaths ? '<div class="game-path">' + esc(exe) + '</div>' : '') + '</div><div class="ga">' +
         playBtn +
-        '<button class="btn xs glEdit" title="Editar jogo">Editar</button><button class="btn xs dgr glDel" title="Remover da biblioteca">Remover</button></div></div>';
+        "<button class=\"btn xs glEdit\" title=\"Edit game\">Edit</button><button class=\"btn xs dgr glDel\" title=\"Remove from library\">Remove</button></div></div>";
     }
     g.innerHTML = html;
     // Filter by search
@@ -1887,14 +1714,14 @@
     <div class="mc2">
       <div class="f"><label>${t("tags")}</label><input id="mTags" value="${esc(tags)}" placeholder="Separated by comma"></div>
       <div class="f"><label>${t("note")}</label><textarea id="mNote" rows="2" style="resize:vertical;padding:3px 5px;background:var(--bg2);border:1px solid var(--bd);color:var(--txt);border-radius:3px;font-size:10px;font-family:var(--font)">${esc(lc.note || "")}</textarea></div>
-      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${esc(ei.icon || "")} ${esc(ei.label || curEng)} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(Validação por jogo)" : "(Nativo)")}</span></div>
+      <div class="fi"><label>${t("engineLabel")}:</label><span class="fv">${esc(ei.icon || "")} ${esc(ei.label || curEng)} ${ei.js ? "(JS)" : (curEng === "python" || curEng === "renpy" ? "(Requires testing per game)" : "(Nativo)")}</span></div>
       ${(curEng === "python" || curEng === "renpy") ? `
       <div style="background:rgba(108,92,231,0.12);padding:8px 10px;border-radius:6px;border:1px solid rgba(108,92,231,0.3);margin:5px 0">
-        <div style="font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:6px">🎭 Ren'Py Visual Novel Engine <span style="background:rgba(0,184,148,0.2);color:var(--green2);padding:2px 6px;border-radius:4px;font-size:10px">Validação por jogo</span></div>
+        <div style="font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:6px">🎭 Ren'Py Visual Novel Engine <span style="background:rgba(0,184,148,0.2);color:var(--green2);padding:2px 6px;border-radius:4px;font-size:10px">Requires testing per game</span></div>
         <div style="font-size:11px;color:var(--txt);margin-top:3px">
-          <div>Suporte da Engine: <b>8.x (Python 3) — verificar compatibilidade do jogo</b></div>
-          <div style="color:var(--txt2);font-size:10px;margin-top:2px">Não comprovado: ⚠️ 6.x / ⚠️ 7.x (Python 2) — Requer validação</div>
-          <div style="margin-top:2px">Método: <b>Translation Layer Oficial (Puramente Aditiva)</b></div>
+          <div>Engine support: <b>8.x (Python 3) — check compatibility for this game</b></div>
+          <div style="color:var(--txt2);font-size:10px;margin-top:2px">Not verified: ⚠️ 6.x / ⚠️ 7.x (Python 2) — testing required</div>
+          <div style="margin-top:2px">Method: <b>Official translation layer (additive)</b></div>
         </div>
       </div>` : ''}
       <div class="fi"><label>${t("lastLaunch")}:</label><span class="fv">${esc(lastLaunch)}</span></div>
@@ -1903,29 +1730,29 @@
     </div>
   </div>
   <div class="fb" style="display:flex;flex-wrap:wrap;justify-content:space-between;width:100%;gap:10px">
-    <details class="game-tools"><summary>Ferramentas avançadas de tradução e recuperação</summary><div>
+    <details class="game-tools"><summary>Advanced translation and recovery tools</summary><div>
       <button id="mPreTranslate" class="btn sm pri">${t("mPreTranslate") || "Translate Files 🌐"}</button>
-      <button id="mTestRenpyCompat" class="btn sm" style="background:#e84393;color:#fff" title="Testar compatibilidade oficial de ponta a ponta com extração de amostra e validação">Testar Compatibilidade Ren'Py 🎭</button>
-      <button id="mDryRun" class="btn sm" style="background:#2b8a3e;color:#fff" title="Simula a extração sem modificar nenhum arquivo">Simular (Dry Run) 🧪</button>
-      <button id="mDiagGame" class="btn sm" title="Diagnóstico de engine, confiança e capacidades">Diagnóstico 🔍</button>
-      <button id="mRollbackGame" class="btn sm" title="Restaura os arquivos originais de fábrica com verificação criptográfica SHA-256">Restaurar Original (Rollback) 🛡️</button>
-      <button id="mUntranslatedGame" class="btn sm" style="background:#0984e3;color:#fff" title="Detectar textos não traduzidos e pendências por script/idioma">Não Traduzidos 🔎</button>
-      <button id="mTranslateJob" class="btn sm pri" style="background:var(--accent);color:#fff" title="Iniciar um job de tradução com checkpoints em disco, retomável se a aplicação for interrompida">Traduzir (Job) 🛠️</button>
-      <button id="mResumeJob" class="btn sm" style="background:var(--accent2);color:#fff" title="Listar jobs salvos e retomar um job interrompido">Retomar Job ♻️</button>
-      <button id="mVisualQAGame" class="btn sm" style="background:#6c5ce7;color:#fff" title="Executar QA Visual automatizado (overflow, telas pretas, conformidade de UI)">QA Visual 👁️</button>
-      <button id="mRuntimeTextsGame" class="btn sm" style="background:#e17055;color:#fff" title="Gerenciar textos capturados em runtime e promover para tradução">Textos Runtime ⚡</button>
-      <button id="mRuntimeStart" class="btn sm" style="background:#00b894;color:#fff" title="Iniciar uma sessão de runtime com staging isolado, para capturar textos enquanto o jogo roda">Iniciar Sessão Runtime ▶</button>
-      <button id="mRuntimeStop" class="btn sm dgr" style="display:none" title="Encerrar a sessão de runtime ativa, confirmando com o servidor">Encerrar Sessão ⏹</button>
-      <button id="mRuntimeProbe" class="btn sm" style="background:#636e72;color:#fff" title="Verificar se o processo da sessão ainda está vivo">Sondar Processo 🔌</button>
-      <button id="mRuntimeShot" class="btn sm" style="background:#636e72;color:#fff" title="Capturar a tela do processo da sessão">Capturar Tela 📷</button>
-      <button id="mRuntimeTriad" class="btn sm" style="background:#636e72;color:#fff" title="Ver engine, runtime, hook e staging resolvedos para este jogo">Triade 🧭</button>
-      <span id="rtSessaoBadge" style="font-size:10px;color:var(--txt3);align-self:center">Nenhuma sessão ativa</span>
+      <button id="mTestRenpyCompat" class="btn sm" style="background:#e84393;color:#fff" title="Test sample extraction and validation for Ren'Py">Test Ren'Py compatibility 🎭</button>
+      <button id="mDryRun" class="btn sm" style="background:#2b8a3e;color:#fff" title="Preview extraction without running the apply stage; extractors may create staging files">Preview extraction (Dry run) 🧪</button>
+      <button id="mDiagGame" class="btn sm" title="Engine, confidence, and capability diagnostics">Diagnostics 🔍</button>
+      <button id="mRollbackGame" class="btn sm" title="Restore original files from the available backup and verify SHA-256 hashes">Restore original (Rollback) 🛡️</button>
+      <button id="mUntranslatedGame" class="btn sm" style="background:#0984e3;color:#fff" title="Find untranslated texts and pending work by script/language">Untranslated texts 🔎</button>
+      <button id="mTranslateJob" class="btn sm pri" style="background:var(--accent);color:#fff" title="Start a translation job with checkpoints on disk">Translate (Job) 🛠️</button>
+      <button id="mResumeJob" class="btn sm" style="background:var(--accent2);color:#fff" title="List saved jobs and resume an interrupted job">Resume job ♻️</button>
+      <button id="mVisualQAGame" class="btn sm" style="background:#6c5ce7;color:#fff" title="Run the available automated visual QA checks">Visual QA 👁️</button>
+      <button id="mRuntimeTextsGame" class="btn sm" style="background:#e17055;color:#fff" title="Manage captured runtime texts and promote them to translation memory">Runtime texts ⚡</button>
+      <button id="mRuntimeStart" class="btn sm" style="background:#00b894;color:#fff" title="Start a runtime session with isolated staging to capture texts during play">Start runtime session ▶</button>
+      <button id="mRuntimeStop" class="btn sm dgr" style="display:none" title="End the active runtime session and confirm with the server">End session ⏹</button>
+      <button id="mRuntimeProbe" class="btn sm" style="background:#636e72;color:#fff" title="Check whether the session process is still running">Check process 🔌</button>
+      <button id="mRuntimeShot" class="btn sm" style="background:#636e72;color:#fff" title="Capture the session process window">Capture screen 📷</button>
+      <button id="mRuntimeTriad" class="btn sm" style="background:#636e72;color:#fff" title="Inspect the engine, runtime, hook, and staging selected for this game">Runtime details 🧭</button>
+      <span id="rtSessaoBadge" style="font-size:10px;color:var(--txt3);align-self:center">No active session</span>
       <span id="rtSessaoInfo" style="font-size:9px;color:var(--txt3);align-self:center"></span>
-      <button id="mGlossaryGame" class="btn sm" style="background:#00b894;color:#fff" title="Visualizar glossário hierárquico (Project -> Plugin -> Game -> Engine -> Global)">Glossário Hierárquico 📚</button>
+      <button id="mGlossaryGame" class="btn sm" style="background:#00b894;color:#fff" title="View the hierarchical glossary (Project -> Plugin -> Game -> Engine -> Global)">Hierarchical glossary 📚</button>
       <button id="mDecryptImages" class="btn sm">${t("extractImages") || "Extract Images 📷"}</button>
       <button id="mDecryptAudio" class="btn sm">${t("extractAudio") || "Extract Audio 🎵"}</button>
       <button id="mPatchFonts" class="btn sm">${t("patchFonts") || "Patch Fonts PT-BR 🔤"}</button>
-      <button id="mUnpackAll" class="btn sm" style="background:var(--accent);color:#fff" title="Descompactar 100% dos arquivos (.rpa, mídias e scripts) para uma pasta">Descompactar Tudo 📦</button>
+      <button id="mUnpackAll" class="btn sm" style="background:var(--accent);color:#fff" title="Unpack supported archives, media, and scripts into an output folder">Unpack all 📦</button>
       <button id="mDelCache" class="btn sm dgr">${t("deleteCache") || "Delete Cache"}</button>
       <button id="mExportCache" class="btn sm">${t("exportTexts") || "Export Texts"}</button>
     </div></details>
@@ -1941,27 +1768,27 @@
       const tools = m.querySelector(".game-tools");
       if (tools) tools.hidden = true;
       const engineLabel = m.querySelector(".fi .fv");
-      if (engineLabel) engineLabel.textContent = "Identificado ao salvar o caminho do jogo";
+      if (engineLabel) engineLabel.textContent = "Identified when the game path is saved";
     }
     $("mDryRun")?.addEventListener("click", async () => {
       const btn = $("mDryRun");
       btn.disabled = true;
       btn.textContent = "Simulando... ⏳";
-      log("info", "Iniciando simulação segura (Dry Run)...");
+      log("info", "Starting extraction preview (Dry run)...");
       try {
         const res = await rpc("dryRunGame", { gameKey: key });
         if (res && res.success) {
-          const msg = `Simulação Concluída!\n\nEngine: ${res.engine} (${res.engineVersion || 'Nativa'})\nConfiança: ${Math.round((res.confidence || 0) * 100)}%\nStrings extraídas: ${res.totalStrings}\nArquivos modificados: ${res.filesModified} (100% SEGURO)\nTokens protegidos: ${res.protectedTokensCount || 0}`;
+          const msg = `Preview complete!\n\nEngine: ${res.engine} (${res.engineVersion || 'Nativa'})\nConfidence: ${Math.round((res.confidence || 0) * 100)}%\nExtracted strings: ${res.totalStrings}\nArquivos modificados: ${res.filesModified} (100% SEGURO)\nTokens protegidos: ${res.protectedTokensCount || 0}`;
           alert(msg);
-          log("success", `Dry Run: ${res.totalStrings} strings detectadas, 0 arquivos modificados.`);
+          log("success", `Dry Run: ${res.totalStrings} strings detected; the apply stage was not run.`);
         } else {
-          alert("Falha na simulação: " + (res?.error || "Erro desconhecido"));
+          alert("Preview failed: " + (res?.error || "Unknown error"));
         }
       } catch (e) {
-        alert("Erro no Dry Run: " + e.message);
+        alert("Dry-run error: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Simular (Dry Run) 🧪";
+        btn.textContent = "Preview extraction (Dry run) 🧪";
       }
     });
 
@@ -1969,7 +1796,7 @@
       const btn = $("mTestRenpyCompat");
       btn.disabled = true;
       btn.textContent = "Testando... ⏳";
-      log("info", "Iniciando teste de compatibilidade Ren'Py...");
+      log("info", "Starting Ren'Py compatibility test...");
       try {
         const res = await rpc("testRenpyCompatibility", { gameKey: key, exePath });
         if (res && res.ok && res.report) {
@@ -1977,32 +1804,32 @@
           const sampleLines = (r.sampleTexts || []).slice(0, 3).map(s => `• [${s.type}] ${s.original}`).join('\n');
           const m = r.metrics || {};
           const cov = m.TRANSLATION_COVERAGE || {};
-          const msg = `RELATÓRIO DE COMPATIBILIDADE REN'PY:\n\n` +
+          const msg = `REN'PY COMPATIBILITY REPORT:\n\n` +
             `=== ENGINE SUPPORT ===\n` +
             `• Engine: ${r.engine} (${r.version})\n` +
             `• Engine Status: ${r.engine_status || r.status}\n` +
-            `• Versões Comprovadas: ${(r.verified_versions || ['8.x (Python 3)']).join(', ')}\n` +
-            `• Não Comprovadas: ${(r.unverified_versions || ['6.x', '7.x']).join(', ')}\n` +
-            `• Método: ${r.method}\n` +
-            `• Confiança da Detecção: ${r.confidence}\n\n` +
+            `• Verified versions: ${(r.verified_versions || ['8.x (Python 3)']).join(', ')}\n` +
+            `• Unverified versions: ${(r.unverified_versions || ['6.x', '7.x']).join(', ')}\n` +
+            `• Method: ${r.method}\n` +
+            `• Detection confidence: ${r.confidence}\n\n` +
             `=== GAME TRANSLATION COVERAGE ===\n` +
             `• Textos Detectados: ${cov.textos_detectados || r.textsFound || 0}\n` +
-            `• Textos Traduzíveis: ${cov.textos_traduziveis || r.textsFound || 0}\n` +
-            `• Textos Traduzidos (Amostra): ${cov.textos_traduzidos || (r.sampleTexts ? r.sampleTexts.length : 0)}\n` +
+            `• Translatable texts: ${cov.textos_traduziveis || r.textsFound || 0}\n` +
+            `• Translated texts (sample): ${cov.textos_traduzidos || (r.sampleTexts ? r.sampleTexts.length : 0)}\n` +
             `• Cobertura Atual: ${cov.cobertura_pct || '0.0%'}\n` +
             `• Tokens Protegidos: ${r.protectedTokens || 0}\n` +
-            `• Arquivos Originais Intactos: ${r.validation && r.validation.originalFilesUntouched ? "SIM (100% não destrutivo)" : "NÃO"}\n\n` +
+            `• Original files unchanged: ${r.validation && r.validation.originalFilesUntouched ? "YES (for this test)" : "NO"}\n\n` +
             `Amostras de textos:\n${sampleLines}`;
           alert(msg);
-          log("success", `Teste Ren'Py Concluído: ${r.textsFound} textos encontrados com status ${r.status}`);
+          log("success", `Ren'Py test completed: ${r.textsFound} texts found with status ${r.status}`);
         } else {
-          alert("Falha no teste Ren'Py: " + (res?.error || "Erro desconhecido"));
+          alert("Ren'Py test failed: " + (res?.error || "Unknown error"));
         }
       } catch (e) {
-        alert("Erro ao testar compatibilidade Ren'Py: " + e.message);
+        alert("Error testing Ren'Py compatibility: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Testar Compatibilidade Ren'Py 🎭";
+        btn.textContent = "Test Ren'Py compatibility 🎭";
       }
     });
 
@@ -2013,36 +1840,36 @@
         const res = await rpc("analyzeGame", { gameKey: key });
         if (res && res.ok) {
           const cap = Object.entries(res.capabilities || {}).filter(([k, v]) => v).map(([k]) => k).join(", ");
-          const msg = `Diagnóstico de Engine:\n\nEngine: ${res.engine} (${res.engineVersion || 'N/A'})\nArquitetura: ${res.architecture || 'Desconhecida'}\nConfiança: ${res.confidence}%\nEstratégia Recomendada: ${res.recommendedStrategy}\nCapacidades: ${cap || 'Nenhuma'}\nEvidências: ${(res.evidence || []).join('; ')}`;
+          const msg = `Engine diagnostics:\n\nEngine: ${res.engine} (${res.engineVersion || 'N/A'})\nArchitecture: ${res.architecture || 'Unknown'}\nConfidence: ${res.confidence}%\nRecommended strategy: ${res.recommendedStrategy}\nCapabilities: ${cap || 'None'}\nEvidence: ${(res.evidence || []).join('; ')}`;
           alert(msg);
-          log("info", `Diagnóstico: Engine ${res.engine}, Estratégia: ${res.recommendedStrategy}`);
+          log("info", `Diagnostics: engine ${res.engine}, strategy: ${res.recommendedStrategy}`);
         } else {
-          alert("Falha no diagnóstico: " + (res?.error || "Erro"));
+          alert("Diagnostics failed: " + (res?.error || "Error"));
         }
       } catch (e) {
-        alert("Erro no diagnóstico: " + e.message);
+        alert("Diagnostic error: " + e.message);
       } finally {
         btn.disabled = false;
       }
     });
 
     $("mRollbackGame")?.addEventListener("click", async () => {
-      if (!confirm("Deseja restaurar os arquivos originais de fábrica? Isso reverterá com segurança todas as alterações do jogo.")) return;
+      if (!confirm("Restore the original files from the available backup? Check the backup and close the game before continuing.")) return;
       const btn = $("mRollbackGame");
       btn.disabled = true;
       const origText = btn.textContent;
-      btn.textContent = "Restaurando... ⏳";
+      btn.textContent = "Restoring... ⏳";
       try {
         const res = await rpc("rollbackGame", { gameKey: key });
         if (res && (res.success || res.ok !== false)) {
           const count = res.restoredCount || res.restored || 0;
-          alert(`Sucesso! Arquivos originais restaurados com segurança (${count} arquivos processados).`);
-          log("success", `Rollback / Restauração executada com sucesso (${count} arquivos).`);
+          alert(`Original files restored (${count} files processed).`);
+          log("success", `Rollback completed (${count} files).`);
         } else {
-          alert("Aviso: " + (res?.error || res?.message || "Nenhum backup pendente para restaurar."));
+          alert("Aviso: " + (res?.error || res?.message || "No pending backup to restore."));
         }
       } catch (e) {
-        alert("Erro ao restaurar original: " + e.message);
+        alert("Could not restore original files: " + e.message);
       } finally {
         btn.disabled = false;
         btn.textContent = origText;
@@ -2053,32 +1880,32 @@
       const btn = $("mUntranslatedGame");
       btn.disabled = true;
       btn.textContent = "Analisando... ⏳";
-      log("info", "Iniciando detecção universal de textos não traduzidos...");
+      log("info", "Looking for untranslated texts...");
       try {
         const res = await rpc("detectUntranslated", { gameKey: key });
         if (res && res.ok) {
           const s = res.summary || {};
-          const msg = `RELATÓRIO DE TEXTOS NÃO TRADUZIDOS\n\n` +
-            `Total Encontrado: ${s.TOTAL || 0}\n` +
-            `Traduzidos: ${s.TRANSLATED || 0}\n` +
-            `Não Traduzidos: ${s.UNTRANSLATED || 0}\n` +
+          const msg = `UNTRANSLATED TEXT REPORT\n\n` +
+            `Total found: ${s.TOTAL || 0}\n` +
+            `Translated: ${s.TRANSLATED || 0}\n` +
+            `Untranslated: ${s.UNTRANSLATED || 0}\n` +
             `Protegidos (Tokens/Tags): ${s.PROTECTED || 0}\n` +
-            `Técnicos (Código/IDs): ${s.TECHNICAL || 0}\n` +
+            `Technical strings (code/IDs): ${s.TECHNICAL || 0}\n` +
             `Runtime-Only: ${s.RUNTIME_ONLY || 0}\n` +
             `Desconhecidos: ${s.UNKNOWN || 0}\n\n` +
-            `Idiomas Pendentes Detectados:\n` +
+            `Pending languages detected:\n` +
             Object.entries(res.languageStats || {}).map(([l, c]) => `• ${l}: ${c}`).join('\n') +
-            (res.remaining && res.remaining.length > 0 ? `\n\nPrimeiros pendentes:\n` + res.remaining.slice(0, 5).map(r => `• [${r.detectedLanguage || 'Desconhecido'}] "${r.original}"`).join('\n') : '');
+            (res.remaining && res.remaining.length > 0 ? `\n\nFirst pending texts:\n` + res.remaining.slice(0, 5).map(r => `• [${r.detectedLanguage || 'Desconhecido'}] "${r.original}"`).join('\n') : '');
           alert(msg);
-          log("info", `Detecção concluída: ${s.UNTRANSLATED || 0} não traduzidos, ${s.PROTECTED || 0} protegidos.`);
+          log("info", `Detection completed: ${s.UNTRANSLATED || 0} untranslated, ${s.PROTECTED || 0} protegidos.`);
         } else {
-          alert("Falha na análise: " + (res?.error || "Erro desconhecido"));
+          alert("Analysis failed: " + (res?.error || "Unknown error"));
         }
       } catch (e) {
-        alert("Erro na detecção: " + e.message);
+        alert("Detection error: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Não Traduzidos 🔎";
+        btn.textContent = "Untranslated texts 🔎";
       }
     });
 
@@ -2086,29 +1913,29 @@
       const btn = $("mVisualQAGame");
       btn.disabled = true;
       btn.textContent = "Executando QA... ⏳";
-      log("info", "Iniciando verificação de QA Visual automatizado...");
+      log("info", "Starting automated visual QA checks...");
       try {
         const res = await rpc("runVisualQA", { gameKey: key });
         if (res && res.ok) {
           const r = res.report || {};
-          const msg = `RELATÓRIO DE QA VISUAL AUTOMATIZADO\n\n` +
-            `STATUS GERAL: ${r.summary?.status || 'PASS'}\n` +
+          const msg = `AUTOMATED VISUAL QA REPORT\n\n` +
+            `OVERALL STATUS: ${r.summary?.status || 'PASS'}\n` +
             `Telas Pretas Detectadas: ${r.summary?.blackScreens || 0}\n` +
             `Text Overflow (Cortes): ${r.summary?.overflowCount || 0}\n` +
-            `Botões Vazios: ${r.summary?.emptyButtons || 0}\n` +
-            `Erros de Console/Crash: ${r.summary?.errorsCount || 0}\n\n` +
+            `Empty buttons: ${r.summary?.emptyButtons || 0}\n` +
+            `Console/crash errors: ${r.summary?.errorsCount || 0}\n\n` +
             `CENAS AVALIADAS:\n` +
             (r.scenes || []).map(sc => `• ${sc.scene}: ${sc.status}`).join('\n');
           alert(msg);
-          log("success", `QA Visual concluído: Status ${r.summary?.status || 'PASS'}`);
+          log("success", `Visual QA completed: status ${r.summary?.status || 'PASS'}`);
         } else {
-          alert("Falha no QA: " + (res?.error || "Erro desconhecido"));
+          alert("QA failed: " + (res?.error || "Unknown error"));
         }
       } catch (e) {
-        alert("Erro no QA Visual: " + e.message);
+        alert("Visual QA error: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "QA Visual 👁️";
+        btn.textContent = "Visual QA 👁️";
       }
     });
 
@@ -2121,10 +1948,10 @@
         if (res && res.ok) {
           const texts = res.texts || [];
           if (texts.length === 0) {
-            alert("Nenhum texto runtime capturado ainda.\n\nTextos aparecem aqui automaticamente quando o jogo é executado com o hook ativo.");
+            alert("No runtime text captured yet.\n\nTexts appear here when a game runs with a working hook.");
           } else {
-            const list = texts.slice(0, 10).map((t, idx) => `${idx + 1}. [${t.engine || 'MZ'}] "${t.original}" -> ${t.translation ? '"' + t.translation + '"' : '(Pendente)'}`).join('\n');
-            const doPromote = confirm(`Total de Textos em Runtime: ${texts.length}\n\nExemplos Recentes:\n${list}\n\nDeseja promover os textos válidos para a memória de tradução permanente?`);
+            const list = texts.slice(0, 10).map((t, idx) => `${idx + 1}. [${t.engine || 'MZ'}] "${t.original}" -> ${t.translation ? '"' + t.translation + '"' : "(Pending)"}`).join('\n');
+            const doPromote = confirm(`Total de Textos em Runtime: ${texts.length}\n\nExemplos Recentes:\n${list}\n\nPromote valid texts to permanent translation memory?`);
             if (doPromote) {
               let promoted = 0;
               for (const t of texts) {
@@ -2133,18 +1960,18 @@
                   promoted++;
                 }
               }
-              alert(`${promoted} textos promovidos com sucesso para a memória permanente!`);
-              log("success", `Promovidos ${promoted} textos de runtime para memória.`);
+              alert(`${promoted} texts promoted to permanent memory.`);
+              log("success", `Promovidos ${promoted} runtime texts to memory.`);
             }
           }
         } else {
-          alert("Falha ao obter textos de runtime: " + (res?.error || "Erro"));
+          alert("Could not get runtime texts: " + (res?.error || "Error"));
         }
       } catch (e) {
-        alert("Erro ao consultar runtime: " + e.message);
+        alert("Runtime query error: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Textos Runtime ⚡";
+        btn.textContent = "Runtime texts ⚡";
       }
     });
 
@@ -2171,7 +1998,7 @@
       const info = $("rtSessaoInfo");
       if (!runtimeSessaoAtual) {
         if (badge) {
-          badge.textContent = "Nenhuma sessão ativa";
+          badge.textContent = "No active session";
           badge.style.color = "var(--txt3)";
         }
         if (btnStop) btnStop.style.display = "none";
@@ -2179,14 +2006,14 @@
         return;
       }
       if (badge) {
-        badge.textContent = `Sessão ${runtimeSessaoAtual.sessionId}`;
+        badge.textContent = `Session ${runtimeSessaoAtual.sessionId}`;
         badge.style.color = "var(--green2)";
       }
       if (btnStop) btnStop.style.display = "";
       if (info) {
         info.textContent = `PID ${runtimeSessaoAtual.pid || '—'}`
           + ` | strategy=${runtimeSessaoAtual.strategy || 'auto'}`
-          + ` | staging=${runtimeSessaoAtual.stagingDir ? 'pronto' : 'não'}`;
+          + ` | staging=${runtimeSessaoAtual.stagingDir ? "ready" : "no"}`;
       }
     }
 
@@ -2194,8 +2021,8 @@
       const btn = $("mRuntimeStart");
       btn.disabled = true;
       const label = btn.textContent;
-      btn.textContent = "Iniciando sessão... ⏳";
-      log("info", `Iniciando sessão de runtime para ${key}...`);
+      btn.textContent = "Starting session... ⏳";
+      log("info", `Starting runtime session for ${key}...`);
       try {
         // O roteador recomenda a estratégia; o log mostra a recomendação e a
         // sessão é iniciada com ela, em vez de deixar o servidor decidir
@@ -2205,7 +2032,7 @@
           const rec = await rpc("routerRecommend", { engine: curEng, gameId: key });
           if (rec && rec.ok && rec.recommendation) recomendado = rec.recommendation;
         } catch (e) {
-          log("debug", `routerRecommend indisponível: ${e.message}`);
+          log("debug", `routerRecommend unavailable: ${e.message}`);
         }
 
         const res = await rpc("runtimeStartSession", {
@@ -2223,20 +2050,20 @@
               || undefined,
             stagingDir: null,
           };
-          log("success", `Sessão runtime ${res.sessionId} iniciada (PID ${res.pid}).`);
-          showToast(`Sessão runtime iniciada (PID ${res.pid || '?'}).`, "success");
+          log("success", `Runtime session ${res.sessionId} iniciada (PID ${res.pid}).`);
+          showToast(`Runtime session started (PID ${res.pid || '?'}).`, "success");
 
           // Staging: cópia isolada para que o jogo original não seja tocado.
           try {
             const st = await rpc("stagingPrepare", { gameDir: exePath.replace(/[\\/][^\\/]+$/, ""), sessionId: res.sessionId });
             if (st && st.ok && st.res && st.res.success && st.res.stagingDir) {
               runtimeSessaoAtual.stagingDir = st.res.stagingDir;
-              log("success", `Staging pronto em ${st.res.stagingDir}.`);
+              log("success", `Staging ready at ${st.res.stagingDir}.`);
             } else {
-              log("warn", `Staging não foi preparado: ${st?.res?.error || st?.error || 'sem retorno'}`);
+              log("warn", `Staging was not prepared: ${st?.res?.error || st?.error || 'sem retorno'}`);
             }
           } catch (e) {
-            log("warn", "Staging falhou: " + e.message);
+            log("warn", "Staging failed: " + e.message);
           }
 
           await atualizarSessaoRuntime();
@@ -2244,12 +2071,12 @@
           // FASE 8 — sem sessionId não há sessão. Dizer isso é obrigatório:
           // o botão voltaria ao normal e o usuário acharia que o jogo abriu.
           const motivo = res?.error || res?.reason || "resposta sem sessionId";
-          log("error", "Sessão runtime NÃO iniciada: " + motivo);
-          showToast("Sessão runtime não iniciada: " + motivo, "error");
+          log("error", "Runtime session NOT started: " + motivo);
+          showToast("Runtime session not started: " + motivo, "error");
         }
       } catch (e) {
-        log("error", "Falha ao iniciar sessão runtime: " + e.message);
-        showToast("Falha ao iniciar sessão runtime: " + e.message, "error");
+        log("error", "Could not start runtime session: " + e.message);
+        showToast("Could not start runtime session: " + e.message, "error");
       } finally {
         btn.disabled = false;
         btn.textContent = label;
@@ -2258,7 +2085,7 @@
 
     $("mRuntimeStop")?.addEventListener("click", async () => {
       if (!runtimeSessaoAtual) {
-        showToast("Nenhuma sessão ativa para encerrar.", "info");
+        showToast("No active session to end.", "info");
         return;
       }
       const btn = $("mRuntimeStop");
@@ -2271,8 +2098,8 @@
         });
         // FASE 8 — só chamamos de encerrado quando o servidor confirma.
         if (res && res.ok && res.res && res.res.success) {
-          log("success", `Sessão ${alvo.sessionId} encerrada.`);
-          showToast("Sessão runtime encerrada.", "success");
+          log("success", `Session ${alvo.sessionId} encerrada.`);
+          showToast("Runtime session ended.", "success");
           runtimeSessaoAtual = null;
 
         // ----------------------------------------------------------------
@@ -2304,21 +2131,21 @@
             } else {
               const m = st?.res?.error || st?.error || "sem confirmacao";
               log("warn", `Staging NAO removido (${stagingDir}): ${m}`);
-              log("warn", "A copia isolada do jogo permanece no disco. Ela "
-                + "pode ser removida com seguranca depois que o jogo estiver fechado.");
+              log("warn", "The isolated game copy remains on disk. It "
+                + "can be removed after the game has been closed.");
             }
           } catch (stgErr) {
-            log("warn", `Falha ao limpar staging: ${stgErr.message}`);
+            log("warn", `Could not clean up staging: ${stgErr.message}`);
           }
         }
         } else {
-          const motivo = res?.res?.error || res?.error || "sem confirmação";
-          log("error", `Encerramento NÃO confirmado: ${motivo}`);
-          showToast("Encerramento não confirmado: " + motivo, "error");
+          const motivo = res?.res?.error || res?.error || "not confirmed";
+          log("error", `Shutdown NOT confirmed: ${motivo}`);
+          showToast("Shutdown not confirmed: " + motivo, "error");
         }
       } catch (e) {
-        log("error", "Falha ao encerrar sessão: " + e.message);
-        showToast("Falha ao encerrar sessão: " + e.message, "error");
+        log("error", "Could not end session: " + e.message);
+        showToast("Could not end session: " + e.message, "error");
       } finally {
         btn.disabled = false;
         await atualizarSessaoRuntime();
@@ -2327,7 +2154,7 @@
 
     $("mRuntimeProbe")?.addEventListener("click", async () => {
       if (!runtimeSessaoAtual) {
-        showToast("Inicie uma sessão antes de sondar o processo.", "info");
+        showToast("Start a session before checking its process.", "info");
         return;
       }
       try {
@@ -2335,41 +2162,41 @@
         if (res && res.ok) {
           const p = res.probe || {};
           log("info", `Probe PID ${runtimeSessaoAtual.pid}: vivo=${p.alive} `
-            + `nome=${p.name || '—'} threads=${p.threads ?? '—'}`);
-          showToast(`Processo vivo=${p.alive ? 'sim' : 'não'}.`, p.alive ? "info" : "warn");
+            + `name=${p.name || '—'} threads=${p.threads ?? '—'}`);
+          showToast(`Processo vivo=${p.alive ? 'sim' : "no"}.`, p.alive ? "info" : "warn");
           if (!p.alive) {
             // O processo morreu sozinho: a sessão deixou de existir.
-            log("warn", "O processo da sessão não está mais vivo; limpando estado local.");
+            log("warn", "The session process is no longer running; clearing local state.");
             runtimeSessaoAtual = null;
     // Estado inicial da sessão: sem sessão ativa, botão de parar oculto.
     atualizarSessaoRuntime();
           }
         } else {
-          showToast("Sonda falhou: " + (res?.error || "erro"), "error");
+          showToast("Process check failed: " + (res?.error || "error"), "error");
         }
       } catch (e) {
-        showToast("Falha na sonda: " + e.message, "error");
+        showToast("Process check failed: " + e.message, "error");
       }
     });
 
     $("mRuntimeShot")?.addEventListener("click", async () => {
       if (!runtimeSessaoAtual || !runtimeSessaoAtual.pid) {
-        showToast("Não há processo ativo para capturar.", "info");
+        showToast("No active process to capture.", "info");
         return;
       }
       try {
         const res = await rpc("runtimeCaptureScreen", { pid: runtimeSessaoAtual.pid });
         if (res && res.ok && res.capture && res.capture.success) {
           const c = res.capture;
-          log("success", `Captura salva: ${c.outputPath || c.path || 'arquivo'}`);
+          log("success", `Capture saved: ${c.outputPath || c.path || 'arquivo'}`);
           showToast("Captura de tela salva.", "success");
         } else {
-          const motivo = res?.capture?.error || res?.error || "captura não confirmada";
-          log("warn", "Captura falhou: " + motivo);
-          showToast("Captura falhou: " + motivo, "error");
+          const motivo = res?.capture?.error || res?.error || "capture not confirmed";
+          log("warn", "Capture failed: " + motivo);
+          showToast("Capture failed: " + motivo, "error");
         }
       } catch (e) {
-        showToast("Falha na captura: " + e.message, "error");
+        showToast("Capture failed: " + e.message, "error");
       }
     });
 
@@ -2377,19 +2204,19 @@
       try {
         const res = await rpc("getTriadInfo", { gameKey: key });
         if (!res) {
-          showToast("Triade não retornou informação.", "warn");
+          showToast("Runtime details returned no information.", "warn");
           return;
         }
         const linhas = [
           `engine=${res.engine || '—'}`,
           `runtime=${res.runtime || res.strategy || '—'}`,
-          `hook=${res.hookPath ? 'disponível' : 'ausente'}`,
+          `hook=${res.hookPath ? "available" : 'ausente'}`,
           `staging=${res.stagingDir || '—'}`,
         ];
         log("info", "Triade: " + linhas.join(' | '));
         showToast(linhas.join("\n"), "info");
       } catch (e) {
-        showToast("Falha ao ler a triade: " + e.message, "error");
+        showToast("Could not read runtime details: " + e.message, "error");
       }
     });
 
@@ -2460,43 +2287,43 @@
       const btn = $("mTranslateJob");
       const label = btn.textContent;
       btn.disabled = true;
-      btn.textContent = "Iniciando job... ⏳";
-      log("info", `Iniciando job de tradução para ${key}...`);
+      btn.textContent = "Starting job... ⏳";
+      log("info", `Starting translation job for ${key}...`);
       try {
         const res = await rpc("startTranslationJob", { gameKey: key });
         // FASE 8 — `ok:true` sem `jobId` não é um job iniciado.
         if (res && res.ok && res.jobId) {
-          log("success", `Job ${res.jobId} criado; acompanhando progresso.`);
+          log("success", `Job ${res.jobId} created; tracking progress.`);
           const fim = await pollJob(res.jobId, btn);
 
           if (fim.status === 'completed') {
             const j = fim.job;
-            log("success", `Job concluído: ${j.current ?? '?'} de ${j.total ?? '?'}.`);
-            showToast(`Job concluído (${j.current ?? '?'}/${j.total ?? '?'}). `
-              + 'Verifique o certificado de tradução para o status real.', "success");
+            log("success", `Job completed: ${j.current ?? '?'} de ${j.total ?? '?'}.`);
+            showToast(`Job completed (${j.current ?? '?'}/${j.total ?? '?'}). `
+              + "Check the translation certificate for the actual status.", "success");
           } else if (fim.status === 'failed') {
-            const motivo = fim.job?.error || fim.job?.state || 'erro não informado';
-            log("error", `Job falhou: ${motivo}`);
-            showToast("Job falhou: " + motivo, "error");
+            const motivo = fim.job?.error || fim.job?.state || "no error details";
+            log("error", `Job failed: ${motivo}`);
+            showToast("Job failed: " + motivo, "error");
           } else if (fim.status === 'timeout') {
             log("warn", `Job ${res.jobId} continua rodando; parei de acompanhar. `
-              + 'Use "Retomar Job" para ver o estado salvo.');
-            showToast("Acompanhamento interrompido por tempo. O job segue salvo em disco.", "warn");
+              + 'Use "Resume job" to inspect the saved state.');
+            showToast("Tracking timed out. The job remains saved on disk.", "warn");
           } else if (fim.status === 'notfound') {
-            log("warn", `Job ${res.jobId} não foi encontrado pelo servidor.`);
-            showToast("O job não foi encontrado pelo servidor.", "error");
+            log("warn", `Job ${res.jobId} was not found by the server.`);
+            showToast("The server could not find the job.", "error");
           } else {
             log("warn", `Acompanhamento interrompido: ${fim.error || fim.status}`);
             showToast("Acompanhamento interrompido: " + (fim.error || fim.status), "warn");
           }
         } else {
           const motivo = res?.error || "resposta sem jobId";
-          log("error", "Job NÃO iniciado: " + motivo);
-          showToast("Job não iniciado: " + motivo, "error");
+          log("error", "Job NOT started: " + motivo);
+          showToast("Job not started: " + motivo, "error");
         }
       } catch (e) {
-        log("error", "Falha ao iniciar job: " + e.message);
-        showToast("Falha ao iniciar job: " + e.message, "error");
+        log("error", "Could not start job: " + e.message);
+        showToast("Could not start job: " + e.message, "error");
       } finally {
         clearInterval(jobPollTimer);
         btn.disabled = false;
@@ -2509,7 +2336,7 @@
         const res = await rpc("listTranslationJobs");
         const jobs = res && res.ok && Array.isArray(res.jobs) ? res.jobs : [];
         if (jobs.length === 0) {
-          showToast("Nenhum job salvo encontrado.", "info");
+          showToast("No saved jobs found.", "info");
           return;
         }
         const linhas = jobs.slice(0, 20).map((j, i) => {
@@ -2518,14 +2345,14 @@
             + `(${j.current ?? 0}/${j.total ?? 0}) — ${quando}`;
         });
         const escolha = prompt(
-          `Jobs salvos (${jobs.length}):\n\n${linhas.join('\n')}\n\n`
-          + 'Digite o NÚMERO do job para retomar (ou cancele):',
+          `Saved jobs (${jobs.length}):\n\n${linhas.join('\n')}\n\n`
+          + "Enter the NUMBER of the job to resume (or cancel):",
           '1',
         );
         if (escolha === null) return;
         const idx = parseInt(escolha, 10) - 1;
         if (Number.isNaN(idx) || idx < 0 || idx >= jobs.length) {
-          showToast("Número inválido.", "error");
+          showToast("Invalid number.", "error");
           return;
         }
         const alvo = jobs[idx];
@@ -2533,15 +2360,15 @@
         const rr = await rpc("resumeTranslationJob", { jobId });
         // FASE 8 — retomar precisa devolver o job; sem isso, nada retomou.
         if (rr && rr.ok && rr.job) {
-          log("success", `Job ${jobId} retomado.`);
-          showToast(`Job ${jobId} retomado.`, "success");
+          log("success", `Job ${jobId} resumed.`);
+          showToast(`Job ${jobId} resumed.`, "success");
         } else {
           const motivo = rr?.error || "resposta sem job";
-          log("error", `Job ${jobId} NÃO retomado: ${motivo}`);
-          showToast("Job não retomado: " + motivo, "error");
+          log("error", `Job ${jobId} NOT resumed: ${motivo}`);
+          showToast("Job not resumed: " + motivo, "error");
         }
       } catch (e) {
-        showToast("Falha ao listar jobs: " + e.message, "error");
+        showToast("Could not list jobs: " + e.message, "error");
       }
     });
 
@@ -2552,16 +2379,16 @@
         const res = await rpc("getHierarchicalGlossary", { gameKey: key });
         if (res && res.ok) {
           const terms = res.terms || [];
-          const msg = `GLOSSÁRIO HIERÁRQUICO (PROJECT -> PLUGIN -> GAME -> ENGINE -> GLOBAL)\n\n` +
+          const msg = `HIERARCHICAL GLOSSARY (PROJECT -> PLUGIN -> GAME -> ENGINE -> GLOBAL)\n\n` +
             `Total de Termos Ativos: ${terms.length}\n\n` +
             terms.slice(0, 15).map(tm => `• [${tm.scope.toUpperCase()}] "${tm.source}" ➔ "${tm.target}"`).join('\n') +
             (terms.length > 15 ? `\n... e mais ${terms.length - 15} termos.` : '');
           alert(msg);
         } else {
-          alert("Falha ao carregar glossário: " + (res?.error || "Erro"));
+          alert("Could not load glossary: " + (res?.error || "Error"));
         }
       } catch (e) {
-        alert("Erro no glossário: " + e.message);
+        alert("Glossary error: " + e.message);
       } finally {
         btn.disabled = false;
       }
@@ -2581,7 +2408,7 @@
         color: var(--txt); font-family: var(--font);
       `;
       progressOverlay.innerHTML = `
-        <div style="font-size: 16px; font-weight: 600; letter-spacing: 0.5px; color: var(--accent);">Pré-traduzindo arquivos do jogo...</div>
+        <div style="font-size: 16px; font-weight: 600; letter-spacing: 0.5px; color: var(--accent);">Pre-translating game files...</div>
         <div style="width: 320px; text-align: center;">
           <progress id="translateProgress" max="100" value="0" style="
             width: 100%; height: 8px; border-radius: 4px; overflow: hidden;
@@ -2591,7 +2418,7 @@
             #translateProgress::-webkit-progress-bar { background: var(--bg5); border-radius: 4px; }
             #translateProgress::-webkit-progress-value { background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 4px; box-shadow: 0 0 8px var(--accent); }
           </style>
-          <div id="translateProgressMsg" style="font-size: 11px; color: var(--txt2); margin-top: 8px;">Iniciando extrator...</div>
+          <div id="translateProgressMsg" style="font-size: 11px; color: var(--txt2); margin-top: 8px;">Starting extractor...</div>
         </div>
       `;
       document.body.appendChild(progressOverlay);
@@ -2644,21 +2471,21 @@
         }
 
         if (r && r.ok !== false) {
-          log("success", "Tradução offline concluída com sucesso!");
-          alert("Sucesso! Arquivos de dados traduzidos com sucesso.");
+          log("success", "File translation completed.");
+          alert("Game data files translated.");
         } else {
           log(
             "error",
-            "Falha na tradução: " + (r.error || "erro desconhecido"),
+            "Translation failed: " + (r.error || "unknown error"),
           );
-          alert("Falha na tradução: " + (r.error || "erro desconhecido"));
+          alert("Translation failed: " + (r.error || "unknown error"));
         }
       } catch (e) {
         if (document.body.contains(progressOverlay)) {
           document.body.removeChild(progressOverlay);
         }
-        log("error", "Erro na tradução: " + e.message);
-        alert("Erro na tradução: " + e.message);
+        log("error", "Translation error: " + e.message);
+        alert("Translation error: " + e.message);
       } finally {
         btn.disabled = false;
       }
@@ -2668,47 +2495,47 @@
 
     $("mUnpackAll")?.addEventListener("click", async () => {
       const userChoice = prompt(
-        "Digite o caminho da pasta onde deseja descompactar 100% dos arquivos do jogo:\n(Exemplo: C:\\MeusJogos\\Descompactado)",
+        "Enter the output folder for unpacking game files:\n(Example: C:\\Games\\Unpacked)",
         "C:\\Users\\Public\\Documents\\Descompactado"
       );
       if (!userChoice || !userChoice.trim()) return;
       const folderPath = userChoice.trim();
 
       const btn = $("mUnpackAll");
-      const origText = btn ? btn.textContent : "Descompactar Tudo 📦";
+      const origText = btn ? btn.textContent : "Unpack all 📦";
       if (btn) {
         btn.disabled = true;
         btn.textContent = "Descompactando... ⏳";
       }
 
-      log("info", "📦 Iniciando descompactação total para: " + folderPath);
+      log("info", "📦 Starting unpack operation at: " + folderPath);
       try {
         const res = await rpc("unpackAll", { key, targetDir: folderPath });
         if (res && res.ok !== false) {
           const sourcesMsg = res.sources && res.sources.length ? `\n\nFontes detectadas:\n• ${res.sources.join("\n• ")}` : "";
           const diag = [
             `Engine: ${res.engine || "detectada"}`,
-            `Arquivos encontrados: ${res.found ?? (res.count || 0)}`,
-            `Extraídos novos: ${res.extracted ?? (res.count || 0)}`,
-            `Duplicados idênticos: ${res.duplicates ?? 0}`,
-            `Colisões tratadas: ${res.collisions ?? 0}`,
-            `Arquivos gravados no disco: ${res.physicalWritten ?? (res.extracted || 0)}`,
+            `Files found: ${res.found ?? (res.count || 0)}`,
+            `Newly extracted: ${res.extracted ?? (res.count || 0)}`,
+            `Identical duplicates: ${res.duplicates ?? 0}`,
+            `Collisions handled: ${res.collisions ?? 0}`,
+            `Files written to disk: ${res.physicalWritten ?? (res.extracted || 0)}`,
             `Ignorados: ${res.ignored ?? 0}`,
             `Erros: ${res.errors ?? 0}`
           ].join("\n") + sourcesMsg + `\n\nOrigem:\n${res.originDir || ""}\n\nDestino:\n${folderPath}`;
 
           log(
             "success",
-            `Descompactação total concluída com sucesso (${res.extracted ?? (res.count || 0)} novos, ${res.duplicates ?? 0} duplicados para ${folderPath}) [Engine: ${res.engine}]`,
+            `Unpack operation completed (${res.extracted ?? (res.count || 0)} novos, ${res.duplicates ?? 0} duplicados para ${folderPath}) [Engine: ${res.engine}]`,
           );
-          alert(`Descompactação total concluída!\n\n${diag}`);
+          alert(`Unpack operation complete!\n\n${diag}`);
         } else {
-          log("error", "Falha na descompactação: " + (res?.error || "Erro desconhecido"));
-          alert("Falha na descompactação: " + (res?.error || "Erro desconhecido"));
+          log("error", "Unpacking failed: " + (res?.error || "Unknown error"));
+          alert("Unpacking failed: " + (res?.error || "Unknown error"));
         }
       } catch (err) {
-        log("error", "Erro ao descompactar: " + err.message);
-        alert("Erro ao descompactar: " + err.message);
+        log("error", "Unpack error: " + err.message);
+        alert("Unpack error: " + err.message);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -2720,16 +2547,16 @@
     $("mDelCache")?.addEventListener("click", async () => {
       if (
         await customConfirm(
-          "Tem certeza que deseja deletar o cache de tradução deste jogo? A próxima inicialização irá traduzi-lo do zero.",
+          "Delete this game's translation cache? It will need to be translated again on the next launch.",
         )
       ) {
         const r = await rpc("deleteGameCache", { gameKey: key });
         if (r && r.ok !== false) {
-          log("success", "Cache de tradução deletado com sucesso!");
+          log("success", "Translation cache deleted.");
         } else {
           log(
             "error",
-            "Falha ao deletar cache: " + (r.error || "erro desconhecido"),
+            "Could not delete cache: " + (r.error || "unknown error"),
           );
         }
       }
@@ -2739,12 +2566,12 @@
       if (r && r.ok !== false) {
         log(
           "success",
-          "Traduções exportadas para a Área de Trabalho: " + r.path,
+          "Translations exported to the Desktop: " + r.path,
         );
       } else {
         log(
           "error",
-          "Falha ao exportar: " + (r.error || "sem cache para exportar"),
+          "Export failed: " + (r.error || "sem cache para exportar"),
         );
       }
     });
@@ -2767,31 +2594,31 @@
           const sourcesMsg = r.sources && r.sources.length ? `\n\nFontes detectadas:\n• ${r.sources.join("\n• ")}` : "";
           const diag = [
             `Engine: ${r.engine || "detectada"}`,
-            `Arquivos encontrados: ${r.found ?? (r.count || 0)}`,
-            `Extraídos novos: ${r.extracted ?? (r.count || 0)}`,
-            `Duplicados idênticos: ${r.duplicates ?? 0}`,
-            `Colisões tratadas: ${r.collisions ?? 0}`,
-            `Arquivos gravados no disco: ${r.physicalWritten ?? (r.extracted || 0)}`,
+            `Files found: ${r.found ?? (r.count || 0)}`,
+            `Newly extracted: ${r.extracted ?? (r.count || 0)}`,
+            `Identical duplicates: ${r.duplicates ?? 0}`,
+            `Collisions handled: ${r.collisions ?? 0}`,
+            `Files written to disk: ${r.physicalWritten ?? (r.extracted || 0)}`,
             `Ignorados: ${r.ignored ?? 0}`,
             `Erros: ${r.errors ?? 0}`
           ].join("\n") + sourcesMsg + `\n\nOrigem:\n${r.originDir || ""}\n\nDestino:\n${destDir}`;
           log(
             "success",
-            `Imagens extraídas com sucesso (${r.extracted ?? (r.count || 0)} novos, ${r.duplicates ?? 0} duplicados para ${destDir}) [Engine: ${r.engine}]`,
+            `Images extracted (${r.extracted ?? (r.count || 0)} novos, ${r.duplicates ?? 0} duplicados para ${destDir}) [Engine: ${r.engine}]`,
           );
           alert(
-            `Extração de imagens concluída!\n\n${diag}`,
+            `Image extraction complete!\n\n${diag}`,
           );
         } else {
           log(
             "error",
-            "Falha ao extrair imagens: " + (r.error || "erro desconhecido"),
+            "Image extraction failed: " + (r.error || "unknown error"),
           );
-          alert("Erro ao extrair imagens: " + (r.error || "erro desconhecido"));
+          alert("Image extraction error: " + (r.error || "unknown error"));
         }
       } catch (e) {
-        log("error", "Erro ao extrair imagens: " + e.message);
-        alert("Erro ao extrair imagens: " + e.message);
+        log("error", "Image extraction error: " + e.message);
+        alert("Image extraction error: " + e.message);
       } finally {
         btn.textContent = origText;
         btn.disabled = false;
@@ -2800,7 +2627,7 @@
 
     $("mDecryptAudio")?.addEventListener("click", async () => {
       const destDir = prompt(
-        "Digite o caminho completo da pasta para onde deseja exportar os áudios:\n(Exemplo: C:\\MeusJogos\\Audios)",
+        "Enter the output folder for audio files:\n(Example: C:\\Games\\Audio)",
       );
       if (!destDir) return;
       const btn = $("mDecryptAudio");
@@ -2817,31 +2644,31 @@
           const sourcesMsg = r.sources && r.sources.length ? `\n\nFontes detectadas:\n• ${r.sources.join("\n• ")}` : "";
           const diag = [
             `Engine: ${r.engine || "detectada"}`,
-            `Arquivos encontrados: ${r.found ?? (r.count || 0)}`,
-            `Extraídos novos: ${r.extracted ?? (r.count || 0)}`,
-            `Duplicados idênticos: ${r.duplicates ?? 0}`,
-            `Colisões tratadas: ${r.collisions ?? 0}`,
-            `Arquivos gravados no disco: ${r.physicalWritten ?? (r.extracted || 0)}`,
+            `Files found: ${r.found ?? (r.count || 0)}`,
+            `Newly extracted: ${r.extracted ?? (r.count || 0)}`,
+            `Identical duplicates: ${r.duplicates ?? 0}`,
+            `Collisions handled: ${r.collisions ?? 0}`,
+            `Files written to disk: ${r.physicalWritten ?? (r.extracted || 0)}`,
             `Ignorados: ${r.ignored ?? 0}`,
             `Erros: ${r.errors ?? 0}`
           ].join("\n") + sourcesMsg + `\n\nOrigem:\n${r.originDir || ""}\n\nDestino:\n${destDir}`;
           log(
             "success",
-            `Áudios exportados com sucesso (${r.extracted ?? (r.count || 0)} novos, ${r.duplicates ?? 0} duplicados para ${destDir}) [Engine: ${r.engine}]`,
+            `Audio exported (${r.extracted ?? (r.count || 0)} novos, ${r.duplicates ?? 0} duplicados para ${destDir}) [Engine: ${r.engine}]`,
           );
           alert(
-            `Extração de áudios concluída!\n\n${diag}`,
+            `Audio extraction complete!\n\n${diag}`,
           );
         } else {
           log(
             "error",
-            "Falha ao extrair áudios: " + (r.error || "erro desconhecido"),
+            "Audio extraction failed: " + (r.error || "unknown error"),
           );
-          alert("Erro ao extrair áudios: " + (r.error || "erro desconhecido"));
+          alert("Audio extraction error: " + (r.error || "unknown error"));
         }
       } catch (e) {
-        log("error", "Erro ao extrair áudios: " + e.message);
-        alert("Erro ao extrair áudios: " + e.message);
+        log("error", "Audio extraction error: " + e.message);
+        alert("Audio extraction error: " + e.message);
       } finally {
         btn.textContent = origText;
         btn.disabled = false;
@@ -2851,7 +2678,7 @@
     $("mPatchFonts")?.addEventListener("click", async () => {
       if (
         await customConfirm(
-          "Deseja aplicar o patch de fontes para português? Isso copiará uma fonte moderna compatível com acentos (ç, á, é, ã) e configurará o jogo para usá-la.",
+          "Apply the Portuguese font patch? This copies a font with accented Latin characters (ç, á, é, ã) and configures the game to use it.",
         )
       ) {
         const btn = $("mPatchFonts");
@@ -2861,23 +2688,23 @@
         try {
           const r = await rpc("patchGameFont", { gameKey: key });
           if (r && r.ok !== false) {
-            log("success", "Patch de fontes aplicado com sucesso!");
+            log("success", "Font patch applied.");
             alert(
-              "Sucesso! O patch de fontes para suporte a PT-BR foi aplicado com sucesso.",
+              "The Portuguese font patch was applied.",
             );
           } else {
             log(
               "error",
-              "Falha ao aplicar patch de fontes: " +
-                (r.error || "erro desconhecido"),
+              "Could not apply font patch: " +
+                (r.error || "unknown error"),
             );
             alert(
-              "Falha ao aplicar patch: " + (r.error || "erro desconhecido"),
+              "Could not apply patch: " + (r.error || "unknown error"),
             );
           }
         } catch (e) {
-          log("error", "Erro no patch de fontes: " + e.message);
-          alert("Erro no patch de fontes: " + e.message);
+          log("error", "Font patch error: " + e.message);
+          alert("Font patch error: " + e.message);
         } finally {
           btn.textContent = origText;
           btn.disabled = false;
@@ -2892,9 +2719,9 @@
       if (!k) {
         try {
           const added = await rpc("addGameByPath", { exePath: exeVal, title: $("mTitle").value });
-          if (!added?.ok) { showToast(added?.error || "Não foi possível adicionar o jogo.", "error"); return; }
+          if (!added?.ok) { showToast(added?.error || "Could not add the game.", "error"); return; }
           k = added.key;
-        } catch (error) { showToast(error.message || "Não foi possível adicionar o jogo.", "error"); return; }
+        } catch (error) { showToast(error.message || "Could not add the game.", "error"); return; }
       }
       const meng = await detectEngine(exeVal);
       const tagArr = $("mTags")
@@ -2936,7 +2763,7 @@
           if (tr) tr.value = r;
           log(
             "success",
-            'T\u00edtulo traduzido: "' +
+            "Translated title: \"" +
               title.substring(0, 20) +
               '" -> "' +
               r.substring(0, 20) +
@@ -2945,10 +2772,10 @@
         } else
           log(
             "warn",
-            "T\u00edtulo retornou igual (pode ser que n\u00e3o precise tradu\u00e7\u00e3o)",
+            "The title was unchanged (translation may not be needed)",
           );
       } catch (e) {
-        log("error", "Falha ao traduzir t\u00edtulo: " + e.message);
+        log("error", "Could not translate title: " + e.message);
       }
       btn.textContent = orig;
       btn.disabled = false;
@@ -3076,14 +2903,13 @@
 
   // ==================== CONFIG ====================
   $("cfgAppLang")?.addEventListener("change", async function () {
-    _lang = this.value;
-    S.cfg.lang = this.value;
+    S.cfg.lang = "en";
     window.isReloading = true;
     try {
       await saveCfg();
       location.reload();
     } catch (e) {
-      showToast("Erro ao alterar idioma: " + (e.message || e), "error");
+      showToast("Could not change language: " + (e.message || e), "error");
     }
   });
   $("cfgSL")?.addEventListener("change", saveCfg);
@@ -3106,7 +2932,7 @@
   $("cfgWordWrapLimit")?.addEventListener("change", saveCfg);
   for (const id of ["cfgUiFontSize", "cfgLibrarySort", "cfgShowPaths", "cfgReduceMotion"]) {
     $(id)?.addEventListener("change", () => saveCfg().catch(error => {
-      if ($("settings-save-status")) $("settings-save-status").textContent = "Não foi possível salvar";
+      if ($("settings-save-status")) $("settings-save-status").textContent = "Could not save";
       showToast(error.message, "error");
     }));
   }
@@ -3272,7 +3098,7 @@
       if (!g) return;
       const exe = g.constArgs?.gameExe || "";
       const gamePath = prompt(
-        "Caminho para o executável do jogo (.exe), pasta de dados ou arquivo .wolf:",
+        "Path to the game executable (.exe), data folder, or .wolf file:",
         exe,
       );
       if (!gamePath) return;
@@ -3282,11 +3108,11 @@
         if (r.ok === false)
           log(
             "error",
-            "Falha ao extrair Wolf: " + (r.error || "erro desconhecido"),
+            "Wolf extraction failed: " + (r.error || "unknown error"),
           );
-        else log("success", "Jogo Wolf extraído com sucesso!");
+        else log("success", "Wolf game extracted.");
       } catch (e) {
-        log("error", "Erro ao extrair Wolf: " + e.message);
+        log("error", "Wolf extraction error: " + e.message);
       }
     }),
   );
@@ -3299,7 +3125,7 @@
       );
       if (!inputDir) return;
       const verStr = prompt(
-        "Selecione o índice da versão do Wolf RPG (0 a 10) [Padrão: 4 para v3.00]:",
+        "Select the Wolf RPG version index (0 to 10) [Default: 4 for v3.00]:",
         "4",
       );
       if (verStr === null) return;
@@ -3310,11 +3136,11 @@
         if (r.ok === false)
           log(
             "error",
-            "Falha ao empacotar Wolf: " + (r.error || "erro desconhecido"),
+            "Wolf packing failed: " + (r.error || "unknown error"),
           );
-        else log("success", "Pasta empacotada no formato Wolf com sucesso!");
+        else log("success", "Folder packed in Wolf format.");
       } catch (e) {
-        log("error", "Erro ao empacotar Wolf: " + e.message);
+        log("error", "Wolf packing error: " + e.message);
       }
     }),
   );
@@ -3331,25 +3157,25 @@
         return;
       }
       log("info", "Installing RPG Maker overlay...");
-      showToast("Instalando overlay de tradução...", "info");
+      showToast("Installing translation overlay...", "info");
       try {
         const r = await rpc("installOverlay", { gameKey: key });
         if (r.ok === false) {
           log("error", "Overlay install failed: " + (r.error || "unknown"));
           showToast(
-            "Falha ao instalar overlay: " + (r.error || "erro desconhecido"),
+            "Could not install overlay: " + (r.error || "unknown error"),
             "error",
           );
         } else {
           log("success", "RPG Maker overlay installed");
           showToast(
-            "Overlay do RPG Maker instalado com sucesso! 🎮",
+            "RPG Maker overlay installed. 🎮",
             "success",
           );
         }
       } catch (e) {
         log("error", "Overlay install error: " + e.message);
-        showToast("Erro ao instalar overlay: " + e.message, "error");
+        showToast("Overlay installation error: " + e.message, "error");
       }
     }),
   );
@@ -3365,29 +3191,29 @@
         );
         return;
       }
-      log("info", "Gerando planilha Excel de traduções...");
-      showToast("Exportando strings de tradução para planilha...", "info");
+      log("info", "Creating the translation Excel workbook...");
+      showToast("Exporting translation strings to the workbook...", "info");
       try {
         const r = await rpc("exportExcel", { gameKey: key });
         if (r.ok === false) {
           log(
             "error",
-            "Falha ao exportar Excel: " + (r.error || "erro desconhecido"),
+            "Excel export failed: " + (r.error || "unknown error"),
           );
           showToast(
-            "Falha ao exportar Excel: " + (r.error || "erro desconhecido"),
+            "Excel export failed: " + (r.error || "unknown error"),
             "error",
           );
         } else {
-          log("success", "Planilha Excel criada na sua Área de Trabalho!");
+          log("success", "Excel workbook created on your Desktop.");
           showToast(
-            "Planilha Excel criada com sucesso na Área de Trabalho! 📊",
+            "Excel workbook created on your Desktop. 📊",
             "success",
           );
         }
       } catch (e) {
-        log("error", "Erro ao exportar Excel: " + e.message);
-        showToast("Erro ao exportar Excel: " + e.message, "error");
+        log("error", "Excel export error: " + e.message);
+        showToast("Excel export error: " + e.message, "error");
       }
     }),
   );
@@ -3404,38 +3230,38 @@
         return;
       }
       const excelPath = prompt(
-        "Caminho absoluto para o arquivo Excel (.xlsx) de tradução:",
+        "Absolute path to the translation Excel workbook (.xlsx):",
       );
       if (!excelPath) {
-        showToast("Importação cancelada. Nenhum caminho foi inserido.", "info");
+        showToast("Import cancelled. No path was entered.", "info");
         return;
       }
-      log("info", "Importando traduções do Excel...");
-      showToast("Importando e mesclando traduções do Excel...", "info");
+      log("info", "Importing translations from Excel...");
+      showToast("Importing and merging translations from Excel...", "info");
       try {
         const r = await rpc("importExcel", { gameKey: key, excelPath });
         if (r.ok === false) {
           log(
             "error",
-            "Falha ao importar Excel: " + (r.error || "erro desconhecido"),
+            "Excel import failed: " + (r.error || "unknown error"),
           );
           showToast(
-            "Falha ao importar Excel: " + (r.error || "erro desconhecido"),
+            "Excel import failed: " + (r.error || "unknown error"),
             "error",
           );
         } else {
           log(
             "success",
-            `Importação concluída! ${r.count} traduções mescladas no cache.`,
+            `Import completed! ${r.count} translations merged into the cache.`,
           );
           showToast(
-            `Sucesso! ${r.count} traduções mescladas de volta no cache. 📥`,
+            `Sucesso! ${r.count} translations merged back into the cache. 📥`,
             "success",
           );
         }
       } catch (e) {
-        log("error", "Erro ao importar Excel: " + e.message);
-        showToast("Erro ao importar Excel: " + e.message, "error");
+        log("error", "Excel import error: " + e.message);
+        showToast("Excel import error: " + e.message, "error");
       }
     }),
   );
@@ -3457,31 +3283,31 @@
       );
       if (!exePath) return;
       const destDir = prompt(
-        "Caminho da pasta para onde deseja extrair os arquivos:",
+        "Output folder for extracted files:",
         exePath.substring(0, exePath.lastIndexOf(".")) + "_extracted",
       );
       if (destDir === null) return;
 
       log("info", "Extraindo executavel EVB...");
-      showToast("Extraindo arquivos do Enigma Virtual Box...", "info");
+      showToast("Extracting Enigma Virtual Box files...", "info");
       try {
         const r = await rpc("unpackEvb", { exePath, destDir });
         if (r.ok === false) {
           log(
             "error",
-            "Falha ao descompactar EVB: " + (r.error || "erro desconhecido"),
+            "EVB unpacking failed: " + (r.error || "unknown error"),
           );
           showToast(
-            "Falha ao extrair EVB: " + (r.error || "erro desconhecido"),
+            "EVB extraction failed: " + (r.error || "unknown error"),
             "error",
           );
         } else {
-          log("success", "Executavel EVB extraido com sucesso para: " + r.path);
-          showToast("Executável EVB extraído com sucesso! 📦", "success");
+          log("success", "EVB executable extracted to: " + r.path);
+          showToast("EVB executable extracted. 📦", "success");
         }
       } catch (e) {
-        log("error", "Erro ao extrair EVB: " + e.message);
-        showToast("Erro ao extrair EVB: " + e.message, "error");
+        log("error", "EVB extraction error: " + e.message);
+        showToast("EVB extraction error: " + e.message, "error");
       }
     }),
   );
@@ -3524,13 +3350,13 @@
       const res = await rpc("runSelfTest");
       if (res && res.success) {
         const checkDetails = (res.checks || []).map(c => `[${c.status}] ${c.component}: ${c.details || c.version || 'OK'}`).join("\n");
-        alert(`Auto-Diagnóstico do OpenTranslator:\n\nResultado: ${res.summary}\n\n${checkDetails}`);
+        alert(`OpenTranslator self-test:\n\nResult: ${res.summary}\n\n${checkDetails}`);
         log("success", "Self-Test: " + res.summary);
       } else {
-        alert("Self-Test falhou: " + (res?.error || "Erro desconhecido"));
+        alert("Self-test failed: " + (res?.error || "Unknown error"));
       }
     } catch (e) {
-      alert("Erro no Self-Test: " + e.message);
+      alert("Self-test error: " + e.message);
     } finally {
       btn.disabled = false;
       btn.textContent = "Executar Self-Test 🛡️";
@@ -3551,13 +3377,13 @@
         // Fallback when clipboard permissions are not granted
       }
       if (copied) {
-        showToast("Dossiê de diagnóstico copiado para a área de transferência! 📋", "success");
+        showToast("Diagnostic bundle copied to clipboard. 📋", "success");
       } else {
-        alert("Dossiê de diagnóstico exportado!\n" + (bundle.reportPath ? `Arquivo salvo em: ${bundle.reportPath}` : `${bundle.evidenceCount || 0} evidências coletadas.`));
+        alert("Diagnostic bundle exported.\n" + (bundle.reportPath ? `File saved at: ${bundle.reportPath}` : `${bundle.evidenceCount || 0} evidence records collected.`));
       }
-      log("success", "Dossiê de diagnóstico exportado.");
+      log("success", "Diagnostic bundle exported.");
     } catch (e) {
-      alert("Erro ao exportar diagnóstico: " + e.message);
+      alert("Could not export diagnostics: " + e.message);
     }
   });
 
@@ -3566,11 +3392,11 @@
       const res = await rpc("evidenceList");
       if (res && res.matrix) {
         const keys = Object.keys(res.matrix);
-        alert(`Matriz de Evidências Anti-Fraude:\n\nEngines auditadas: ${keys.length}\n\n${keys.slice(0, 8).map(k => k + ': ' + (res.matrix[k].verified ? '✓ COMPROVADO' : 'AUDITADO')).join('\n')}`);
-        log("info", "Matriz de evidências visualizada.");
+        alert(`Evidence matrix:\n\nEngines reviewed: ${keys.length}\n\n${keys.slice(0, 8).map(k => k + ': ' + (res.matrix[k].verified ? '✓ COMPROVADO' : 'AUDITADO')).join('\n')}`);
+        log("info", "Evidence matrix displayed.");
       }
     } catch (e) {
-      alert("Erro ao ler matriz de evidências: " + e.message);
+      alert("Could not read evidence matrix: " + e.message);
     }
   });
 
@@ -3703,16 +3529,16 @@
   let lastNoEncounterInteraction = 0;
 
   const HOTKEY_ACTIONS = [
-    { id: "victory", label: "Vitória Instantânea" },
-    { id: "defeat", label: "Derrota Forçada" },
+    { id: "victory", label: "Instant victory" },
+    { id: "defeat", label: "Force defeat" },
     { id: "escape", label: "Fuga" },
-    { id: "groupHp1", label: "Grupo HP = 1" },
-    { id: "groupHpMax", label: "Grupo HP = Max" },
-    { id: "groupRecover", label: "Recuperar Grupo" },
+    { id: "groupHp1", label: "Party HP = 1" },
+    { id: "groupHpMax", label: "Party HP = Max" },
+    { id: "groupRecover", label: "Heal party" },
     { id: "enemyHp1", label: "Inimigo HP = 1" },
     { id: "enemyHp0", label: "Inimigo HP = 0" },
     { id: "enemyHpMax", label: "Inimigo HP = Max" },
-    { id: "skipMsg", label: "Acelerar Diálogo (segurar)" },
+    { id: "skipMsg", label: "Speed up dialogue (hold)" },
   ];
   const KEY_OPTIONS = [
     "", "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight", "AltLeft", "AltRight",
@@ -3947,7 +3773,7 @@
         });
         if (!html) {
           html =
-            '<div style="text-align:center;padding:12px;color:var(--txt3);font-size:10px">Nenhum item encontrado.</div>';
+            "<div style=\"text-align:center;padding:12px;color:var(--txt3);font-size:10px\">No items found.</div>";
         }
         invList.innerHTML = html;
       }
@@ -3974,7 +3800,7 @@
     if (!container) return;
     const varsToRender = variables || latestRenpyVariables;
     if (!varsToRender || varsToRender.length === 0) {
-      container.innerHTML = '<div style="text-align: center; color: var(--txt3); font-size: 10px;">Clique em "Scan Variables" para ler a memória do renpy.store</div>';
+      container.innerHTML = "<div style=\"text-align: center; color: var(--txt3); font-size: 10px;\">Click \"Scan Variables\" to read renpy.store memory</div>";
       return;
     }
 
@@ -4028,7 +3854,7 @@
     });
 
     if (!html) {
-      html = '<div style="text-align:center;padding:12px;color:var(--txt3);font-size:10px">Nenhuma variável corresponde ao filtro.</div>';
+      html = "<div style=\"text-align:center;padding:12px;color:var(--txt3);font-size:10px\">No variables match the filter.</div>";
     }
     container.innerHTML = html;
   }
@@ -4056,10 +3882,10 @@
 
     if (target.id === "cheatOpenAppDataBtn") {
       const fullPath = $("renpy-appdata-full-path")?.textContent;
-      if (fullPath && fullPath !== "-" && !fullPath.includes("Aguardando")) {
+      if (fullPath && fullPath !== "-" && !fullPath.includes("Waiting")) {
         await rpc("openSaveFolder", { path: fullPath });
       } else {
-        showToast("Nenhuma pasta de saves/AppData resolvida ainda.", "info");
+        showToast("No save/AppData folder resolved yet.", "info");
       }
     }
 
@@ -4083,9 +3909,9 @@
       if (res && res.ok && res.variables) {
         latestRenpyVariables = res.variables;
         renderRenpyVariables(latestRenpyVariables);
-        log("success", `[Ren'Py Memory Scanner] Mapeadas ${res.variables.length} variáveis do renpy.store com sucesso!`);
+        log("success", `[Ren'Py Memory Scanner] Mapeadas ${res.variables.length} renpy.store variables.`);
       } else {
-        log("warn", "Aguardando sincronização com a memória do Ren'Py...");
+        log("warn", "Waiting for Ren'Py memory synchronization...");
       }
     }
 
@@ -4143,14 +3969,14 @@
         });
         await rpc("setGameVar", { id: "gold", value: val });
         await rpc("setGameVar", { id: "money", value: val });
-        log("success", "Definido Ouro/Moedas para: " + val);
+        log("success", "Gold/currency set to: " + val);
       }
     }
 
     if (target.id === "cheatGodHP") {
       godHPActive = !godHPActive;
       await rpc("sendCheatCommand", { code: "window.godHP = " + godHPActive });
-      log("info", "Vida Infinita (God HP) set to: " + godHPActive);
+      log("info", "Infinite health (God HP) set to: " + godHPActive);
     }
 
     if (target.id === "cheatGodMP") {
@@ -4163,7 +3989,7 @@
       await rpc("sendCheatCommand", {
         code: 'if (typeof BattleManager !== "undefined") { BattleManager.processVictory(); }',
       });
-      log("success", "Vitória Instantânea ativada!");
+      log("success", "Instant victory enabled!");
     }
 
     if (target.id === "cheatInstaKill") {
@@ -4298,19 +4124,19 @@
 
   let compatibilityProfiles = [];
   function renderCompatibilityCards() {
-    const query = ($("compat-search")?.value || "").toLocaleLowerCase("pt-BR");
-    const visible = compatibilityProfiles.filter(profile => JSON.stringify(profile).toLocaleLowerCase("pt-BR").includes(query));
+    const query = ($("compat-search")?.value || "").toLocaleLowerCase("en");
+    const visible = compatibilityProfiles.filter(profile => JSON.stringify(profile).toLocaleLowerCase("en").includes(query));
     const container = $("pf-matrix-rows");
     if (!container) return;
     container.innerHTML = visible.length ? visible.map(profile => `
       <article class="compat-card">
-        <header><h2>${esc(profile.name)}</h2><span class="compat-badge">${profile.status === "PARTIAL" ? "Suporte parcial" : "Integração pendente"}</span></header>
+        <header><h2>${esc(profile.name)}</h2><span class="compat-badge">${profile.status === "PARTIAL" ? "Partial support" : "Integration pending"}</span></header>
         <p class="compat-version">${esc(profile.versions)}</p>
-        <dl><dt>Disponível no programa</dt><dd>${esc(profile.coverage)}</dd><dt>Cheats</dt><dd>${esc(profile.cheats)}</dd><dt>Atenção neste tipo de jogo</dt><dd>${esc(profile.commonIssue)}</dd></dl>
-        <details><summary>O que falta e como conferir</summary><ul>${profile.missing.map(item => `<li>${esc(item)}</li>`).join("")}</ul>
-        <div class="compat-sources">${profile.sources.filter(url => /^https:\/\//.test(url)).map((url, index) => `<a href="${attr(url)}" target="_blank" rel="noopener noreferrer">Fonte ${index + 1} ↗</a>`).join(" ")}</div></details>
-      </article>`).join("") : '<p class="empty-state">Nenhuma engine corresponde à busca.</p>';
-    if ($("compat-summary")) $("compat-summary").textContent = `${visible.length} de ${compatibilityProfiles.length} perfis • Revisão de 01/11/2026 • A compatibilidade final depende do jogo e da versão.`;
+        <dl><dt>Available in the application</dt><dd>${esc(profile.coverage)}</dd><dt>Cheats</dt><dd>${esc(profile.cheats)}</dd><dt>Known issues for this game type</dt><dd>${esc(profile.commonIssue)}</dd></dl>
+        <details><summary>Remaining work and verification</summary><ul>${profile.missing.map(item => `<li>${esc(item)}</li>`).join("")}</ul>
+        <div class="compat-sources">${profile.sources.filter(url => /^https:\/\//.test(url)).map((url, index) => `<a href="${attr(url)}" target="_blank" rel="noopener noreferrer">Source ${index + 1} ↗</a>`).join(" ")}</div></details>
+      </article>`).join("") : '<p class="empty-state">No engine matches your search.</p>';
+    if ($("compat-summary")) $("compat-summary").textContent = `${visible.length} of ${compatibilityProfiles.length} profiles • Reviewed November 1, 2026 • Compatibility depends on the game and version.`;
   }
   async function renderPerformance() {
     try {
@@ -4318,7 +4144,7 @@
       compatibilityProfiles = result?.compatibility?.profiles || [];
       renderCompatibilityCards();
     } catch (error) {
-      if ($("compat-summary")) $("compat-summary").textContent = "Não foi possível carregar. Clique em Atualizar para tentar novamente.";
+      if ($("compat-summary")) $("compat-summary").textContent = "Could not load profiles. Click Refresh to retry.";
       console.warn("renderPerformance:", error.message);
     }
   }
@@ -4328,7 +4154,7 @@
     const btn = $("btnRunBenchmark");
     btn.disabled = true;
     btn.innerHTML = `<span>⏳</span> <span>Medindo Throughput...</span>`;
-    showToast("Iniciando benchmark empírico de concorrência...", "info");
+    showToast("Starting concurrency benchmark...", "info");
 
     try {
       const res = await rpc("runSpeedBenchmark", { options: { stages: [1, 2, 4, 8, 12, 16], roundsPerStage: 2 } });
@@ -4360,17 +4186,17 @@
         } else if (rows) {
           // Sem estágios, não se escreve uma tabela vazia que parece medida.
           rows.innerHTML = '<tr><td colspan="8" style="padding:8px;color:var(--txt3)">'
-            + 'O benchmark não retornou estágios para exibir.</td></tr>';
+            + "The benchmark returned no stages to display.</td></tr>";
         }
-        showToast("Benchmark concluído com sucesso!", "success");
+        showToast("Benchmark completed.", "success");
       } else {
         // FASE 8 — a ausência de resultado não é sucesso. Antes, um retorno
         // sem `result` caía fora do `if` e não mostrava NADA: o botão voltava
         // ao normal e o usuário ficava sem saber se rodou.
-        showToast("O benchmark não retornou resultados: " + (res?.error || "resposta vazia"), "error");
+        showToast("The benchmark returned no results: " + (res?.error || "resposta vazia"), "error");
       }
     } catch (err) {
-      showToast("Falha no benchmark: " + err.message, "error");
+      showToast("Benchmark failed: " + err.message, "error");
     } finally {
       btn.disabled = false;
       btn.innerHTML = `<span>⚡</span> <span>Executar Benchmark Real</span>`;

@@ -1,17 +1,17 @@
 {
   "reviewedAt": "2026-11-01",
-  "notice": "Descrição do código e pesquisa; não certifica todas as versões ou jogos.",
+  "notice": "Code review and research; not a certification of every engine version or game.",
   "profiles": [
     {
       "id": "generic",
-      "name": "Arquivos genéricos",
-      "versions": "Formato do arquivo determina a cobertura",
-      "coverage": "Texto estruturado reconhecido",
-      "cheats": "Não implementado",
-      "commonIssue": "Não reconhece automaticamente a lógica de motores proprietários.",
+      "name": "Generic files",
+      "versions": "Coverage depends on the file format",
+      "coverage": "Recognized structured text",
+      "cheats": "Not implemented",
+      "commonIssue": "Proprietary engine logic is not detected automatically.",
       "missing": [
-        "Adicionar parser específico por formato necessário",
-        "Comprovar round-trip e excluir código/configuração de máquina"
+        "Add a parser for each required format",
+        "Verify round trips and exclude code and machine configuration"
       ],
       "sources": [],
       "status": "PARTIAL"
@@ -19,13 +19,13 @@
     {
       "id": "choicescript",
       "name": "ChoiceScript",
-      "versions": "Não implementado como parser dedicado",
-      "coverage": "Texto de cenas precisa preservar comandos",
-      "cheats": "Não implementado",
-      "commonIssue": "Comandos e indentação controlam escolhas e fluxo.",
+      "versions": "No dedicated parser implemented",
+      "coverage": "Scene text must preserve commands",
+      "cheats": "Not implemented",
+      "commonIssue": "Commands and indentation control choices and flow.",
       "missing": [
-        "Parser de cenas que preserve comandos e variáveis",
-        "Testar escolhas após tradução"
+        "Implement a scene parser that preserves commands and variables",
+        "Test choices after translation"
       ],
       "sources": [
         "https://www.choiceofgames.com/make-your-own-games/choicescript-intro/"
@@ -35,13 +35,13 @@
     {
       "id": "cocos",
       "name": "Cocos Creator / Cocos2d-x",
-      "versions": "Creator 2/3 e Cocos2d-x separados",
-      "coverage": "Recursos legíveis JSON/JS/Lua",
-      "cheats": "Não implementado",
-      "commonIssue": "Scripts podem ser compilados ou distribuídos em .jsc.",
+      "versions": "Separate Creator 2/3 and Cocos2d-x profiles",
+      "coverage": "Readable JSON/JS/Lua resources",
+      "cheats": "Not implemented",
+      "commonIssue": "Scripts may be compiled or distributed as .jsc.",
       "missing": [
-        "Validar versões e referências de recursos",
-        "Não declarar cobertura de scripts cifrados sem extração comprovada"
+        "Validate versions and resource references",
+        "Do not claim encrypted script coverage without verified extraction"
       ],
       "sources": [
         "https://docs.cocos.com/creator/3.8/manual/en/editor/publish/native-options"
@@ -51,13 +51,13 @@
     {
       "id": "construct",
       "name": "Construct",
-      "versions": "2 e 3; projeto e exportação diferem",
-      "coverage": "Extrai dados legíveis; gera arquivo de tradução adicional",
-      "cheats": "Não implementado",
-      "commonIssue": "Criar um JSON adicional não garante que o jogo o carregue.",
+      "versions": "Versions 2 and 3; projects and exports differ",
+      "coverage": "Extracts readable data; writes an additional translation file",
+      "cheats": "Not implemented",
+      "commonIssue": "Creating a JSON file does not ensure the game loads it.",
       "missing": [
-        "Integrar carregamento real do arquivo gerado",
-        "Validar exportações e plugin de internacionalização"
+        "Integrate loading of the generated translation file",
+        "Validate exports and the internationalization plugin"
       ],
       "sources": [
         "https://www.construct.net/en/make-games/manuals/construct-3/plugin-reference/internationalization"
@@ -67,13 +67,13 @@
     {
       "id": "defold",
       "name": "Defold",
-      "versions": "Arquivos abertos e exportações compiladas diferem",
-      "coverage": "JSON/Lua de localização acessíveis",
-      "cheats": "Não implementado",
-      "commonIssue": "Fontes precisam conter os glifos usados; dados compilados exigem tratamento próprio.",
+      "versions": "Loose files and compiled exports differ",
+      "coverage": "Accessible localization JSON/Lua",
+      "cheats": "Not implemented",
+      "commonIssue": "Fonts need the required glyphs; compiled data needs specific handling.",
       "missing": [
-        "Cobrir arquivos compilados e coleções",
-        "Validar placeholders e fontes no runtime"
+        "Support compiled files and collections",
+        "Validate placeholders and fonts in runtime"
       ],
       "sources": [
         "https://defold.com/examples/gui/localization/",
@@ -84,13 +84,13 @@
     {
       "id": "electron",
       "name": "Electron / HTML5",
-      "versions": "Versão e configuração do aplicativo importam",
-      "coverage": "Arquivos acessíveis e ponte de runtime",
-      "cheats": "Depende da ponte do jogo; sem editor universal",
-      "commonIssue": "Context isolation e ausência de Node no renderer impedem hooks antigos.",
+      "versions": "Application version and configuration matter",
+      "coverage": "Accessible files and runtime bridge",
+      "cheats": "Depends on the game bridge; no universal editor",
+      "commonIssue": "Context isolation and missing Node integration prevent older hooks.",
       "missing": [
-        "Testar ASAR, preload e DOM sem alterar isolamento global",
-        "Validar versões atuais além das antigas listadas"
+        "Test ASAR, preload, and DOM without disabling global isolation",
+        "Validate current versions as well as legacy versions"
       ],
       "sources": [
         "https://www.electronjs.org/docs/latest/tutorial/context-isolation"
@@ -100,13 +100,13 @@
     {
       "id": "gamemaker",
       "name": "GameMaker",
-      "versions": "Studio e versões recentes exigem ferramentas compatíveis",
-      "coverage": "Textos externos; data.win exige integração específica",
-      "cheats": "Sem editor universal implementado",
-      "commonIssue": "Bytecode e YYC não são formatos intercambiáveis.",
+      "versions": "Studio and recent versions need compatible tools",
+      "coverage": "External text; data.win needs specific integration",
+      "cheats": "No universal editor implemented",
+      "commonIssue": "Bytecode and YYC are not interchangeable formats.",
       "missing": [
-        "Integrar e verificar ferramenta para data.win de cada versão",
-        "Testar retorno ao formato original e runtime YYC"
+        "Integrate and verify a data.win tool for each supported version",
+        "Test format round trips and YYC runtime"
       ],
       "sources": [
         "https://github.com/UnderminersTeam/UndertaleModTool/issues",
@@ -117,13 +117,13 @@
     {
       "id": "gdevelop",
       "name": "GDevelop",
-      "versions": "Estruturas de projeto/exportação variam",
-      "coverage": "Objetos TextObject em JSON",
-      "cheats": "Não implementado",
-      "commonIssue": "Textos definidos em eventos/extensões podem ficar fora dos objetos da cena.",
+      "versions": "Project and export structures vary",
+      "coverage": "TextObject entries in JSON",
+      "cheats": "Not implemented",
+      "commonIssue": "Texts in events and extensions may be outside scene objects.",
       "missing": [
-        "Cobrir eventos, objetos globais e recursos externos",
-        "Testar exportações que não trazem game.json"
+        "Cover events, global objects, and external resources",
+        "Test exports without game.json"
       ],
       "sources": [
         "https://forum.gdevelop.io/t/translate-extension/72249"
@@ -133,13 +133,13 @@
     {
       "id": "godot",
       "name": "Godot",
-      "versions": "3 e 4; formatos de importação variam",
-      "coverage": "Ponte de recursos, CSV/PO e pacotes compatíveis",
-      "cheats": "Sem cheats genéricos implementados",
-      "commonIssue": "Uma tradução precisa ser carregada/registrada; fonte e cultura afetam exibição.",
+      "versions": "Versions 3 and 4; import formats vary",
+      "coverage": "Resource bridge, CSV/PO, and compatible packages",
+      "cheats": "No generic cheats implemented",
+      "commonIssue": "Translations must be loaded or registered; fonts and locale affect display.",
       "missing": [
-        "Testar PCK normal e recursos importados por versão",
-        "Comprovar carregamento de PO/plurais e fallback de fontes"
+        "Test PCK and imported resources by version",
+        "Verify PO/plural loading and font fallback"
       ],
       "sources": [
         "https://docs.godotengine.org/en/stable/tutorials/i18n/internationalizing_games.html"
@@ -149,13 +149,13 @@
     {
       "id": "krkr",
       "name": "Kirikiri 2 / Z",
-      "versions": "Kirikiri 2, Z e x86/x64 separados",
-      "coverage": "Seleção de hook nativo; parser dedicado incompleto",
-      "cheats": "Depende de hook compatível, não validado nesta revisão",
-      "commonIssue": "UTF-8/Shift-JIS e variantes do script exigem leitura correta.",
+      "versions": "Separate Kirikiri 2, Z, x86, and x64 profiles",
+      "coverage": "Native hook selection; dedicated parser incomplete",
+      "cheats": "Requires a compatible hook; not verified in this review",
+      "commonIssue": "UTF-8/Shift-JIS and script variants need correct decoding.",
       "missing": [
-        "Parser KAG/TJS e pacotes XP3 por variante",
-        "Teste de fontes e variáveis no jogo real"
+        "Implement KAG/TJS and XP3 parsing by variant",
+        "Test fonts and variables in a real game"
       ],
       "sources": [
         "https://wamsoft.github.io/krkrz_dev/en/guide/CommandLine/"
@@ -165,13 +165,13 @@
     {
       "id": "agtk",
       "name": "Pixel Game Maker MV",
-      "versions": "Sem matriz de versões comprovada",
-      "coverage": "Hook específico; integração incompleta",
-      "cheats": "Não comprovado",
-      "commonIssue": "Não deve usar o pipeline RPG Maker MV só pelo nome MV.",
+      "versions": "No verified version matrix",
+      "coverage": "Specific hook; incomplete integration",
+      "cheats": "Not verified",
+      "commonIssue": "The name MV does not mean the RPG Maker MV pipeline is compatible.",
       "missing": [
-        "Adapter específico para dados e runtime",
-        "Validação de versão e arquitetura do componente"
+        "Implement a dedicated data and runtime adapter",
+        "Validate component version and architecture"
       ],
       "sources": [],
       "status": "INCOMPLETE"
@@ -179,13 +179,13 @@
     {
       "id": "renpy",
       "name": "Ren’Py",
-      "versions": "6/7 com Python 2; 8 com Python 3",
-      "coverage": "Scripts e camada de tradução",
-      "cheats": "Variáveis dependem da ponte RenPy; não usa comandos RPG Maker",
-      "commonIssue": "Atualizações podem mudar identificadores, compilação, GUI e API Python.",
+      "versions": "6/7 use Python 2; 8 uses Python 3",
+      "coverage": "Scripts and translation layer",
+      "cheats": "Variables require the RenPy bridge; RPG Maker commands do not apply",
+      "commonIssue": "Updates may change identifiers, compilation, GUI, and Python APIs.",
       "missing": [
-        "Validar extração de RPYC/RPA por versão",
-        "Testar interpolação, tags, fontes e persistência de variáveis"
+        "Validate RPYC/RPA extraction by version",
+        "Test interpolation, tags, fonts, and variable persistence"
       ],
       "sources": [
         "https://www.renpy.org/doc/html/translation.html",
@@ -196,13 +196,13 @@
     {
       "id": "bakin",
       "name": "RPG Developer Bakin",
-      "versions": "Não implementado como adapter dedicado",
-      "coverage": "Referência do MTool; sem cobertura própria comprovada",
-      "cheats": "Não implementado",
-      "commonIssue": "O loader observado em outro produto não pode ser tratado como suporte deste programa.",
+      "versions": "No dedicated adapter implemented",
+      "coverage": "MTool reference; no verified dedicated coverage",
+      "cheats": "Not implemented",
+      "commonIssue": "A feature listed by MTool is not evidence of OpenTranslator support.",
       "missing": [
-        "Implementar detecção e formatos com licença/procedência",
-        "Testar fontes e recursos por versão"
+        "Implement a dedicated detector and resource parser",
+        "Validate translation loading, fonts, and save/load"
       ],
       "sources": [
         "https://mtool.app/"
@@ -212,13 +212,13 @@
     {
       "id": "rpgmaker",
       "name": "RPG Maker MV / MZ",
-      "versions": "MV e MZ; plugins precisam de teste próprio",
-      "coverage": "JSON e overlay JavaScript",
-      "cheats": "Dinheiro, grupo, itens, variáveis e atalhos pelo overlay MV/MZ",
-      "commonIssue": "Plugins de diálogo, códigos de controle e fontes podem alterar o resultado.",
+      "versions": "MV and MZ; runtime and plugin versions differ",
+      "coverage": "JSON data and JavaScript runtime bridge",
+      "cheats": "Gold, variables, HP/MP, and inventory depend on the active bridge",
+      "commonIssue": "Plugins, escape codes, and NW.js versions can change runtime behavior.",
       "missing": [
-        "Validar a versão do núcleo e a ordem dos plugins",
-        "Testar save/load, diálogo e atalhos em cada jogo"
+        "Test MV/MZ versions and plugin combinations separately",
+        "Validate escape codes, fonts, save/load, and gameplay cheats"
       ],
       "sources": [
         "https://rpgmakerofficial.com/product/MZ_help-en/01_10_01.html",
@@ -229,13 +229,13 @@
     {
       "id": "rgss",
       "name": "RPG Maker XP / VX / VX Ace",
-      "versions": "RGSS1, RGSS2 e RGSS3",
-      "coverage": "Dados Ruby e arquivos RGSS",
-      "cheats": "Hooks nativos dependem da arquitetura; não equivalem ao overlay MV/MZ",
-      "commonIssue": "RTP, DLL e encoding devem corresponder ao motor do jogo.",
+      "versions": "Separate RGSS1, RGSS2, and RGSS3",
+      "coverage": "Ruby Marshal bridge and RGSS archives",
+      "cheats": "Native hooks depend on architecture; separate from the MV/MZ overlay",
+      "commonIssue": "RTP, DLLs, and encoding must match the game engine.",
       "missing": [
-        "Validar Marshal e arquivos por geração",
-        "Verificar dependências RTP e fontes sem substituir DLL arbitrariamente"
+        "Validate Marshal and archives by generation",
+        "Check RTP and fonts without replacing arbitrary DLLs"
       ],
       "sources": [
         "https://rpgmakerofficial.com/support/rtp/"
@@ -245,13 +245,13 @@
     {
       "id": "smile",
       "name": "SMILE GAME BUILDER",
-      "versions": "Não implementado como adapter dedicado",
-      "coverage": "Sem cobertura própria comprovada",
-      "cheats": "Não implementado",
-      "commonIssue": "A listagem do MTool não equivale a suporte do OpenTranslator.",
+      "versions": "No dedicated adapter implemented",
+      "coverage": "No verified dedicated coverage",
+      "cheats": "Not implemented",
+      "commonIssue": "A feature listed by MTool is not evidence of OpenTranslator support.",
       "missing": [
-        "Implementar detector e parser próprios",
-        "Validar recursos, tradução e saves"
+        "Implement a dedicated detector and parser",
+        "Validate resources, translations, and saves"
       ],
       "sources": [
         "https://mtool.app/"
@@ -261,13 +261,13 @@
     {
       "id": "srpg",
       "name": "SRPG Studio",
-      "versions": "Sem matriz de versões comprovada",
-      "coverage": "Hook nativo específico; sem pipeline dedicado completo",
-      "cheats": "Não comprovado",
-      "commonIssue": "Detectar o motor não comprova tradução nem edição de atributos.",
+      "versions": "No verified version matrix",
+      "coverage": "Specific native hook; no complete dedicated pipeline",
+      "cheats": "Not verified",
+      "commonIssue": "Engine detection does not prove translation or attribute editing.",
       "missing": [
-        "Adapter específico e fixtures autorizadas",
-        "Validar fontes, save/load e hooks por arquitetura"
+        "Add a dedicated adapter and authorized fixtures",
+        "Validate fonts, save/load, and hooks by architecture"
       ],
       "sources": [],
       "status": "INCOMPLETE"
@@ -275,13 +275,13 @@
     {
       "id": "tyrano",
       "name": "TyranoBuilder / TyranoScript",
-      "versions": "Versão e exportação precisam ser identificadas",
-      "coverage": "Detecção disponível; fluxo dedicado ainda incompleto",
-      "cheats": "Não comprovado",
-      "commonIssue": "Tags de cenário e fontes não devem ser tratadas como texto simples.",
+      "versions": "Identify the engine version and export type",
+      "coverage": "Detection available; dedicated flow incomplete",
+      "cheats": "Not verified",
+      "commonIssue": "Scenario tags and fonts must not be treated as plain text.",
       "missing": [
-        "Parser de cenário que preserve tags",
-        "Teste de exportação e exibição multilíngue"
+        "Implement a scenario parser that preserves tags",
+        "Test exports and multilingual display"
       ],
       "sources": [
         "https://tyranobuilder.com/faq/"
@@ -291,13 +291,13 @@
     {
       "id": "unity",
       "name": "Unity",
-      "versions": "Mono e IL2CPP são perfis diferentes",
-      "coverage": "Recursos e integração XUnity dependente do loader",
-      "cheats": "Sem editor universal de atributos comprovado",
-      "commonIssue": "IL2CPP, TMP e fontes exigem combinação compatível de loader e plugin.",
+      "versions": "Mono and IL2CPP are different profiles",
+      "coverage": "Resources and loader-dependent XUnity integration",
+      "cheats": "No verified universal attribute editor",
+      "commonIssue": "IL2CPP, TMP, and fonts require a compatible loader/plugin combination.",
       "missing": [
-        "Verificar BepInEx/IL2CPP e arquitetura antes de instalar",
-        "Testar TMP, rich text e textos criados após carregar cenas"
+        "Check BepInEx/IL2CPP and architecture before installation",
+        "Test TMP, rich text, and text created after scene loading"
       ],
       "sources": [
         "https://github.com/bbepis/XUnity.AutoTranslator/blob/master/README.md",
@@ -308,13 +308,13 @@
     {
       "id": "unreal",
       "name": "Unreal Engine",
-      "versions": "LocRes 0–3; Pak/IoStore tratados separadamente",
-      "coverage": "LocRes com preservação de hashes; pacote depende de ferramenta",
-      "cheats": "Sem cheats universais de gameplay",
-      "commonIssue": "Idioma carregado, hashes e prioridade dos pacotes influenciam a tradução.",
+      "versions": "LocRes 0–3; Pak/IoStore are separate formats",
+      "coverage": "LocRes with preserved hashes; packages need external tooling",
+      "cheats": "No universal gameplay cheats",
+      "commonIssue": "Loaded locale, hashes, and package priority affect translations.",
       "missing": [
-        "Testar IoStore e novas versões de pacotes",
-        "Validar fontes, textos em imagens e strings fora do LocRes"
+        "Test IoStore and newer package versions",
+        "Validate fonts, text in images, and strings outside LocRes"
       ],
       "sources": [
         "https://dev.epicgames.com/documentation/en-us/unreal-engine/localization-overview?application_version=4.27"
@@ -324,13 +324,13 @@
     {
       "id": "vnmaker",
       "name": "Visual Novel Maker",
-      "versions": "Não implementado como adapter dedicado",
-      "coverage": "Sem cobertura própria comprovada",
-      "cheats": "Não implementado",
-      "commonIssue": "Ausência de integração própria; não confundir com RenPy ou Tyrano.",
+      "versions": "No dedicated adapter implemented",
+      "coverage": "No verified dedicated coverage",
+      "cheats": "Not implemented",
+      "commonIssue": "No dedicated integration; do not confuse with RenPy or Tyrano.",
       "missing": [
-        "Mapear formato e versões",
-        "Criar fixtures de extração/aplicação e teste em runtime"
+        "Map formats and versions",
+        "Create extraction/application fixtures and runtime tests"
       ],
       "sources": [
         "https://mtool.app/"
@@ -340,13 +340,13 @@
     {
       "id": "wolf",
       "name": "Wolf RPG Editor",
-      "versions": "1, 2 e 3 exigem perfis separados",
-      "coverage": "Ponte Python e ferramentas de arquivo",
-      "cheats": "Hook automático suspenso sem assinatura confiável de versão",
-      "commonIssue": "Codificação antiga e formatos de arquivo diferentes podem causar texto corrompido.",
+      "versions": "Versions 1, 2, and 3 need separate profiles",
+      "coverage": "Python bridge and archive tools",
+      "cheats": "Automatic hook disabled without a reliable version signature",
+      "commonIssue": "Legacy encodings and different archive formats can corrupt text.",
       "missing": [
-        "Detectar versão/encoding do arquivo real",
-        "Testar reempacotamento e fontes sem trocar DLL por tamanho do EXE"
+        "Detect the actual archive version and encoding",
+        "Test repacking and fonts without selecting DLLs by executable size"
       ],
       "sources": [
         "https://dreamsavior.net/translator-ver-5-10-31-automatic-character-encoding-for-wolf-rpg-engine/"

@@ -1,7 +1,5 @@
-# Runtime Translation Specification
+# Runtime translation
 
-O subsistema de runtime traduz textos dinâmicos em tempo real sem alterar os arquivos do jogo no disco:
-1. **Ponte WebSocket (16005)**: Comunicação assíncrona com wrappers e hooks.
-2. **TextFrameworkProvider**: Mapeia TextMeshPro e UGUI em jogos Unity Mono.
-3. **DOMTextProvider**: Escuta mutações na árvore DOM de aplicações Electron/NW.js.
-4. **Isolamento de Falhas**: Se o hook falhar ou o jogo apresentar crash, o roteador migra imediatamente para o modo **OVERLAY** sem derrubar o OpenTranslator.
+Separate game-side bridge installation, text capture, provider translation, replacement/display, and recovery. Installation can write files even if runtime replacement happens in memory. An automatic switch to overlay after a game crash is not a general guarantee.
+
+See [engine support](../engines/ENGINE_SUPPORT_MATRIX.md), [the SDK limits](../development/PLUGIN_SDK.md), and [the detailed guide](../GUIA-DETALHADO.md).

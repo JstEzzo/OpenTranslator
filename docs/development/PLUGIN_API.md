@@ -1,72 +1,9 @@
-# OpenTranslator — Plugin & Adapter API
+# Engine adapter API
 
-**Versão:** 2.0  
-**Padrão:** BaseEngineAdapter Specification
+Adapters inherit from `src/core/baseEngineAdapter.js` and are registered in `src/core/engineRegistry.js`. Read the current base contract and a tested adapter before adding a new engine.
 
----
+Typical operations include detection, inspection, extraction, capability reporting, validation, application, and rollback. A method existing or returning `{success: true}` is not evidence of implemented behavior. Returning an always-valid QA result does not validate a translation.
 
-## 1. Criando um Novo Adapter de Engine
+Extraction must distinguish empty input from failed or incomplete parsing. Application must report actual writes and errors; preserve archive metadata and tokens. Integrate backup/write contracts where required and test restoring originals and removing created files. Registration must not promote experimental support to universal compatibility.
 
-Todos os adaptadores devem herdar de `BaseEngineAdapter` (`Tool/src/core/baseEngineAdapter.js`):
-
-```javascript
-const BaseEngineAdapter = require('../../core/baseEngineAdapter');
-
-class CustomEngineAdapter extends BaseEngineAdapter {
-  constructor() {
-    super('custom_engine_id', 'Nome Amigável da Engine');
-  }
-
-  getCapabilities(gameDir, exePath) {
-    return {
-      staticFiles: true,         // Permite modificar arquivos estáticos
-      nativeLocalization: false, // Suporte a pastas tl nativas
-      archives: false,           // Manipulação de arquivos empacotados
-      runtimeHook: false,        // Injeção de DLL / Hook em runtime
-      dom: false,                // Inspeção de DOM (Electron)
-      ocr: true,                 // Suporte a OCR
-      backupSupported: true      // Backup/Rollback suportado
-    };
-  }
-
-  async extract(gameDir, options = {}) {
-    // Retorna lista de textos encontrados
-    return {
-      success: true,
-      texts: [
-        { id: 0, original: "Texto original", clean: "Texto original", file: "data.txt" }
-      ],
-      count: 1
-    };
-  }
-
-  async validate(gameDir, texts, translations) {
-    return { valid: true, errors: [], warnings: [] };
-  }
-
-  async apply(gameDir, texts, translations, options = {}) {
-    // Grava traduções no disco
-    return { success: true, count: 1, modifiedFiles: ["data.txt"] };
-  }
-
-  async rollback(gameDir, options = {}) {
-    // Restaura arquivos de backup
-    return { success: true, restoredFiles: ["data.txt"] };
-  }
-}
-
-module.exports = CustomEngineAdapter;
-```
-
----
-
-## 2. Registro no EngineRegistry
-
-Para registrar um adapter:
-
-```javascript
-const defaultRegistry = require('./core/engineRegistry');
-const CustomAdapter = require('./engines/custom/customAdapter');
-
-defaultRegistry.register(new CustomAdapter());
-```
+Use fixtures covering malformed input, duplicate contexts, encoding, placeholders, format round trips, partial failure, and recovery. Document the versions/architectures actually tested and the optional tools required.

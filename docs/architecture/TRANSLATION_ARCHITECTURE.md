@@ -1,51 +1,7 @@
-# OpenTranslator — Translation Architecture (Fase 5B)
+# Translation architecture
 
-## Fluxo Central de Tradução
+The product contains static-file, native-localization, runtime-bridge, DOM, and overlay/OCR-related strategies. Availability depends on the adapter, format, tools, and game version. A fallback name is not proof that a working fallback is selected automatically.
 
-```
-                    OpenTranslator
-                         │
-                         ▼
-                Translation Router
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-      STATIC          RUNTIME          VISUAL
-          │              │              │
-          ▼              ▼              ▼
-       parser           hook            OCR
-       patch            bridge
-       redirect         observer
-       archive          runtime text
-          │              │              │
-          └──────────────┼──────────────┘
-                         ▼
-                   Text Pipeline
-                         │
-                         ▼
-                  Text Normalizer
-                         │
-                         ▼
-                  Context Resolver
-                         │
-                         ▼
-                 Translation Memory (L1 -> L2 -> L3 -> L4)
-                         │
-                         ▼
-                  Translator Core (Offline First)
-                         │
-                         ▼
-                  Result Validator (Placeholder & Tag Safety)
-                         │
-                         ▼
-                  Output Adapter
-                         │
-             ┌───────────┼───────────┐
-             ▼           ▼           ▼
-          FILE PATCH   RUNTIME     OVERLAY
-```
+Trace an operation from UI to RPC and its service/pipeline. Extraction identifies source records; preparation/classification must avoid translating machine keys or code. Translation must honor provider choice and placeholder contracts. Application must produce real output, preserve required format metadata, and report partial failures. Recovery must restore originals and account for newly created files.
 
-### Princípios de Arquitetura:
-1. **Sem IA Pesada**: Lógica baseada em regras determinísticas, heurísticas e dicionários locais de alto desempenho.
-2. **Capacidade Baseada em Contratos**: Provedores declaram explicitamente permissões e capacidades (`capture`, `replace`, `static`, `runtime`, `overlay`, `ocr`).
-3. **Resiliência a Spam**: Estabilização via debounce e supressão de atualizações intermediárias de HUD/contadores.
+New and legacy flows coexist. New automatic translation usually needs a configured online/local provider; cached text can be reused offline. Separate cache hits, dictionary substitutions, real provider calls, and game-side display when measuring results.

@@ -1,36 +1,19 @@
-# Teste real de tradução Unreal — 31/10/2026
+# Unreal real-game translation test — October 31, 2026
 
-O teste solicitado foi executado num jogo Unreal local, com pacotes Pak v11 criptografados e recursos LocRes v3. Os arquivos do jogo, textos, traduções, chaves e capturas não integram este repositório público. O usuário autorizou o envio dos textos ao Google Tradutor.
+**Status: historical record — English summary.** Current behavior is described by the current guides and compatibility profiles.
 
-## Defeitos comprovados e corrigidos
+## Scope
 
-- A assinatura LocRes usada pelo OpenTranslator era incorreta. Foi corrigida para `0e147475674a03fc4a15909dc3377f1b`.
-- O leitor confundia os layouts Compact/Optimized: faltavam a contagem total, os hashes de namespaces/chaves e os contadores de referências. Agora lê Legacy/Compact/Optimized v2/v3 com limites, validação de offsets e índices.
-- A escrita padrão usa Compact v1 válido. Escrita otimizada exige os hashes originais; a edição por tabela preserva integralmente o bloco de namespaces e chaves, os hashes de origem e os índices.
-- O descobridor buscava `Localization` fora de `Content`. Agora reconhece os diretórios estruturais e os IDs de extração incluem o caminho do arquivo, evitando colisões entre idiomas.
-- Um jogo apenas com `.pak` podia ser tratado como vazio sem examinar conteúdo. Agora esse caso informa extração pendente. Arquivo binário inválido não vira um suposto recurso traduzível por regex.
-- Foi adicionada uma ferramenta de desenvolvimento para traduzir um LocRes com checkpoints e validação dos marcadores. Ela permite impedir fallback para outro provedor quando o destino escolhido é fixo.
+An additional localization patch was tested for one Unreal game. Original package files were preserved. The test covered extracted localization records and observed menu/settings text; it did not inspect every scene, translate image text, or establish automatic extraction of every encrypted Pak/IoStore game. Machine translation was not human-reviewed line by line.
 
-## Resultado no jogo
+## Interpretation and limits
 
-- Extraídas e lidas 1.979 entradas da localização inglesa, com 1.614 textos únicos.
-- Traduzidos automaticamente os textos e revisados alguns rótulos curtos. O conjunto final altera 1.600 textos únicos; os demais incluem sinais, nomes e termos invariantes.
-- Duas entradas adicionais invariantes de outro idioma foram preservadas, totalizando 1.981 chaves no patch.
-- Gerado e instalado um Pak adicional com as localizações dos idiomas existentes e pt-BR. Os dois arquivos Pak originais foram conferidos por SHA-256 antes/depois e ficaram intactos.
-- O jogo foi aberto depois da instalação. Menu e configurações foram inspecionados: Novo jogo, Carregar jogo, Galeria, Configurações, Sair, Resolução, Escala de renderização, Voz do personagem, Efeitos Sonoros e Aplicar ficaram legíveis em português.
-- A instalação inclui instruções locais para remover apenas o patch de tradução.
-- O executável local do OpenTranslator foi recompilado, e `bin/node.exe` atualizado para Node 24. O executável anterior foi preservado em `scratch/OpenTranslator-before-realtest.exe`.
+Results depend on the original revision, fixture, environment, operation, and available evidence. Earlier PASS labels, test counts, timings, and claimed fixes have not all been reproduced during the English documentation migration.
 
-## Limites
+Detection, format parsing, file application, runtime execution, visual display, gameplay, and verified restoration are separate evidence levels. A previous test is not certification for every version of an engine. Local personal paths and inaccessible screenshots are not portable evidence for another developer.
 
-A tradução é automática e não foi revisada linha por linha por um tradutor humano. Não foram percorridas todas as cenas do jogo. Imagens, logotipos e alguns rótulos fixos fora dos recursos de localização podem permanecer no idioma original. O arquivo de atualização Pak existente não pôde ser inspecionado com a ferramenta utilizada; ele foi preservado e o patch adicional teve prioridade de carregamento confirmada visualmente.
+## Preserved original
 
-O procedimento deste teste não transforma a interface atual em extração automática universal de todo Pak criptografado. Descoberta de chave, extração e montagem ocorreram em uma área de trabalho local; nenhum segredo ou arquivo do jogo foi publicado.
+The complete original report remains in [the pre-migration Git revision](https://github.com/JstEzzo/OpenTranslator/blob/c1a30f2e05fb37b7524945114b66a212e9ff984b/docs/audit/UNREAL_REAL_GAME_TEST_2026-10-31.md). Its SHA-256 before this migration was `b6b978ca9a73639283469dbc0412e0e1e6ad73e44336f44b055d2962808f1ae4`. A verified local backup also preserves the original Markdown. The English summary does not re-run the historical experiment or silently endorse unsupported claims.
 
-## Referências de formato e ferramentas
-
-- [CUE4Parse — FTextLocalizationResource](https://github.com/FabianFG/CUE4Parse/blob/master/CUE4Parse/UE4/Localization/FTextLocalizationResource.cs)
-- [CUE4Parse — FTextKey](https://github.com/FabianFG/CUE4Parse/blob/master/CUE4Parse/UE4/Objects/Core/i18N/FTextKey.cs)
-- [Repak — ferramentas Pak](https://github.com/trumank/repak)
-
-A suíte inclui fixture binária independente de LocRes v3, alteração com preservação de hashes, round trip byte a byte, rejeição de truncamento e índices impossíveis, casos de descoberta por idioma e recusa de fallback de provedor não autorizado.
+See [the current engine matrix](../engines/ENGINE_SUPPORT_MATRIX.md) and [the documentation index](../INDEX.md).

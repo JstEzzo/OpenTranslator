@@ -1,17 +1,19 @@
-# OPENTRANSLATOR — GAME COMPATIBILITY REPORT (FASE 5)
-## UNIVERSAL GAME UNDERSTANDING & AUTONOMOUS DISCOVERY
+# Game Compatibility Report
 
-**Data:** 2026-09-16T18:01:06.627Z  
-**Laboratório:** `C:/Users/Teste/Desktop/Nova pasta`  
-**Total de Jogos Comerciais Analisados:** 6
+**Status: historical record — English summary.** Current behavior is described by the current guides and compatibility profiles.
 
----
+## Scope
 
-| Jogo | Engine Principal | Candidatos e Confiança | Runtimes Detectados | Renderizadores | Empacotamento | Sistemas de Texto |
-|---|---|---|---|---|---|---|
-| **ArmoredSuitSolganteRenpy0.2-pc** | Ren'Py | **Ren'Py**: 16% | V8 / Chromium | WebGL (Chromium Canvas) | Ren'Py Archive, Loose JSON / Web Files | Ren'Py Text Displayable |
-| **RWLHPMK_D1.00** | Electron / Chromium Web App | **Electron / Chromium Web App**: 36%<br>**Unreal Engine**: 28% | V8 / Chromium, NW.js / Chromium | Vulkan, WebGL (Chromium Canvas) | Wolf RPG Archive, Unreal PAK, Loose JSON / Web Files | Default |
-| **Daily Lives of My Countryside v0.3.5.3 (PC) (Full)** | Electron / Chromium Web App | **Electron / Chromium Web App**: 36%<br>**Unreal Engine**: 28% | V8 / Chromium, NW.js / Chromium | WebGL (Chromium Canvas) | Wolf RPG Archive, Unreal PAK, Loose JSON / Web Files | Ren'Py Text Displayable |
-| **DokiDoki-Massage-v2.1.5** | Electron / Chromium Web App | **Electron / Chromium Web App**: 36%<br>**Unreal Engine**: 28% | V8 / Chromium | Vulkan, WebGL (Chromium Canvas) | Electron ASAR Archive, Wolf RPG Archive, Unreal PAK, Loose JSON / Web Files | Default |
-| **BLACK SOULS** | RPG Maker XP/VX/VX Ace | **RPG Maker XP/VX/VX Ace**: 27% | Ruby VM (RGSS) | N/A | RGSS Encrypted Archive | Default |
-| **Rabbit Hood English 2026-06-30** | Wolf RPG Editor | **Wolf RPG Editor**: 23%<br>**RPG Maker XP/VX/VX Ace**: 14% | Native | N/A | Wolf RPG Archive | Default |
+This record concerns game compatibility report. It describes an earlier development or laboratory stage, not a current product guarantee.
+
+## Interpretation and limits
+
+The old detector assigned contradictory runtime/packaging candidates to some fixtures, including Chromium evidence for a RenPy sample. Treat this as a record of detector limitations, not the current engine matrix.
+
+Detection, format parsing, file application, runtime execution, visual display, gameplay, and verified restoration are separate evidence levels. A previous test is not certification for every version of an engine. Local personal paths and inaccessible screenshots are not portable evidence for another developer.
+
+## Preserved original
+
+The complete original report remains in [the pre-migration Git revision](https://github.com/JstEzzo/OpenTranslator/blob/c1a30f2e05fb37b7524945114b66a212e9ff984b/docs/reports/GAME_COMPATIBILITY_REPORT.md). Its SHA-256 before this migration was `c3f700f8fa510243a5c542f6e6d8739870ddfdda34247e326aebbeca949265bd`. A verified local backup also preserves the original Markdown. The English summary does not re-run the historical experiment or silently endorse unsupported claims.
+
+See [the current engine matrix](../engines/ENGINE_SUPPORT_MATRIX.md) and [the documentation index](../INDEX.md).

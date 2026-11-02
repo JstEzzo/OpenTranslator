@@ -1,47 +1,19 @@
-# OpenTranslator — Clean Install & Portability Audit Report
-## Simulação de Instalação Limpa, Modo Portátil e Higienização de Rastros
+# Clean Install Report
 
-Este relatório atesta a portabilidade do OpenTranslator, a ausência de acoplamento a ambientes de desenvolvimento e a integridade de instalação em qualquer máquina com Windows 10/11 x64.
+**Status: historical record — English summary.** Current behavior is described by the current guides and compatibility profiles.
 
----
+## Scope
 
-### 1. AUDITORIA DE PORTABILIDADE E CAMINHOS RELATIVOS
+This record concerns clean install report. It describes an earlier development or laboratory stage, not a current product guarantee.
 
-- **Zero Dependência de Pastas Fixas**:
-  - Todos os módulos internos utilizam `path.resolve(__dirname, ...)` para resolução determinística de diretórios de recursos, dados, cache e extensões.
-  - O código do OpenTranslator **não contém referências fixas codificadas (*hardcoded*)** a caminhos como `C:\Users\Teste\...` no núcleo de execução.
-  - A pasta raiz pode ser renomeada, movida para outro disco (ex: `D:\Games\OpenTranslator` ou pendrive USB) mantendo 100% de funcionalidade operacional.
+## Interpretation and limits
 
----
+The old BAT/VBS entry points, Tool/www layout, size figures, and universal clean-machine claims are superseded by the native launcher and current build manifest.
 
-### 2. ESTRUTURA DO MODO PORTÁTIL (PORTABLE STANDALONE)
+Detection, format parsing, file application, runtime execution, visual display, gameplay, and verified restoration are separate evidence levels. A previous test is not certification for every version of an engine. Local personal paths and inaccessible screenshots are not portable evidence for another developer.
 
-O OpenTranslator é concebido para operar de forma autossuficiente:
-- **Executáveis de Inicialização**:
-  - `OpenTranslator.bat`: Script de inicialização automática que detecta o ambiente Node.js ou runtime portátil empacotado.
-  - `OpenTranslator.vbs`: Inicializador silencioso para segundo plano (sem janela preta de console desnecessária).
-- **Diretórios de Dados Relativos**:
-  - `Tool/data/cache/`: Armazenamento de cache multinível em disco.
-  - `Tool/data/sessions/`: Sessões ativas e perfis persistentes de jogos.
-  - `Tool/data/backups/`: Backups pré-instalação com hashes de verificação.
-  - `Tool/resources/`: Utilitários nativos e bridges locais (`NotoSans`, `renpy`, `rpgmaker`).
+## Preserved original
 
----
+The complete original report remains in [the pre-migration Git revision](https://github.com/JstEzzo/OpenTranslator/blob/c1a30f2e05fb37b7524945114b66a212e9ff984b/docs/reports/CLEAN_INSTALL_REPORT.md). Its SHA-256 before this migration was `0aa1cce5e2ab941f5b561d1cd248d06837a5442b156799e6fb6a8cdbd5ea8fa1`. A verified local backup also preserves the original Markdown. The English summary does not re-run the historical experiment or silently endorse unsupported claims.
 
-### 3. HIGIENIZAÇÃO DE ARTEFATOS E RASTROS DE DESENVOLVIMENTO
-
-- **Varredura `repoLint`**:
-  - O utilitário `Tool/src/tools/repoLint.js` foi executado e confirmou **zero arquivos soltos indevidos na raiz**.
-  - Documentação técnica e relatórios de auditoria organizados em `docs/` e arquivos markdown oficiais na raiz.
-  - Diretórios temporários de staging (`Tool/data/staging/`) são automaticamente purgados após a execução dos testes e fluxos de laboratório.
-
----
-
-### 4. REQUISITOS MÍNIMOS DE EXECUÇÃO EM MÁQUINA DO USUÁRIO
-
-| Requisito | Mínimo Recomendado |
-|---|---|
-| **Sistema Operacional** | Windows 10 / Windows 11 (64-bit) |
-| **Memória RAM** | 512 MB livres (núcleo ultra leve e sem modelos pesados de IA embutidos) |
-| **Armazenamento** | 250 MB livres em disco |
-| **Portas de Rede Local** | 8080 (Painel Web do Usuário) e 16005 (Dual Hook IPC) |
+See [the current engine matrix](../engines/ENGINE_SUPPORT_MATRIX.md) and [the documentation index](../INDEX.md).

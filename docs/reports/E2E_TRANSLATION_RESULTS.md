@@ -1,23 +1,19 @@
-# OPENTRANSLATOR — RESULTADOS DA FASE 5B (TRADUÇÃO REAL)
-## TESTES E2E EM JOGOS COMERCIAIS DO LABORATÓRIO
+# E2E Translation Results
 
-**Data:** 2026-09-22T22:19:17.299Z  
-**Laboratório:** `C:/Users/Teste/Desktop/Nova pasta`  
-**Status:** **100% SUCESSO EM TODOS OS JOGOS TESTADOS**
+**Status: historical record — English summary.** Current behavior is described by the current guides and compatibility profiles.
 
----
+## Scope
 
-### Resumo dos Resultados
+This record concerns e2e translation results. It describes an earlier development or laboratory stage, not a current product guarantee.
 
-| Jogo | Engine | Método Selecionado | Provider | Strings Testadas | Traduzidas | Validadas (QA) | Tempo (ms) |
-|---|---|---|---|---|---|---|---|
-| **ArmoredSuitSolganteRenpy0.2-pc** | Ren'Py Visual Novel | `METHOD_B_NATIVE` | RenpyNativeProvider | 25 | 25 | 25 | 1ms |
-| **Marie's Adventure** | RPG Maker MV | `METHOD_A_STATIC` | RpgMakerStaticProvider | 7 | 7 | 7 | 0ms |
-| **RWLHPMK_D1.00** | RPG Maker MZ | `METHOD_A_STATIC` | RpgMakerStaticProvider | 7 | 7 | 7 | 0ms |
-| **Rabbit Hood English 2026-06-30** | Wolf RPG | `METHOD_F_OVERLAY` | UniversalOverlayProvider | 7 | 7 | 7 | 0ms |
+## Interpretation and limits
 
-### Desempenho e Telemetria Real
-- **Vazão Média:** `46 textos/segundo`
-- **Latência Média:** `0 ms`
-- **Uso de Memória RAM (RSS):** `53.1 MB`
-- **Uso de Heap Node.js:** `5.4 MB`
+Small samples of 7 or 25 strings and zero-millisecond measurements do not establish a complete game translation or online-provider latency. Record provider type, timer resolution, actual writes, runtime display, and recovery.
+
+Detection, format parsing, file application, runtime execution, visual display, gameplay, and verified restoration are separate evidence levels. A previous test is not certification for every version of an engine. Local personal paths and inaccessible screenshots are not portable evidence for another developer.
+
+## Preserved original
+
+The complete original report remains in [the pre-migration Git revision](https://github.com/JstEzzo/OpenTranslator/blob/c1a30f2e05fb37b7524945114b66a212e9ff984b/docs/reports/E2E_TRANSLATION_RESULTS.md). Its SHA-256 before this migration was `f8f2c9f5fab0b30c4b0bc2c739f1f0486987b0db713544905d1ad677a4298d75`. A verified local backup also preserves the original Markdown. The English summary does not re-run the historical experiment or silently endorse unsupported claims.
+
+See [the current engine matrix](../engines/ENGINE_SUPPORT_MATRIX.md) and [the documentation index](../INDEX.md).

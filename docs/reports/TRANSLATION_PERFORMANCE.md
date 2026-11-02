@@ -1,62 +1,19 @@
-# OpenTranslator — Performance & Latency Report (Fase 6)
+# Translation Performance
 
-## 1. Segregação Estrita de Latência: Pipeline Local vs Provedor Real
+**Status: historical record — English summary.** Current behavior is described by the current guides and compatibility profiles.
 
-Na Fase 6, o OpenTranslator separou formalmente as métricas de tempo em dois eixos independentes:
+## Scope
 
-1. **Pipeline Latency (Custo Local do OpenTranslator):**
-   - `captureMs`: Tempo de leitura, cálculo de hash e `TextObjectIdentity`.
-   - `filterMs`: Classificação heurística via `TextClassifier` (ignora números puros, paths e símbolos).
-   - `cacheMs`: Consulta no cache multinível L1 / L2 e `TranslationMemory3` (match exato, fuzzy e glossário).
-   - `validationMs`: Validação de tags via `PlaceholderValidator` e aplicação de regras `GlossaryEngine`.
-   - `outputMs`: Empacotamento e entrega ao subsistema de renderização/arquivo.
+This record concerns translation performance. It describes an earlier development or laboratory stage, not a current product guarantee.
 
-2. **Real Provider Latency (Custo da Tradução Externa/Offline):**
-   - `providerMs`: Tempo de requisição de rede ou processamento do modelo/serviço.
+## Interpretation and limits
 
----
+Pausing a low-priority queue cannot guarantee zero delay for visible dialogue. Distinguish queue time, provider time, and time until rendered text.
 
-## 2. Resultados de Latência Medidos
+Detection, format parsing, file application, runtime execution, visual display, gameplay, and verified restoration are separate evidence levels. A previous test is not certification for every version of an engine. Local personal paths and inaccessible screenshots are not portable evidence for another developer.
 
-### Caso A: Cache Hit (L1 Cache / TM3)
-- `capture`: **0.001 ms**
-- `filter`: **0.001 ms**
-- `cache`: **0.002 ms**
-- `provider`: **0.000 ms** (ignorado devido ao cache)
-- `validation`: **0.000 ms**
-- `output`: **0.000 ms**
-- **Total Pipeline Latency:** **< 0.005 ms** (sub-milissegundo)
+## Preserved original
 
-### Caso B: Offline Fallback Pipeline
-- `capture`: **0.001 ms**
-- `filter`: **0.001 ms**
-- `cache`: **0.002 ms**
-- `provider`: **0.002 ms**
-- `validation`: **0.000 ms**
-- `output`: **0.000 ms**
-- **Total:** **0.041 ms**
+The complete original report remains in [the pre-migration Git revision](https://github.com/JstEzzo/OpenTranslator/blob/c1a30f2e05fb37b7524945114b66a212e9ff984b/docs/reports/TRANSLATION_PERFORMANCE.md). Its SHA-256 before this migration was `c4d344ba14477d4b5df27dbc20a75e5cfe396e4be33316fee2b5b6d73b0b8d8a`. A verified local backup also preserves the original Markdown. The English summary does not re-run the historical experiment or silently endorse unsupported claims.
 
----
-
-## 3. Vazão do Pipeline Local (Throughput Benchmark)
-
-| Volume de Strings | Tempo de Processamento Local | Memória RAM Alocada | Vazão (Strings/segundo) |
-|---|---|---|---|
-| **100 strings** | 4.8 ms | 47.1 MB | ~20.800 strings/s |
-| **1.000 strings** | 18.2 ms | 52.1 MB | ~54.900 strings/s |
-| **10.000 strings** | 132.5 ms | 54.7 MB | ~75.400 strings/s |
-| **100.000 strings** | 1.24 s | 68.2 MB | ~80.600 strings/s |
-
----
-
-## 4. Priorização de Filas sob Carga
-
-O `FastTextPipeline` gerencia 6 filas de prioridade estritas:
-- **P0 (Screen-visible):** Processamento imediato com timeout reduzido.
-- **P1 (Current dialogue):** Prioridade padrão para falas ativas.
-- **P2 (Current UI):** Menus e opções interativas.
-- **P3 (Recently observed):** Strings recém visualizadas pelo jogador.
-- **P4 (Prefetch):** Diálogos sequenciais previstos.
-- **P5 (Background):** Strings em repouso nos arquivos.
-
-**Proteção contra sobrecarga:** Quando `pipeline.isUnderLoad = true`, a fila **P5** é automaticamente pausada para garantir 0 ms de atraso nas falas visíveis na tela (P0/P1).
+See [the current engine matrix](../engines/ENGINE_SUPPORT_MATRIX.md) and [the documentation index](../INDEX.md).

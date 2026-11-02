@@ -1,7 +1,9 @@
-# Estrutura do projeto
+# Project structure
 
-Índice alfabético do código, configuração, documentação, testes e ferramentas atuais. Históricos e laboratórios retirados estão no arquivo externo da organização.
+Alphabetical index of current code, configuration, documentation, tests, and tools. Local state and installed dependencies are excluded.
 
+- `.github/workflows/release.yml`
+- `.github/workflows/verify.yml`
 - `config/engineCompatibility.json`
 - `config/restore_config.json`
 - `config/syntax_rules.json`
@@ -16,11 +18,15 @@
 - `docs/audit/dependencies-2026-10-31.json`
 - `docs/audit/engine-adapters-inspection-2026-11-01.json`
 - `docs/audit/ENGINE-BY-ENGINE-2026-11-01.md`
+- `docs/audit/ENGLISH-INTERFACE-2026-11-01.md`
 - `docs/audit/FOLLOWUP-2026-10-31.md`
+- `docs/audit/inventory-2026-10-31.csv`
 - `docs/audit/mtool-switch-program-inventory-2026-11-01.json`
 - `docs/audit/relative-imports-2026-10-31.json`
 - `docs/audit/REVIEW-2026-10-31.md`
 - `docs/audit/UNREAL_REAL_GAME_TEST_2026-10-31.md`
+- `docs/audit/validation-2026-10-31.txt`
+- `docs/audit/validation-followup-2026-10-31.txt`
 - `docs/audits/AUDIT.md`
 - `docs/audits/multi-ia-analysis.md`
 - `docs/CATALOGO-DO-CODIGO.md`
@@ -285,6 +291,7 @@
 - `src/engines/rpgmaker/rpgMakerPluginsFile.js`
 - `src/engines/rpgmaker/rpgMakerRubyHandler.js`
 - `src/engines/rpgmaker/rpgMakerRuntimeBridge.js`
+- `src/engines/unity/cecil_bridge.ps1`
 - `src/engines/unity/test_asset_extract.py`
 - `src/engines/unity/unity_asset_bridge.py`
 - `src/engines/unity/unity_inspector.py`
@@ -445,6 +452,7 @@
 - `tests/unit/coverageTruth.test.js`
 - `tests/unit/displayTextClassification.test.js`
 - `tests/unit/engineAndRollback.test.js`
+- `tests/unit/englishStartup.test.js`
 - `tests/unit/executableCompatibility.test.js`
 - `tests/unit/explicitProviderChoice.test.js`
 - `tests/unit/hookLifecycle.test.js`
@@ -502,7 +510,11 @@
 - `tools/translate-locres.js`
 - `tools/universal_rpgmaker_gameplay_runner.js`
 - `ui/app.js`
+- `ui/favicon.ico`
 - `ui/index.html`
+- `ui/NotoSans/cjk/NotoSansCJKsc-Regular.otf`
+- `ui/OpenTranslator.png`
+- `ui/rawres/notdef.ttf`
 - `ui/styles/base.css`
 - `ui/styles/layout.css`
 - `ui/UltraTranslateOverlay.js`
