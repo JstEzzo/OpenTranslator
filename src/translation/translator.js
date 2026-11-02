@@ -559,7 +559,42 @@ async function translateMultiBatch(texts, sl, tl, glossary, onBatchTranslated) {
   return translateBatch(texts, sl, tl, "multi", glossary, onBatchTranslated);
 }
 
+const TranslationQuality = require('../core/translationQuality');
+
 async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated, options = {}) {
+  const rejected = new Map();
+  const sourceById = new Map(texts.map(item => [item.id, item.clean || item.original || '']));
+  const idsBySource = new Map();
+  for (const [id, source] of sourceById) {
+    if (!idsBySource.has(source)) idsBySource.set(source, []);
+    idsBySource.get(source).push(id);
+  }
+  const check = (source, translation, id) => {
+    const quality = TranslationQuality.inspect(source, translation);
+    if (!quality.valid) {
+      const ids = id !== null && id !== undefined ? [id] : (idsBySource.get(source) || [null]);
+      for (const rejectedId of ids) rejected.set(rejectedId ?? source, { id:rejectedId, issues:quality.issues });
+    }
+    return quality.valid;
+  };
+  const saveValid = typeof onBatchTranslated === 'function' ? chunk => {
+    const valid = chunk.filter(item => Array.isArray(item)
+      ? check(item[0], item[1], null)
+      : check(item.clean || item.original || sourceById.get(item.id), item.translated, item.id));
+    if (valid.length) onBatchTranslated(valid);
+  } : undefined;
+  const result = await translateBatchUnchecked(texts, sl, tl, engine, glossary, saveValid, options);
+  if (result instanceof Map) {
+    for (const [id, value] of result) {
+      if (!check(sourceById.get(id), value, id)) result.delete(id);
+    }
+    const combined = [...(result.rejectedTranslations || []), ...rejected.values()];
+    result.rejectedTranslations = [...new Map(combined.map(item => [item.id ?? JSON.stringify(item.issues), item])).values()];
+  }
+  return result;
+}
+
+async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchTranslated, options = {}) {
   if (!engine || engine === "auto") engine = "multi";
   options = { ...options, allowProviderFallback: options.allowProviderFallback === true || engine === "multi" };
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
@@ -1055,6 +1090,18 @@ async function translateGoogleMobileBatch(texts, sl, tl) {
 }
 
 async function translateSingle(text, sl, tl, engine) {
+  const result = await translateSingleUnchecked(text, sl, tl, engine);
+  if (typeof text === 'string' && text.trim()) {
+    const quality = TranslationQuality.inspect(text, result);
+    if (!quality.valid) {
+      const error = new Error('Translation quality rejected: ' + quality.issues.join(', '));
+      error.code = 'INVALID_TRANSLATION_QUALITY'; throw error;
+    }
+  }
+  return result;
+}
+
+async function translateSingleUnchecked(text, sl, tl, engine) {
   const cfg = loadCfg();
   if (!engine || engine === "auto") engine = cfg.engine || "multi";
   if (engine === "bing") return translateBingSingle(text, sl, tl);

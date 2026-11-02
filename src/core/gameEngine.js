@@ -14,6 +14,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const TranslationQuality = require("./translationQuality");
 const { spawn, spawnSync } = require("child_process");
 
 const {
@@ -1577,7 +1578,7 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
       } else if (t.raw) {
         k = t.file + ":" + t.raw + ":" + t.original;
       } else continue;
-      if (cacheTranslations[k]) {
+      if (cacheTranslations[k] && TranslationQuality.inspect(t.original || t.clean, cacheTranslations[k]).valid) {
         translations.set(t.id, cacheTranslations[k]);
         localCacheMatches++;
       }
@@ -1594,7 +1595,7 @@ async function executeTranslationPipeline(gameDir, cfg, title, engineType = "gen
         k = t.file + ":" + t.raw + ":" + (t.original || t.clean);
       }
       const hit = (k && transCacheData[k]) || transCacheData[t.clean] || transCacheData[t.original];
-      if (hit) {
+      if (hit && TranslationQuality.inspect(t.original || t.clean, hit).valid) {
         translations.set(t.id, hit);
         localCacheMatches++;
       }

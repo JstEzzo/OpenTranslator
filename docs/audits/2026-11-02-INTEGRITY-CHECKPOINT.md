@@ -49,3 +49,11 @@ Repeated 429s now increase exponential backoff instead of repeatedly using the c
 Google requests are serialized in the gateway with a minimum start interval. HTTP error responses are no longer briefly counted as successes, and one 429 response is not counted twice by the gateway and caller. Preflight checks do not consume the single recovery probe before the gateway can issue it.
 
 A loopback HTTP integration test verifies a real 429 response, duplicate-error suppression, durable pause after a new breaker instance, no socket during pause, single-probe recovery, cleared persisted state, increasing backoff and one in-flight Google request. The full local suite passed 673 checks in 49 suites. This fixes client behavior; it cannot compel Google to lift a server-side limit.
+
+## Repeated translation prevention
+
+A shared quality check rejects generated word/phrase loops, duplicated short labels (including close misspellings), and introduced unknown-model markers. Source repetition, protected tags/interpolations, and repeated expressive text are accounted for instead of being automatically deleted.
+
+Provider single/batch entry points validate results before returning them or forwarding incremental cache writes. SQLite translation memory, the global SQLite/JSON cache, common dictionaries and local-cache hits ignore rejected legacy values while retaining the stored data. The main pipeline returns FAILED_QA before calling the adapter's apply method. Direct RenPy injection performs the same preflight before creating translation files; reviewed interface labels remain authoritative.
+
+The regression includes invalid provider output, unchanged game files on failure, rejected cache writes, ignored legacy SQLite/fallback entries, protected placeholders, intentional repetition and canonical menu labels. Detection is a quality gate, not a claim that machine translation is semantically perfect.

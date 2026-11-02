@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { formatRenpyStringLiteral, healRenpyVariables, RENPY_COMMON_STRINGS } = require('../renpyCommon');
 const { PartialReport } = require('../../../core/partialApply');
+const TranslationQuality = require('../../../core/translationQuality');
 const canonicalInterfaceTranslations = new Map(RENPY_COMMON_STRINGS.map(item => [item.original, item.translated]));
 
 class RenpyInjector {
@@ -96,6 +97,12 @@ class RenpyInjector {
   async inject(gameDir, translations, options = {}) {
     const gameSubDir = this.resolveGameSubDir(gameDir);
     const tlDir = path.join(gameSubDir, 'tl', 'pt_BR');
+
+    const rejected = translations.filter(entry => entry.original && entry.translated &&
+      !TranslationQuality.inspect(entry.original, canonicalInterfaceTranslations.get(entry.original) || entry.translated).valid);
+    if (rejected.length) return { success:false, status:'FAILED_QA', count:0, filesGenerated:[],
+      error:'Repeated or invalid translation rejected before writing RenPy files.',
+      rejectedIds:rejected.map(entry => entry.id) };
 
     if (!fs.existsSync(tlDir)) {
       fs.mkdirSync(tlDir, { recursive: true });

@@ -47,6 +47,7 @@
  * Infraestrutura / Persistência & Cache (Data Access Layer)
  */
 
+const TranslationQuality = require('../core/translationQuality');
 const fs = require("fs");
 const path = require("path");
 if (!global.ROOT) global.ROOT = path.resolve(__dirname, '..', '..');
@@ -270,7 +271,7 @@ function loadGlobalCacheForLang(sl, tl, engine) {
       );
       const rows = stmt.all(langKey);
       for (const row of rows) {
-        if (row.original && row.translated && row.original !== row.translated) {
+        if (row.original && row.translated && row.original !== row.translated && TranslationQuality.inspect(row.original, row.translated).valid) {
           dict[row.original] = row.translated;
         }
       }
@@ -287,7 +288,7 @@ function loadGlobalCacheForLang(sl, tl, engine) {
       for (const k of keysToCheck) {
         if (data[k]) {
           for (const [orig, tr] of Object.entries(data[k])) {
-            if (orig && tr && orig !== tr) {
+            if (orig && tr && orig !== tr && TranslationQuality.inspect(orig, tr).valid) {
               dict[orig] = tr;
             }
           }
@@ -321,7 +322,7 @@ function saveNewGlobalTranslations(sl, tl, translationsArray, engine) {
   const accepted = [];
   let rejected = 0;
   for (const [orig, tr] of translationsArray) {
-    if (isTranslatableText(orig) && isTranslatableText(tr)) accepted.push([orig, tr]);
+    if (isTranslatableText(orig) && isTranslatableText(tr) && TranslationQuality.inspect(orig, tr).valid) accepted.push([orig, tr]);
     else rejected++;
   }
   if (rejected > 0) {
@@ -543,7 +544,7 @@ function getCommonTranslation(text, sl, tl, commonTrans) {
   const tryPair = (pair) => {
     if (!pair) return null;
     tried.push(pair);
-    if (commonTrans[pair] && commonTrans[pair][trimmed]) {
+    if (commonTrans[pair] && commonTrans[pair][trimmed] && TranslationQuality.inspect(trimmed, commonTrans[pair][trimmed]).valid) {
       return commonTrans[pair][trimmed];
     }
     return null;

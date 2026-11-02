@@ -31,6 +31,7 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: 'unit', name: 'translationRepetition', file: 'tests/unit/translationRepetition.test.js', desc: 'Reject model loops before caching and game writes while preserving intentional repetition' },
   { group: 'unit', name: 'renpyInterfaceLabels', file: 'tests/unit/renpyInterfaceLabels.test.js', desc: 'Reviewed interface labels replace repeated machine output and preserve genuine repeated dialogue' },
   { group: 'unit', name: 'persistentProviderPause', file: 'tests/unit/persistentProviderPause.test.js', desc: 'Real HTTP 429, durable pause, Retry-After date, probe recovery and serialized Google requests' },
   { group: 'unit', name: 'godotPckHeader', file: 'tests/unit/godotPckHeader.test.js', desc: 'Official PCK v2 header, encrypted-directory diagnostics and refusal of invalid legacy rewriting' },

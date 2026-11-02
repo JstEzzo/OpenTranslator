@@ -20,6 +20,7 @@ const defaultRegistry = require('./engineRegistry');
 const CodeProtector = require('./codeProtector');
 const BackupManager = require('./backupManager');
 const QAEngine = require('./qaEngine');
+const TranslationQuality = require('./translationQuality');
 const translationMemory = require('./translationMemory');
 
 // Registra adapters
@@ -240,7 +241,8 @@ class TranslationPipeline {
       }
 
       const isActuallyTranslated = typeof cached === 'string' && cached.trim().length > 0 &&
-        cached.trim() !== t.clean.trim() && cached.trim() !== (t.original || '').trim();
+        cached.trim() !== t.clean.trim() && cached.trim() !== (t.original || '').trim() &&
+        TranslationQuality.inspect(t.clean, cached).valid;
       if (isActuallyTranslated) {
         translations.set(t.id, cached);
         cacheHits++;
@@ -302,6 +304,10 @@ class TranslationPipeline {
           { allowProviderFallback }
         );
 
+        if (newTranslations.rejectedTranslations?.length) {
+          return { success:false, status:'FAILED_QA', error:'Provider output failed translation quality checks. No game files were modified.',
+            details:newTranslations.rejectedTranslations, appliedCount:0, pending:newTranslations.rejectedTranslations.length };
+        }
         for (const [id, tr] of newTranslations) {
           const origObj = textsById.get(id);
           const isRealTranslation = tr && typeof tr === 'string' && tr.trim().length > 0 &&
@@ -464,6 +470,7 @@ class TranslationPipeline {
     // Validação com QAEngine (restaura tokens antes do QA para validar strings finais)
     let qaErrorsCount = 0;
     let qaWarningsCount = 0;
+    const qualityFailures = [];
     for (const t of texts) {
       let tr = translations.get(t.id);
       if (tr) {
@@ -472,6 +479,8 @@ class TranslationPipeline {
           tr = restored.restoredText;
           translations.set(t.id, tr);
         }
+        const quality = TranslationQuality.inspect(t.original || t.clean, tr);
+        if (!quality.valid) qualityFailures.push({ id:t.id, issues:quality.issues });
         const qaRes = QAEngine.validate(t.clean, tr, { expectedTokens: t.tokens });
         if (qaRes.qaStatus === 'fail') qaErrorsCount++;
         else if (qaRes.qaStatus === 'warn') qaWarningsCount++;
@@ -479,6 +488,11 @@ class TranslationPipeline {
     }
 
     if (global.log) global.log('info', '[Pipeline QA] Status: ' + qaErrorsCount + ' erros, ' + qaWarningsCount + ' alertas.');
+
+    if (qualityFailures.length) {
+      return { success:false, status:'FAILED_QA', error:'Translation contains repeated words or invalid model output. No game files were modified.',
+        details:qualityFailures, appliedCount:0, pending:qualityFailures.length };
+    }
 
     // Validação estrutural do Adapter
     let valResult;

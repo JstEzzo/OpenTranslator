@@ -3,6 +3,8 @@
  * Validador dedicado de integridade técnica, sintática e de proteção.
  */
 
+const TranslationQuality = require('./translationQuality');
+
 class QAEngine {
   static validate(original, translated, options = {}) {
     const qaErrors = [];
@@ -102,6 +104,9 @@ class QAEngine {
     if (words.length >= 4 && original.trim() === translated.trim()) {
       qaWarnings.push("Texto idêntico ao original (possível frase não-traduzida).");
     }
+
+    const quality = TranslationQuality.inspect(original, translated);
+    qaErrors.push(...quality.issues.map(code => 'Translation quality rejected: ' + code));
 
     let qaStatus = "pass";
     if (qaErrors.length > 0) qaStatus = "fail";

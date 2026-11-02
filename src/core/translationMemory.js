@@ -7,6 +7,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const TranslationQuality = require("./translationQuality");
 
 function canonicalLanguage(value, fallback) {
   return String(value || fallback).trim().replace(/_/g, '-').toLowerCase();
@@ -107,7 +108,7 @@ class TranslationMemory2 {
           LIMIT 1
         `);
         const row = stmt.get(hash, langSource, langTarget, gameId, engine);
-        if (row && row.translated_text && typeof row.translated_text === "string" && row.translated_text.trim().length > 0 && row.translated_text.trim() !== sourceText.trim()) {
+        if (row && row.translated_text && typeof row.translated_text === "string" && row.translated_text.trim().length > 0 && row.translated_text.trim() !== sourceText.trim() && TranslationQuality.inspect(sourceText, row.translated_text).valid) {
           this.cacheStats.hits++;
           return row.translated_text;
         }
@@ -116,7 +117,7 @@ class TranslationMemory2 {
 
     for (const [scope, scopeId] of [['game', gameId], ['engine', engine], ['global', '']]) {
       const entry = this.inMemoryStore.get(memoryKey(hash, langSource, langTarget, scope, scopeId));
-      if (entry && entry.translated_text && entry.translated_text.trim() !== sourceText.trim()) {
+      if (entry && entry.translated_text && entry.translated_text.trim() !== sourceText.trim() && TranslationQuality.inspect(sourceText, entry.translated_text).valid) {
         this.cacheStats.hits++;
         return entry.translated_text;
       }
@@ -130,6 +131,7 @@ class TranslationMemory2 {
     if (!sourceText || !translatedText) return;
     if (typeof sourceText !== "string" || typeof translatedText !== "string") return;
     if (sourceText.trim() === translatedText.trim()) return; // Nunca armazena texto idêntico ao original como tradução válida
+    if (!TranslationQuality.inspect(sourceText, translatedText).valid) return false;
     const norm = sourceText.trim().toLowerCase();
     const hash = crypto.createHash("sha256").update(norm).digest("hex");
     const engine = options.engine || "generic";
