@@ -6,9 +6,12 @@
  * - Estados: AVAILABLE, DEGRADED, RATE_LIMITED, COOLDOWN, HALF_OPEN, AUTH_ERROR, NETWORK_ERROR, DISABLED, NOT_CONFIGURED
  * - Transição controlada para HALF_OPEN após expiração de cooldown
  * - Health Probe Protocol: exatamente 1 único probe permitido em HALF_OPEN; todos os demais workers bloqueados
- * - Backoff exponencial em reincidência de 429 (10min -> 20min -> 40min -> 80min)
+ * - Backoff exponencial com jitter, Retry-After e pausa persistente
  * - Telemetria completa e detalhada para o painel de saúde
  */
+
+const fs = require('fs');
+const path = require('path');
 
 const STATES = {
   AVAILABLE: "AVAILABLE",
@@ -47,13 +50,46 @@ class ProviderCircuitState {
 }
 
 class GlobalCircuitBreaker {
-  constructor() {
+  constructor(options = {}) {
     this.providers = new Map();
+    this.statePath = options.statePath || (global.DATA_DIR ? path.join(global.DATA_DIR, 'provider-cooldowns.json') : null);
+    this.random = options.random || Math.random;
+    this.seenRateLimitEvents = new Set();
+    if (this.statePath) {
+      try {
+        const saved = JSON.parse(fs.readFileSync(this.statePath, 'utf8'));
+        for (const item of saved.providers || []) {
+          if (!item || typeof item.providerKey !== 'string' || !Number.isFinite(item.cooldownUntil)) continue;
+          const state = new ProviderCircuitState(item.providerKey);
+          state.state = STATES.RATE_LIMITED;
+          state.cooldownUntil = Math.max(0, item.cooldownUntil);
+          state.nextProbeAt = state.cooldownUntil;
+          state.consecutive429 = Math.max(0, Number(item.consecutive429) || 0);
+          state.concurrency = 0;
+          this.providers.set(item.providerKey, state);
+        }
+      } catch (error) {
+        if (error.code !== 'ENOENT') this.persistenceError = error.message;
+      }
+    }
     this.baseCooldownMs = 15 * 1000; // 15 segundos base adaptativo (NÃO 10 minutos!)
     this.maxCooldownMs = 5 * 60 * 1000; // 5 minutos teto
     // FASE 3 / PASSO 27 — falhas consecutivas (rede/5xx) também cooldown.
     this.failureThreshold = 3;         // 3 falhas seguidas abrem o cooldown
     this.failureCooldownBaseMs = 5 * 1000; // 5s base, crescendo até maxCooldownMs
+  }
+
+  _persistCooldowns() {
+    if (!this.statePath) return;
+    const temporary = this.statePath + '.' + process.pid + '.tmp';
+    try {
+      fs.mkdirSync(path.dirname(this.statePath), { recursive: true });
+      const providers = [...this.providers.values()].filter(p => p.cooldownUntil > 0)
+        .map(p => ({ providerKey: p.providerKey, cooldownUntil: p.cooldownUntil, consecutive429: p.consecutive429 }));
+      fs.writeFileSync(temporary, JSON.stringify({ version: 1, providers }));
+      fs.renameSync(temporary, this.statePath);
+      this.persistenceError = null;
+    } catch (error) { this.persistenceError = error.message; }
   }
 
   static getInstance() {
@@ -71,7 +107,7 @@ class GlobalCircuitBreaker {
     return this.providers.get(key);
   }
 
-  canExecute(providerKey) {
+  canExecute(providerKey, { reserveProbe = true } = {}) {
     const p = this._getProviderState(providerKey);
     const now = Date.now();
 
@@ -112,7 +148,7 @@ class GlobalCircuitBreaker {
     // Protocolo HALF_OPEN: apenas 1 único probe permitido
     if (p.state === STATES.HALF_OPEN) {
       if (!p.probeInFlight) {
-        p.probeInFlight = true;
+        if (reserveProbe) p.probeInFlight = true;
         return {
           allowed: true,
           state: STATES.HALF_OPEN,
@@ -177,9 +213,16 @@ class GlobalCircuitBreaker {
       p.cooldownUntil = 0;
       p.nextProbeAt = 0;
     }
+    this._persistCooldowns();
   }
 
   recordError(providerKey, classifiedError = {}) {
+    if (classifiedError.eventId !== undefined) {
+      const event = providerKey + ':' + classifiedError.eventId;
+      if (this.seenRateLimitEvents.has(event)) return;
+      this.seenRateLimitEvents.add(event);
+      if (this.seenRateLimitEvents.size > 256) this.seenRateLimitEvents.delete(this.seenRateLimitEvents.values().next().value);
+    }
     const p = this._getProviderState(providerKey);
     const now = Date.now();
     p.probeInFlight = false;
@@ -194,19 +237,19 @@ class GlobalCircuitBreaker {
       if (!p.first429Time) p.first429Time = now;
       p.last429Time = now;
 
-      // Backoff exponencial baseado em reincidências:
-      // 1ª vez = baseCooldown (ex: 10 min)
-      // 2ª vez = baseCooldown * 2 (20 min)
-      // 3ª vez = baseCooldown * 4 (40 min)
-      // 4ª vez = baseCooldown * 8 (80 min)
+      // Increase the pause on repeated 429s. A default classifier delay must
+      // not override exponential backoff; a server-provided delay is a floor.
       const multiplier = Math.pow(2, Math.max(0, p.consecutive429 - 1));
       const calculatedCooldown = Math.min(this.maxCooldownMs, this.baseCooldownMs * multiplier);
-      const cd = classifiedError.retryAfterMs || calculatedCooldown;
+      const serverDelay = classifiedError.retryAfterProvided === true ? Math.max(0, classifiedError.retryAfterMs) : 0;
+      const jitter = Math.floor(this.random() * Math.min(1000, calculatedCooldown * 0.1));
+      const cd = Math.max(serverDelay, calculatedCooldown + jitter);
 
       p.cooldownUntil = now + cd;
       p.nextProbeAt = p.cooldownUntil;
       p.lastError = classifiedError.message || `HTTP 429 Too Many Requests (Reincidência ${p.consecutive429})`;
       p.concurrency = 0;
+      this._persistCooldowns();
       return;
     }
 
@@ -309,6 +352,7 @@ class GlobalCircuitBreaker {
     } else {
       this.providers.clear();
     }
+    this._persistCooldowns();
   }
 }
 

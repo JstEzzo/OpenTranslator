@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { formatRenpyStringLiteral, healRenpyVariables, RENPY_COMMON_STRINGS } = require('../renpyCommon');
 const { PartialReport } = require('../../../core/partialApply');
+const canonicalInterfaceTranslations = new Map(RENPY_COMMON_STRINGS.map(item => [item.original, item.translated]));
 
 class RenpyInjector {
   constructor(options = {}) {
@@ -185,7 +186,7 @@ class RenpyInjector {
         blockCount++;
 
         const fOld = formatRenpyStringLiteral(entry.original);
-        let healedTrans = healRenpyVariables(entry.original, entry.translated);
+        let healedTrans = healRenpyVariables(entry.original, canonicalInterfaceTranslations.get(entry.original) || entry.translated);
         if (healedTrans.startsWith('[PT] ') && !entry.original.includes('[PT]')) {
           healedTrans = healedTrans.slice(5);
         }

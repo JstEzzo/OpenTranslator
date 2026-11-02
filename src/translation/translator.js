@@ -681,7 +681,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
   }
   if (engine === "multi" || engine === "google" || engine === "gtx") {
     const breaker = GlobalCircuitBreaker.getInstance();
-    const initCheck = breaker.canExecute("google:gtx");
+    const initCheck = breaker.canExecute("google:gtx", { reserveProbe: false });
     if (!initCheck.allowed) {
       if (options.allowProviderFallback === false) {
         const pending = new Map(); pending.rateLimited = true; return pending;
@@ -733,7 +733,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
 
   const fetchGoogleBatchWithRetry = async (url, maxRetries = 3, postBody = null) => {
     const breaker = GlobalCircuitBreaker.getInstance();
-    const check = breaker.canExecute("google:gtx");
+    const check = breaker.canExecute("google:gtx", { reserveProbe: false });
     if (!check.allowed) {
       LogDeduplicator.getInstance().logRateLimit("google:gtx", check.reason);
       throw new Error(`CIRCUIT_BREAKER_OPEN: Google GTX bloqueado por Rate Limit. Cooldown até ${check.cooldownUntil}`);
@@ -741,7 +741,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       // Re-verifica o circuit breaker antes de cada tentativa
-      const checkLoop = breaker.canExecute("google:gtx");
+      const checkLoop = breaker.canExecute("google:gtx", { reserveProbe: false });
       if (!checkLoop.allowed) {
         throw new Error(`CIRCUIT_BREAKER_OPEN: Google GTX bloqueado por Rate Limit`);
       }
@@ -839,7 +839,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
     await new Promise((r) => setTimeout(r, 200 + Math.floor(Math.random() * 100)));
     const joined = batch.map(([clean]) => clean).join(SEP);
     try {
-      const gCheck = breaker.canExecute("google:gtx");
+      const gCheck = breaker.canExecute("google:gtx", { reserveProbe: false });
       if (!gCheck.allowed) {
         throw new Error(`Google GTX temporariamente limitado (${gCheck.reason}).`);
       }
@@ -902,7 +902,7 @@ async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated
   };
 
   const breaker = GlobalCircuitBreaker.getInstance();
-  const initCheck = breaker.canExecute("google:gtx");
+  const initCheck = breaker.canExecute("google:gtx", { reserveProbe: false });
   if (!initCheck.allowed) {
     LogDeduplicator.getInstance().logRateLimit("google:gtx", initCheck.reason);
     results.rateLimited = true;
@@ -1088,7 +1088,7 @@ async function translateSingleWithFallback(text, sl, tl) {
   if (!text || typeof text !== "string" || !text.trim()) return text;
 
   const breaker = GlobalCircuitBreaker.getInstance();
-  const googleCheck = breaker.canExecute("google:gtx");
+  const googleCheck = breaker.canExecute("google:gtx", { reserveProbe: false });
 
   // Se Google GTX estiver disponível e não bloqueado por rate limit, tenta Google primeiro
   if (googleCheck.allowed) {
@@ -1130,7 +1130,7 @@ async function translateSingleWithFallback(text, sl, tl) {
 async function translateSingleRawGoogle(text, sl, tl, strict = false) {
   if (!text || typeof text !== "string" || !text.trim()) return text;
   const breaker = GlobalCircuitBreaker.getInstance();
-  const initCheck = breaker.canExecute("google:gtx");
+  const initCheck = breaker.canExecute("google:gtx", { reserveProbe: false });
   if (!initCheck.allowed) {
     if (strict) throw new Error('Google provider is temporarily blocked by its circuit breaker.');
     return text;

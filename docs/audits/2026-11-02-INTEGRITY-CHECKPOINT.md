@@ -41,3 +41,11 @@ A real Godot 4.4.1 PCK v2 package has an encrypted directory. The diagnostic now
 Primary format reference: [Godot 4.4 PCK reader](https://github.com/godotengine/godot/blob/4.4/core/io/file_access_pack.cpp).
 
 Final original-installation integrity check: 12 games and 69,538 files checked by SHA-256; no changed, missing or additional files. Windows/POSIX relative-path separators are normalized before comparison.
+
+## HTTP 429 continuation
+
+Repeated 429s now increase exponential backoff instead of repeatedly using the classifier's default 15-second delay. Jitter is added and an explicit Retry-After value is a minimum wait. Retry-After supports both seconds and HTTP dates. Pauses are saved in the application's data directory and survive process restart. Explicit provider selection remains unchanged.
+
+Google requests are serialized in the gateway with a minimum start interval. HTTP error responses are no longer briefly counted as successes, and one 429 response is not counted twice by the gateway and caller. Preflight checks do not consume the single recovery probe before the gateway can issue it.
+
+A loopback HTTP integration test verifies a real 429 response, duplicate-error suppression, durable pause after a new breaker instance, no socket during pause, single-probe recovery, cleared persisted state, increasing backoff and one in-flight Google request. The full local suite passed 673 checks in 49 suites. This fixes client behavior; it cannot compel Google to lift a server-side limit.

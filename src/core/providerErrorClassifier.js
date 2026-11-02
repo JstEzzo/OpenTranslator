@@ -3,6 +3,8 @@
  * Classificador central de erros de provedores HTTP/API.
  */
 
+const responseEvents = new WeakMap();
+let nextEvent = 0;
 class ProviderErrorClassifier {
   static classify(err, response = {}) {
     const status = response.statusCode || (err && err.statusCode);
@@ -13,15 +15,25 @@ class ProviderErrorClassifier {
     if (status === 429 || msg.includes("429") || msg.toLowerCase().includes("too many requests") || body.includes("Too Many Requests")) {
       let retryAfterMs = 15 * 1000; // 15s adaptive default, NOT 10 minutes!
       let retryAfterProvided = false;
-      if (response.headers && response.headers["retry-after"]) {
-        const ra = parseInt(response.headers["retry-after"], 10);
-        if (!isNaN(ra) && ra > 0) {
-          retryAfterMs = ra * 1000;
+      const headers = response.headers || (err && err.headers);
+      const retryAfter = headers && (typeof headers.get === 'function'
+        ? headers.get('retry-after') : headers['retry-after'] ?? headers['Retry-After']);
+      if (retryAfter !== undefined && retryAfter !== null) {
+        const text = String(retryAfter).trim();
+        const delay = /^\d+(?:\.\d+)?$/.test(text) ? Number(text) * 1000 : Date.parse(text) - Date.now();
+        if (Number.isFinite(delay) && delay >= 0) {
+          retryAfterMs = Math.ceil(delay);
           retryAfterProvided = true;
         }
       }
+      let eventId;
+      if (headers && typeof headers === 'object') {
+        if (!responseEvents.has(headers)) responseEvents.set(headers, ++nextEvent);
+        eventId = responseEvents.get(headers);
+      }
       return {
         type: "RATE_LIMITED",
+        eventId,
         statusCode: 429,
         isRateLimit: true,
         retryAfterMs,
