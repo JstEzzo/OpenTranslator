@@ -14,6 +14,7 @@ const { patchGameData, backupGameData, restoreOldestBackup } = require('../../co
 const { PartialReport } = require('../../core/partialApply');
 const TextWrap = require('./installTextWrap');
 const NativeTextData = require('./nativeTextData');
+const PluginTextData = require('./pluginTextData');
 
 class RpgMakerAdapter extends BaseEngineAdapter {
   constructor() {
@@ -74,7 +75,7 @@ class RpgMakerAdapter extends BaseEngineAdapter {
     }
 
     const nativeData = NativeTextData.extract(gameDir);
-    const rawTexts = nativeData ? nativeData.texts : extractGameTexts(gameDir);
+    const rawTexts = nativeData ? [...nativeData.texts,...PluginTextData.extract(gameDir)] : extractGameTexts(gameDir);
     const allTexts = [];
 
     for (const t of rawTexts) {
@@ -190,14 +191,16 @@ class RpgMakerAdapter extends BaseEngineAdapter {
 
     const native = texts.some(text=>text.nativeKind);
     if(native && texts.some(text=>!text.nativeKind)) throw new Error('Mixed database translation formats are not supported');
-    const nativeResult = native ? NativeTextData.apply(gameDir,texts,restoredMap) : null;
-    const patchedCount = nativeResult ? nativeResult.count : patchGameData(gameDir, texts, restoredMap);
+    const pluginPlan = native ? PluginTextData.prepare(gameDir,texts,restoredMap) : null;
+    const nativeResult = native ? NativeTextData.apply(gameDir,texts.filter(text=>text.nativeKind!=='pluginParameter'),restoredMap) : null;
+    const pluginResult = PluginTextData.commit(pluginPlan);
+    const patchedCount = nativeResult ? nativeResult.count + pluginResult.count : patchGameData(gameDir, texts, restoredMap);
     let textWrap = null;
-    try { if (wrapPlan) textWrap = TextWrap.install(wrapRoot, wrapPlan); }
+    try { if (wrapPlan) textWrap = TextWrap.install(wrapRoot); }
     catch (error) { return { success:false, error:error.message, count:patchedCount, modifiedFiles:[path.join(wrapRoot, 'data')] }; }
     return {
       success: true,
-      modifiedFiles: [...(nativeResult?.modifiedFiles || [path.join(gameDir, "data")]), ...(textWrap?.files || [])],
+      modifiedFiles: [...(nativeResult?.modifiedFiles || [path.join(gameDir, "data")]), ...pluginResult.modifiedFiles, ...(textWrap?.files || [])],
       fileHashes: nativeResult?.fileHashes,
       textWrap,
       count: patchedCount

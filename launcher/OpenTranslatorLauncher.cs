@@ -711,6 +711,8 @@ namespace OpenTranslatorLauncher
                     Arguments = "-e \"" + script + "\"",
                     WorkingDirectory = Directory.Exists(ToolDir) ? ToolDir : BaseDir,
                     RedirectStandardOutput = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -739,6 +741,8 @@ namespace OpenTranslatorLauncher
                     FileName = exe,
                     Arguments = "-v",
                     RedirectStandardOutput = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -813,6 +817,8 @@ namespace OpenTranslatorLauncher
                     Arguments = "server.js --no-browser",
                     WorkingDirectory = File.Exists(Path.Combine(BaseDir, "server.js")) ? BaseDir : ToolDir,
                     RedirectStandardOutput = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true

@@ -155,10 +155,11 @@ class UnrealAdapter extends BaseEngineAdapter {
 
           for (const item of fileTexts) {
             const tr = translations.get ? translations.get(item.id) : translations[item.id];
-            if (tr && tr !== item.original && item.namespace && item.key) {
+            if (tr && tr !== item.original && typeof item.namespace === 'string' && typeof item.key === 'string') {
               if (!namespaces[item.namespace]) namespaces[item.namespace] = {};
               const restored = this.codeProtector.restore(tr, item.tokens || []);
-              namespaces[item.namespace][item.key] = restored.restoredText;
+              const previous = namespaces[item.namespace][item.key];
+              namespaces[item.namespace][item.key] = { ...(previous && typeof previous === 'object' ? previous : {}), value: restored.restoredText };
               appliedCount++;
             }
           }

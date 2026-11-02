@@ -16,11 +16,14 @@ async function translateBatch(texts,sl,tl,glossary,onBatch,options={}) {
   let diagnostic='';
   const exit=await new Promise((resolve,reject)=>{
     const child=spawn(python,[worker,'--request',request,'--response',response,'--config',configPath],{windowsHide:true,stdio:['ignore','pipe','pipe']});
-    child.on('error',reject);
+    const cancellation=setInterval(()=>{if(require('../core/shutdownCoordinator').isShuttingDown())child.kill();},100);
+    cancellation.unref();
+    child.on('error',error=>{clearInterval(cancellation);reject(error);});
     child.stdout.on('data',buffer=>{if(global.log)global.log('info','[Local translation] '+buffer.toString().trim());});
     child.stderr.on('data',buffer=>{diagnostic=(diagnostic+buffer.toString()).slice(-4000);});
-    child.on('close',resolve);
+    child.on('close',code=>{clearInterval(cancellation);resolve(code);});
   });
+  if(require('../core/shutdownCoordinator').isShuttingDown()){const error=new Error('Local translation cancelled during shutdown; generated cache entries are preserved.');error.code='TRANSLATION_CANCELLED';throw error;}
   if(!fs.existsSync(response))throw new Error('Local translation worker failed: '+diagnostic);
   const result=JSON.parse(fs.readFileSync(response,'utf8'));
   if(exit!==0 || result.error)throw new Error(result.error || diagnostic);

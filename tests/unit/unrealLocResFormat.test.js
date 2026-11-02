@@ -41,6 +41,10 @@ async function test(name, fn) { try { await fn(); pass++; console.log('ok ' + na
     for(const culture of ['en','pt-BR']){const dest=path.join(dir,'Content','Localization','Game',culture);fs.mkdirSync(dest,{recursive:true});fs.writeFileSync(path.join(dest,'Game.locres'),fixture);}
     const r=await new Adapter().extract(dir);assert.strictEqual(r.success,true);assert.strictEqual(r.count,4);assert.strictEqual(new Set(r.texts.map(t=>t.id)).size,4);
   });
+  await test('adapter translates empty namespaces and preserves source hashes', async () => {
+    const dir=path.join(temp,'apply-empty'),dest=path.join(dir,'Content','Localization','Game','pt-BR');fs.mkdirSync(dest,{recursive:true});const file=path.join(dest,'Game.locres');fs.writeFileSync(file,fixture);
+    const adapter=new Adapter(),extracted=await adapter.extract(dir),text=extracted.texts.find(t=>t.key==='A');const result=await adapter.apply(dir,[text],new Map([[text.id,'Iniciar']]));assert.strictEqual(result.success,true);assert.strictEqual(result.count,1);const actual=P.parseLocRes(fs.readFileSync(file));assert.strictEqual(actual.namespaces[''].A.value,'Iniciar');assert.strictEqual(actual.namespaces[''].A.sourceHash,0xdeadbeef);assert.strictEqual(actual.namespaces[''].B.sourceHash,0x01020304);
+  });
   await test('invalid binary resource is a declared extraction failure, not regex text', async () => {
     const dir=path.join(temp,'invalid','Content','Localization');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'Bad.locres'),'This is not a compiled localization resource');
     const r=await new Adapter().extract(path.join(temp,'invalid'));assert.strictEqual(r.success,false);assert.strictEqual(r.count,0);

@@ -31,6 +31,9 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group:'unit', name:'unityLocalizationEncoding', file:'tests/unit/unityLocalizationEncoding.test.js', desc:'Decode and recode supported native Base64 localization fields; reject incompatible tables' },
+  { group:'unit', name:'translationCancellation', file:'tests/unit/translationCancellation.test.js', desc:'Shutdown stops queued requests and blocks new provider calls' },
+  { group:'unit', name:'pluginLabelsAndBatching', file:'tests/unit/pluginLabelsAndBatching.test.js', desc:'Nested visible plugin labels, source checks and bounded Unicode POST batches' },
   { group: 'unit', name: 'nativeMessageBlocks', file: 'tests/unit/nativeMessageBlocks.test.js', desc: 'Whole message translation, stable event commands, stale-source refusal and pixel wrapping in MV/MZ' },
   { group: 'unit', name: 'translationRepetition', file: 'tests/unit/translationRepetition.test.js', desc: 'Reject model loops before caching and game writes while preserving intentional repetition' },
   { group: 'unit', name: 'renpyInterfaceLabels', file: 'tests/unit/renpyInterfaceLabels.test.js', desc: 'Reviewed interface labels replace repeated machine output and preserve genuine repeated dialogue' },

@@ -40,3 +40,9 @@ Internal language markers such as `>>pob<<` are encoder metadata. They must neve
 - [Helsinki-NLP English–Portuguese model](https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-pt): CC BY 4.0; preserve attribution when distributing weights.
 - [Helsinki-NLP Japanese–Portuguese model](https://huggingface.co/Helsinki-NLP/opus-mt-ja-pt): Apache 2.0; follow the model license when distributing weights.
 - [CTranslate2 installation](https://opennmt.net/CTranslate2/installation.html) and [Transformers conversion](https://opennmt.net/CTranslate2/guides/transformers).
+
+## Experimental Unity native table worker
+
+`resources/unity/native_localization_worker.py` supports an explicit schema: English columns in `StringData`, `Random000` and `Topic000`, plus native `m_text`/`m_Text` UI values. The three table columns use canonical UTF-8 Base64 storage; they are decoded before translation and encoded again before writing. Plain-text tables with those names are rejected rather than guessed. This worker is not the default Unity UI path. It requires UnityPy and its optional TypeTreeGeneratorAPI dependency, the game assemblies, and a separately prepared translation payload.
+
+Always create a verified backup before invoking apply. The worker reconstructs type trees without executing game code, stages the modified bundle, reopens it, compares complete changed objects and verifies raw bytes of every unrelated object. Native gameplay, language selection and font coverage require later testing. Unreadable objects remain outside its coverage.

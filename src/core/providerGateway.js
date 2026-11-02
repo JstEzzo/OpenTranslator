@@ -38,6 +38,7 @@ class ProviderGateway {
   }
 
   static async _executeRequest(providerKey, requestFn, options = {}) {
+    if (require("./shutdownCoordinator").isShuttingDown()) { const error=new Error("Translation cancelled during shutdown");error.code="TRANSLATION_CANCELLED";throw error; }
     const cb = GlobalCircuitBreaker.getInstance();
     const check = cb.canExecute(providerKey);
 

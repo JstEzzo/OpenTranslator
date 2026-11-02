@@ -728,34 +728,9 @@ async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchT
   }
 
   const SEP = "\n[|]\n";
-  const SEP_LEN = 15;
-  const MAX_URL_LEN = 1000; // Limite conservador para evitar 414 / rate limits por payload grande
-  const BASE_URL =
-    "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
-    sl +
-    "&tl=" +
-    tl +
-    "&dt=t&q=";
-  const BASE_LEN = BASE_URL.length;
-
-  const batches = [];
-  let batchIdx = 0;
-  while (batchIdx < unique.length) {
-    let batchSize = 0,
-      estLen = BASE_LEN;
-    for (let j = batchIdx; j < unique.length; j++) {
-      const addLen =
-        encodeURIComponent(unique[j][0]).length + (j > batchIdx ? SEP_LEN : 0);
-      if ((estLen + addLen > MAX_URL_LEN || batchSize >= 8) && batchSize > 0)
-        break;
-      estLen += addLen;
-      batchSize++;
-    }
-    if (batchSize === 0) batchSize = 1;
-    const batch = unique.slice(batchIdx, batchIdx + batchSize);
-    batches.push(batch);
-    batchIdx += batchSize;
-  }
+  const batchPlan = require('./googleBatchPlanner').plan(unique);
+  const batches = batchPlan.batches;
+  if (batchPlan.oversized.length) results.pendingTranslations = batchPlan.oversized.flatMap(([, related]) => related.map(t => ({id:t.id,reason:'INPUT_EXCEEDS_BATCH_LIMIT'})));
 
   global.log(
     "info",
@@ -776,6 +751,7 @@ async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchT
     }
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (require("../core/shutdownCoordinator").isShuttingDown()) { const error=new Error("Translation cancelled during shutdown");error.code="TRANSLATION_CANCELLED";throw error; }
       // Re-verifica o circuit breaker antes de cada tentativa
       const checkLoop = breaker.canExecute("google:gtx", { reserveProbe: false });
       if (!checkLoop.allowed) {
@@ -872,6 +848,7 @@ async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchT
   };
 
   const processBatch = async (batch, bIdx) => {
+    if (require("../core/shutdownCoordinator").isShuttingDown()) { results.cancelled=true; return; }
     await new Promise((r) => setTimeout(r, 200 + Math.floor(Math.random() * 100)));
     const joined = batch.map(([clean]) => clean).join(SEP);
     try {
@@ -924,6 +901,7 @@ async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchT
         );
       }
     } catch (e) {
+      if (e.code === "TRANSLATION_CANCELLED") { results.cancelled=true; return; }
       if (e.message.includes("Rate Limit") || e.message.includes("CIRCUIT_BREAKER_OPEN") || e.message.includes("429")) {
         results.rateLimited = true;
         results.rateLimitError = e.message;
@@ -951,10 +929,12 @@ async function translateBatchUnchecked(texts, sl, tl, engine, glossary, onBatchT
     CONCURRENCY_LIMIT,
     batches.map((b, i) => ({ b, i })),
     async ({ b, i }) => {
-      if (results.rateLimited) return; // Se circuit abriu, descarta batches subsequentes
+      if (results.rateLimited || results.cancelled) return; // Se circuit abriu, descarta batches subsequentes
       await processBatch(b, i);
     }
   );
+
+  if (results.cancelled || require("../core/shutdownCoordinator").isShuttingDown()) { const error=new Error("Translation cancelled during shutdown; completed translations remain in cache");error.code="TRANSLATION_CANCELLED";throw error; }
 
   if (results.rateLimited) {
     LogDeduplicator.getInstance().emitSummary("google:gtx", {

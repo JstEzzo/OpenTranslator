@@ -499,6 +499,8 @@ class TranslationPipeline {
         qaErrorsCount, appliedCount:0 };
     }
 
+    if (require("./shutdownCoordinator").isShuttingDown()) return { success:false,status:"CANCELLED",appliedCount:0,error:"Application cancelled during shutdown; cached translations are preserved." };
+
     // Validação estrutural do Adapter
     let valResult;
     try {

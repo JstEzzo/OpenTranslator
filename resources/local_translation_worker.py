@@ -1,5 +1,5 @@
 """Offline translation worker. Language tokens are encoder-only metadata."""
-import argparse,json,os,re,sys,time,hashlib
+import argparse,json,os,re,sys,time,hashlib,unicodedata
 from pathlib import Path
 # Language detection uses small matrix operations; avoid thread startup overhead.
 for variable in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS'):
@@ -34,8 +34,14 @@ def main(request_file,response_file,config_file):
                 item=json.loads(line)
                 if clean_output(item['translation'],item['source']):cache[item['key']]=item['translation']
             except (KeyError,json.JSONDecodeError):continue
-    canonical={'Yes':'Sim','No':'Não','New Game':'Novo jogo','Continue':'Continuar','Shutdown':'Sair','End Game':'Sair do jogo','Options':'Opções','Save':'Salvar','Load':'Carregar','Attack':'Atacar','Guard':'Defender','Fight':'Lutar','Escape':'Fugir','Item':'Item','Items':'Itens','Skill':'Habilidade','Skills':'Habilidades','Equip':'Equipamento','Equipment':'Equipamento','Optimize':'Otimizar','Clear':'Remover','Cancel':'Cancelar','Back':'Voltar','On':'Ativado','Off':'Desativado','スキル':'Habilidades','ステータス':'Estado','並び替え':'Formação','セーブ':'Salvar','ロード':'Carregar','ゲーム終了':'Sair do jogo','ニューゲーム':'Novo jogo','コンティニュー':'Continuar','オプション':'Opções','装備':'Equipamento','アイテム':'Itens','武器':'Armas','防具':'Armaduras','戦う':'Lutar','逃げる':'Fugir','攻撃':'Atacar','防御':'Defender','キャンセル':'Cancelar','はい':'Sim','いいえ':'Não'}
-    def language_of(text):return 'ja' if re.search(r'[\u3040-\u30ff\u3400-\u9fff]',text) else 'en'
+    canonical={'Recollection':'Recordações','Yes':'Sim','No':'Não','New Game':'Novo jogo','Continue':'Continuar','Shutdown':'Sair','End Game':'Sair do jogo','Options':'Opções','Save':'Salvar','Load':'Carregar','Attack':'Atacar','Guard':'Defender','Fight':'Lutar','Escape':'Fugir','Item':'Item','Items':'Itens','Skill':'Habilidade','Skills':'Habilidades','Equip':'Equipamento','Equipment':'Equipamento','Optimize':'Otimizar','Clear':'Remover','Cancel':'Cancelar','Back':'Voltar','On':'Ativado','Off':'Desativado','スキル':'Habilidades','ステータス':'Estado','並び替え':'Formação','セーブ':'Salvar','ロード':'Carregar','ゲーム終了':'Sair do jogo','ニューゲーム':'Novo jogo','コンティニュー':'Continuar','オプション':'Opções','装備':'Equipamento','アイテム':'Itens','武器':'Armas','防具':'Armaduras','戦う':'Lutar','逃げる':'Fugir','攻撃':'Atacar','防御':'Defender','キャンセル':'Cancelar','はい':'Sim','いいえ':'Não'}
+    def language_of(text):
+        if re.search(r'[\u3040-\u30ff]',text):return 'ja'
+        if re.search(r'[\u3400-\u9fff]',text):
+            hint=str(request.get('sourceLanguage','auto')).lower().split('-')[0]
+            if hint in ('zh','en'):return 'zh' # No implicit Japanese fallback for Chinese or mismatched English input.
+            return 'ja'
+        return 'en'
     def encoder(language):
         if language not in encoders:encoders[language]=MarianTokenizer.from_pretrained(config['models'][language]['source'],local_files_only=True)
         return encoders[language]
@@ -52,7 +58,8 @@ def main(request_file,response_file,config_file):
             if detected=='pt' and confidence>.98:plans.append((item,[('literal',source)],None));continue
         if re.search(r'[\u0400-\u052f\u0600-\u06ff\uac00-\ud7af]',source):plans.append((item,[], 'UNSUPPORTED_SOURCE_LANGUAGE'));continue
         protected=sorted(set(value for token in item.get('tokens',[]) for value in [token.get('raw'),token.get('token')] if value),key=len,reverse=True)
-        pattern='('+'|'.join([re.escape(value) for value in protected]+[r'⟦OT_[^⟧]+⟧',r'\\[A-Za-z]+(?:\[[^\]]*\])?',r'\\[.!|><^{}$\\]',r'%\d+',r'\{[^{}]*\}',r'\[[^\[\]]+\]',r'[/_=*~.-]{3,}'])+')'
+        protected=sorted(set(protected)|{character for character in source if unicodedata.category(character).startswith('S')},key=len,reverse=True)
+        pattern='('+'|'.join([re.escape(value) for value in protected]+[r'</?[A-Za-z][^>]*>',r'⟦OT_[^⟧]+⟧',r'\\[A-Za-z]+(?:\[[^\]]*\])?',r'\\[.!|><^{}$\\]',r'%\d+',r'\{[^{}]*\}',r'\[[^\[\]]+\]',r'[/_=*~.-]{3,}'])+')'
         plan=[];reason=None
         for piece in re.split(pattern,source):
             if not piece:continue
