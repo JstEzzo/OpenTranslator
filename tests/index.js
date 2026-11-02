@@ -31,6 +31,11 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: 'unit', name: 'packedContentDiagnostics', file: 'tests/unit/packedContentDiagnostics.test.js', desc: 'Runtime options are excluded, opaque packed content and failed dry-run extraction stay unconfirmed' },
+  { group: 'unit', name: 'rubyMarshalCodec', file: 'tests/unit/rubyMarshalCodec.test.js', desc: 'Structural Unicode rewrite, stale payload rejection, minimal RGSS terminator and collision refusal' },
+  { group: 'unit', name: 'pipelineLanguageSelection', file: 'tests/unit/pipelineLanguageSelection.test.js', desc: 'English dialogue reaches the selected provider and is verified on disk' },
+  { group: 'unit', name: 'translationMemoryLanguages', file: 'tests/unit/translationMemoryLanguages.test.js', desc: 'Separate source and target languages, games and engine scopes in SQLite and fallback memory' },
+  { group: 'unit', name: 'backupSessionIntegrity', file: 'tests/unit/backupSessionIntegrity.test.js', desc: 'Real backup restoration, integrity failures, session identity, and retained recovery data' },
   { group: 'unit', name: 'englishStartup', file: 'tests/unit/englishStartup.test.js', desc: 'English startup preserves game translation languages and other saved preferences' },
   { group: "unit", name: "projectCleanup", file: "tests/unit/projectCleanup.test.js", desc: "Arquivamento verificado conserva dados pessoais e fonte atual" },
   { group: "unit", name: "adapterReview", file: "tests/unit/adapterReview.test.js", desc: "Electron aberto/ASAR, campos repetidos e IDs distintos de Defold/Cocos" },

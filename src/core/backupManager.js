@@ -203,13 +203,20 @@ class BackupManager {
    */
   createSessionBackup(gameDir, filesToBackup = [], sessionInfo = {}) {
     try {
-      const sessionId = sessionInfo.sessionId || `session_${Date.now()}`;
+      const sessionId = sessionInfo.sessionId || `session_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+      if (typeof sessionId !== 'string' || path.basename(sessionId) !== sessionId || sessionId === '..') throw new Error('Invalid backup session identity');
       const transactionId = sessionInfo.transactionId || `tx_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       const backupId = sessionInfo.backupId || `bk_${sessionId}`;
 
       const rootBackupDir = path.join(gameDir, this.backupDirName);
       const sessionBackupDir = path.join(rootBackupDir, "sessions", sessionId);
       const originalFilesDir = path.join(sessionBackupDir, "original");
+      if (fs.existsSync(path.join(sessionBackupDir, 'metadata.json'))) throw new Error('Backup session already exists; restore or retain it before starting another write');
+      const createdFiles = (sessionInfo.createdFiles || []).map(relative => {
+        if (typeof relative !== 'string' || !relative || path.isAbsolute(relative) || /(^|[\\/])\.\.([\\/]|$)/.test(relative)) throw new Error('Invalid created-file path');
+        if (fs.existsSync(path.resolve(gameDir, relative))) throw new Error('A planned new file already exists: ' + relative);
+        return relative.replace(/\\/g, '/');
+      });
 
       if (!fs.existsSync(originalFilesDir)) {
         fs.mkdirSync(originalFilesDir, { recursive: true });
@@ -219,12 +226,14 @@ class BackupManager {
       let count = 0;
 
       for (const srcPath of filesToBackup) {
-        if (!fs.existsSync(srcPath)) continue;
+        if (!fs.existsSync(srcPath)) throw new Error('A requested backup source is missing: ' + srcPath);
 
         const relPath = path.relative(gameDir, srcPath).replace(/\\/g, "/");
+        if (relPath === '..' || relPath.startsWith('../') || path.isAbsolute(relPath)) throw new Error('Backup source is outside the game directory');
         const destPath = path.join(originalFilesDir, relPath);
         const destDir = path.dirname(destPath);
 
+        if (fs.lstatSync(srcPath).isSymbolicLink() || !fs.statSync(srcPath).isFile()) throw new Error('Backup source must be a regular file');
         if (!fs.existsSync(destDir)) {
           fs.mkdirSync(destDir, { recursive: true });
         }
@@ -232,6 +241,7 @@ class BackupManager {
         fs.copyFileSync(srcPath, destPath);
 
         const sha256 = this.getFileHash(srcPath);
+        if (!sha256 || this.getFileHash(destPath) !== sha256) throw new Error('Backup copy hash mismatch: ' + relPath);
         const stat = fs.statSync(srcPath);
         fileRecords.push({
           relPath,
@@ -250,7 +260,8 @@ class BackupManager {
         engine: sessionInfo.engine || "unknown",
         version: sessionInfo.version || "unknown",
         toolVersion: "2.0.0",
-        files: fileRecords
+        files: fileRecords,
+        createdFiles
       };
 
       const metaPath = path.join(sessionBackupDir, "metadata.json");
@@ -282,13 +293,19 @@ class BackupManager {
    * @returns {{ success: boolean, restoredCount: number, error?: string }}
    */
   restoreSessionBackup(gameDir, sessionRef = {}) {
+    const accApply = new PartialReport();
+    const scanWarnings = [];
     try {
       const rootBackupDir = path.join(gameDir, this.backupDirName);
       const sessionsDir = path.join(rootBackupDir, "sessions");
+      const hasIdentity = Boolean(sessionRef.sessionId || sessionRef.backupId || sessionRef.transactionId);
 
       let targetSessionDir = null;
 
       if (sessionRef.sessionId) {
+        if (typeof sessionRef.sessionId !== 'string' || path.basename(sessionRef.sessionId) !== sessionRef.sessionId || sessionRef.sessionId === '..') {
+          throw new Error('Invalid backup session identity');
+        }
         const direct = path.join(sessionsDir, sessionRef.sessionId);
         if (fs.existsSync(direct)) targetSessionDir = direct;
       }
@@ -307,15 +324,14 @@ class BackupManager {
                 (sessionRef.backupId && meta.backupId === sessionRef.backupId) ||
                 (sessionRef.transactionId && meta.transactionId === sessionRef.transactionId)
               ) {
-    // FASE 9 / PASSO 59 — o relatorio decide o `success`.
-    const accApply = new PartialReport();
                 targetSessionDir = sDir;
                 break;
               }
             } catch (e) {
               // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
               // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
-              accApply.fail(sessionRef, e);
+              // A damaged unrelated session must not select a different backup.
+              scanWarnings.push({ path: metaPath, error: e.message });
             }
           }
         }
@@ -323,11 +339,14 @@ class BackupManager {
 
       // Se ainda não encontrou e houver fallback para metadata.json direto na raiz do backup
       if (!targetSessionDir && fs.existsSync(path.join(rootBackupDir, "metadata.json"))) {
-        targetSessionDir = rootBackupDir;
+        const legacy = JSON.parse(fs.readFileSync(path.join(rootBackupDir, "metadata.json"), 'utf8'));
+        if (!hasIdentity || (sessionRef.sessionId && legacy.sessionId === sessionRef.sessionId) ||
+          (sessionRef.backupId && legacy.backupId === sessionRef.backupId) ||
+          (sessionRef.transactionId && legacy.transactionId === sessionRef.transactionId)) targetSessionDir = rootBackupDir;
       }
 
       // Se nenhuma sessão específica foi solicitada (ou não encontrada), seleciona a sessão mais recente disponível
-      if (!targetSessionDir && fs.existsSync(sessionsDir)) {
+      if (!targetSessionDir && !hasIdentity && fs.existsSync(sessionsDir)) {
         const sessions = fs.readdirSync(sessionsDir).sort().reverse();
         for (const s of sessions) {
           const sDir = path.join(sessionsDir, s);
@@ -342,27 +361,90 @@ class BackupManager {
         return {
           success: false,
           restoredCount: 0,
-          error: `Nenhum backup correspondente encontrado para a sessão: ${sessionRef.sessionId || sessionRef.backupId || "indefinida"}`
+          error: `No matching backup session was found: ${sessionRef.sessionId || sessionRef.backupId || "unspecified"}`,
+          scanWarnings
         };
       }
 
       const metaPath = path.join(targetSessionDir, "metadata.json");
       const metadata = JSON.parse(fs.readFileSync(metaPath, "utf8"));
       const originalFilesDir = path.join(targetSessionDir, "original");
+      if (!Array.isArray(metadata.files)) throw new Error('Invalid backup file manifest');
+      for (const key of ['sessionId', 'backupId', 'transactionId']) {
+        if (sessionRef[key] && metadata[key] !== sessionRef[key]) throw new Error('Backup identity mismatch: ' + key);
+      }
+      const gameRoot = fs.realpathSync(gameDir);
+      const normalized = value => process.platform === 'win32' ? path.resolve(value).toLowerCase() : path.resolve(value);
+      if (metadata.gamePath && normalized(metadata.gamePath) !== normalized(gameDir)) {
+        throw new Error('Backup belongs to a different game directory');
+      }
+      const checkedPath = (base, relative) => {
+        if (typeof relative !== 'string' || !relative || path.isAbsolute(relative) || /(^|[\\/])\.\.([\\/]|$)/.test(relative)) {
+          throw new Error('Invalid path in backup manifest');
+        }
+        const absolute = path.resolve(base, relative);
+        const relativeResult = path.relative(path.resolve(base), absolute);
+        if (relativeResult === '..' || relativeResult.startsWith('..' + path.sep) || path.isAbsolute(relativeResult)) throw new Error('Backup path escapes its directory');
+        const resolvedBase = path.relative(gameRoot, fs.realpathSync(base));
+        if (resolvedBase === '..' || resolvedBase.startsWith('..' + path.sep) || path.isAbsolute(resolvedBase)) throw new Error('Backup root escapes the game directory');
+        // Reject existing links/junctions before any copy, including parent directories.
+        let cursor = path.resolve(base);
+        if (fs.lstatSync(cursor).isSymbolicLink()) throw new Error('Linked backup root is not supported');
+        for (const part of relativeResult.split(path.sep)) {
+          cursor = path.join(cursor, part);
+          if (fs.existsSync(cursor) && fs.lstatSync(cursor).isSymbolicLink()) throw new Error('Linked restore path is not supported');
+        }
+        return absolute;
+      };
+      if (fs.realpathSync(gameDir) !== gameRoot) throw new Error('Game directory changed during restore');
+      const plannedNames = new Set();
+      const plan = metadata.files.map(rec => {
+        const identity = process.platform === 'win32' ? String(rec.relPath).toLowerCase() : rec.relPath;
+        if (plannedNames.has(identity)) throw new Error('Duplicate path in backup manifest');
+        plannedNames.add(identity);
+        const backupFilePath = checkedPath(originalFilesDir, rec.relPath);
+        const targetFilePath = checkedPath(gameDir, rec.relPath);
+        if (!/^[a-f0-9]{64}$/i.test(rec.sha256 || '') || this.getFileHash(backupFilePath) !== rec.sha256.toLowerCase()) {
+          throw new Error('Backup file is missing or its hash does not match: ' + rec.relPath);
+        }
+        return { rec, backupFilePath, targetFilePath };
+      });
+      if (metadata.createdFiles !== undefined && !Array.isArray(metadata.createdFiles)) throw new Error('Invalid created-file manifest');
+      const removePlan = (metadata.createdFiles || []).map(relative => {
+        const identity = process.platform === 'win32' ? String(relative).toLowerCase() : relative;
+        if (plannedNames.has(identity)) throw new Error('Created-file path conflicts with the backup file plan');
+        plannedNames.add(identity);
+        const file = checkedPath(gameDir, relative);
+        if (fs.existsSync(file) && !fs.statSync(file).isFile()) throw new Error('A created-file path is not a regular file');
+        return { file, relative };
+      });
 
       let restoredCount = 0;
+      const restoredFiles = [];
 
-      for (const rec of metadata.files) {
-        const backupFilePath = path.join(originalFilesDir, rec.relPath);
-        const targetFilePath = path.join(gameDir, rec.relPath);
-
-        if (fs.existsSync(backupFilePath)) {
+      for (const { rec, backupFilePath, targetFilePath } of plan) {
+        try {
           const targetDir = path.dirname(targetFilePath);
           if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
           fs.copyFileSync(backupFilePath, targetFilePath);
+          if (this.getFileHash(targetFilePath) !== rec.sha256.toLowerCase()) throw new Error('Restored file hash mismatch');
           restoredCount++;
+          restoredFiles.push(rec.relPath);
+          accApply.ok();
+        } catch (error) {
+          accApply.fail(rec.relPath, error);
         }
       }
+      if (accApply.failed) return accApply.report({ restoredCount, restoredFiles, isPerfectRestore: false, backupRetained: true });
+      const removedCreatedFiles = [];
+      for (const { file, relative } of removePlan) {
+        try {
+          if (fs.existsSync(file)) fs.unlinkSync(file);
+          if (fs.existsSync(file)) throw new Error('Created file was not removed');
+          removedCreatedFiles.push(relative);
+        } catch (error) { accApply.fail(relative, error); }
+      }
+      if (accApply.failed) return accApply.report({ restoredCount, restoredFiles, removedCreatedFiles, isPerfectRestore: false, backupRetained: true });
 
       // Remove apenas a pasta desta sessão
       try {
@@ -380,9 +462,8 @@ class BackupManager {
 
       // Se não há mais sessões em .opent_backup/sessions, limpa pasta .opent_backup
       try {
-        if (fs.existsSync(sessionsDir) && fs.readdirSync(sessionsDir).length === 0) {
-          fs.rmSync(rootBackupDir, { recursive: true, force: true });
-        }
+        if (fs.existsSync(sessionsDir) && fs.readdirSync(sessionsDir).length === 0) fs.rmdirSync(sessionsDir);
+        if (fs.existsSync(rootBackupDir) && fs.readdirSync(rootBackupDir).length === 0) fs.rmdirSync(rootBackupDir);
       } catch (e) {
         // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
         // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
@@ -393,12 +474,17 @@ class BackupManager {
         sessionId: metadata.sessionId,
         backupId: metadata.backupId,
         restoredCount,
-        restoredFiles: metadata.files ? metadata.files.map(f => f.relPath) : []
+        restoredFiles,
+        removedCreatedFiles,
+        scanWarnings,
+        isPerfectRestore: restoredCount === plan.length
 });
     } catch (e) {
       return {
         success: false,
         restoredCount: 0,
+        restoredFiles: [],
+        backupRetained: true,
         error: e.message
       };
     }

@@ -246,7 +246,7 @@ class CoverageGuarantor {
       let recovered = null;
 
       // 1. Consulta Translation Memory
-      recovered = translationMemory.lookup(clean, { engine, gameId });
+      recovered = translationMemory.lookup(clean, { engine, gameId, langSource: sl, langTarget: tl });
 
       // 2. Consulta Common Translations
       if (!recovered) {
@@ -293,7 +293,8 @@ class CoverageGuarantor {
     // disparar chamadas a provedores externos só para medir cobertura: o
     // resultado passa a depender da rede, e um teste fica instável. Com
     // `allowNetworkFallback: false` a pendência é declarada como pendência.
-    const allowNetworkFallback = options.allowNetworkFallback !== false;
+    const allowNetworkFallback = options.allowNetworkFallback !== false &&
+      (options.allowProviderFallback === true || options.provider === 'multi');
 
     if (stillPending.length > 0) {
       fallbackAttempted = true;
@@ -371,7 +372,7 @@ class CoverageGuarantor {
                 fallbackAdded++;
                 uncoveredReasons.delete(id);
                 if (origItem && finalText.trim() !== origItem.clean.trim()) {
-                  translationMemory.store(origItem.clean, finalText, { engine, gameId, filePath: origItem.file });
+                  translationMemory.store(origItem.clean, finalText, { engine, gameId, langSource: sl, langTarget: tl, filePath: origItem.file });
                 }
               }
             }

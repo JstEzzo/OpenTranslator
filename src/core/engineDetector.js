@@ -330,6 +330,7 @@ class EngineDetector {
 
       // Extração determinística de versão a partir dos headers binários da engine
       let exactUnityVersion = null;
+      let serializedUnityVersion = null;
       if (dataFolderPath) {
         const ggm = path.join(dataFolderPath, "globalgamemanagers");
         const ggmAssets = path.join(dataFolderPath, "globalgamemanagers.assets");
@@ -342,18 +343,22 @@ class EngineDetector {
             fs.closeSync(fd);
             const str = buf.toString("latin1");
             const match = str.match(/([25]\.\d+\.\d+[a-z]\d+|20\d{2}\.\d+\.\d+[a-z]\d+|6000\.\d+\.\d+[a-z]\d+)/);
-            if (match) exactUnityVersion = match[1];
+            if (match) serializedUnityVersion = match[1];
           } catch (e) {}
         }
       }
 
-      if (!exactUnityVersion && rootFilesLower.includes("unityplayer.dll")) {
+      if (rootFilesLower.includes("unityplayer.dll")) {
         try {
           const upPath = path.join(gameDir, rootFiles.find(f => f.toLowerCase() === "unityplayer.dll"));
-          const buf = fs.readFileSync(upPath);
-          const match = buf.toString("utf8").match(/([25]\.\d+\.\d+[a-z]\d+|20\d{2}\.\d+\.\d+[a-z]\d+|6000\.\d+\.\d+[a-z]\d+)/);
+          const versionInfo = require('./executableInfo').readExecutableVersion(upPath);
+          const match = (versionInfo?.productVersion || '').match(/\b(\d{1,4}\.\d+\.\d+[abfp]\d+)\b/);
           if (match) exactUnityVersion = match[1];
         } catch (e) {}
+      }
+      if (serializedUnityVersion) evidence.push(`Serialized asset version field: ${serializedUnityVersion}; not used as proof of player version`);
+      if (exactUnityVersion && serializedUnityVersion && exactUnityVersion !== serializedUnityVersion) {
+        warnings.push(`Unity player version ${exactUnityVersion} differs from serialized asset field ${serializedUnityVersion}`);
       }
 
       const hasStreamingAssets = dataFolderPath && fs.existsSync(path.join(dataFolderPath, "StreamingAssets"));

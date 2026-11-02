@@ -14,6 +14,7 @@ const GlobalCircuitBreaker = require('./globalCircuitBreaker');
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const EngineDetector = require('./engineDetector');
 const defaultRegistry = require('./engineRegistry');
 const CodeProtector = require('./codeProtector');
@@ -56,6 +57,11 @@ class TranslationPipeline {
     }
 
     const extractResult = await adapter.extract(targetDir, options);
+    if (!extractResult || extractResult.success !== true) {
+      return { success: false, dryRun: true, status: 'FAILED_EXTRACTION', detection,
+        error: extractResult?.error || 'Adapter did not confirm successful extraction',
+        totalStrings: 0, universeComplete: false };
+    }
     let protectedTokensCount = 0;
     const sampleQA = [];
 
@@ -154,6 +160,8 @@ class TranslationPipeline {
     }
 
     const texts = extractResult.texts;
+    const textsById = new Map(texts.map(text => [text.id, text]));
+    const gameIdentity = options.gameId || crypto.createHash('sha256').update(path.resolve(targetDir)).digest('hex');
     const translations = new Map();
     const sl = options.sl || 'auto';
     const tl = options.tl || 'pt';
@@ -171,10 +179,12 @@ class TranslationPipeline {
       if (fs.existsSync(cp)) {
         try {
           const rawData = JSON.parse(fs.readFileSync(cp, "utf8"));
-          if (rawData && rawData.translations) {
+          if (rawData && rawData.translations &&
+              String(rawData.langSource || rawData.sl || '').replace(/_/g, '-').toLowerCase() === String(sl).replace(/_/g, '-').toLowerCase() &&
+              String(rawData.langTarget || rawData.tl || '').replace(/_/g, '-').toLowerCase() === String(tl).replace(/_/g, '-').toLowerCase()) {
             localGameCache = rawData.translations;
             break;
-          } else if (rawData && typeof rawData === "object") {
+          } else if (options.allowLegacyCache === true && rawData && typeof rawData === "object") {
             localGameCache = rawData;
             break;
           }
@@ -216,7 +226,8 @@ class TranslationPipeline {
       if (!cached) {
         cached = translationMemory.lookup(t.clean, {
           engine: detection.engine,
-          gameId: path.basename(targetDir)
+          gameId: gameIdentity,
+          langSource: sl, langTarget: tl
         });
       }
 
@@ -228,16 +239,10 @@ class TranslationPipeline {
         }
       }
 
-      const hasSourceChars = /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(t.clean);
-      const isActuallyTranslated = cached && typeof cached === 'string' && cached.trim().length > 0 &&
-        (cached.trim() !== t.clean.trim() && cached.trim() !== (t.original || '').trim() || !hasSourceChars);
-
+      const isActuallyTranslated = typeof cached === 'string' && cached.trim().length > 0 &&
+        cached.trim() !== t.clean.trim() && cached.trim() !== (t.original || '').trim();
       if (isActuallyTranslated) {
         translations.set(t.id, cached);
-        cacheHits++;
-      } else if (!hasSourceChars) {
-        // Texto sem caracteres do idioma de origem: já está na língua alvo (ex: 'Atacar', 'Fugir') ou é símbolo/pontuação
-        translations.set(t.id, t.clean);
         cacheHits++;
       } else {
         pendingTexts.push(t);
@@ -272,6 +277,7 @@ class TranslationPipeline {
         const glossary = cache.loadGlossary();
 
         const activeEngine = options.engine || options.provider || 'multi';
+        const allowProviderFallback = options.allowProviderFallback === true || activeEngine === 'multi';
 
         const newTranslations = await translator.translateBatch(
           pendingTexts,
@@ -285,27 +291,29 @@ class TranslationPipeline {
                 if (item.clean && item.translated && item.clean.trim() !== item.translated.trim()) {
                   translationMemory.store(item.clean, item.translated, {
                     engine: detection.engine,
-                    gameId: path.basename(targetDir),
+                    gameId: gameIdentity,
+                    langSource: sl, langTarget: tl,
                     filePath: item.file
                   });
                 }
               }
             }
-          }
+          },
+          { allowProviderFallback }
         );
 
         for (const [id, tr] of newTranslations) {
-          const origObj = texts.find(x => x.id === id);
-          const hasSource = origObj ? /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(origObj.clean) : true;
+          const origObj = textsById.get(id);
           const isRealTranslation = tr && typeof tr === 'string' && tr.trim().length > 0 &&
-            (!origObj || tr.trim() !== origObj.clean.trim() || !hasSource);
+            (origObj && tr.trim() !== origObj.clean.trim());
           if (isRealTranslation) {
             translations.set(id, tr);
             accounting.registerTranslated(id, true);
             if (origObj && tr.trim() !== origObj.clean.trim()) {
               translationMemory.store(origObj.clean, tr, {
                 engine: detection.engine,
-                gameId: path.basename(targetDir),
+                gameId: gameIdentity,
+                langSource: sl, langTarget: tl,
                 filePath: origObj.file
               });
             }
@@ -321,10 +329,11 @@ class TranslationPipeline {
 
           if (global.log) {
             global.log('warn', `Google GTX está temporariamente limitado.`);
-            global.log('info', `Ativando fallback automático para Papago (${remainingPending.length} textos pendentes)...`);
+            if (allowProviderFallback) global.log('info', `Ativando fallback automático para Papago (${remainingPending.length} textos pendentes)...`);
           }
 
           try {
+            if (!allowProviderFallback) throw new Error('Provider fallback is disabled for the selected provider.');
             const fallbackTranslations = await translator.translateBatch(
               remainingPending,
               sl,
@@ -335,17 +344,17 @@ class TranslationPipeline {
 
             if (fallbackTranslations && fallbackTranslations.size > 0) {
               for (const [id, tr] of fallbackTranslations) {
-                const origObj = texts.find(x => x.id === id);
-                const hasSource = origObj ? /[\u3041-\u3096\u30a1-\u30fa\u4e00-\u9faf]/.test(origObj.clean) : true;
+                const origObj = textsById.get(id);
                 const isRealTranslation = tr && typeof tr === 'string' && tr.trim().length > 0 &&
-                  (!origObj || tr.trim() !== origObj.clean.trim() || !hasSource);
+                  (origObj && tr.trim() !== origObj.clean.trim());
                 if (isRealTranslation) {
                   translations.set(id, tr);
                   accounting.registerTranslated(id, true);
                   if (origObj && tr.trim() !== origObj.clean.trim()) {
                     translationMemory.store(origObj.clean, tr, {
                       engine: detection.engine,
-                      gameId: path.basename(targetDir),
+                      gameId: gameIdentity,
+                      langSource: sl, langTarget: tl,
                       filePath: origObj.file
                     });
                   }
@@ -367,10 +376,13 @@ class TranslationPipeline {
           const jobId = `${path.basename(targetDir)}_${Date.now()}`;
           JobPersistence.saveJob({
             jobId,
-            gameId: path.basename(targetDir),
+            gameId: gameIdentity,
+            langSource: sl, langTarget: tl,
             engine: detection.engine,
             targetLang: tl,
-            provider: options.provider || 'google',
+            provider: options.engine || options.provider || 'multi',
+      allowProviderFallback: options.allowProviderFallback === true,
+      allowNetworkFallback: options.allowNetworkFallback !== false && !isRateLimitedEncountered,
             pendingTexts: remainingPending,
             completedTexts: Array.from(translations.entries()),
             cachedTexts: cacheHits,
@@ -440,10 +452,13 @@ class TranslationPipeline {
     const guarantor = new CoverageGuarantor({ engine: detection.engine });
     const coverageReport = await guarantor.auditAndRecover(texts, translations, {
       engine: detection.engine,
-      gameId: path.basename(targetDir),
+      gameId: gameIdentity,
+      langSource: sl, langTarget: tl,
       sl,
       tl,
-      provider: options.provider || 'google'
+      provider: options.engine || options.provider || 'multi',
+      allowProviderFallback: options.allowProviderFallback === true,
+      allowNetworkFallback: options.allowNetworkFallback !== false && !isRateLimitedEncountered
     });
 
     // Validação com QAEngine (restaura tokens antes do QA para validar strings finais)

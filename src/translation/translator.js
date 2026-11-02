@@ -561,6 +561,7 @@ async function translateMultiBatch(texts, sl, tl, glossary, onBatchTranslated) {
 
 async function translateBatch(texts, sl, tl, engine, glossary, onBatchTranslated, options = {}) {
   if (!engine || engine === "auto") engine = "multi";
+  options = { ...options, allowProviderFallback: options.allowProviderFallback === true || engine === "multi" };
   if (engine === "bing") return translateBingBatch(texts, sl, tl);
   const results = new Map();
   if (texts.length === 0) return results;
@@ -1064,19 +1065,23 @@ async function translateSingle(text, sl, tl, engine) {
 
   if (!text || typeof text !== "string" || !text.trim()) return text;
 
+  if (!['google', 'gtx', 'multi'].includes(engine)) throw new Error('Unknown translation provider: ' + engine);
+  const translateSelected = engine === 'multi' ? translateSingleWithFallback :
+    (value, source, target) => translateSingleRawGoogle(value, source, target, true);
+
   // Proteção universal: chunking se exceder tamanho seguro
   const chunkResult = TextChunker.chunk(text, { maxChars: 800, maxBytes: 1500 });
   if (chunkResult.isChunked) {
     global.log("info", `[TextChunker] Texto longo (${text.length} chars) dividido em ${chunkResult.chunks.length} partes seguras.`);
     const translatedParts = [];
     for (const ch of chunkResult.chunks) {
-      const partTr = await translateSingleWithFallback(ch, sl, tl);
+      const partTr = await translateSelected(ch, sl, tl);
       translatedParts.push(partTr);
     }
     return TextChunker.recombine(translatedParts);
   }
 
-  return translateSingleWithFallback(text, sl, tl);
+  return translateSelected(text, sl, tl);
 }
 
 async function translateSingleWithFallback(text, sl, tl) {
@@ -1122,11 +1127,12 @@ async function translateSingleWithFallback(text, sl, tl) {
   return text;
 }
 
-async function translateSingleRawGoogle(text, sl, tl) {
+async function translateSingleRawGoogle(text, sl, tl, strict = false) {
   if (!text || typeof text !== "string" || !text.trim()) return text;
   const breaker = GlobalCircuitBreaker.getInstance();
   const initCheck = breaker.canExecute("google:gtx");
   if (!initCheck.allowed) {
+    if (strict) throw new Error('Google provider is temporarily blocked by its circuit breaker.');
     return text;
   }
 
@@ -1210,6 +1216,7 @@ async function translateSingleRawGoogle(text, sl, tl) {
           .join("")
       : text;
   } catch (e) {
+    if (strict) throw e;
     return text;
   }
 }

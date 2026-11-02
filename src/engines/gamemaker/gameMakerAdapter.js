@@ -20,6 +20,12 @@ const { rollbackResult } = require('../rollbackResult.js');
 const { startApplyContract } = require('../../core/applyContract');
 const { PartialReport } = require('../../core/partialApply');
 
+function isLocalizationFile(filename) {
+  const ext = path.extname(filename).toLowerCase();
+  return ['.ini', '.json', '.txt'].includes(ext) &&
+    /(?:^|[_. -])(?:lang(?:uage)?s?|locali[sz](?:ation|ations|e|ed)?|strings?|dialog(?:ue)?s?|messages?|translations?)(?:[_. -]|$)/i.test(filename);
+}
+
 class GameMakerAdapter extends BaseEngineAdapter {
   constructor() {
     super("gamemaker", "GameMaker");
@@ -56,18 +62,18 @@ class GameMakerAdapter extends BaseEngineAdapter {
   getCapabilities(gameDir, exePath) {
     const hasDataWin = fs.existsSync(path.join(gameDir, "data.win"));
     const files = fs.existsSync(gameDir) ? fs.readdirSync(gameDir).map(f => f.toLowerCase()) : [];
-    const hasExternalL10n = files.some(f => f.endsWith(".ini") || f.endsWith(".json") || f.includes("lang") || f.includes("strings"));
+    const hasExternalL10n = files.some(isLocalizationFile);
 
     return {
-      staticFiles: true,
+      staticFiles: hasExternalL10n,
       nativeLocalization: hasExternalL10n,
-      archives: hasDataWin,
+      archives: false,
       runtimeHook: false,
       dom: false,
       frameworkState: false,
       ocr: true,
       backupSupported: true,
-      strategy: hasExternalL10n ? "GameMaker External UTF-8 Localization" : (hasDataWin ? "data.win Binary Scanner & Diagnostic" : "OCR Fallback")
+      strategy: hasExternalL10n ? "GameMaker External UTF-8 Localization" : (hasDataWin ? "Packed data requires an external localization tool" : "OCR Fallback")
     };
   }
 
@@ -83,7 +89,7 @@ class GameMakerAdapter extends BaseEngineAdapter {
     for (const f of files) {
       const ext = path.extname(f).toLowerCase();
       const full = path.join(gameDir, f);
-      if (ext === ".ini" || ext === ".json" || (ext === ".txt" && (f.toLowerCase().includes("lang") || f.toLowerCase().includes("dialog")))) {
+      if (isLocalizationFile(f) && fs.statSync(full).isFile()) {
         try {
           const content = fs.readFileSync(full, 'utf8');
           if (ext === ".ini") {
@@ -94,7 +100,7 @@ class GameMakerAdapter extends BaseEngineAdapter {
                 const parts = l.split("=");
                 const key = parts[0].trim();
                 const val = parts.slice(1).join("=").trim();
-                if (val.length > 1) {
+                if (val.length > 1 && !/^(?:true|false|null|[-+]?\d+(?:\.\d+)?)$/i.test(val)) {
                   const { protectedText, tokens } = this.codeProtector.protect(val, "gamemaker");
                   allTexts.push({
                     id: `gm_ini_${f}_${i}`,
@@ -141,11 +147,14 @@ class GameMakerAdapter extends BaseEngineAdapter {
         } catch (e) {
           // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
           // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
-          accApply.fail(relDir, e);
+          accApply.fail(f, e);
         }
       }
     }
 
+    if (allTexts.length === 0 && fs.existsSync(path.join(gameDir, 'data.win'))) {
+      return { success: false, status: 'UNSUPPORTED_PACKED_DATA', error: 'Packed GameMaker data.win requires an external localization tool; runtime options are not game dialogue.', texts: [], count: 0 };
+    }
     return accApply.report({
       texts: allTexts,
       count: allTexts.length

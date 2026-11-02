@@ -13,6 +13,8 @@ const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
 const RpgMakerRubyHandler = require('./rpgMakerRubyHandler');
 const { rollbackResult } = require('../rollbackResult.js');
+const os = require('os');
+const PlaceholderValidator = require('../../core/placeholderIntegrityValidator');
 
 class RgssAdapter extends BaseEngineAdapter {
   constructor() {
@@ -20,6 +22,7 @@ class RgssAdapter extends BaseEngineAdapter {
     this.codeProtector = new CodeProtector({ engine: 'rpgmaker' });
     this.backupManager = new BackupManager({ backupDirName: '.opent_rgss_backup' });
     this.rubyHandler = new RpgMakerRubyHandler();
+    this.stagingByGame = new Map();
   }
 
   getDetailedDeclaration() {
@@ -77,6 +80,10 @@ class RgssAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const res = await this.rubyHandler.extract({ gameDir, options });
+    if (res.success && res.stagingDir) {
+      const archive = this._findRgssArchive(gameDir);
+      this.stagingByGame.set(path.resolve(gameDir), { dir: res.stagingDir, archive, hash: this.backupManager.getFileHash(archive) });
+    }
     const rawRubyTexts = res.texts || [];
     const allTexts = [];
     for (const t of rawRubyTexts) {
@@ -93,16 +100,50 @@ class RgssAdapter extends BaseEngineAdapter {
       success: res.success !== false,
       texts: allTexts,
       count: allTexts.length,
-      warning: res.error || null
+      error: res.error || res.bridgeResult?.error || null,
+      warning: res.error || res.bridgeResult?.error || null,
+      errors: res.bridgeResult?.failures || [],
+      coverageScope: res.bridgeResult?.coverageScope,
+      archiveStaged: Boolean(res.stagingDir)
     };
   }
 
   async validate(gameDir, texts, translations) {
-    return { valid: true, errors: [], warnings: [] };
+    const errors = [];
+    for (const text of texts) {
+      const translated = translations instanceof Map ? translations.get(text.id) : translations?.[text.id];
+      if (translated === undefined) continue;
+      if (typeof translated !== 'string') { errors.push({ id: text.id, error: 'Translation must be a string' }); continue; }
+      const restored = this.codeProtector.restore(translated, text.tokens || []).restoredText;
+      const check = PlaceholderValidator.validate(text.original || text.clean, restored);
+      if (!check.valid) errors.push({ id: text.id, error: 'Placeholder integrity mismatch', issues: check.issues });
+    }
+    return { valid: errors.length === 0, errors, warnings: [] };
   }
 
   async apply(gameDir, texts, translations, options = {}) {
+    const validation = await this.validate(gameDir, texts, translations);
+    if (!validation.valid) throw new Error('RGSS translation failed placeholder validation');
+    const transMap = {};
+    for (const t of texts) {
+      const tr = (translations instanceof Map) ? translations.get(t.id) : (translations ? translations[t.id] : null);
+      if (tr && tr !== (t.clean || t.original)) {
+        if (t.tokens && t.tokens.length > 0) {
+          const restored = this.codeProtector.restore(tr, t.tokens);
+          transMap[t.id] = { original: t.original, translated: restored.restoredText };
+        } else {
+          transMap[t.id] = { original: t.original, translated: tr };
+        }
+      }
+    }
+
+    if (!Object.keys(transMap).length) return { success: true, status: 'NO_CHANGES', count: 0, modifiedFiles: [], reason: 'No changed translations supplied' };
     const dataDir = path.join(gameDir, 'Data');
+    const staged = this.stagingByGame.get(path.resolve(gameDir));
+    if (staged && this.backupManager.getFileHash(staged.archive) !== staged.hash) throw new Error('RGSS archive changed after extraction; extract again');
+    const stagedFiles = staged ? fs.readdirSync(path.join(staged.dir, 'Data')).filter(f => /\.(?:rxdata|rvdata2?)$/i.test(f)) : [];
+    const createdFiles = stagedFiles.map(f => path.join('Data', f)).filter(rel => !fs.existsSync(path.join(gameDir, rel)));
+    if (staged && options.skipBackup === true) throw new Error('Staged archive application requires a verified backup');
     const filesToBackup = [];
     if (fs.existsSync(dataDir)) {
       try {
@@ -121,60 +162,47 @@ class RgssAdapter extends BaseEngineAdapter {
     }
 
     if (options.skipBackup !== true && filesToBackup.length > 0) {
-      this.backupManager.createSessionBackup(gameDir, filesToBackup, {
+      const backup = this.backupManager.createSessionBackup(gameDir, filesToBackup, {
         sessionId: options.sessionId,
         transactionId: options.transactionId,
         backupId: options.backupId,
-        engine: 'rgss'
+        engine: 'rgss',
+        createdFiles
       });
+      if (!backup.success) throw new Error(backup.error || 'Could not create RGSS backup');
     }
-
-    const transMap = {};
-    for (const t of texts) {
-      const tr = (translations instanceof Map) ? translations.get(t.id) : (translations ? translations[t.id] : null);
-      if (tr && tr !== (t.clean || t.original)) {
-        if (t.tokens && t.tokens.length > 0) {
-          const restored = this.codeProtector.restore(tr, t.tokens);
-          transMap[t.original] = restored.restoredText;
-        } else {
-          transMap[t.original] = tr;
-        }
-      }
+    for (const filename of stagedFiles) {
+      const source = path.join(staged.dir, 'Data', filename), target = path.join(dataDir, filename);
+      if (fs.existsSync(target)) throw new Error('Staged RGSS target already exists: ' + filename);
+      fs.mkdirSync(dataDir, { recursive: true });
+      fs.copyFileSync(source, target);
+      if (this.backupManager.getFileHash(source) !== this.backupManager.getFileHash(target)) throw new Error('Staged RGSS copy hash mismatch');
     }
 
     const res = await this.rubyHandler.injectTranslation({ gameDir, translationMap: transMap, options });
 
     return {
       success: res.success !== false,
-      modifiedFiles: res.injectedFiles || filesToBackup,
-      count: res.count || Object.keys(transMap).length,
-      message: res.success ? `Tradução RGSS aplicada com sucesso.` : res.error
+      modifiedFiles: res.injectedFiles || [],
+      createdFiles,
+      count: res.count || 0,
+      message: res.success ? 'RGSS data translation applied.' : res.error,
+      error: res.error || null
     };
   }
 
   async rollback(gameDir, options = {}) {
     const res = this.backupManager.restoreSessionBackup(gameDir, options);
-    const backupBase = path.join(gameDir, ".opent_rgss_backup");
-    try {
-      if (fs.existsSync(backupBase)) {
-        fs.rmSync(backupBase, { recursive: true, force: true });
+    if (!res?.success) return rollbackResult(res, this.id, { backupRetained: true });
+    const staged = this.stagingByGame.get(path.resolve(gameDir));
+    if (staged) {
+      const temporaryRoot = fs.realpathSync(os.tmpdir());
+      const work = fs.realpathSync(staged.dir);
+      const relative = path.relative(temporaryRoot, work);
+      if (!relative.startsWith('..') && !path.isAbsolute(relative) && path.basename(work).startsWith('opent-rgss-')) {
+        fs.rmSync(work, { recursive: true, force: true });
+        this.stagingByGame.delete(path.resolve(gameDir));
       }
-    } catch (_) {}
-
-    // If game uses an archive container (e.g. .rgss3a), clean up unpacked Data to guarantee 100% bit-level restore
-    const arc = this._findRgssArchive(gameDir);
-    if (arc && fs.existsSync(arc)) {
-      const dataDir = path.join(gameDir, "Data");
-      if (fs.existsSync(dataDir)) {
-        try {
-          fs.rmSync(dataDir, { recursive: true, force: true });
-        } catch (_) {}
-      }
-    }
-
-    if (!res || !res.success) {
-      const oldRes = this.backupManager.restoreOldestBackup(gameDir);
-      return rollbackResult(oldRes, this.id || this.engineId || "unknown");
     }
     return rollbackResult(res, this.id || this.engineId || "unknown", {
       // FASE 7 — success:true era literal, mesmo sem saber se algum arquivo

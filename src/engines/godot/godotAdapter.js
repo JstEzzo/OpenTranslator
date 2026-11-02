@@ -209,8 +209,11 @@ class GodotAdapter extends BaseEngineAdapter {
         const tmpOut = path.join(__dirname, `_tmp_godot_${Date.now()}.json`);
         try {
           const proc = spawnSync(py, [bridgeScript, "extract", pckPath, tmpOut], { encoding: "utf-8", timeout: 60000 });
+          if (proc.error || proc.status !== 0) throw proc.error || new Error(proc.stderr || 'Godot archive bridge failed');
+          if (!fs.existsSync(tmpOut)) throw new Error('Godot archive bridge did not produce extraction results');
           if (fs.existsSync(tmpOut)) {
             const result = JSON.parse(fs.readFileSync(tmpOut, "utf-8"));
+            if (result.success === false) throw new Error(result.error || 'Godot archive extraction failed');
             if (result.texts && Array.isArray(result.texts)) {
               for (const item of result.texts) {
                 const { protectedText, tokens } = this.codeProtector.protect(item.original, "godot");
@@ -241,6 +244,11 @@ class GodotAdapter extends BaseEngineAdapter {
       }
     }
 
+    if (allTexts.length === 0 && fs.existsSync(gameDir) && fs.readdirSync(gameDir).some(f => /\.(?:exe|pck)$/i.test(f))) {
+      return { success: false, status: 'STATIC_TEXT_NOT_EXPOSED',
+        error: 'No supported localization text was extracted. Packed, embedded, compiled, or dynamic resources require additional tooling; this is not proof that the game has no text.',
+        texts: [], count: 0, universeComplete: false };
+    }
     // FASE 9 / PASSO 60 — quem decide o `success` e o relatorio.
     return accExtract.report({
       texts: allTexts,

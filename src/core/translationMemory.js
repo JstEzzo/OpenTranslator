@@ -8,6 +8,13 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
+function canonicalLanguage(value, fallback) {
+  return String(value || fallback).trim().replace(/_/g, '-').toLowerCase();
+}
+function memoryKey(hash, source, target, scope, scopeId) {
+  return JSON.stringify([hash, source, target, scope, scopeId]);
+}
+
 class TranslationMemory2 {
   constructor(dbPath) {
     this.dbPath = dbPath || path.join(global.DATA_DIR || path.join(__dirname, "../../data"), "translation_memory.sqlite");
@@ -77,12 +84,16 @@ class TranslationMemory2 {
     const hash = crypto.createHash("sha256").update(norm).digest("hex");
     const engine = options.engine || "generic";
     const gameId = options.gameId || "default";
+    const langSource = canonicalLanguage(options.langSource, 'auto');
+    const langTarget = canonicalLanguage(options.langTarget, 'pt-BR');
 
     if (this.hasSqlite) {
       try {
         const stmt = this.db.prepare(`
           SELECT translated_text, scope FROM translations
-          WHERE source_hash = ? AND (
+          WHERE source_hash = ?
+            AND lower(replace(lang_source, '_', '-')) = ?
+            AND lower(replace(lang_target, '_', '-')) = ? AND (
             (scope = 'game' AND game_id = ?) OR
             (scope = 'engine' AND engine = ?) OR
             (scope = 'global')
@@ -95,7 +106,7 @@ class TranslationMemory2 {
           END ASC
           LIMIT 1
         `);
-        const row = stmt.get(hash, gameId, engine);
+        const row = stmt.get(hash, langSource, langTarget, gameId, engine);
         if (row && row.translated_text && typeof row.translated_text === "string" && row.translated_text.trim().length > 0 && row.translated_text.trim() !== sourceText.trim()) {
           this.cacheStats.hits++;
           return row.translated_text;
@@ -103,9 +114,9 @@ class TranslationMemory2 {
       } catch (e) {}
     }
 
-    if (this.inMemoryStore.has(hash)) {
-      const entry = this.inMemoryStore.get(hash);
-      if (entry && entry.translated_text && typeof entry.translated_text === "string" && entry.translated_text.trim().length > 0 && entry.translated_text.trim() !== sourceText.trim()) {
+    for (const [scope, scopeId] of [['game', gameId], ['engine', engine], ['global', '']]) {
+      const entry = this.inMemoryStore.get(memoryKey(hash, langSource, langTarget, scope, scopeId));
+      if (entry && entry.translated_text && entry.translated_text.trim() !== sourceText.trim()) {
         this.cacheStats.hits++;
         return entry.translated_text;
       }
@@ -124,7 +135,10 @@ class TranslationMemory2 {
     const engine = options.engine || "generic";
     const scope = options.scope || "global";
     const gameId = options.gameId || "default";
-    const id = this.generateIdentity(engine, options.filePath, options.label, options.speaker, sourceText);
+    const langSource = canonicalLanguage(options.langSource, 'auto');
+    const langTarget = canonicalLanguage(options.langTarget, 'pt-BR');
+    const scopeId = scope === 'game' ? gameId : scope === 'engine' ? engine : '';
+    const id = JSON.stringify([this.generateIdentity(engine, options.filePath, options.label, options.speaker, sourceText), langSource, langTarget, scope, scopeId]);
     const now = new Date().toISOString();
 
     if (this.hasSqlite) {
@@ -139,13 +153,13 @@ class TranslationMemory2 {
         stmt.run(
           id, engine, scope, gameId, options.filePath || "", options.speaker || "",
           sourceText, norm, translatedText, hash,
-          options.langSource || "ja", options.langTarget || "pt_BR",
+          langSource, langTarget,
           now, now
         );
       } catch (e) {}
     }
 
-    this.inMemoryStore.set(hash, {
+    this.inMemoryStore.set(memoryKey(hash, langSource, langTarget, scope, scopeId), {
       id, engine, scope, sourceText, translated_text: translatedText
     });
   }

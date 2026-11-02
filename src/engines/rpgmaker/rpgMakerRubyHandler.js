@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execFile } = require('child_process');
 const BaseEngineHandler = require('../baseEngineHandler');
 
@@ -29,7 +30,7 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
       const args = [sidecarScript, '--game-dir', gameDir, '--mode', mode];
       if (payloadFile) args.push('--payload', payloadFile);
 
-      execFile(pythonBin, args, { cwd: gameDir, maxBuffer: 100 * 1024 * 1024 }, (error, stdout, stderr) => {
+      execFile(pythonBin, args, { cwd: gameDir, maxBuffer: 100 * 1024 * 1024, timeout: 120000, windowsHide: true }, (error, stdout, stderr) => {
         if (error) {
           return resolve({
             success: false,
@@ -40,7 +41,7 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
           const result = JSON.parse(stdout);
           resolve(result);
         } catch (e) {
-          resolve({ success: true, rawOutput: stdout });
+          resolve({ success: false, error: 'Marshal bridge returned invalid JSON', rawOutput: stdout.slice(0, 1000) });
         }
       });
     });
@@ -58,7 +59,7 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
     return null;
   }
 
-  async _runRgss3aBridge({ mode, archivePath, outputDir }) {
+  async _runRgss3aBridge({ mode, archivePath, outputDir, dataOnly = false }) {
     return new Promise((resolve) => {
       const bridgeScript = path.join(global.ROOT || path.resolve(__dirname, '../../..'), 'src', 'engines', 'rpgmaker', 'rgss3a_bridge.py');
       if (!fs.existsSync(bridgeScript)) {
@@ -67,7 +68,8 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
       const { resolvePythonBinary } = require("../../utils/pythonResolver");
       const pythonBin = resolvePythonBinary();
       const args = [bridgeScript, '--mode', mode, '--archive', archivePath, '--dir', outputDir];
-      execFile(pythonBin, args, { maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (dataOnly) args.push('--data-only');
+      execFile(pythonBin, args, { maxBuffer: 100 * 1024 * 1024, timeout: 120000, windowsHide: true }, (err, stdout, stderr) => {
         if (err) return resolve({ success: false, error: stderr || err.message });
         resolve({ success: true, output: stdout });
       });
@@ -79,6 +81,8 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
    */
   async extract({ gameDir, gameExe, title, options = {} }) {
     try {
+      let workingDir = gameDir;
+      let stagingDir = null;
       let dataDir = fs.existsSync(path.join(gameDir, 'Data'))
         ? path.join(gameDir, 'Data')
         : (fs.existsSync(path.join(gameDir, 'data')) ? path.join(gameDir, 'data') : null);
@@ -86,23 +90,27 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
       let rubyFiles = [];
       if (dataDir && fs.existsSync(dataDir)) {
         rubyFiles = fs.readdirSync(dataDir).filter(f => 
-          f.endsWith('.rxdata') || f.endsWith('.rvdata') || f.endsWith('.rvdata2')
+          /\.(?:rxdata|rvdata2?)$/i.test(f)
         );
       }
 
       // If no loose Data files found, check for RGSS3A container
       const archive = this._findRgssArchive(gameDir);
       if (rubyFiles.length === 0 && archive) {
+        stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opent-rgss-'));
         const unpackRes = await this._runRgss3aBridge({
           mode: 'unpack',
           archivePath: archive,
-          outputDir: gameDir
+          outputDir: stagingDir,
+          dataOnly: true
         });
+        if (!unpackRes.success) return { success: false, texts: [], error: unpackRes.error, stagingDir };
         if (unpackRes.success) {
-          dataDir = path.join(gameDir, 'Data');
+          workingDir = stagingDir;
+          dataDir = path.join(stagingDir, 'Data');
           if (fs.existsSync(dataDir)) {
             rubyFiles = fs.readdirSync(dataDir).filter(f => 
-              f.endsWith('.rxdata') || f.endsWith('.rvdata') || f.endsWith('.rvdata2')
+              /\.(?:rxdata|rvdata2?)$/i.test(f)
             );
           }
         }
@@ -118,7 +126,7 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
         };
       }
 
-      const bridgeResult = await this._runSidecarMarshalBridge({ gameDir, mode: 'extract' });
+      const bridgeResult = await this._runSidecarMarshalBridge({ gameDir: workingDir, mode: 'extract' });
       const texts = (bridgeResult && bridgeResult.data) ? bridgeResult.data : [];
 
       return {
@@ -127,7 +135,9 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
         extractedFiles: rubyFiles.map(f => path.join(dataDir, f)),
         totalEntries: texts.length,
         texts,
-        bridgeResult
+        bridgeResult,
+        error: bridgeResult.error || (bridgeResult.failures?.length ? bridgeResult.failures.map(f => `${f.file}: ${f.error}`).join('; ') : null),
+        stagingDir
       };
     } catch (err) {
       return {
@@ -161,8 +171,9 @@ class RpgMakerRubyHandler extends BaseEngineHandler {
       return {
         success: bridgeResult.success !== false,
         engine: 'RPG_MAKER_RUBY',
-        injectedFiles: [path.join(gameDir, 'Data')],
-        count: Object.keys(translationMap || {}).length,
+        injectedFiles: bridgeResult.injectedFiles || [],
+        count: bridgeResult.injectedCount || 0,
+        error: bridgeResult.error || (bridgeResult.failures?.length ? bridgeResult.failures.map(f => `${f.file}: ${f.error}`).join('; ') : null),
         bridgeResult
       };
     } catch (err) {

@@ -29,6 +29,12 @@ async function main() {
     const arbitrary = await Detector.detect(dir); assert.notStrictEqual(arbitrary.engine,"mv"); passed++;
     fs.mkdirSync(path.join(dir,"js")); fs.writeFileSync(path.join(dir,"js","rmmz_core.js"), 'Utils.RPGMAKER_VERSION = "1.8.1";');
     const mz = await Detector.detect(dir); assert.strictEqual(mz.engine,"mz"); assert.strictEqual(mz.engineVersion,"MZ 1.8.1"); passed++;
+    const unityDir = path.join(dir, 'unity-fixture'); fs.mkdirSync(path.join(unityDir, 'Game_Data'), { recursive: true });
+    const player = Buffer.alloc(256); player.write('MZ'); player.writeUInt32LE(128,60); player.write('PE\0\0',128); player.writeUInt16LE(0x8664,132);
+    player.write('2018.3.0a1',200); fs.writeFileSync(path.join(unityDir,'UnityPlayer.dll'),player); fs.writeFileSync(path.join(unityDir,'Game.exe'),player);
+    const arbitraryUnityString = await Detector.detect(unityDir);
+    assert.strictEqual(arbitraryUnityString.engine, 'unity');
+    assert.strictEqual(arbitraryUnityString.exactVersion, null, 'An arbitrary version-like DLL string is not player version metadata'); passed++;
     console.log(`pass=${passed} fail=0`);
   } finally { fs.rmSync(dir,{recursive:true,force:true}); }
 }

@@ -1,6 +1,7 @@
 import os
 import sys
 import struct
+import ntpath
 
 if sys.platform == "win32":
     try:
@@ -9,47 +10,85 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-def unpack_rgss3a(rgss3a_path, output_dir):
+def unpack_rgss3a(rgss3a_path, output_dir, data_only=False):
     if not os.path.exists(rgss3a_path):
         raise FileNotFoundError(f"Archive not found: {rgss3a_path}")
 
     os.makedirs(output_dir, exist_ok=True)
     extracted_files = []
 
+    root = os.path.realpath(output_dir)
+    archive_size = os.path.getsize(rgss3a_path)
+    entries = []
+    names = set()
     with open(rgss3a_path, "rb") as f:
         magic = f.read(8)
         if magic != b"RGSSAD\x00\x03":
             raise ValueError(f"Invalid RGSS3A magic header: {magic}")
 
-        raw_key = struct.unpack("<I", f.read(4))[0]
+        raw_key_bytes = f.read(4)
+        if len(raw_key_bytes) != 4:
+            raise ValueError('Truncated RGSS3A key')
+        raw_key = struct.unpack("<I", raw_key_bytes)[0]
         key = (raw_key * 9 + 3) & 0xFFFFFFFF
 
         while True:
-            entry_header = f.read(16)
-            if len(entry_header) < 16:
+            offset_bytes = f.read(4)
+            if len(offset_bytes) != 4:
+                raise ValueError('Truncated RGSS3A index offset')
+            offset = struct.unpack('<I', offset_bytes)[0] ^ key
+            # The terminator consists of the zero offset only. Reading the
+            # next 12 bytes here can consume the first archived file's data.
+            if offset == 0:
                 break
-            o, s, fk, nl = struct.unpack("<IIII", entry_header)
-            offset = o ^ key
+            entry_header = f.read(12)
+            if len(entry_header) != 12:
+                raise ValueError('Truncated RGSS3A index')
+            s, fk, nl = struct.unpack("<III", entry_header)
             size = s ^ key
             file_key = fk ^ key
             name_len = nl ^ key
 
-            if offset == 0 or name_len == 0 or name_len > 1024:
+            if offset == 0:
                 break
+            if name_len == 0 or name_len > 4096 or offset > archive_size or size > archive_size - offset:
+                raise ValueError('Invalid RGSS3A entry bounds')
 
             enc_name = f.read(name_len)
+            if len(enc_name) != name_len:
+                raise ValueError('Truncated RGSS3A filename')
             name_bytes = bytearray(enc_name)
             for i in range(name_len):
                 name_bytes[i] ^= (key >> (8 * (i % 4))) & 0xFF
 
-            file_rel_path = name_bytes.decode("utf-8", errors="replace").replace("\\", "/")
-            dest_path = os.path.join(output_dir, file_rel_path)
+            file_rel_path = name_bytes.decode("utf-8", errors="strict").replace("\\", "/")
+            if ntpath.isabs(file_rel_path) or ':' in file_rel_path or '\x00' in file_rel_path or '..' in file_rel_path.split('/'):
+                raise ValueError('Unsafe RGSS3A entry path')
+            dest_path = os.path.realpath(os.path.join(root, file_rel_path))
+            if os.path.commonpath([root, dest_path]) != root or dest_path == root:
+                raise ValueError('RGSS3A entry escapes the output directory')
+            if dest_path.casefold() in names:
+                raise ValueError('Duplicate RGSS3A entry path')
+            names.add(dest_path.casefold())
+            entries.append((offset, size, file_key, file_rel_path, dest_path))
+        index_end = f.tell()
+        for offset, size, file_key, file_rel_path, dest_path in entries:
+            if offset < index_end:
+                raise ValueError('RGSS3A entry overlaps the archive index')
+            if data_only and not (file_rel_path.lower().startswith('data/') and file_rel_path.lower().endswith(('.rxdata', '.rvdata', '.rvdata2'))):
+                continue
+            if os.path.exists(dest_path):
+                raise FileExistsError('Refusing to overwrite an existing extraction target: ' + file_rel_path)
+            if size > 256 * 1024 * 1024:
+                raise ValueError('RGSS3A entry exceeds the supported memory limit')
+        for offset, size, file_key, file_rel_path, dest_path in entries:
+            if data_only and not (file_rel_path.lower().startswith('data/') and file_rel_path.lower().endswith(('.rxdata', '.rvdata', '.rvdata2'))):
+                continue
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-
-            curr_pos = f.tell()
             f.seek(offset)
             enc_data = f.read(size)
-            f.seek(curr_pos)
+            if len(enc_data) != size:
+                raise ValueError('Truncated RGSS3A entry data')
 
             # Decrypt file data using file_key
             dec_data = bytearray(enc_data)
@@ -162,10 +201,11 @@ if __name__ == "__main__":
     parser.add_argument("--mode", choices=["unpack", "pack"], required=True)
     parser.add_argument("--archive", required=True)
     parser.add_argument("--dir", required=True)
+    parser.add_argument('--data-only', action='store_true', help='Extract only Ruby data for structural text inspection')
     args = parser.parse_args()
 
     if args.mode == "unpack":
-        files = unpack_rgss3a(args.archive, args.dir)
+        files = unpack_rgss3a(args.archive, args.dir, data_only=args.data_only)
         print(f"Unpacked {len(files)} files successfully.")
     elif args.mode == "pack":
         count = pack_rgss3a(args.dir, args.archive)
