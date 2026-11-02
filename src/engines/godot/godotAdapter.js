@@ -127,6 +127,7 @@ class GodotAdapter extends BaseEngineAdapter {
     // FASE 9 / PASSO 60 — escopo do METODO. O `return` do fim do metodo le
     // esta instancia, e ela precisa receber as falhas dos blocos internos.
     const accExtract = new PartialReport();
+    const archiveErrors = [];
 
     // 1. Arquivos CSV nativos de localização soltos
     for (const csvPath of findings.csvFiles) {
@@ -213,7 +214,10 @@ class GodotAdapter extends BaseEngineAdapter {
           if (!fs.existsSync(tmpOut)) throw new Error('Godot archive bridge did not produce extraction results');
           if (fs.existsSync(tmpOut)) {
             const result = JSON.parse(fs.readFileSync(tmpOut, "utf-8"));
-            if (result.success === false) throw new Error(result.error || 'Godot archive extraction failed');
+            if (result.success === false || result.error) {
+              const failure = new Error(result.error || 'Godot archive extraction failed');
+              failure.code = result.code; throw failure;
+            }
             if (result.texts && Array.isArray(result.texts)) {
               for (const item of result.texts) {
                 const { protectedText, tokens } = this.codeProtector.protect(item.original, "godot");
@@ -239,11 +243,16 @@ class GodotAdapter extends BaseEngineAdapter {
           // sumia do UNIVERSO, e a cobertura (FASE 4) era calculada sobre o que
           // sobrou — um numero menor, e pareceria legitimo.
           accExtract.fail(pckName, e);
+          archiveErrors.push({ file: pckName, code: e.code || 'PCK_EXTRACTION_FAILED', error: e.message });
           if (fs.existsSync(tmpOut)) { try { fs.unlinkSync(tmpOut); } catch (_) {} }
         }
       }
     }
 
+    if (archiveErrors.length && allTexts.length === 0) {
+      return { success: false, status: archiveErrors[0].code, error: archiveErrors[0].error,
+        errors: archiveErrors, texts: [], count: 0, universeComplete: false };
+    }
     if (allTexts.length === 0 && fs.existsSync(gameDir) && fs.readdirSync(gameDir).some(f => /\.(?:exe|pck)$/i.test(f))) {
       return { success: false, status: 'STATIC_TEXT_NOT_EXPOSED',
         error: 'No supported localization text was extracted. Packed, embedded, compiled, or dynamic resources require additional tooling; this is not proof that the game has no text.',
@@ -309,6 +318,12 @@ class GodotAdapter extends BaseEngineAdapter {
     }
 
     // Backup inicial via BackupManager
+    if (pckTextsByFile.size > 0) {
+      return { success: false, status: 'PCK_REPACK_REQUIRED',
+        error: 'PCK application requires a verified repacker; no game files were modified.',
+        modifiedFiles: [], count: 0 };
+    }
+
     const sessionOpts = {
       engine: "godot",
       sessionId: options.sessionId || `godot_sess_${Date.now()}`,
@@ -320,10 +335,6 @@ class GodotAdapter extends BaseEngineAdapter {
       const looseFiles = [...new Set(looseTexts.map(t => path.join(gameDir, t.file)))];
       filesToBackup.push(...looseFiles);
     }
-    // Para PCK, não duplicamos o arquivo de 1.2GB se pudermos usar rollback de cabeçalho + truncagem,
-    // mas se o usuário optar por backup completo ou arquivo for pequeno (< 200MB), fazemos backup
-    const pckMetaFiles = [];
-
     const backupRes = this.backupManager.createBackup(gameDir, filesToBackup, sessionOpts);
     const sessionDir = backupRes && backupRes.sessionDir ? backupRes.sessionDir : path.join(gameDir, ".opent_godot_backup", sessionOpts.sessionId);
     if (!fs.existsSync(sessionDir)) {
@@ -402,55 +413,6 @@ class GodotAdapter extends BaseEngineAdapter {
           } catch (e) {
             if (global.log) global.log('error', `[Godot] Erro ao aplicar no PO ${relFile}: ${e.message}`);
           }
-        }
-      }
-    }
-
-    // 2. Aplicação em arquivos PCK
-    if (pckTextsByFile.size > 0) {
-      const py = this._findPython();
-      const bridgeScript = path.join(__dirname, "godot_bridge.py");
-
-      for (const [pckName, pckTexts] of pckTextsByFile.entries()) {
-        const pckPath = path.join(gameDir, pckName);
-        if (!fs.existsSync(pckPath)) continue;
-
-        // Monta lista de traduções com restauração de placeholders
-        const transList = [];
-        for (const item of pckTexts) {
-          const tr = translations.get ? translations.get(item.id) : translations[item.id];
-          if (tr) {
-            const restored = this.codeProtector.restore(tr, item.tokens || []);
-            transList.push({
-              id: item.id,
-              file: item.file,
-              subPath: item.subPath,
-              nodeId: item.nodeId,
-              field: item.field || "text",
-              original: item.original,
-              translation: restored.restoredText
-            });
-          }
-        }
-
-        if (transList.length === 0) continue;
-
-        const tmpTransJson = path.join(sessionDir, `trans_${pckName}.json`);
-        const metaOutJson = path.join(sessionDir, `pck_meta_${pckName}.json`);
-        fs.writeFileSync(tmpTransJson, JSON.stringify(transList, null, 2), "utf-8");
-
-        try {
-          const proc = spawnSync(py, [bridgeScript, "apply", pckPath, tmpTransJson, metaOutJson], { encoding: "utf-8", timeout: 60000 });
-          if (fs.existsSync(metaOutJson)) {
-            const meta = JSON.parse(fs.readFileSync(metaOutJson, "utf-8"));
-            if (meta.success) {
-              appliedCount += (meta.appliedCount || 0);
-              modifiedFiles.add(pckPath);
-              pckMetaFiles.push(metaOutJson);
-            }
-          }
-        } catch (e) {
-          if (global.log) global.log('error', `[Godot] Erro ao aplicar no PCK ${pckName}: ${e.message}`);
         }
       }
     }

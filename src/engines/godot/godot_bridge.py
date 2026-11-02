@@ -13,65 +13,61 @@ if sys.platform == "win32":
         pass
 
 def parse_pck(pck_path):
-    with open(pck_path, "rb") as fp:
-        magic = fp.read(4)
-        if magic != b"GDPC":
-            return {"error": "Invalid magic: " + str(magic)}
-        
-        pck_version = struct.unpack("<I", fp.read(4))[0]
-        major, minor, patch = struct.unpack("<III", fp.read(12))
-        
-        if pck_version >= 2:
-            flags = struct.unpack("<I", fp.read(4))[0]
-            file_base = struct.unpack("<Q", fp.read(8))[0]
-            file_table_offset = struct.unpack("<Q", fp.read(8))[0]
-            reserved = fp.read(56)
-            fp.seek(file_table_offset)
-        else:
-            reserved = fp.read(64)
-            file_base = 0
-            file_table_offset = 0
-            
-        file_count = struct.unpack("<I", fp.read(4))[0]
-        
-        files = []
+    # Layout reference: Godot 4.4 core/io/file_access_pack.cpp.
+    archive_size = os.path.getsize(pck_path)
+    with open(pck_path, 'rb') as fp:
+        def take(size):
+            data = fp.read(size)
+            if len(data) != size:
+                raise ValueError('Truncated PCK directory')
+            return data
+        def u32():
+            return struct.unpack('<I', take(4))[0]
+        if take(4) != b'GDPC':
+            return {'error': 'Invalid PCK magic', 'code': 'PCK_INVALID_HEADER'}
+        version = u32()
+        major, minor, patch = u32(), u32(), u32()
+        if version not in (1, 2):
+            return {'error': 'Unsupported PCK format version', 'code': 'PCK_UNSUPPORTED_VERSION'}
+        flags = u32() if version == 2 else 0
+        file_base = struct.unpack('<Q', take(8))[0] if version == 2 else 0
+        reserved = take(64)
+        table_offset = fp.tell()
+        file_count = u32()
+        info = {'magic': 'GDPC', 'pckVersion': version,
+                'godotVersion': f'{major}.{minor}.{patch}',
+                'major': major, 'minor': minor, 'patch': patch,
+                'fileBase': file_base, 'fileTableOffset': table_offset,
+                'fileCount': file_count, 'flags': flags, 'files': []}
+        if flags & 1:
+            return {**info, 'error': 'Encrypted PCK directory requires the game-specific key; no strings were read.',
+                    'code': 'PCK_ENCRYPTED_DIRECTORY'}
+        if file_count > min(1000000, archive_size // 32):
+            raise ValueError('Invalid PCK file count')
         for _ in range(file_count):
-            path_len = struct.unpack("<I", fp.read(4))[0]
-            raw_path_bytes = fp.read(path_len)
-            raw_path = raw_path_bytes.decode("utf-8", errors="ignore").rstrip("\x00")
-            offset = struct.unpack("<Q", fp.read(8))[0]
-            size = struct.unpack("<Q", fp.read(8))[0]
-            md5 = fp.read(16)
-            f_flags = struct.unpack("<I", fp.read(4))[0] if pck_version >= 2 else 0
-            
-            files.append({
-                "path": raw_path,
-                "raw_path_bytes": raw_path_bytes,
-                "offset": offset,
-                "size": size,
-                "md5": md5.hex(),
-                "md5_bytes": md5,
-                "flags": f_flags
-            })
-            
-    return {
-        "magic": magic.decode("ascii", errors="ignore"),
-        "pckVersion": pck_version,
-        "godotVersion": f"{major}.{minor}.{patch}",
-        "major": major,
-        "minor": minor,
-        "patch": patch,
-        "fileBase": file_base,
-        "fileTableOffset": file_table_offset,
-        "fileCount": len(files),
-        "files": files
-    }
+            path_length = u32()
+            if path_length == 0 or path_length > 16384:
+                raise ValueError('Invalid PCK entry name length')
+            path_bytes = take(path_length)
+            name = path_bytes.rstrip(b'\x00').decode('utf-8', errors='strict')
+            entry_position = fp.tell()
+            offset, size = struct.unpack('<QQ', take(16))
+            digest = take(16)
+            entry_flags = u32() if version == 2 else 0
+            if not entry_flags & 2 and (file_base + offset > archive_size or size > archive_size - file_base - offset):
+                raise ValueError('Invalid PCK entry data bounds')
+            info['files'].append({'path': name, 'raw_path_bytes': path_bytes,
+                                  'offset': offset, 'size': size, 'md5': digest.hex(),
+                                  'md5_bytes': digest, 'flags': entry_flags,
+                                  'directoryEntryPosition': entry_position})
+        return info
+
 
 def extract_texts(pck_path, out_json_path):
     pck = parse_pck(pck_path)
     if "error" in pck:
         with open(out_json_path, "w", encoding="utf-8") as f:
-            json.dump({"error": pck["error"], "texts": []}, f)
+            json.dump({"success": False, "error": pck["error"], "code": pck.get("code"), "texts": []}, f)
         return
 
     file_base = pck["fileBase"]
@@ -150,126 +146,12 @@ def apply_translations(pck_path, trans_json_path, out_meta_path):
             json.dump({"error": pck["error"], "success": False}, f)
         return
 
-    with open(trans_json_path, "r", encoding="utf-8") as f:
-        trans_data = json.load(f)
+    with open(out_meta_path, 'w', encoding='utf-8') as output:
+        json.dump({'success': False, 'code': 'PCK_REPACK_REQUIRED',
+                   'error': 'PCK application requires a verified repacker; the legacy reserved-header index relocation is not supported.',
+                   'appliedCount': 0}, output)
+    return
 
-    # Group translations by subPath
-    # Support both list of objects and map of id -> translation
-    items_by_subpath = {}
-    if isinstance(trans_data, list):
-        for item in trans_data:
-            sp = item.get("subPath")
-            if sp:
-                if sp not in items_by_subpath:
-                    items_by_subpath[sp] = []
-                items_by_subpath[sp].append(item)
-    elif isinstance(trans_data, dict):
-        texts = trans_data.get("texts", [])
-        translations = trans_data.get("translations", {})
-        for item in texts:
-            sp = item.get("subPath")
-            item_id = item.get("id")
-            tl = translations.get(item_id) or item.get("translation")
-            if sp and tl:
-                item_copy = dict(item)
-                item_copy["translation"] = tl
-                if sp not in items_by_subpath:
-                    items_by_subpath[sp] = []
-                items_by_subpath[sp].append(item_copy)
-
-    file_base = pck["fileBase"]
-    orig_file_table_offset = pck["fileTableOffset"]
-    orig_file_size = os.path.getsize(pck_path)
-
-    # Save original offset & size in metadata for exact byte-level rollback
-    rollback_meta = {
-        "pckPath": pck_path,
-        "origFileSize": orig_file_size,
-        "origFileTableOffset": orig_file_table_offset,
-        "fileBase": file_base,
-        "modifiedFiles": list(items_by_subpath.keys())
-    }
-
-    modified_blobs = {} # subPath -> bytes
-    applied_count = 0
-
-    with open(pck_path, "rb") as fp:
-        for f in pck["files"]:
-            sp = f["path"]
-            if sp in items_by_subpath:
-                fp.seek(f["offset"] + file_base)
-                raw_bytes = fp.read(f["size"])
-                text_content = raw_bytes.decode("utf-8", errors="ignore")
-                
-                if f["path"].endswith(".json"):
-                    try:
-                        data = json.loads(text_content)
-                        for item in items_by_subpath[sp]:
-                            node_id = item.get("nodeId")
-                            field = item.get("field", "text")
-                            tl = item.get("translation")
-                            if node_id in data and isinstance(data[node_id], dict) and tl:
-                                data[node_id][field] = tl
-                                applied_count += 1
-                        new_content = json.dumps(data, indent=4, ensure_ascii=False)
-                        modified_blobs[sp] = new_content.encode("utf-8")
-                    except Exception as e:
-                        print(f"Error updating {sp}: {e}")
-
-    if not modified_blobs:
-        with open(out_meta_path, "w", encoding="utf-8") as f:
-            json.dump({"success": False, "count": 0, "message": "No matching files modified"}, f)
-        return
-
-    # Append modified blobs and rebuild directory table
-    with open(pck_path, "r+b") as fp:
-        # Seek to end of file to append new blobs
-        fp.seek(0, os.SEEK_END)
-        append_start_pos = fp.tell()
-
-        updated_files_map = {}
-        for sp, blob in modified_blobs.items():
-            blob_pos = fp.tell()
-            fp.write(blob)
-            updated_files_map[sp] = {
-                "offset": blob_pos - file_base,
-                "size": len(blob),
-                "md5": hashlib.md5(blob).digest()
-            }
-
-        # Write new directory table
-        new_table_offset = fp.tell()
-        fp.write(struct.pack("<I", len(pck["files"])))
-
-        for f in pck["files"]:
-            sp = f["path"]
-            raw_path_bytes = f["raw_path_bytes"]
-            fp.write(struct.pack("<I", len(raw_path_bytes)))
-            fp.write(raw_path_bytes)
-
-            if sp in updated_files_map:
-                u = updated_files_map[sp]
-                fp.write(struct.pack("<Q", u["offset"]))
-                fp.write(struct.pack("<Q", u["size"]))
-                fp.write(u["md5"])
-            else:
-                fp.write(struct.pack("<Q", f["offset"]))
-                fp.write(struct.pack("<Q", f["size"]))
-                fp.write(f["md5_bytes"])
-
-            if pck["pckVersion"] >= 2:
-                fp.write(struct.pack("<I", f["flags"]))
-
-        # Update file_table_offset in header (offset 32 = 0x20)
-        fp.seek(32)
-        fp.write(struct.pack("<Q", new_table_offset))
-
-    rollback_meta["success"] = True
-    rollback_meta["appliedCount"] = applied_count
-    rollback_meta["modifiedCount"] = len(modified_blobs)
-
-    with open(out_meta_path, "w", encoding="utf-8") as f:
-        json.dump(rollback_meta, f, indent=2)
 
 def rollback_pck(meta_path):
     with open(meta_path, "r", encoding="utf-8") as f:

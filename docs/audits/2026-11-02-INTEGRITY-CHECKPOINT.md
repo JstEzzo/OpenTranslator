@@ -33,3 +33,11 @@ A separate local UI instance verified English startup, saved 18 px text across r
 - [Godot 4.4 Windows export and PCK packaging](https://docs.godotengine.org/en/4.4/tutorials/export/exporting_for_windows.html)
 
 No stable release is justified by this checkpoint. Full visual game testing, font/layout checks, save/load round trips, gameplay cheats and wider version coverage remain open.
+
+## Godot follow-up
+
+A real Godot 4.4.1 PCK v2 package has an encrypted directory. The diagnostic now reports `PCK_ENCRYPTED_DIRECTORY`, without treating it as an empty game. The header reader follows the engine's fixed directory layout and validates count/data bounds. The previous writer incorrectly attempted to relocate the directory through a reserved header field. That writer was removed; PCK application returns `PCK_REPACK_REQUIRED` before modifying game files. Loose CSV/PO support is unaffected. Tests cover a valid v2 fixture, encryption, invalid bounds, and refusal of unsupported writes.
+
+Primary format reference: [Godot 4.4 PCK reader](https://github.com/godotengine/godot/blob/4.4/core/io/file_access_pack.cpp).
+
+Final original-installation integrity check: 12 games and 69,538 files checked by SHA-256; no changed, missing or additional files. Windows/POSIX relative-path separators are normalized before comparison.

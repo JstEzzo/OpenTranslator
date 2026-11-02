@@ -31,6 +31,7 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group: 'unit', name: 'godotPckHeader', file: 'tests/unit/godotPckHeader.test.js', desc: 'Official PCK v2 header, encrypted-directory diagnostics and refusal of invalid legacy rewriting' },
   { group: 'unit', name: 'packedContentDiagnostics', file: 'tests/unit/packedContentDiagnostics.test.js', desc: 'Runtime options are excluded, opaque packed content and failed dry-run extraction stay unconfirmed' },
   { group: 'unit', name: 'rubyMarshalCodec', file: 'tests/unit/rubyMarshalCodec.test.js', desc: 'Structural Unicode rewrite, stale payload rejection, minimal RGSS terminator and collision refusal' },
   { group: 'unit', name: 'pipelineLanguageSelection', file: 'tests/unit/pipelineLanguageSelection.test.js', desc: 'English dialogue reaches the selected provider and is verified on disk' },
