@@ -31,6 +31,7 @@ const ROOT = path.resolve(__dirname, '..');
  * as demais, e o output de cada uma fica legível.
  */
 const SUITES = [
+  { group:'unit', name:'cocosCompiledLocalization', file:'tests/unit/cocosCompiledLocalization.test.js', desc:'Compiled Cocos language maps, duplicate IDs, active language columns, verified backup and stale-source refusal' },
   { group:'unit', name:'unityLocalizationEncoding', file:'tests/unit/unityLocalizationEncoding.test.js', desc:'Decode and recode supported native Base64 localization fields; reject incompatible tables' },
   { group:'unit', name:'translationCancellation', file:'tests/unit/translationCancellation.test.js', desc:'Shutdown stops queued requests and blocks new provider calls' },
   { group:'unit', name:'pluginLabelsAndBatching', file:'tests/unit/pluginLabelsAndBatching.test.js', desc:'Nested visible plugin labels, source checks and bounded Unicode POST batches' },

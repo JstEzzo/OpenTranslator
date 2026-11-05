@@ -58,7 +58,7 @@ def main(request_file,response_file,config_file):
             if detected=='pt' and confidence>.98:plans.append((item,[('literal',source)],None));continue
         if re.search(r'[\u0400-\u052f\u0600-\u06ff\uac00-\ud7af]',source):plans.append((item,[], 'UNSUPPORTED_SOURCE_LANGUAGE'));continue
         protected=sorted(set(value for token in item.get('tokens',[]) for value in [token.get('raw'),token.get('token')] if value),key=len,reverse=True)
-        protected=sorted(set(protected)|{character for character in source if unicodedata.category(character).startswith('S')},key=len,reverse=True)
+        protected=sorted(set(protected)|set(re.findall(r'</?[A-Za-z][^>]*>|%(?:\d+\$)?\d*[A-Za-z]',source))|{character for character in source if unicodedata.category(character).startswith('S')},key=len,reverse=True)
         pattern='('+'|'.join([re.escape(value) for value in protected]+[r'</?[A-Za-z][^>]*>',r'⟦OT_[^⟧]+⟧',r'\\[A-Za-z]+(?:\[[^\]]*\])?',r'\\[.!|><^{}$\\]',r'%\d+',r'\{[^{}]*\}',r'\[[^\[\]]+\]',r'[/_=*~.-]{3,}'])+')'
         plan=[];reason=None
         for piece in re.split(pattern,source):

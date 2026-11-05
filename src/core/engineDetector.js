@@ -224,6 +224,13 @@ class EngineDetector {
     // -------------------------------------------------------------
     // 3. DETECÇÃO ELECTRON / CHROMIUM PURO (SEM RPG MAKER)
     // -------------------------------------------------------------
+    const embeddedCocosRoot = path.join(gameDir, 'resources', 'app', 'game');
+    if (fs.existsSync(path.join(embeddedCocosRoot, 'assets', 'resources')) &&
+        fs.readdirSync(embeddedCocosRoot).some(name=>/^cocos2d-js-min(?:\.[\w-]+)?\.js$/.test(name))) {
+      evidence.push('Cocos Creator web build inside Electron resources/app/game');
+      return {engine:'cocos_creator',engineVersion:'Cocos Creator web build',architecture,confidence:0.99,evidence,warnings,
+        capabilities:{staticFiles:true,nativeLocalization:true,archives:false,runtimeHook:false,dom:true,frameworkState:true,ocr:true,backupSupported:true}};
+    }
     const hasAsar = fs.existsSync(path.join(gameDir, "resources", "app.asar")) || fs.existsSync(path.join(gameDir, "app.asar"));
     const hasElectronSigs = rootFilesLower.some(f => f === "resources.pak" || f === "v8_context_snapshot.bin" || f === "license.electron.txt");
     const hasChromeSigs = rootFilesLower.some(f => f === "chrome_100_percent.pak" || f === "icudtl.dat");
