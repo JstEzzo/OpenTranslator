@@ -16,20 +16,51 @@ function walk(root,visit) {
   }
  }
 }
-function parse(source,file){const ast=acorn.parse(source,{ecmaVersion:'latest',allowHashBang:true});const rows=[],occurrences=new Map();walk(ast,node=>{
- if(node.type!=='Property'||node.computed||!/^G(?:language\d+|words_[A-Za-z0-9_]+)$/.test(node.key.name||node.key.value||''))return;
- const name=node.key.name||node.key.value,fn=node.value?.type==='ArrayExpression'?node.value.elements[0]:null;
- if(fn?.type!=='FunctionExpression')return;
- walk(fn.body,call=>{if(call.type!=='CallExpression'||call.callee.type!=='MemberExpression'||call.callee.computed||call.callee.property.name!=='set'||call.arguments.length!==2)return;
- const [key,object]=call.arguments;if(key.type!=='Literal'||typeof key.value!=='number'||object.type!=='ObjectExpression')return;
- const props=new Map(object.properties.filter(p=>p.type==='Property'&&!p.computed).map(p=>[p.key.name||p.key.value,p.value]));const id=props.get('id'),english=props.get('english');
- if(id?.type!=='Literal'||id.value!==key.value||english?.type!=='Literal'||typeof english.value!=='string'||!english.value.trim())return;
- const ranges={};for(const field of LANGUAGE_FIELDS){const p=props.get(field);if(p?.type==='Literal'&&typeof p.value==='string')ranges[field]={start:p.start,end:p.end,original:p.value};}
- if(!ranges.str)return;
- const base='compiled:'+file+':'+name+':'+key.value,occurrence=occurrences.get(base)||0;occurrences.set(base,occurrence+1);
- rows.push({id:base+':'+occurrence,file,module:name,entry:key.value,original:english.value,clean:english.value,format:'cocos_compiled_localization',ranges,engine:'cocos_creator',tokens:english.value.includes('@')?[{raw:'@',token:'⟦OT_COCOS_PAGE_0⟧',type:'COCOS_PAGE'}]:[]});
- });});
- const identities=new Set();for(const row of rows){if(identities.has(row.id))throw Error('Duplicate compiled localization ID: '+row.id+' at '+row.ranges.english.start);identities.add(row.id);}return rows.sort((a,b)=>a.ranges.english.start-b.ranges.english.start);
+function parse(source,file) {
+ const ast=acorn.parse(source,{ecmaVersion:'latest',allowHashBang:true});
+ const rows=[],occurrences=new Map(),seenUi=new Set();
+ walk(ast,module=>{
+  if(module.type!=='Property'||module.computed)return;
+  const name=module.key.name||module.key.value;
+  const fn=module.value?.type==='ArrayExpression'?module.value.elements[0]:null;
+  if(typeof name!=='string'||fn?.type!=='FunctionExpression')return;
+  const isLanguageMap=/^G(?:language\d+|words_[A-Za-z0-9_]+)$/.test(name);
+  let uiOrdinal=0;
+  function addUi(literal) {
+   if(literal?.type!=='Literal'||typeof literal.value!=='string'||seenUi.has(literal.start))return;
+   seenUi.add(literal.start);const ordinal=uiOrdinal++;
+   if(!literal.value.trim()||!/[\p{L}]/u.test(literal.value))return;
+   rows.push({id:'ui:'+file+':'+name+':'+ordinal,file,module:name,entry:ordinal,original:literal.value,clean:literal.value,
+    format:'cocos_compiled_localization',sourceKind:'script-label',sourceLanguage:/[\u3400-\u9fff]/.test(literal.value)&&!/[\u3040-\u30ff]/.test(literal.value)?'zh':'auto',
+    ranges:{english:{start:literal.start,end:literal.end,original:literal.value}},engine:'cocos_creator',tokens:[]});
+  }
+  function displayParts(node) {
+   if(!node)return;
+   if(node.type==='Literal')addUi(node);
+   else if(node.type==='BinaryExpression'&&node.operator==='+'){displayParts(node.left);displayParts(node.right);}
+   else if(node.type==='ConditionalExpression'){displayParts(node.consequent);displayParts(node.alternate);}
+  }
+  walk(fn.body,node=>{
+   if(node.type==='AssignmentExpression'&&node.operator==='='&&node.left.type==='MemberExpression'&&
+     (node.left.property.name||node.left.property.value)==='string')displayParts(node.right);
+   if(node.type!=='CallExpression')return;
+   const callee=node.callee.type==='MemberExpression'?(node.callee.property.name||node.callee.property.value):node.callee.name;
+   if(['showConfirm','showToast','showTips','showMessage','showNotice','alert','confirm'].includes(callee))addUi(node.arguments[0]);
+   if(!isLanguageMap||node.callee.type!=='MemberExpression'||node.callee.computed||node.callee.property.name!=='set'||node.arguments.length!==2)return;
+   const [key,object]=node.arguments;
+   if(key.type!=='Literal'||typeof key.value!=='number'||object.type!=='ObjectExpression')return;
+   const props=new Map(object.properties.filter(p=>p.type==='Property'&&!p.computed).map(p=>[p.key.name||p.key.value,p.value]));
+   const id=props.get('id'),english=props.get('english');
+   if(id?.type!=='Literal'||id.value!==key.value||english?.type!=='Literal'||typeof english.value!=='string'||!english.value.trim())return;
+   const ranges={};for(const field of LANGUAGE_FIELDS){const value=props.get(field);if(value?.type==='Literal'&&typeof value.value==='string')ranges[field]={start:value.start,end:value.end,original:value.value};}
+   if(!ranges.str)return;
+   const base='compiled:'+file+':'+name+':'+key.value,occurrence=occurrences.get(base)||0;occurrences.set(base,occurrence+1);
+   rows.push({id:base+':'+occurrence,file,module:name,entry:key.value,original:english.value,clean:english.value,
+    format:'cocos_compiled_localization',sourceKind:'language-map',ranges,engine:'cocos_creator',tokens:english.value.includes('@')?[{raw:'@',token:'⟦OT_COCOS_PAGE_0⟧',type:'COCOS_PAGE'}]:[]});
+  });
+ });
+ const identities=new Set();for(const row of rows){if(identities.has(row.id))throw Error('Duplicate compiled localization ID: '+row.id);identities.add(row.id);}
+ return rows.sort((a,b)=>a.ranges.english.start-b.ranges.english.start);
 }
 function roots(root){return[root,path.join(root,'resources','app','game'),path.join(root,'game')];}
 function extract(root){const rows=[];for(const base of roots(root)){const dir=path.join(base,'assets','main');if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>/^index(?:\.[\w-]+)?\.js$/.test(n))){const file=path.join(dir,name),relative=path.relative(root,file).replace(/\\/g,'/');rows.push(...parse(fs.readFileSync(file,'utf8'),relative));}}

@@ -25,7 +25,7 @@ def main(request_file,response_file,config_file):
     cache_dir=Path(config['cacheDirectory']);cache_dir.mkdir(parents=True,exist_ok=True)
     journal_path=cache_dir/'segments.jsonl';cache={};models={};encoders={};plans=[];pending={}
     def identity(language,source):
-        return hashlib.sha256(json.dumps([config['models'][language]['revision'],'pt-BR',language,source],ensure_ascii=False).encode()).hexdigest()
+        return hashlib.sha256(json.dumps([config['models'][language]['revision'],request.get('targetLanguage','pt-BR'),language,source],ensure_ascii=False).encode()).hexdigest()
     def clean_output(value,source):
         return bool(value) and not re.search(r'>>\s*(?:pob|por|pt(?:[_-]br)?)\s*<<|<unk>|⁇',value) and len(value)<max(100,len(source)*4)
     if journal_path.exists():
@@ -50,7 +50,8 @@ def main(request_file,response_file,config_file):
         source=item.get('clean') or item.get('original') or ''
         if item.get('context') in ('RPG::Actor.@name','RPG::Actor.@nickname'):
             plans.append((item,[('literal',source)],None));continue
-        if source in canonical:plans.append((item,[('literal',canonical[source])],None));continue
+        if request.get('targetLanguage')=='en' and not re.search(r'[\u3040-\u30ff\u3400-\u9fff]',source):plans.append((item,[('literal',source)],None));continue
+        if request.get('targetLanguage')!='en' and source in canonical:plans.append((item,[('literal',canonical[source])],None));continue
         if not any(character.isalpha() for character in source):plans.append((item,[('literal',source)],None));continue
         if language_of(source)=='en' and identifier and len(source.split())>=4:
             if source not in detected_sources:detected_sources[source]=identifier.classify(source)
@@ -58,11 +59,12 @@ def main(request_file,response_file,config_file):
             if detected=='pt' and confidence>.98:plans.append((item,[('literal',source)],None));continue
         if re.search(r'[\u0400-\u052f\u0600-\u06ff\uac00-\ud7af]',source):plans.append((item,[], 'UNSUPPORTED_SOURCE_LANGUAGE'));continue
         protected=sorted(set(value for token in item.get('tokens',[]) for value in [token.get('raw'),token.get('token')] if value),key=len,reverse=True)
-        protected=sorted(set(protected)|set(re.findall(r'</?[A-Za-z][^>]*>|%(?:\d+\$)?\d*[A-Za-z]',source))|{character for character in source if unicodedata.category(character).startswith('S')},key=len,reverse=True)
+        protected=sorted(set(protected)|set(re.findall(r'</?[A-Za-z][^>]*>|%(?:\d+\$)?\d*[A-Za-z]|_[A-Z][A-Z0-9_]*_',source))|{character for character in source if unicodedata.category(character).startswith('S')},key=len,reverse=True)
         pattern='('+'|'.join([re.escape(value) for value in protected]+[r'</?[A-Za-z][^>]*>',r'⟦OT_[^⟧]+⟧',r'\\[A-Za-z]+(?:\[[^\]]*\])?',r'\\[.!|><^{}$\\]',r'%\d+',r'\{[^{}]*\}',r'\[[^\[\]]+\]',r'[/_=*~.-]{3,}'])+')'
         plan=[];reason=None
         for piece in re.split(pattern,source):
             if not piece:continue
+            if request.get('targetLanguage')=='en' and not re.search(r'[\u3040-\u30ff\u3400-\u9fff]',piece):plan.append(('literal',piece));continue
             if piece in protected or re.fullmatch(pattern,piece) or not any(character.isalpha() for character in piece):plan.append(('literal',piece));continue
             for paragraph in re.split(r'(\n+)',piece):
                 if not paragraph:continue
@@ -70,8 +72,9 @@ def main(request_file,response_file,config_file):
                 leading=paragraph[:len(paragraph)-len(paragraph.lstrip())]
                 trailing=paragraph[len(paragraph.rstrip()):]
                 body=paragraph.strip();language=language_of(body)
-                if body in canonical:plan.append(('literal',leading+canonical[body]+trailing));continue
+                if request.get('targetLanguage')!='en' and body in canonical:plan.append(('literal',leading+canonical[body]+trailing));continue
                 if language not in config['models']:reason='MISSING_LANGUAGE_MODEL';break
+                if config['models'][language].get('outputLanguage','pt-BR')!=request.get('targetLanguage','pt-BR'):reason='MODEL_TARGET_MISMATCH';break
                 model_prefix=config['models'][language].get('prefix','')
                 tokens=encoder(language).convert_ids_to_tokens(encoder(language).encode(model_prefix+body))
                 if len(tokens)>450:reason='INPUT_REQUIRES_REVIEW';break
@@ -81,7 +84,7 @@ def main(request_file,response_file,config_file):
         plans.append((item,plan,reason))
     started=time.perf_counter();done=0
     with journal_path.open('a',encoding='utf-8',buffering=1) as journal:
-        for language in ('en','ja'):
+        for language in ('en','ja','zh'):
             subset=[(key,*values[1:]) for key,values in pending.items() if values[0]==language]
             if not subset:continue
             device=config.get('device','cpu')

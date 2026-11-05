@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const CompiledLocalization = require('./compiledLocalization');
+const SerializedLabels = require('./serializedLabels');
 const path = require('path');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
@@ -70,7 +71,8 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
 
   async extract(gameDir, options = {}) {
     const compiled = CompiledLocalization.extract(gameDir);
-    if (compiled) return compiled;
+    const labels = SerializedLabels.extract(gameDir);
+    if (compiled || labels.count) {const texts=[...(compiled?.texts||[]),...labels.texts];return {success:true,texts,count:texts.length,universeComplete:false,coverageScope:'Compiled localization and typed Cocos Label/RichText assets; image text excluded',warnings:labels.warnings};}
     const allTexts = [];
     // FASE 9 / PASSO 52 — o relatório decide o `success`.
     const acc = new PartialReport();
@@ -135,13 +137,15 @@ class CocosCreatorAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
-    if (texts.some(t=>t.format==='cocos_compiled_localization')) {
-      if (texts.some(t=>t.format!=='cocos_compiled_localization')) throw new Error('Mixed Cocos translation formats');
-      const plan=CompiledLocalization.prepare(gameDir,texts,translations);
+    if (texts.some(t=>['cocos_compiled_localization','cocos_serialized_label'].includes(t.format))) {
+      if (texts.some(t=>!['cocos_compiled_localization','cocos_serialized_label'].includes(t.format))) throw new Error('Mixed Cocos translation formats');
+      const compiledPlan=CompiledLocalization.prepare(gameDir,texts.filter(t=>t.format==='cocos_compiled_localization'),translations);
+      const labelPlan=SerializedLabels.prepare(gameDir,texts.filter(t=>t.format==='cocos_serialized_label'),translations);
+      const plan={updates:[...compiledPlan.updates,...labelPlan.updates],count:compiledPlan.count+labelPlan.count};
       if (!plan.updates.length) return {success:true,count:0,modifiedFiles:[]};
       const backup=this.backupManager.createSessionBackup(gameDir,plan.updates.map(u=>u.target),{sessionId:options.sessionId,engine:'cocos_creator'});
       if (!backup.success) return {success:false,count:0,error:backup.error};
-      return CompiledLocalization.commit(plan);
+      return SerializedLabels.commit(plan);
     }
     // FASE 10 / D1 — o contrato de apply. O plano de arquivos vem dos textos:
     // um texto traduzível veio de um arquivo, e aplicar escreve nele.
