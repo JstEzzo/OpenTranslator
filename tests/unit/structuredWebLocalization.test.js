@@ -1,0 +1,21 @@
+'use strict';
+const fs=require('fs'),path=require('path'),os=require('os'),assert=require('assert');
+const Construct=require('../../src/engines/construct/constructAdapter');
+const GDevelop=require('../../src/engines/gdevelop/gdevelopAdapter');
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'opent-web-formats-'));
+let pass=0;
+(async()=>{try{
+ const c=path.join(root,'construct');fs.mkdirSync(c);
+ fs.writeFileSync(path.join(c,'lang.json'),JSON.stringify({locale:'en',strings:{menu:{'a.b':' Start {0} '},title:'Title'}}));
+ fs.writeFileSync(path.join(c,'data.json'),JSON.stringify({name:'Internal project',version:'1'}));
+ const adapter=new Construct(),extracted=await adapter.extract(c);assert.equal(extracted.count,2);assert.ok(extracted.texts.every(t=>t.file==='lang.json'));pass++;
+ const row=extracted.texts.find(t=>t.original.includes('Start'));
+ const applied=await adapter.apply(c,[row],new Map([[row.id,' Iniciar {0} ']]));assert.equal(applied.count,1);assert.equal(applied.success,true);assert.ok(applied.transactional);const result=JSON.parse(fs.readFileSync(path.join(c,'lang.json')));assert.equal(result.strings.menu['a.b'],' Iniciar {0} ');assert.equal(result.locale,'en');assert.ok(!fs.existsSync(path.join(c,'translation_pt_BR.json')));pass++;
+ await assert.rejects(()=>adapter.apply(c,[row],new Map([[row.id,' Outro {0} ']])),/source changed/);pass++;
+ const restored=await adapter.rollback(c);assert.ok(restored.success);assert.equal(JSON.parse(fs.readFileSync(path.join(c,'lang.json'))).strings.menu['a.b'],' Start {0} ');pass++;
+ const g=path.join(root,'gdevelop');fs.mkdirSync(g);const fixture={objects:[{name:'Same',type:'TextObject::Text',text:'Global'}],layouts:[{name:'Scene',objects:[{name:'Same',type:'TextObject::Text',content:{text:'Scene text'}},{name:'Sprite',type:'Sprite',content:{text:'Internal'}}]}]};fs.writeFileSync(path.join(g,'data.json'),JSON.stringify(fixture));
+ const gd=new GDevelop(),gr=await gd.extract(g);assert.equal(gr.count,2);assert.equal(new Set(gr.texts.map(t=>t.id)).size,2);pass++;
+ const ga=await gd.apply(g,gr.texts,new Map(gr.texts.map(t=>[t.id,t.original==='Global'?'Global PT':'Cena'])));assert.equal(ga.count,2);const got=JSON.parse(fs.readFileSync(path.join(g,'data.json')));assert.equal(got.objects[0].text,'Global PT');assert.equal(got.layouts[0].objects[0].content.text,'Cena');assert.equal(got.layouts[0].objects[1].content.text,'Internal');pass++;
+ const source=JSON.stringify(got);await assert.rejects(()=>gd.apply(g,[{...gr.texts[0],file:'../outside.json'}],new Map([[gr.texts[0].id,'Fora']])));assert.equal(fs.readFileSync(path.join(g,'data.json'),'utf8'),JSON.stringify(got,null,2));pass++;
+ console.log(`pass=${pass} fail=0`);
+}finally{fs.rmSync(root,{recursive:true,force:true});}})().catch(e=>{console.error(e);process.exitCode=1});

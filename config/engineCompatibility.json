@@ -1,5 +1,5 @@
 {
-  "reviewedAt": "2026-11-01",
+  "reviewedAt": "2026-11-06",
   "notice": "Code review and research; not a certification of every engine version or game.",
   "profiles": [
     {
@@ -36,9 +36,9 @@
       "id": "cocos",
       "name": "Cocos Creator / Cocos2d-x",
       "versions": "Separate Creator 2/3 and Cocos2d-x profiles",
-      "coverage": "Readable JSON/JS/Lua resources",
+      "coverage": "Compiled language maps, script UI labels, typed serialized labels and cgList cutscene dialogue arrays in supported Creator builds",
       "cheats": "Not implemented",
-      "commonIssue": "Scripts may be compiled or distributed as .jsc.",
+      "commonIssue": "Creator versions, custom loaders and .jsc/native resources need separate parsers.",
       "missing": [
         "Validate versions and resource references",
         "Do not claim encrypted script coverage without verified extraction"
@@ -52,12 +52,12 @@
       "id": "construct",
       "name": "Construct",
       "versions": "Versions 2 and 3; projects and exports differ",
-      "coverage": "Extracts readable data; writes an additional translation file",
+      "coverage": "Updates recognized loaded localization JSON tables in place, including nested string contexts",
       "cheats": "Not implemented",
-      "commonIssue": "Creating a JSON file does not ensure the game loads it.",
+      "commonIssue": "Compiled exports and game loading logic outside recognized localization tables remain format-specific.",
       "missing": [
-        "Integrate loading of the generated translation file",
-        "Validate exports and the internationalization plugin"
+        "Validate real Construct 2/3 exports and runtime locale/plural loading",
+        "Cover text stored in proprietary exported event data"
       ],
       "sources": [
         "https://www.construct.net/en/make-games/manuals/construct-3/plugin-reference/internationalization"
@@ -118,12 +118,13 @@
       "id": "gdevelop",
       "name": "GDevelop",
       "versions": "Project and export structures vary",
-      "coverage": "TextObject entries in JSON",
+      "coverage": "Global and scene TextObject fields in game.json and data.json, direct text and content.text layouts",
       "cheats": "Not implemented",
       "commonIssue": "Texts in events and extensions may be outside scene objects.",
       "missing": [
-        "Cover events, global objects, and external resources",
-        "Test exports without game.json"
+        "Cover text expressions in events and extensions",
+        "Support JavaScript exports without project JSON",
+        "Validate a real GDevelop game"
       ],
       "sources": [
         "https://forum.gdevelop.io/t/translate-extension/72249"

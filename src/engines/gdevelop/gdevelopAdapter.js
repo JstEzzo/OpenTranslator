@@ -65,52 +65,28 @@ class GDevelopAdapter extends BaseEngineAdapter {
   }
 
   async extract(gameDir, options = {}) {
-    const allTexts = [];
-    // FASE 9 / PASSO 50 — o relatório de parcialidade. Ver partialApply.js.
-    const acc = new PartialReport();
-    const gameJsonPath = path.join(gameDir, "game.json");
-
-    if (fs.existsSync(gameJsonPath)) {
-      acc.ok();
-      try {
-        const data = JSON.parse(fs.readFileSync(gameJsonPath, 'utf8'));
-        // Varredura de objetos de texto em cenas
-        const layouts = data.layouts || [];
-        for (const layout of layouts) {
-          const lName = layout.name || "scene";
-          const objects = layout.objects || [];
-          for (const obj of objects) {
-            if (obj.type === "TextObject::Text" && obj.content) {
-              const text = obj.content.text || "";
-              if (text.trim().length > 0) {
-                const { protectedText, tokens } = this.codeProtector.protect(text.trim(), "gdevelop");
-                allTexts.push({
-                  id: `gd_${lName}_${obj.name}`,
-                  file: "game.json",
-                  scene: lName,
-                  objectName: obj.name,
-                  original: text.trim(),
-                  clean: text.trim(),
-                  protectedText,
-                  tokens,
-                  engine: "gdevelop"
-                });
-              }
-            }
-          }
-        }
-      } catch (e) {
-        // FASE 9 / PASSO 50 — `catch (e) {}` engolia um game.json ilegível ou
-        // malformado, e o adapter devolvia `success: true` com zero textos.
-        // O `buildUniverse()` (FASE 4) derivava o total daqui: um jogo com
-        // 5.000 linhas reportava universo 0 e cobertura 100% — o certificado
-        // podia declarar COMPLETED sobre um jogo que nunca foi lido.
-        acc.fail('game.json', e);
-      }
+    const texts=[],acc=new PartialReport();
+    for(const file of ['game.json','data.json']){
+      const full=path.join(gameDir,file);if(!fs.existsSync(full))continue;
+      try{
+        const data=JSON.parse(fs.readFileSync(full,'utf8'));
+        if(!data||(!Array.isArray(data.layouts)&&!Array.isArray(data.objects))){acc.skip(file,'No recognized GDevelop project');continue;}
+        const objects=(list,keys,scene)=>{if(!Array.isArray(list))return;list.forEach((obj,index)=>{
+          if(obj?.type!=='TextObject::Text')return;
+          // Project versions store text either directly or in content.
+          const at=typeof obj.text==='string'?keys.concat(index,'text'):typeof obj.content?.text==='string'?keys.concat(index,'content','text'):null;
+          const value=typeof obj.text==='string'?obj.text:obj.content?.text;
+          if(!at||!value.trim())return;
+          const {protectedText,tokens}=this.codeProtector.protect(value,'gdevelop');
+          texts.push({id:'gd_'+file+'_'+JSON.stringify(at),file,keySegments:at,scene,objectName:obj.name,original:value,clean:value,protectedText,tokens,engine:'gdevelop'});
+        })};
+        objects(data.objects,['objects'],'global');
+        (data.layouts||[]).forEach((layout,index)=>objects(layout.objects,['layouts',index,'objects'],layout.name||'scene'));
+        (data.externalLayouts||[]).forEach((layout,index)=>objects(layout.objects,['externalLayouts',index,'objects'],layout.name||'external'));
+        acc.ok();
+      }catch(error){acc.fail(file,error);}
     }
-
-    // FASE 9: o relatório decide o `success`, não a intenção do adapter.
-    return acc.report({ texts: allTexts, count: allTexts.length });
+    return acc.report({texts,count:texts.length});
   }
 
   async validate(gameDir, texts, translations) {
@@ -118,84 +94,14 @@ class GDevelopAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
-    // FASE 10 / D1 — o contrato de apply. Este adapter escreve em `game.json`
-    // ou `data.json`, e os textos extraídos declaram `file: "game.json"`, então
-    // o plano derivado dos textos cobre o que ele escreve.
+    const Json = require('../../core/structuredJsonTranslation');
+    const plan = Json.prepare(gameDir, texts, translations, this.codeProtector);
     const ac = startApplyContract(gameDir, texts);
-    const candidateFiles = [
-      path.join(gameDir, "game.json"),
-      path.join(gameDir, "data.json")
-    ];
-
-    const targetPath = candidateFiles.find(p => fs.existsSync(p));
-    if (!targetPath) {
-      return { success: false, error: "Arquivo de dados do GDevelop (game.json ou data.json) não encontrado.", modifiedFiles: [], count: 0 };
-    }
-
-    this.backupManager.createBackup(gameDir, [targetPath], { engine: "gdevelop" });
-
-    try {
-      const data = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
-      const textLookup = new Map();
-      for (const t of texts) {
-        const tr = translations.get ? translations.get(t.id) : translations[t.id];
-        if (tr && tr !== t.original) {
-          const restored = this.codeProtector.restore(tr, t.tokens || []);
-          textLookup.set(`${t.scene}::${t.objectName}`, restored.restoredText);
-        }
-      }
-
-      let appliedCount = 0;
-      const layouts = data.layouts || [];
-      for (const layout of layouts) {
-        const lName = layout.name || "scene";
-        const objects = layout.objects || [];
-        for (const obj of objects) {
-          if (obj.type === "TextObject::Text" && obj.content) {
-            const key = `${lName}::${obj.name}`;
-            if (textLookup.has(key)) {
-              obj.content.text = textLookup.get(key);
-              appliedCount++;
-            }
-          }
-        }
-      }
-
-      // Também verifica globalObjects se existirem
-      if (Array.isArray(data.objects)) {
-        for (const obj of data.objects) {
-          if (obj.type === "TextObject::Text" && obj.content) {
-            for (const t of texts) {
-              if (t.objectName === obj.name) {
-                const tr = translations.get ? translations.get(t.id) : translations[t.id];
-                if (tr && tr !== t.original) {
-                  const restored = this.codeProtector.restore(tr, t.tokens || []);
-                  obj.content.text = restored.restoredText;
-                  appliedCount++;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // FASE 10 / D1 — hash declarado a partir do CONTEÚDO EM MEMÓRIA.
-      // Hashear o arquivo depois de escrever compararia o número com ele mesmo.
-      const saida = JSON.stringify(data, null, 2);
-      fs.writeFileSync(targetPath, saida, 'utf8');
-      ac.wrote(path.relative(gameDir, targetPath).replace(/\\/g, "/"), saida);
-
-      // FASE 10 / D1 — `ac.finish` acrescenta `transactional`,
-      // `filesToBackup` e `fileHashes` ao que o adapter já devolvia.
-      return ac.finish({
-        success: true,
-        modifiedFiles: [targetPath],
-        count: appliedCount,
-        message: `Tradução GDevelop aplicada com sucesso em ${path.basename(targetPath)} (${appliedCount} textos).`
-      });
-    } catch (e) {
-      return { success: false, error: e.message, modifiedFiles: [], count: 0 };
-    }
+    if (!plan.updates.length) return ac.finish({success:true,count:0,modifiedFiles:[]});
+    const backup = this.backupManager.createBackup(gameDir, plan.updates.map(u=>u.file), {engine:this.id,sessionId:options.sessionId});
+    if (!backup.success) return {success:false,count:0,modifiedFiles:[],error:backup.error||'Backup failed'};
+    for (const update of plan.updates) { Json.commit(update); ac.wrote(update.relative, update.output); }
+    return ac.finish({success:true,count:plan.count,modifiedFiles:plan.updates.map(u=>u.file)});
   }
 
   async rollback(gameDir, options = {}) {

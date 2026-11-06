@@ -36,7 +36,7 @@ Support is **partial and dependent on the engine version, game format, architect
 | Godot, Wolf RPG, Electron/HTML5 | Dedicated adapters or bridges | Imported/compiled resources, archives, fonts, and runtime configurations vary |
 | GameMaker, Construct, Defold, Cocos, GDevelop | Format-specific partial integrations | External text or generated files may require additional game-side loading |
 
-See the [current compatibility profiles](config/engineCompatibility.json) and [engine support guide](docs/engines/ENGINE_SUPPORT_MATRIX.md). A provider's presence or a historical PASS label is not a game compatibility certificate. Cheats require a working game bridge; OpenTranslator is not a universal memory editor.
+See the [current compatibility profiles](config/engineCompatibility.json), [engine support guide](docs/engines/ENGINE_SUPPORT_MATRIX.md) and [compatibility corrections and outstanding validation](docs/engines/COMPATIBILITY_REVIEW_2026-11-06.md). Construct now updates recognized localization files in place; GDevelop covers global and scene text objects in both `game.json` and `data.json`. A provider's presence or a historical PASS label is not a game compatibility certificate. Cheats require a working game bridge; OpenTranslator is not a universal memory editor.
 
 New automatic translations generally require the selected online provider or a separately configured local provider. Cached translations can be reused offline; that does not make every translation workflow offline.
 

@@ -69,53 +69,26 @@ class ConstructAdapter extends BaseEngineAdapter {
   }
 
   async extract(gameDir, options = {}) {
-    const allTexts = [];
-    // FASE 9 / PASSO 51 — o relatório decide o `success`.
-    const acc = new PartialReport();
-    const candidateFiles = ["data.json", "c3runtime.js", "lang.json", "strings.json", "locale.json"];
-
-    for (const cf of candidateFiles) {
-      const full = path.join(gameDir, cf);
-      if (fs.existsSync(full)) {
-        acc.ok();
-        try {
-          const content = fs.readFileSync(full, 'utf8');
-          if (cf.endsWith(".json")) {
-            const data = JSON.parse(content);
-            // Formato Construct 3 I18n: {"locale": "en", "strings": { "key": "value" }}
-            const stringMap = data.strings || (typeof data === "object" ? data : {});
-            for (const [k, v] of Object.entries(stringMap)) {
-              if (typeof v === "string" && v.trim().length > 0) {
-                const { protectedText, tokens } = this.codeProtector.protect(v.trim(), "construct");
-                allTexts.push({
-                  id: `c3_${cf}_${k}`,
-                  file: cf,
-                  key: k,
-                  original: v.trim(),
-                  clean: v.trim(),
-                  protectedText,
-                  tokens,
-                  engine: "construct"
-                });
-              }
-            }
-          }
-        } catch (e) {
-          // FASE 9 / PASSO 51 — a falha deixou de ser silenciosa.
-          // Ver src/core/partialApply.js.
-          //
-          // Um `data.json` malformado era engolido aqui, e o adapter devolvia
-          // `success: true`. O `buildUniverse()` (FASE 4) derivava o total
-          // deste retorno: um projeto com 5.000 linhas reportava universo
-          // parcial e cobertura calculada sobre o que sobrou — número que
-          // parece legítimo e não é.
-          acc.fail(cf, e);
-        }
-      }
+    const texts=[], acc=new PartialReport();
+    for(const file of ['data.json','lang.json','strings.json','locale.json']) {
+      const full=path.join(gameDir,file);if(!fs.existsSync(full))continue;
+      try {
+        const data=JSON.parse(fs.readFileSync(full,'utf8'));
+        const map=data&&typeof data.strings==='object'&&!Array.isArray(data.strings)?data.strings:null;
+        // Never treat the exported project metadata in data.json as dialogue.
+        const flat=!map&&file!=='data.json'&&data&&typeof data==='object'&&!Array.isArray(data);
+        if(!map&&!flat){acc.skip(file,'No recognized localization string table');continue;}
+        const visit=(value,keys)=>{for(const [key,child]of Object.entries(value)){
+          const at=keys.concat(key);
+          if(typeof child==='string'&&child.trim()&&!(flat&&keys.length===0&&['locale','version','name','id'].includes(key))){
+            const {protectedText,tokens}=this.codeProtector.protect(child,'construct');
+            texts.push({id:'c3_'+file+'_'+JSON.stringify(at),file,keySegments:at,original:child,clean:child,protectedText,tokens,engine:'construct'});
+          }else if(child&&typeof child==='object'&&!Array.isArray(child))visit(child,at);
+        }};
+        visit(map||data,map?['strings']:[]);acc.ok();
+      }catch(error){acc.fail(file,error);}
     }
-
-    // FASE 9: quem decide o `success` é o relatório, não a intenção.
-    return acc.report({ texts: allTexts, count: allTexts.length });
+    return acc.report({texts,count:texts.length});
   }
 
   async validate(gameDir, texts, translations) {
@@ -123,41 +96,14 @@ class ConstructAdapter extends BaseEngineAdapter {
   }
 
   async apply(gameDir, texts, translations, options = {}) {
-    this.backupManager.createBackup(gameDir, "construct_translation");
-    const targetFile = path.join(gameDir, "translation_pt_BR.json");
-    // FASE 10 / D1 — PLANO EXPLICITO, e este adapter é a razão de ele existir.
-    //
-    // O plano derivado dos textos não serve aqui: os textos vêm de
-    // `data.json`/`lang.json`/`locale.json`, e este adapter escreve um
-    // arquivo NOVO, `translation_pt_BR.json`, que nenhum texto menciona.
-    // Derivar o plano dos textos daria um conjunto que não inclui o arquivo
-    // realmente escrito — e `ac.wrote` recusaria a escrita, com razão.
-    //
-    // Este adapter sabe o que escreve, então declara.
-    const ac = startApplyContract(gameDir, texts, {
-      planFiles: ['translation_pt_BR.json'],
-    });
-    const outStrings = {};
-    let count = 0;
-
-    for (const t of texts) {
-      const tr = translations.get(t.id);
-      if (tr) {
-        const restored = this.codeProtector.restore(tr, t.tokens || []);
-        outStrings[t.key || t.id] = restored.restoredText;
-        count++;
-      }
-    }
-
-    // FASE 10 / D1 — hash declarado a partir do CONTEÚDO EM MEMÓRIA.
-    const saida = JSON.stringify({ locale: "pt-BR", strings: outStrings }, null, 2);
-    fs.writeFileSync(targetFile, saida, 'utf8');
-    ac.wrote('translation_pt_BR.json', saida);
-    return ac.finish({
-      success: true,
-      modifiedFiles: [targetFile],
-      count
-    });
+    const Json = require('../../core/structuredJsonTranslation');
+    const plan = Json.prepare(gameDir, texts, translations, this.codeProtector);
+    const ac = startApplyContract(gameDir, texts);
+    if (!plan.updates.length) return ac.finish({success:true,count:0,modifiedFiles:[]});
+    const backup = this.backupManager.createBackup(gameDir, plan.updates.map(u=>u.file), {engine:this.id,sessionId:options.sessionId});
+    if (!backup.success) return {success:false,count:0,modifiedFiles:[],error:backup.error||'Backup failed'};
+    for (const update of plan.updates) { Json.commit(update); ac.wrote(update.relative, update.output); }
+    return ac.finish({success:true,count:plan.count,modifiedFiles:plan.updates.map(u=>u.file)});
   }
 
   async rollback(gameDir, options = {}) {

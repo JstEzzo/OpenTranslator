@@ -58,7 +58,7 @@ class UnrealAdapter extends BaseEngineAdapter {
 
   getCapabilities(gameDir, exePath) {
     const hasPaks = this.handler._findPakFiles(gameDir).length > 0;
-    const hasLocres = fs.existsSync(path.join(gameDir, 'Content', 'Localization'));
+    const hasLocres = fs.existsSync(gameDir) && this.handler._findLocresFiles(gameDir).length > 0;
 
     return {
       staticFiles: hasLocres,

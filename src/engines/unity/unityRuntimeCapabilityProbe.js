@@ -69,8 +69,8 @@ class UnityRuntimeCapabilityProbe {
         if (result.runtimeType !== 'IL2CPP') {
           result.runtimeType = 'MONO';
           result.clues.push('Pasta Managed encontrada -> Runtime Mono detectado');
-          result.capabilities.runtimeHook = 'SUPPORTED';
-          result.capabilities.bridgeStatus = 'MONO_INSPECTOR_AVAILABLE';
+          result.capabilities.runtimeHook = 'UNVERIFIED';
+          result.capabilities.bridgeStatus = 'MONO_RUNTIME_DETECTED_BRIDGE_UNVERIFIED';
         }
 
         // Checagem de frameworks específicos
