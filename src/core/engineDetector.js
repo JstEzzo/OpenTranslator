@@ -523,14 +523,19 @@ class EngineDetector {
     // -------------------------------------------------------------
     // 8A. DETECÇÃO GODOT ENGINE
     // -------------------------------------------------------------
-    const hasGodot = rootFilesLower.includes("project.godot") ||
+    const { findEmbeddedPck } = require('../engines/godot/embeddedPck');
+    const embeddedGodot = fs.readdirSync(gameDir, { withFileTypes: true })
+      .filter(entry => entry.isFile() && /\.exe$/i.test(entry.name))
+      .map(entry => findEmbeddedPck(path.join(gameDir, entry.name))).find(Boolean);
+    const hasGodot = embeddedGodot || rootFilesLower.includes("project.godot") ||
                      rootFilesLower.some(f => f.endsWith(".pck")) ||
                      rootFilesLower.some(f => f.includes("godot"));
     if (hasGodot) {
-      evidence.push("Estrutura da Godot Engine identificada (project.godot / .pck)");
+      evidence.push(embeddedGodot ? `Embedded Godot PCK v${embeddedGodot.version} validated` :
+        "Estrutura da Godot Engine identificada (project.godot / .pck)");
       return {
         engine: "godot",
-        engineVersion: "Godot 3.x/4.x",
+        engineVersion: embeddedGodot ? `Godot ${embeddedGodot.godotVersion}` : "Godot 3.x/4.x",
         architecture,
         confidence: 0.95,
         evidence,

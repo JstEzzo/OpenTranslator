@@ -24,4 +24,51 @@ with tempfile.TemporaryDirectory(prefix='opent-pck-header-',dir=ROOT/'scratch') 
     p.write_bytes(blob[:-2])
     try:bridge.parse_pck(str(p));raise AssertionError('Invalid data bounds accepted')
     except ValueError:pass
-print('pass=5 fail=0')
+    # A v3 pack in an executable has a relative data base and index.
+    p = root / 'game.exe'
+    prefix = b'MZ' + bytes(62)
+    body = 'type\ttext_ja\ttext_en\r\nsay\tこんにちは\tHello {0}\r\n'.encode('utf-8')
+    name = b'dialogue.tsv'
+    header = struct.pack('<4s5I2Q', b'GDPC', 3, 4, 6, 1, 2, 40, 40 + len(body))
+    entry = struct.pack('<I', len(name)) + name + struct.pack('<QQ16sI', 0, len(body), hashlib.md5(body).digest(), 0)
+    pack = header + body + struct.pack('<I', 1) + entry
+    blob = prefix + pack + struct.pack('<Q4s', len(pack), b'GDPC')
+    p.write_bytes(blob)
+    bridge.extract_texts(str(p), str(extracted))
+    rows = json.loads(extracted.read_text(encoding='utf-8'))['texts']
+    assert len(rows) == 1 and rows[0]['original'] == 'Hello {0}'
+    edit = dict(rows[0], translated='Olá, viajante {0}')
+    payload.write_text(json.dumps({'format': 'godot_pck_tsv', 'edits': [edit]}), encoding='utf-8')
+    bridge.apply_translations(str(p), str(payload), str(meta))
+    assert json.loads(meta.read_text(encoding='utf-8'))['appliedCount'] == 1
+    parsed = bridge.parse_pck(str(p))
+    packed = parsed['files'][0]
+    start = parsed['fileBase'] + packed['offset']
+    assert p.read_bytes()[:len(prefix)] == prefix
+    assert p.read_bytes()[start:start + packed['size']] == body.replace(b'Hello {0}', 'Olá, viajante {0}'.encode())
+    after = p.read_bytes()
+    try:
+        bridge.apply_translations(str(p), str(payload), str(meta))
+        raise AssertionError('Stale TSV source accepted')
+    except ValueError as error:
+        assert 'source changed' in str(error)
+    assert p.read_bytes() == after
+    # A second, standalone pack uses the standard keyed CSV localization format.
+    p = root / 'another-game.pck'
+    body = 'keys,fr,de\r\nINTRO,"Bonjour, monde",Hallo\r\n'.encode('utf-8')
+    name = b'locale.csv'
+    entry = struct.pack('<I', len(name)) + name + struct.pack('<QQ16sI', 0, len(body), hashlib.md5(body).digest(), 0)
+    base = 100 + len(entry)
+    p.write_bytes(struct.pack('<4s5IQ', b'GDPC', 2, 4, 4, 1, 0, base) + bytes(64) +
+                  struct.pack('<I', 1) + entry + body)
+    bridge.extract_texts(str(p), str(extracted), 'fr')
+    rows = json.loads(extracted.read_text(encoding='utf-8'))['texts']
+    assert len(rows) == 1 and rows[0]['original'] == 'Bonjour, monde' and rows[0]['sourceLanguage'] == 'fr'
+    payload.write_text(json.dumps({'format': 'godot_pck_localization_table',
+                       'edits': [dict(rows[0], translated='Olá, mundo')]}), encoding='utf-8')
+    bridge.apply_translations(str(p), str(payload), str(meta))
+    for language, expected in [('fr', 'Olá, mundo'), ('de', 'Hallo')]:
+        bridge.extract_texts(str(p), str(extracted), language)
+        assert json.loads(extracted.read_text(encoding='utf-8'))['texts'][0]['original'] == expected
+    assert bridge.localization_columns(['id', 'hp', 'bg']) == {}
+print('pass=11 fail=0')

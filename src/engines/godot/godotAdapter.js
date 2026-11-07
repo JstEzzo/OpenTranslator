@@ -14,10 +14,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { randomUUID } = require('crypto');
+const { listPacks } = require('./embeddedPck');
+const Quality = require('../../core/translationQuality');
+const Placeholders = require('../../core/placeholderIntegrityValidator');
 const { spawnSync, spawn } = require('child_process');
 const BaseEngineAdapter = require('../../core/baseEngineAdapter');
 const CodeProtector = require('../../core/codeProtector');
 const BackupManager = require('../../core/backupManager');
+const { rollbackResult } = require('../rollbackResult');
 const GodotLocalizationProvider = require('./godotLocalizationProvider');
 const { PartialReport } = require('../../core/partialApply');
 
@@ -53,7 +59,7 @@ class GodotAdapter extends BaseEngineAdapter {
   getCapabilities(gameDir, exePath) {
     const findings = GodotLocalizationProvider.discover(gameDir);
     const hasNative = findings.csvFiles.length > 0 || findings.poFiles.length > 0;
-    const hasPck = fs.existsSync(gameDir) && fs.readdirSync(gameDir).some(f => f.toLowerCase().endsWith('.pck'));
+    const hasPck = listPacks(gameDir).length > 0;
 
     return {
       staticFiles: true,
@@ -71,7 +77,8 @@ class GodotAdapter extends BaseEngineAdapter {
   async detect(gameDir) {
     if (!fs.existsSync(gameDir)) return { isMatch: false, confidence: 0 };
     const files = fs.readdirSync(gameDir);
-    const hasPck = files.some(f => f.toLowerCase().endsWith('.pck'));
+    const pckFiles = listPacks(gameDir);
+    const hasPck = pckFiles.length > 0;
     const hasProjectGodot = files.some(f => f.toLowerCase() === 'project.godot' || f.toLowerCase() === 'project.binary');
     
     if (hasProjectGodot || hasPck) {
@@ -79,7 +86,7 @@ class GodotAdapter extends BaseEngineAdapter {
         isMatch: true,
         confidence: hasProjectGodot ? 1.0 : 0.95,
         engine: "godot",
-        pckFiles: files.filter(f => f.toLowerCase().endsWith('.pck'))
+        pckFiles
       };
     }
     return { isMatch: false, confidence: 0 };
@@ -87,9 +94,7 @@ class GodotAdapter extends BaseEngineAdapter {
 
   async inspect(gameDir) {
     const findings = GodotLocalizationProvider.discover(gameDir);
-    const pckFiles = fs.existsSync(gameDir) 
-      ? fs.readdirSync(gameDir).filter(f => f.toLowerCase().endsWith('.pck')) 
-      : [];
+    const pckFiles = listPacks(gameDir);
     
     const pckDetails = [];
     const py = this._findPython();
@@ -201,15 +206,15 @@ class GodotAdapter extends BaseEngineAdapter {
 
     // 3. Arquivos PCK (extração profunda via godot_bridge.py)
     if (fs.existsSync(gameDir)) {
-      const pckFiles = fs.readdirSync(gameDir).filter(f => f.toLowerCase().endsWith('.pck'));
+      const pckFiles = listPacks(gameDir);
       const py = this._findPython();
       const bridgeScript = path.join(__dirname, "godot_bridge.py");
 
       for (const pckName of pckFiles) {
         const pckPath = path.join(gameDir, pckName);
-        const tmpOut = path.join(__dirname, `_tmp_godot_${Date.now()}.json`);
+        const tmpOut = path.join(os.tmpdir(), `opent-godot-${randomUUID()}.json`);
         try {
-          const proc = spawnSync(py, [bridgeScript, "extract", pckPath, tmpOut], { encoding: "utf-8", timeout: 60000 });
+          const proc = spawnSync(py, [bridgeScript, "extract", pckPath, tmpOut, options.sl || 'auto'], { encoding: "utf-8", timeout: 60000, windowsHide: true });
           if (proc.error || proc.status !== 0) throw proc.error || new Error(proc.stderr || 'Godot archive bridge failed');
           if (!fs.existsSync(tmpOut)) throw new Error('Godot archive bridge did not produce extraction results');
           if (fs.existsSync(tmpOut)) {
@@ -319,6 +324,10 @@ class GodotAdapter extends BaseEngineAdapter {
 
     // Backup inicial via BackupManager
     if (pckTextsByFile.size > 0) {
+      if (!looseTexts.length && pckTextsByFile.size === 1 &&
+          texts.every(text => ['godot_pck_tsv', 'godot_pck_csv_table'].includes(text.format))) {
+        return this.applyPackedDialogue(gameDir, texts, translations, options);
+      }
       return { success: false, status: 'PCK_REPACK_REQUIRED',
         error: 'PCK application requires a verified repacker; no game files were modified.',
         modifiedFiles: [], count: 0 };
@@ -426,6 +435,45 @@ class GodotAdapter extends BaseEngineAdapter {
     };
   }
 
+  applyPackedDialogue(gameDir, texts, translations, options) {
+    const name = texts[0].file;
+    if (!listPacks(gameDir).includes(name)) throw new Error('Unrecognized Godot pack path');
+    const file = path.resolve(gameDir, name);
+    const edits = [];
+    for (const text of texts) {
+      const value = translations.get ? translations.get(text.id) : translations[text.id];
+      if (typeof value !== 'string' || !value.trim() || value === text.original) continue;
+      const translated = this.codeProtector.restore(value, text.tokens || []).restoredText;
+      if (!Quality.inspect(text.original, translated).valid ||
+          !Placeholders.validate(text.original, translated).valid || translated.includes('\0') ||
+          (text.format === 'godot_pck_tsv' && /[\r\n\t]/.test(translated))) {
+        throw new Error(`Invalid translation for Godot localization row ${text.rowIndex}`);
+      }
+      const { subPath, rowIndex, sourceCol, original } = text;
+      edits.push({ subPath, rowIndex, sourceCol, original, translated });
+    }
+    if (!edits.length) return { success: true, count: 0, modifiedFiles: [] };
+    const backup = this.backupManager.createSessionBackup(gameDir, [file], {
+      engine: 'godot', sessionId: options.sessionId, transactionId: options.transactionId
+    });
+    if (!backup.success) return { success: false, count: 0, modifiedFiles: [], error: backup.error };
+    const input = path.join(os.tmpdir(), `opent-godot-${randomUUID()}.json`);
+    const resultFile = input + '.result';
+    try {
+      fs.writeFileSync(input, JSON.stringify({ format: 'godot_pck_localization_table', edits }), { flag: 'wx' });
+      const proc = spawnSync(this._findPython(), [path.join(__dirname, 'godot_bridge.py'),
+        'apply', file, input, resultFile], { encoding: 'utf8', windowsHide: true, timeout: 180000 });
+      if (proc.error || proc.status !== 0) throw proc.error || new Error(proc.stderr || 'Godot repack failed');
+      const result = JSON.parse(fs.readFileSync(resultFile, 'utf8'));
+      return { ...result, count: result.appliedCount || 0, modifiedFiles: result.success ? [file] : [],
+        sessionId: backup.sessionId };
+    } finally {
+      for (const temporary of [input, resultFile]) {
+        if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+      }
+    }
+  }
+
   async package(gameDir, options = {}) {
     return { success: true, packaged: true };
   }
@@ -454,6 +502,9 @@ class GodotAdapter extends BaseEngineAdapter {
   }
 
   async rollback(gameDir, options = {}) {
+    if (options.sessionId || listPacks(gameDir).some(file => /\.exe$/i.test(file))) {
+      return rollbackResult(this.backupManager.restoreSessionBackup(gameDir, options), 'godot');
+    }
     const py = this._findPython();
     const bridgeScript = path.join(__dirname, "godot_bridge.py");
       const accApply = new PartialReport();

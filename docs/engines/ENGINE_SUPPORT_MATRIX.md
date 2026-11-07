@@ -117,11 +117,13 @@ Sources: [Reference 1](https://forum.gdevelop.io/t/translate-extension/72249).
 
 ### Godot
 
+The adapter detects embedded PCKs by their footer and header. It can extract and apply recognized CSV and TSV localization tables in unencrypted PCK v2 and v3 packages, whether stored separately or embedded in an executable. The selected source language identifies the column to replace. In automatic mode, the adapter prefers English, then Japanese, when available.
+
 Translations must be loaded or registered; fonts and locale affect display.
 
 **Cheats:** No generic cheats implemented.
 
-- Test PCK and imported resources by version.
+- Compiled resources, encrypted packs and games that use custom text formats still require separate support. The packed-table workflow applies to one package per operation.
 - Verify PO/plural loading and font fallback.
 
 Sources: [Reference 1](https://docs.godotengine.org/en/stable/tutorials/i18n/internationalizing_games.html).
