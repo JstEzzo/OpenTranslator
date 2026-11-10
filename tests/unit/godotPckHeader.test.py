@@ -71,4 +71,38 @@ with tempfile.TemporaryDirectory(prefix='opent-pck-header-',dir=ROOT/'scratch') 
         bridge.extract_texts(str(p), str(extracted), language)
         assert json.loads(extracted.read_text(encoding='utf-8'))['texts'][0]['original'] == expected
     assert bridge.localization_columns(['id', 'hp', 'bg']) == {}
-print('pass=11 fail=0')
+    p = root / 'dialogic.pck'
+    timeline = ('[style name="dialog"]\r\n'
+                'Guide (happy): [b]Hello {Player.Name}[/b]\\\r\n'
+                'Welcome!\r\n'
+                '\t- Continue | [if {Player.Ready}]\r\n'
+                '\t\tjump Next\r\n').encode('utf-8')
+    entries = []
+    body = b''
+    for name, content in [(b'res://addons/dialogic/loader.gdc', b'fixture'),
+                          (b'res://chapters/intro.dtl', timeline)]:
+        entries.append(struct.pack('<I', len(name)) + name +
+                       struct.pack('<QQ16sI', len(body), len(content), hashlib.md5(content).digest(), 0))
+        body += content
+    directory = b''.join(entries)
+    base = 100 + len(directory)
+    p.write_bytes(struct.pack('<4s5IQ', b'GDPC', 2, 4, 3, 0, 0, base) + bytes(64) +
+                  struct.pack('<I', len(entries)) + directory + body)
+    bridge.extract_texts(str(p), str(extracted))
+    rows = json.loads(extracted.read_text(encoding='utf-8'))['texts']
+    assert [row['original'] for row in rows] == ['[b]Hello {Player.Name}[/b]', 'Welcome!', 'Continue']
+    assert bridge.apply_localization_tables(str(p), bridge.parse_pck(str(p)),
+           [dict(rows[0], translated='[b]Olá {Player.Name}[/b]'),
+            dict(rows[2], translated='Continuar')]) == 2
+    with p.open('rb') as source:
+        pack = bridge.parse_pck(str(p))
+        raw, _ = bridge.read_dialogic_timeline(source, pack, pack['files'][1])
+    assert raw == timeline.replace(b'Hello', 'Olá'.encode()).replace(b'- Continue', b'- Continuar')
+    before = p.read_bytes()
+    try:
+        bridge.apply_localization_tables(str(p), pack, [dict(rows[1], translated='jump Elsewhere')])
+        raise AssertionError('Dialogic command accepted as translation')
+    except ValueError as error:
+        assert 'change Dialogic syntax' in str(error)
+    assert p.read_bytes() == before
+print('pass=14 fail=0')

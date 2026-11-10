@@ -148,6 +148,44 @@ def read_localization_table(fp, pack, entry):
     return (raw, rows, columns, encode) if columns else None
 
 
+def dialogic_text_span(line):
+    text = line.strip()
+    start = len(line) - len(line.lstrip())
+    if not text or re.match(r'^(?:#|(?:join|leave|update|if|elif|else|set|label|jump|return|do|call)(?:\s|:|$))', text):
+        return None
+    end = start + len(text)
+    if text.startswith('- '):
+        start += 2
+        suffix = re.search(r'\s+\|\s*|\s+\[if\s', line[start:end])
+        if suffix:
+            end = start + suffix.start()
+    else:
+        speaker = re.match(r'^[\w./-]+(?:\s+\([^)\r\n]+\))?:\s+', text)
+        if speaker:
+            start += speaker.end()
+    if line[start:end].endswith('\\'):
+        end -= 1
+    while start < end and line[start].isspace():
+        start += 1
+    while end > start and line[end - 1].isspace():
+        end -= 1
+    if not re.search(r'[^\W\d_]', re.sub(r'\[[^\]]*\]|\{[^}]*\}', '', line[start:end])):
+        return None
+    return start, end
+
+
+def read_dialogic_timeline(fp, pack, entry):
+    if entry['flags'] or entry['size'] > 4 * 1024 * 1024:
+        return None
+    fp.seek(pack['fileBase'] + entry['offset'])
+    raw = fp.read(entry['size'])
+    try:
+        lines = raw.decode('utf-8').splitlines(keepends=True)
+    except UnicodeDecodeError:
+        return None
+    return raw, lines
+
+
 def extract_texts(pck_path, out_json_path, source_language='auto'):
     pck = parse_pck(pck_path)
     if "error" in pck:
@@ -157,11 +195,28 @@ def extract_texts(pck_path, out_json_path, source_language='auto'):
 
     file_base = pck["fileBase"]
     translatable_texts = []
+    has_dialogic = any('/addons/dialogic/' in entry['path'].lower()
+                       or entry['path'].lower().startswith('addons/dialogic/')
+                       for entry in pck['files'])
     
     with open(pck_path, "rb") as fp:
         for f in pck["files"]:
             p = f["path"]
             if f['flags']:
+                continue
+            if has_dialogic and pck['pckVersion'] >= 2 and p.lower().endswith('.dtl'):
+                timeline = read_dialogic_timeline(fp, pck, f)
+                if timeline is not None:
+                    for index, line in enumerate(timeline[1]):
+                        span = dialogic_text_span(line)
+                        if span:
+                            value = line[slice(*span)]
+                            translatable_texts.append({
+                                'id': f'godot_dialogic_{os.path.basename(pck_path)}_{p}_{index}',
+                                'file': os.path.basename(pck_path), 'subPath': p,
+                                'rowIndex': index, 'original': value, 'clean': value,
+                                'engine': 'godot', 'format': 'godot_pck_dialogic'
+                            })
                 continue
             if pck['pckVersion'] >= 2 and p.lower().endswith(('.tsv', '.csv')):
                 try:
@@ -242,7 +297,8 @@ def extract_texts(pck_path, out_json_path, source_language='auto'):
                 except Exception:
                     pass
 
-    writable = [row for row in translatable_texts if row['format'] in ('godot_pck_tsv', 'godot_pck_csv_table')]
+    writable = [row for row in translatable_texts if row['format'] in (
+        'godot_pck_tsv', 'godot_pck_csv_table', 'godot_pck_dialogic')]
     if writable:
         translatable_texts = writable
     with open(out_json_path, "w", encoding="utf-8") as out_fp:
@@ -277,6 +333,31 @@ def apply_translations(pck_path, trans_json_path, out_meta_path):
     return
 
 
+def edit_dialogic_timeline(source, pack, entry, edits):
+    timeline = read_dialogic_timeline(source, pack, entry)
+    if timeline is None or hashlib.md5(timeline[0]).hexdigest() != entry['md5']:
+        raise ValueError('PCK Dialogic timeline checksum mismatch')
+    _, lines = timeline
+    markup = re.compile(r'\[[^\]]*\]|\{[^}]*\}|\\.')
+    for edit in edits:
+        index = edit['rowIndex']
+        if not 0 <= index < len(lines):
+            raise ValueError('PCK Dialogic line position changed')
+        line = lines[index]
+        span = dialogic_text_span(line)
+        if not span or line[slice(*span)] != edit['original']:
+            raise ValueError('PCK Dialogic source changed')
+        start, end = span
+        value = edit['translated']
+        updated = line[:start] + value + line[end:]
+        if (value.splitlines() != [value] or '\0' in value or
+                dialogic_text_span(updated) != (start, start + len(value)) or
+                markup.findall(value) != markup.findall(edit['original'])):
+            raise ValueError('Translation would change Dialogic syntax')
+        lines[index] = updated
+    return ''.join(lines).encode('utf-8')
+
+
 def apply_localization_tables(pck_path, pack, edits):
     if not edits:
         return 0
@@ -288,6 +369,10 @@ def apply_localization_tables(pck_path, pack, edits):
     changed = []
     with open(pck_path, 'rb') as source:
         for name, table_edits in grouped.items():
+            if name in entries and name.lower().endswith('.dtl'):
+                entry = entries[name]
+                changed.append((entry, edit_dialogic_timeline(source, pack, entry, table_edits)))
+                continue
             if name not in entries or not name.lower().endswith(('.tsv', '.csv')):
                 raise ValueError('Unknown PCK dialogue table')
             entry = entries[name]

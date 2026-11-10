@@ -225,7 +225,8 @@ class GodotAdapter extends BaseEngineAdapter {
             }
             if (result.texts && Array.isArray(result.texts)) {
               for (const item of result.texts) {
-                const { protectedText, tokens } = this.codeProtector.protect(item.original, "godot");
+                const syntax = item.format === 'godot_pck_dialogic' ? 'godot_dialogic' : 'godot';
+                const { protectedText, tokens } = this.codeProtector.protect(item.original, syntax);
                 item.protectedText = protectedText;
                 item.tokens = tokens;
                 allTexts.push(item);
@@ -325,7 +326,7 @@ class GodotAdapter extends BaseEngineAdapter {
     // Backup inicial via BackupManager
     if (pckTextsByFile.size > 0) {
       if (!looseTexts.length && pckTextsByFile.size === 1 &&
-          texts.every(text => ['godot_pck_tsv', 'godot_pck_csv_table'].includes(text.format))) {
+          texts.every(text => ['godot_pck_tsv', 'godot_pck_csv_table', 'godot_pck_dialogic'].includes(text.format))) {
         return this.applyPackedDialogue(gameDir, texts, translations, options);
       }
       return { success: false, status: 'PCK_REPACK_REQUIRED',

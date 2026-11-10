@@ -51,6 +51,9 @@ class CodeProtector {
         { type: "GODOT_DIALOG_VAR", regex: /<<[^>]+>>/g },
         { type: "GODOT_FMT", regex: /%[-+0-9]*[sdefgoxX]|(?:\{[a-zA-Z0-9_.]+\})/g }
       ],
+      godot_dialogic: [
+        { type: "DIALOGIC_MARKUP", regex: /\[[^\]\r\n]*\]|\{[^}\r\n]*\}|\\./g }
+      ],
       electron: [
         { type: "JS_TEMPLATE", regex: /\$\{[^}]+\}/g },
         { type: "HTML_ENTITY", regex: /&[a-zA-Z0-9#]+;/g },
