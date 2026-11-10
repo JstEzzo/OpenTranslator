@@ -68,7 +68,10 @@ class GenericAdapter extends BaseEngineAdapter {
   }
 
   async extract(gameDir, options = {}) {
-    const textExts = new Set([".json", ".txt", ".csv", ".po", ".xml", ".ini", ".yaml", ".yml", ".ts", ".js", ".lua", ".gd"]);
+    // Scripts need a parser that identifies display text. Scanning code line
+    // by line confuses commands and literals with dialogue.
+    const textExts = new Set([".json", ".txt", ".csv", ".po", ".xml", ".ini", ".yaml", ".yml"]);
+    const ignoredDirectories = new Set(["node_modules", "readme", "readmes", "doc", "docs", "documentation"]);
     const rawExtracted = [];
     // FASE 9 / PASSO 59 — o relatorio decide o `success`.
     // Precisa viver no escopo do METODO: um `catch` de dentro de `scanDir`
@@ -76,19 +79,19 @@ class GenericAdapter extends BaseEngineAdapter {
     // `return` do fim do metodo precisa leia-la.
     const accApply = new PartialReport();
 
-    const scanDir = (dir, depth = 0) => {
-      if (depth > 4) return;
+    const scanDir = (dir) => {
       try {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
           const fullPath = path.join(dir, entry.name);
           if (entry.isDirectory()) {
-            if (!entry.name.startsWith(".") && entry.name !== "node_modules" && entry.name !== ".git") {
-              scanDir(fullPath, depth + 1);
+            if (!entry.name.startsWith(".") && !ignoredDirectories.has(entry.name.toLowerCase())) {
+              scanDir(fullPath);
             }
           } else if (entry.isFile()) {
             const ext = path.extname(entry.name).toLowerCase();
-            if (textExts.has(ext)) {
+            const stem = path.basename(entry.name, ext).toLowerCase();
+            if (textExts.has(ext) && !/^(readme|license|licence|changelog|credits)(?:[._ -]|$)/.test(stem)) {
               try {
                 const stat = fs.statSync(fullPath);
                 if (stat.size < 5 * 1024 * 1024) {
@@ -146,7 +149,7 @@ class GenericAdapter extends BaseEngineAdapter {
       } catch (e) {
         // FASE 9 / PASSO 59 — a falha deixou de ser silenciosa.
         // Ver src/core/partialApply.js: quem decide o `success` e o relatorio.
-        accApply.fail(fullPath, e);
+        accApply.fail(dir, e);
       }
     };
 

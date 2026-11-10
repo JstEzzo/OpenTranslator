@@ -1779,7 +1779,9 @@
       try {
         const res = await rpc("dryRunGame", { gameKey: key });
         if (res && res.success) {
-          const msg = `Preview complete!\n\nEngine: ${res.engine} (${res.engineVersion || 'Nativa'})\nConfidence: ${Math.round((res.confidence || 0) * 100)}%\nExtracted strings: ${res.totalStrings}\nArquivos modificados: ${res.filesModified} (100% SEGURO)\nTokens protegidos: ${res.protectedTokensCount || 0}`;
+          const excluded = res.extractionReview?.excluded || 0;
+          const review = excluded ? `\nTechnical or empty entries excluded: ${excluded}` : '';
+          const msg = `Preview complete!\n\nEngine: ${res.engine} (${res.engineVersion || 'Nativa'})\nConfidence: ${Math.round((res.confidence || 0) * 100)}%\nExtracted strings: ${res.totalStrings}${review}\nArquivos modificados: ${res.filesModified} (100% SEGURO)\nTokens protegidos: ${res.protectedTokensCount || 0}`;
           alert(msg);
           log("success", `Dry Run: ${res.totalStrings} strings detected; the apply stage was not run.`);
         } else {

@@ -31,6 +31,7 @@ const UnityAdapter = require('../engines/unity/unityAdapter');
 const GenericAdapter = require('../engines/generic/genericAdapter');
 
 const { buildUniverse } = require('../translation/extraction/buildUniverse');
+const { reviewExtraction } = require('../translation/extraction/reviewExtraction');
 
 defaultRegistry.register(new RenpyAdapter());
 defaultRegistry.register(new RpgMakerAdapter());
@@ -57,9 +58,10 @@ class TranslationPipeline {
       };
     }
 
-    const extractResult = await adapter.extract(targetDir, options);
+    const extractResult = reviewExtraction(await adapter.extract(targetDir, options));
     if (!extractResult || extractResult.success !== true) {
       return { success: false, dryRun: true, status: 'FAILED_EXTRACTION', detection,
+        extractionStatus: extractResult?.status, extractionReview: extractResult?.extractionReview,
         error: extractResult?.error || 'Adapter did not confirm successful extraction',
         totalStrings: 0, universeComplete: false };
     }
@@ -85,6 +87,7 @@ class TranslationPipeline {
       evidence: detection.evidence,
       capabilities: adapter.getCapabilities(targetDir),
       totalStrings: extractResult.count || 0,
+      extractionReview: extractResult.extractionReview,
       protectedTokensCount,
       sampleTexts: (extractResult.texts || []).slice(0, 5),
       sampleQA,
@@ -107,7 +110,7 @@ class TranslationPipeline {
 
     if (global.log) global.log('info', '[Pipeline] Iniciando tradução para: ' + path.basename(targetDir) + ' (' + detection.engine + ')');
 
-    const extractResult = await adapter.extract(targetDir, options);
+    const extractResult = reviewExtraction(await adapter.extract(targetDir, options));
 
     // FASE 4 / PASSO 29 — FALHA DE EXTRAÇÃO NÃO É "NADA PARA TRADUZIR"
     //
@@ -133,6 +136,8 @@ class TranslationPipeline {
       return {
         success: false,
         status: 'FAILED_EXTRACTION',
+        extractionStatus: extractResult?.status,
+        extractionReview: extractResult?.extractionReview,
         error: `Falha na extração de textos: ${reason}`,
         reason,
         detection,
@@ -769,6 +774,7 @@ class TranslationPipeline {
           error: certificate.reason,
           message: certificate.reason,
           certificate,
+          extractionReview: extractResult.extractionReview,
           engine: detection.engine,
           engineVersion: detection.engineVersion,
           totalStrings: texts.length,
@@ -791,6 +797,7 @@ class TranslationPipeline {
         success: true,
         status: certificate.finalStatus,
         certificate,
+        extractionReview: extractResult.extractionReview,
         engine: detection.engine,
         engineVersion: detection.engineVersion,
         totalStrings: texts.length,

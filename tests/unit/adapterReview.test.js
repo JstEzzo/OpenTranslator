@@ -44,6 +44,14 @@ async function main() {
   fixture({'../outside.json':{offset:'0',size:2}},'{}');assert.throws(()=>Asar.extractAll(invalid,path.join(root,'bad')),/nome/);passed++;
   fixture({'locale.json':{offset:'1000',size:2}},'{}');assert.throws(()=>Asar.extractAll(invalid,path.join(root,'bad')),/limites/);passed++;
   fixture({'external.json':{unpacked:true,size:2}});assert.throws(()=>Asar.extractAll(invalid,path.join(root,'bad')),/perfil específico/);passed++;
+  const Generic=require('../../src/engines/generic/genericAdapter');
+  const deep='generic/game/resources/chapters/first/scene/dialogue';
+  write(deep+'/locale.json',{text:'هل أنت مستيقظ؟',command:'Open the inventory now',asset:'sprites/room.png',next:'go_to_scene'});
+  fs.writeFileSync(path.join(root,deep,'script.js'),'const message = "This is code";');
+  write('generic/docs/tutorial.json',{text:'This is documentation'});
+  const visible=await new Generic().extract(path.join(root,'generic'));
+  assert.strictEqual(visible.count,1);
+  assert.strictEqual(visible.texts[0].original,'هل أنت مستيقظ؟');passed++;
   console.log(`pass=${passed} fail=0`);
  } finally {fs.rmSync(root,{recursive:true,force:true});}
 }

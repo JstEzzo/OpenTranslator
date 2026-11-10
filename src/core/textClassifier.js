@@ -5,6 +5,12 @@
  * PLAYER_TEXT, UI_TEXT, DIALOGUE vs CODE, PATH, URL, HASH, GUID, etc.
  */
 
+const { classifyDisplayText } = require('./displayTextClassifier');
+
+const TECHNICAL_FIELDS = new Set(['id', 'guid', 'uuid', 'hash', 'asset', 'assetpath',
+  'path', 'filename', 'script', 'command', 'condition', 'expression', 'callback',
+  'variable', 'url', 'version', 'classname', 'methodname']);
+
 const CATEGORIES = {
   TEXT: "TEXT",
   CODE: "CODE",
@@ -32,6 +38,16 @@ class TextClassifier {
     const clean = text.trim();
     if (clean.length === 0) {
       return { translatable: false, reason: 'EMPTY', category: CATEGORIES.CODE, confidence: 1.0 };
+    }
+    if (context.engine === 'generic') {
+      const field = typeof context.key === 'string' ? context.key.split('.').at(-1).toLowerCase() : '';
+      const shape = classifyDisplayText(clean);
+      const technicalShape = ['identifier', 'opaque', 'code'].includes(shape.kind) ||
+        (shape.kind === 'path' && !/\s/.test(clean)) ||
+        /^(?:const|let|var)\s+[$\w]+\s*=|^(?:[\w$]+\.)+[\w$]+\s*\(.*\)\s*;?$/s.test(clean);
+      if (TECHNICAL_FIELDS.has(field) || technicalShape) {
+        return { translatable: false, reason: 'TECHNICAL_FIELD_OR_VALUE', category: CATEGORIES.CODE, confidence: 1 };
+      }
     }
     if (clean.length === 1 && !/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(clean)) {
       return { translatable: false, reason: 'SINGLE_ASCII_CHAR', category: CATEGORIES.CODE, confidence: 1.0 };
@@ -73,7 +89,7 @@ class TextClassifier {
     }
 
     // Não contém nenhuma letra humana (alfabético latino ou CJK)
-    if (!/[a-zA-Z\u00C0-\u017F\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(clean)) {
+    if (!/\p{L}/u.test(clean)) {
       return { translatable: false, reason: 'NO_HUMAN_CHARACTERS', category: CATEGORIES.CODE, confidence: 1.0 };
     }
 
@@ -99,7 +115,7 @@ class TextClassifier {
 
     for (const item of items) {
       const text = item.clean || item.original || item.text || "";
-      const classification = TextClassifier.classify(text, { file: item.file, engine: item.engine });
+      const classification = TextClassifier.classify(text, { file: item.file, engine: item.engine, key: item.key });
 
       if (classification.translatable && (classification.confidence || 1.0) >= minConfidence) {
         translatable.push({
