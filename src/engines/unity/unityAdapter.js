@@ -11,6 +11,8 @@
 
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
+const { randomUUID } = require("crypto");
 const { execFileSync } = require("child_process");
 const BaseEngineAdapter = require("../../core/baseEngineAdapter");
 const CodeProtector = require("../../core/codeProtector");
@@ -45,6 +47,8 @@ class UnityAdapter extends BaseEngineAdapter {
 
   getPythonBin() {
     const { resolvePythonBinary } = require("../../utils/pythonResolver");
+    const bundled = path.resolve(__dirname, '../../../resources/renpy/python/python.exe');
+    if (fs.existsSync(bundled)) return bundled;
     return resolvePythonBinary();
   }
 
@@ -136,26 +140,31 @@ class UnityAdapter extends BaseEngineAdapter {
     try {
       let rawTexts = [];
       let assetBridgeError = null;
+      let diagnostics = null;
       try {
         const stdout = execFileSync(
           pyBin,
-          [this.bridgeScript, "--game-dir", root, "--mode", "extract"],
+          [this.bridgeScript, "--game-dir", root, "--mode", "extract", "--source-language", options.sl || 'auto'],
           { maxBuffer: 100 * 1024 * 1024, cwd: root }
         ).toString("utf-8");
 
         const bridgeResult = JSON.parse(stdout);
+        if (bridgeResult.success !== true || !Array.isArray(bridgeResult.texts)) {
+          throw new Error(bridgeResult.error || 'Unity asset bridge returned invalid extraction data.');
+        }
         rawTexts = bridgeResult.texts || [];
+        diagnostics = bridgeResult.diagnostics || null;
       } catch (assetErr) {
         assetBridgeError = assetErr;
         // Keep the failure unless the managed-assembly fallback actually succeeds.
       }
 
       // If no serialized TextAssets found and engine is Mono, extract managed assembly literals
-      if (rawTexts.length === 0 && !isIl2cpp) {
+      if (rawTexts.length === 0 && !isIl2cpp && !assetBridgeError && options.includeManagedLiterals === true) {
         const managedAsm = this._findManagedAssembly(root);
         if (managedAsm && fs.existsSync(managedAsm)) {
           const cecilScript = path.resolve(__dirname, "cecil_bridge.ps1");
-          const tempOut = path.join(root, ".opent_managed_extract.json");
+          const tempOut = path.join(os.tmpdir(), `opent-managed-${randomUUID()}.json`);
           try {
             execFileSync("powershell.exe", [
               "-ExecutionPolicy", "Bypass",
@@ -182,7 +191,21 @@ class UnityAdapter extends BaseEngineAdapter {
         }
       }
 
-      if (!rawTexts.length && assetBridgeError) throw new Error("Falha ao extrair recursos Unity: " + assetBridgeError.message);
+      if (!rawTexts.length) {
+        let error = 'The Unity extractor found no supported text. The game may store dialogue in bundles, compiled resources or runtime UI.';
+        let status = 'STATIC_TEXT_NOT_EXPOSED';
+        if (assetBridgeError) {
+          status = 'UNITY_ASSET_BRIDGE_FAILED';
+          error = 'Could not read Unity resources: ' + assetBridgeError.message;
+        } else if (diagnostics?.unityPyAvailable === false) {
+          status = 'UNITYPY_REQUIRED';
+          error = 'UnityPy is unavailable to the selected Python runtime. Unity serialized assets could not be scanned.';
+        } else if (diagnostics?.failedAssets?.length) {
+          status = 'UNITY_ASSET_READ_FAILED';
+          error = `No supported text found and ${diagnostics.failedAssets.length} serialized asset files could not be read.`;
+        }
+        return { success: false, status, error, diagnostics, isIl2cpp, texts: [], count: 0, universeComplete: false };
+      }
 
       const protectedTexts = [];
       for (const t of rawTexts) {
@@ -265,12 +288,13 @@ const root = this.resolveUnityRoot(gameDir);
     // 2. Cria backup seguro com manifesto SHA-256
     const filesToBackup = Array.from(filesToBackupSet);
     if (options.skipBackup !== true && filesToBackup.length > 0) {
-      this.backupManager.createSessionBackup(root, filesToBackup, {
+      const backup = this.backupManager.createSessionBackup(root, filesToBackup, {
         sessionId: options.sessionId,
         transactionId: options.transactionId,
         backupId: options.backupId,
         engine: "unity"
       });
+      if (!backup.success) return { success: false, count: 0, modifiedFiles: [], error: backup.error };
     }
 
     // 3. Separa itens de Managed Assembly (Cecil) e Assets (UnityPy)
@@ -318,10 +342,13 @@ const root = this.resolveUnityRoot(gameDir);
         ).toString("utf-8");
 
         const res = JSON.parse(stdout);
+        if (!res.success || !Number.isInteger(res.count) || res.count <= 0) {
+          return { success: false, count: 0, modifiedFiles, error: res.error || 'Unity did not apply any asset translations.' };
+        }
         if (res.modifiedFiles) {
           modifiedFiles.push(...res.modifiedFiles);
         }
-        totalInjected += (res.count || assetItems.length);
+        totalInjected += res.count;
       } finally {
         // FASE 9 / PASSO 57 — este `try` foi reconstituido. O conversor casou
         // apenas a cauda `catch (_) {}` da linha e derrubou o `try {` junto,
@@ -350,16 +377,6 @@ const root = this.resolveUnityRoot(gameDir);
   async rollback(gameDir, options = {}) {
     const root = this.resolveUnityRoot(gameDir);
     const res = this.backupManager.restoreSessionBackup(root, options);
-    const backupBase = path.join(root, ".opent_unity_backup");
-    try {
-      if (fs.existsSync(backupBase)) {
-        fs.rmSync(backupBase, { recursive: true, force: true });
-      }
-    } catch (_) {}
-    if (!res || !res.success) {
-      const oldRes = this.backupManager.restoreOldestBackup(root);
-      return rollbackResult(oldRes, this.id || this.engineId || "unknown");
-    }
     return rollbackResult(res, this.id || this.engineId || "unknown", {
       // FASE 7 — success:true era literal, mesmo sem saber se algum arquivo
       // foi restaurado. Um rollback que "deu certo" sem tocar em nada é pior

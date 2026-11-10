@@ -13,6 +13,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 site_pkg = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../resources/unity/site-packages"))
 if os.path.exists(site_pkg) and site_pkg not in sys.path:
     sys.path.insert(0, site_pkg)
@@ -54,9 +55,11 @@ def is_translatable_text(s):
         return False
     return True
 
-def extract_from_game(game_dir):
+def extract_from_game(game_dir, source_language="auto"):
     texts = []
     visited_ids = set()
+    asset_files = []
+    failed_assets = []
 
     # 1. Resolve Data directory
     data_dir = None
@@ -68,7 +71,21 @@ def extract_from_game(game_dir):
 
     # 2. Extract from UnityPy Serialized Assets
     if UNITYPY_AVAILABLE and data_dir and os.path.exists(data_dir):
-        asset_files = [f for f in os.listdir(data_dir) if f.endswith(".assets")]
+        import unity_i2
+        asset_files = [f for f in os.listdir(data_dir) if f.endswith(".assets") and not f.startswith(".")]
+        localized = []
+        for asset in asset_files:
+            filename = os.path.join(data_dir, asset)
+            try:
+                env = UnityPy.load(filename)
+            except Exception:
+                continue
+            try:
+                localized.extend(unity_i2.extract(env, os.path.relpath(filename, game_dir).replace("\\", "/"), source_language))
+            except (ValueError, UnicodeError) as error:
+                return {"success": False, "error": f"Unsupported I2 localization table in {asset}: {error}"}
+        if localized:
+            return {"success": True, "texts": localized, "count": len(localized)}
         for af in asset_files:
             af_path = os.path.join(data_dir, af)
             rel_file = os.path.relpath(af_path, game_dir).replace("\\", "/")
@@ -199,7 +216,7 @@ def extract_from_game(game_dir):
                                         "engine": "unity"
                                     })
             except Exception:
-                pass
+                failed_assets.append(rel_file)
 
     # 3. Extract from AutoTranslator dictionaries
     at_dir = os.path.join(game_dir, "AutoTranslator", "Translation")
@@ -304,7 +321,13 @@ def extract_from_game(game_dir):
     return {
         "success": True,
         "count": len(texts),
-        "texts": texts
+        "texts": texts,
+        "diagnostics": {
+            "unityPyAvailable": UNITYPY_AVAILABLE,
+            "serializedFilesScanned": len(asset_files),
+            "failedAssets": failed_assets,
+            "hasStreamingAssets": bool(data_dir and os.path.isdir(os.path.join(data_dir, "StreamingAssets")))
+        }
     }
 
 def inject_into_game(game_dir, payload_file):
@@ -328,6 +351,12 @@ def inject_into_game(game_dir, payload_file):
     for rel_file, file_items in items_by_file.items():
         full_path = os.path.join(game_dir, rel_file)
         if not os.path.exists(full_path):
+            continue
+
+        if UNITYPY_AVAILABLE and all(item.get("format") == "unity_i2" for item in file_items):
+            import unity_i2
+            injected_count += unity_i2.inject(full_path, file_items)
+            modified_files.add(full_path)
             continue
 
         if rel_file.endswith(".assets") and UNITYPY_AVAILABLE:
@@ -427,10 +456,11 @@ if __name__ == "__main__":
     parser.add_argument("--game-dir", required=True)
     parser.add_argument("--mode", choices=["extract", "inject"], required=True)
     parser.add_argument("--payload", default=None)
+    parser.add_argument("--source-language", default="auto")
     args = parser.parse_args()
 
     if args.mode == "extract":
-        res = extract_from_game(args.game_dir)
+        res = extract_from_game(args.game_dir, args.source_language)
     else:
         res = inject_into_game(args.game_dir, args.payload)
 
