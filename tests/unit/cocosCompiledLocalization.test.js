@@ -7,4 +7,18 @@ const protectedSource=source.replace('New Game','Hello {0}');fs.writeFileSync(fi
 fs.writeFileSync(file,source.replace('New Game','[Hilltop Passage]'));const bracket=C.extract(root);const translatedBracket=new Map([[bracket.texts[0].id,'[Passagem da colina]']]);assert.doesNotThrow(()=>C.prepare(root,bracket.texts,translatedBracket));pass++;
 fs.writeFileSync(file,source.replace('New Game','[Hello {0}]'));const variable=C.extract(root);assert.throws(()=>C.prepare(root,variable.texts,new Map([[variable.texts[0].id,'[Olá]']])),/quality/);pass++;
 fs.writeFileSync(file,'var modules={Panel:[function(){this.label.string="语言："+this.name;this.showConfirm("确认是否删除");console.log("技术信息");},{}]};');const ui=C.extract(root);assert.equal(ui.count,2);assert(ui.texts.every(t=>t.sourceKind==='script-label'&&t.sourceLanguage==='zh'));const uiMap=new Map(ui.texts.map(t=>[t.id,t.original==='语言：'?'Idioma: ':'Confirmar exclusão']));C.commit(C.prepare(root,ui.texts,uiMap));assert.equal(C.extract(root).texts.length,2);assert(fs.readFileSync(file,'utf8').includes('技术信息'));pass++;
+const otherBundle=path.join(root,'assets/story');fs.mkdirSync(otherBundle);
+const otherFile=path.join(otherBundle,'index.other.js');
+fs.writeFileSync(otherFile,`var modules={DialogueCatalog:[function(){
+ const entries=new Map();
+ entries.set("intro",{id:"intro",str:"介绍",english:"[Introduction Screen]",traditional:"介紹"});
+ entries.set("setting",{id:"setting",str:"internal",english:"Technical option"});
+ const config={set(){}};
+ config.set("debug",{id:"debug",str:"调试",english:"Debug Value",traditional:"調試"});
+},{}]};`);
+const alternate=C.extract(root).texts.filter(row=>row.file==='assets/story/index.other.js');
+assert.equal(alternate.length,1);assert.equal(alternate[0].module,'DialogueCatalog');assert.equal(alternate[0].entry,'intro');
+C.commit(C.prepare(root,alternate,new Map([[alternate[0].id,'[Tela de introdução]']])));
+assert.equal(C.extract(root).texts.find(row=>row.id===alternate[0].id).original,'[Tela de introdução]');
+assert(fs.readFileSync(otherFile,'utf8').includes('Technical option'));assert(fs.readFileSync(otherFile,'utf8').includes('Debug Value'));pass++;
 console.log(`pass=${pass} fail=0`);})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>fs.rmSync(root,{recursive:true,force:true}));

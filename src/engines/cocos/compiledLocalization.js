@@ -24,7 +24,12 @@ function parse(source,file) {
   const name=module.key.name||module.key.value;
   const fn=module.value?.type==='ArrayExpression'?module.value.elements[0]:null;
   if(typeof name!=='string'||fn?.type!=='FunctionExpression')return;
-  const isLanguageMap=/^G(?:language\d+|words_[A-Za-z0-9_]+)$/.test(name);
+  const maps = new Set(fn.body.body.flatMap(statement =>
+   statement.type === 'VariableDeclaration' ? statement.declarations
+    .filter(declaration => declaration.id.type === 'Identifier' &&
+     declaration.init?.type === 'NewExpression' && declaration.init.callee.type === 'Identifier' &&
+     declaration.init.callee.name === 'Map')
+    .map(declaration => declaration.id.name) : []));
   let uiOrdinal=0;
   function addUi(literal) {
    if(literal?.type!=='Literal'||typeof literal.value!=='string'||seenUi.has(literal.start))return;
@@ -46,15 +51,19 @@ function parse(source,file) {
    if(node.type!=='CallExpression')return;
    const callee=node.callee.type==='MemberExpression'?(node.callee.property.name||node.callee.property.value):node.callee.name;
    if(['showConfirm','showToast','showTips','showMessage','showNotice','alert','confirm'].includes(callee))addUi(node.arguments[0]);
-   if(!isLanguageMap||node.callee.type!=='MemberExpression'||node.callee.computed||node.callee.property.name!=='set'||node.arguments.length!==2)return;
+   if(node.callee.type!=='MemberExpression'||node.callee.computed||node.callee.property.name!=='set'||
+      node.callee.object.type!=='Identifier'||!maps.has(node.callee.object.name)||node.arguments.length!==2)return;
    const [key,object]=node.arguments;
-   if(key.type!=='Literal'||typeof key.value!=='number'||object.type!=='ObjectExpression')return;
+   const validKey = key.type === 'Literal' && (typeof key.value === 'number' ||
+    (typeof key.value === 'string' && key.value.trim()));
+   if(!validKey||object.type!=='ObjectExpression')return;
    const props=new Map(object.properties.filter(p=>p.type==='Property'&&!p.computed).map(p=>[p.key.name||p.key.value,p.value]));
    const id=props.get('id'),english=props.get('english');
    if(id?.type!=='Literal'||id.value!==key.value||english?.type!=='Literal'||typeof english.value!=='string'||!english.value.trim())return;
    const ranges={};for(const field of LANGUAGE_FIELDS){const value=props.get(field);if(value?.type==='Literal'&&typeof value.value==='string')ranges[field]={start:value.start,end:value.end,original:value.value};}
-   if(!ranges.str)return;
-   const base='compiled:'+file+':'+name+':'+key.value,occurrence=occurrences.get(base)||0;occurrences.set(base,occurrence+1);
+   // Require a multilingual record, independent of the bundle and module names.
+   if(!ranges.str||(!ranges.traditional&&!ranges.japanese))return;
+   const base='compiled:'+file+':'+name+':'+JSON.stringify(key.value),occurrence=occurrences.get(base)||0;occurrences.set(base,occurrence+1);
    rows.push({id:base+':'+occurrence,file,module:name,entry:key.value,original:english.value,clean:english.value,
     format:'cocos_compiled_localization',sourceKind:'language-map',ranges,engine:'cocos_creator',tokens:english.value.includes('@')?[{raw:'@',token:'⟦OT_COCOS_PAGE_0⟧',type:'COCOS_PAGE'}]:[]});
   });
@@ -63,11 +72,33 @@ function parse(source,file) {
  return rows.sort((a,b)=>a.ranges.english.start-b.ranges.english.start);
 }
 function roots(root){return[root,path.join(root,'resources','app','game'),path.join(root,'game')];}
-function extract(root){const rows=[];for(const base of roots(root)){const dir=path.join(base,'assets','main');if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>/^index(?:\.[\w-]+)?\.js$/.test(n))){const file=path.join(dir,name),relative=path.relative(root,file).replace(/\\/g,'/');rows.push(...parse(fs.readFileSync(file,'utf8'),relative));}}
+function extract(root) {
+ const rows = [];
+ for (const base of roots(root)) {
+  const assets = path.join(base, 'assets');
+  if (!fs.existsSync(assets)) continue;
+  for (const bundle of fs.readdirSync(assets, { withFileTypes: true })) {
+   if (!bundle.isDirectory() || bundle.name.startsWith('.')) continue;
+   const directory = path.join(assets, bundle.name);
+   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (!entry.isFile() || !/^index(?:\.[\w-]+)?\.js$/.test(entry.name)) continue;
+    const file = path.join(directory, entry.name);
+    const relative = path.relative(root, file).replace(/\\/g, '/');
+    rows.push(...parse(fs.readFileSync(file, 'utf8'), relative));
+   }
+  }
+ }
  return rows.length?{success:true,texts:rows,count:rows.length,universeComplete:false,coverageScope:'Explicit compiled Cocos localization maps; image text and other scripts excluded'}:null;
 }
 function validPlaceholders(row,tr){
- if(row.module==='Glanguage1'&&/^\[[^\[\]\r\n]+\]$/.test(row.original)&&/^\[[^\[\]\r\n]+\]$/.test(tr))return Placeholders.validate(row.original.slice(1,-1),tr.slice(1,-1)).valid;
+ const bracketed = /^\[([^\[\]\r\n]+)\]$/;
+ const label = row.sourceKind === 'language-map' && row.original.match(bracketed);
+ const translatedLabel = tr.match(bracketed);
+ // A complete multiword label can use brackets as decoration. Single-token
+ // placeholders and directives such as [color=red] remain protected.
+ if(label && translatedLabel && /\S\s+\S/.test(label[1]) && !label[1].includes('=')) {
+  return Placeholders.validate(label[1], translatedLabel[1]).valid;
+ }
  return Placeholders.validate(row.original,tr).valid;
 }
 function prepare(root,texts,translations){const byFile=new Map();for(const row of texts){const tr=translations.get(row.id);if(tr===undefined||(tr===row.original&&Object.values(row.ranges).every(r=>r.original===tr)))continue;if(row.original.split('@').length!==tr.split('@').length||!Quality.inspect(row.original,tr).valid||!validPlaceholders(row,tr))throw Error('Compiled localization failed quality checks');if(!byFile.has(row.file))byFile.set(row.file,[]);byFile.get(row.file).push(row);}
